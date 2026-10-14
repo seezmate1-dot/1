@@ -84,7 +84,7 @@ def storage(row):
     return nice(pacing.storage_cap(row), 3)
 
 
-STORAGE_GATE_FROM = 8  # below this the warehouse holds the 1000 of the tutorial levels
+STORAGE_GATE_FROM = 10  # the first day (tutorial) is free of the warehouse rule (MIN_STORAGE)
 
 
 def hero_gate(result):
@@ -92,7 +92,7 @@ def hero_gate(result):
     rows, reached = result["rows"], result["reached_run"]
     by_day = {d["day"]: d for d in result["days"]}
     out = []
-    for lv in range(5, pacing.MAX_LEVEL):
+    for lv in range(HERO_GATE_FROM, pacing.MAX_LEVEL):
         if lv + 1 not in reached or reached[lv + 1] > DAYS:
             break
         t = hearth_start_day(rows, reached, lv)
@@ -131,7 +131,7 @@ def essence_income_per_day(level):
     """Daily essence from Surge, arena, expeditions and repeats (GDD 10, 11). First clears of the
     campaign and events add their own. The sources follow campaign progress and squad power, and
     essence is never sold for diamonds, so a player cannot rush it."""
-    return 160 * 1.13 ** (level - 1)
+    return 170 * 1.13 ** (level - 1)
 
 
 def hero_level_cost(hero_level):
@@ -150,14 +150,27 @@ def hero_level_cap(hearth_level):
 # Anti-rush (GDD 9.5): the hearth job level -> level+1 starts only when five heroes have reached
 # this level. A free player is HERO_SLACK levels above it, so the rule stops only rushers.
 HERO_CORE = 5
+HERO_GATE_FROM = 10  # the first day (tutorial) is free of the hero rule
 HERO_SLACK = 2
 MISSION_ESSENCE_DAYS = 0.6  # a first clear of a campaign battle gives 0.6 of a day of essence
-STARTER_ESSENCE = 3000      # starter quests of the first days (heroes grow fast at first)
-STARTER_DAYS = 3
+STARTER_ESSENCE = 9000      # tutorial and first-day quests (heroes grow fast at first)
+STARTER_DAYS = 2
+
+
+KEY_ROOMS_EARLY = ["Спальни", "Кухня", "Угольная шахта", "Казарма", "Рудник", "Кузня", "Лазарет", "Библиотека",
+                   "Тренировочный зал"]
+KEY_ROOMS_CYCLE = ["Казарма", "Кузня", "Лазарет", "Библиотека", "Тренировочный зал"]
+
+
+def key_room(level):
+    """The one room that must be at level L before the hearth job L -> L+1 (anti-rush rule 2)."""
+    if level <= len(KEY_ROOMS_EARLY):
+        return KEY_ROOMS_EARLY[level - 1]
+    return KEY_ROOMS_CYCLE[(level - 10) % len(KEY_ROOMS_CYCLE)]
 
 
 def hero_requirement(level):
-    return 0 if level < 5 else 2 * level - 2
+    return 0 if level < HERO_GATE_FROM else 2 * level - 2
 
 
 def essence_to_level(h):
@@ -181,9 +194,9 @@ MISSIONS_PER_ACT = 18  # plus a boss
 MISSIONS = ACTS * (MISSIONS_PER_ACT + 1)
 # Day by which a free player reaches mission N: fast at first, then a new battle every 2-3 days,
 # so the campaign never stalls for weeks (the gate inside it is squad power).
-CAMPAIGN_PACE = [(0, 0), (8, 1), (19, 3), (38, 8), (57, 16), (76, 30), (95, 50), (114, 80),
-                 (133, 120), (152, 165), (171, 215), (190, 270)]
-MISSIONS_PER_DAY_MAX = 8
+CAMPAIGN_PACE = [(0, 0), (12, 1), (19, 2), (38, 5), (57, 10), (76, 18), (95, 32), (114, 55),
+                 (133, 90), (152, 140), (171, 195), (190, 255)]
+MISSIONS_PER_DAY_MAX = 12
 MAX_MISSION_GAP_DAYS = 3.5
 
 
@@ -224,6 +237,7 @@ DIAMONDS_PER_3_STAR_CHEST = 5  # one chest per mission with 3 stars
 FOURTH_BUILDER_PRICE = 2500
 
 # Spending habits of a free player (diamonds per day once available).
+ARENA_UNLOCK = 16              # PvP waits until the two-week hook is over (docs/RESEARCH.md)
 ARENA_EXTRA_TICKETS = 20       # an extra arena ticket, bought twice a week (league weekends)
 SHOP_REFRESH = 10              # one paid refresh of the daily shop
 
@@ -240,8 +254,9 @@ EVENTS = {
     "Осада застав":      (28, 25, 4, 80, 60, 1.5, 16, 180),
     "Праздник очага":    (91, 60, 10, 200, 100, 2.0, 24, 720),
 }
-EVENT_UNLOCK_HEARTH = {"Ярмарка Пепла": 4, "Кладоискатели": 5, "Долгая ночь": 6, "Портал в Туман": 8,
-                       "Турнир Стражей": 10, "Осада застав": 12, "Праздник очага": 3}
+# Something new every day or two of the two-week hook: hearth 9 is the first evening, 15 is day 14.
+EVENT_UNLOCK_HEARTH = {"Праздник очага": 9, "Ярмарка Пепла": 9, "Кладоискатели": 10, "Долгая ночь": 11,
+                       "Портал в Туман": 12, "Турнир Стражей": 13, "Осада застав": 15}
 
 HOURGLASS_DAILY_MINUTES = 45   # daily tasks (3 of 5) give a 45-minute hourglass
 HOURGLASS_SURGE_MINUTES = 15   # a won evening Surge gives 15 minutes (from hearth 2)
@@ -375,7 +390,7 @@ def run(rows, reached):
         ach = min(ACHIEVEMENT_POOL * (0.6 / 30 if day <= 30 else 0.4 / 335), achievements_left)
         achievements_left -= ach
         daily["Достижения"] = ach
-        daily["Арена"] = 60 if lv >= 12 and day % 7 == 0 else 0  # weekly league reward
+        daily["Арена"] = 60 if lv >= ARENA_UNLOCK and day % 7 == 0 else 0  # weekly league reward
         daily["События"] = 0
         hourglass = HOURGLASS_DAILY_MINUTES + (HOURGLASS_SURGE_MINUTES if lv >= 2 else 0)
         event_spend = 0
@@ -403,7 +418,7 @@ def run(rows, reached):
                 spent += FOURTH_BUILDER_PRICE
                 fourth_builder_day = day
         else:
-            habit = SHOP_REFRESH + (ARENA_EXTRA_TICKETS if lv >= 12 and day % 7 in (6, 0) else 0)
+            habit = SHOP_REFRESH + (ARENA_EXTRA_TICKETS if lv >= ARENA_UNLOCK and day % 7 in (6, 0) else 0)
             if diamonds >= habit:
                 diamonds -= habit
                 spent_by["Билет арены и обновление лавки"] += habit
@@ -415,7 +430,7 @@ def run(rows, reached):
             surplus = diamonds - RESERVE
             if day % 7 == 1:
                 packs_this_week = 0
-            if surplus > 0 and gated[lv]:
+            if surplus > 0 and gated.get(lv, False):
                 minutes = max(row["room_h"] * 60, 60)
                 rate = speedup_cost(minutes) / minutes
                 bought = surplus / rate
@@ -558,7 +573,7 @@ def dec(x, digits=1):
 PLAYTIME = [  # minutes a day of a typical free player, 4 sessions of 12 minutes
     ("Сбор производства, стройка, расселение жителей", 8),
     ("Кампания: новые бои, сложный режим, повторы", 8),
-    ("Арена: 5 боёв (с очага 12)", 5),
+    ("Арена: 5 боёв (с очага 16)", 5),
     ("Вылазки, таверна, кузня, лазарет", 7),
     ("Наплыв тумана (можно смотреть или пропустить)", 3),
     ("События", 12),
@@ -610,7 +625,11 @@ def report(result):
         w("| %d | %s | %s (%+.0f%%) | %s |" % (lv, dec(want), dec(got), (got - want) / want * 100,
                                               dec(plain[lv]) if lv in plain else "после года"))
     w("")
-    w("Ускорения и четвёртый строитель важны с 5-го по 16-й уровень очага, когда игрока держат строители. Позже держат материалы, "
+    w("**Первый день** (обучение и крючок, таймеры первых уровней заданы вручную по образцу Whiteout Survival): " +
+      ", ".join("очаг %d — %s" % (lv, pacing.fmt_h(reached[lv] * 24)) for lv in (3, 5, 7, 8, 9, 10) if lv in reached) + ".")
+    w("")
+    w("Ускорения и четвёртый строитель важны с %d-го по %d-й уровень очага, когда игрока держат строители. Позже держат материалы, "
+      % (pacing.BUILDER_GATED[0], pacing.BUILDER_GATED[-1]) +
       "и алмазы выгоднее тратить на наборы ресурсов. Полная таблица таймеров и цен — `docs/pacing_table.md`.")
     w("")
     w("## 4. Материалы (серебро и железо)")
@@ -736,20 +755,26 @@ def report(result):
         w("| %s | %d |" % (name, m))
     w("| **Всего** | **%d** |" % sum(m for _, m in PLAYTIME))
     w("")
-    w("Первый день длиннее: около 3,5 часов, если игроку нравится (обучение, первые 4 уровня очага, первый босс).")
+    w("Первый день длиннее: около 3,5 часов, если игроку нравится (обучение, 9 уровней очага, первый акт кампании).")
     w("")
     w("## 11. Защита от раша")
     w("")
     w("Раш — это когда игрок гонит уровень очага, не развивая крепость и героев: потом он не тянет ни кампанию, ни "
-      "события, и ему скучно. Четыре правила не дают начать стройку очага с уровня L на L+1, пока не выполнено:")
+      "события, и ему скучно. Как в Whiteout Survival, стройку очага с уровня L на L+1 нельзя начать, пока не "
+      "выполнены три правила:")
     w("")
     w("1. **Склад.** Цена очага влезает только в склад, улучшенный до уровня L. Склад уровня L−1 меньше цены (с очага %d)." % STORAGE_GATE_FROM)
-    w("2. **Ключевые залы** на уровне L: склад, казарма, спальни, кухня, угольная шахта, рудник (с очага 3), "
-      "кузня (с 5), Часовня Угля (с 12).")
-    w("3. **Остальные залы** не ниже уровня L−1: ни один зал не отстаёт больше чем на уровень.")
-    w("4. **Герои.** Пять героев не ниже уровня `2 × L − 2` (с очага 5; предел уровня героя `2 × L + 5`).")
+    w("2. **Ключевой зал уровня L** — один, по кругу (у Whiteout так же: печь требует одно-два здания своего уровня). "
+      "Остальные залы игрок растит по желанию, ради выработки и силы:")
     w("")
-    w("Обычный игрок выполняет все четыре правила сам и не замечает их: он и так поднимает все залы, а героев растит "
+    w("| Очаг L | Ключевой зал |")
+    w("|---|---|")
+    for lo, hi in ((1, 9), (10, 14), (15, 19), (20, 24), (25, 29)):
+        w("| " + " · ".join("%d" % lv for lv in range(lo, hi + 1)) + " | " + " · ".join(key_room(lv) for lv in range(lo, hi + 1)) + " |")
+    w("")
+    w("3. **Герои.** Пять героев не ниже уровня `2 × L − 2` (с очага %d; предел уровня героя `2 × L + 5`)." % HERO_GATE_FROM)
+    w("")
+    w("Обычный игрок выполняет все три правила сам и не замечает их: он и так поднимает залы, а героев растит "
       "с запасом. Проверка модели:")
     w("")
     w("| Очаг | Склад уровня L−1 | Цена очага | Склад уровня L | Нужен уровень героев | Пятёрка героев у игрока |")
