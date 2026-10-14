@@ -221,6 +221,7 @@ namespace LastHearth.Core
         public SpecializationData Specializations = new SpecializationData();
         public DailyData Daily = new DailyData();
         public ShopData Shop = new ShopData();
+        public PvpData Pvp = new PvpData();
         public List<EventData> Events = new List<EventData>();
     }
 
@@ -249,6 +250,43 @@ namespace LastHearth.Core
         public long[] Refresh = new long[0];
         public int Slots;
         public long[] ArenaTicket = new long[0];
+    }
+
+    /// <summary>MODES.md, 2-3: the arena and raids (against ghosts until the server exists).</summary>
+    public sealed class PvpData
+    {
+        public int ArenaUnlock;
+        public int Tickets;
+        public int TicketHours;
+        public int StartRating;
+        public List<LeagueData> Leagues = new List<LeagueData>();
+        public double WinEssence;
+        public long WinGlory;
+        public long LossGlory;
+        public int RaidUnlock;
+        public int Flags;
+        public int FlagHours;
+        public double LootHours;
+        public long TrophyGlory;
+        public int RevengeHours;
+        public List<GloryGoodsData> GloryShop = new List<GloryGoodsData>();
+    }
+
+    public sealed class LeagueData
+    {
+        public string Name = "";
+        public int Rating;
+        public long Sparks;
+        public long Glory;
+        public double EssenceDays;
+    }
+
+    public sealed class GloryGoodsData
+    {
+        public string Goods = "";
+        public long Price;
+        public int PerWeek;
+        public double Amount;
     }
 
     public sealed class DailyData

@@ -3241,6 +3241,85 @@
     60
    ]
   },
+  "pvp": {
+   "arenaUnlock": 16,
+   "tickets": 5,
+   "ticketHours": 3,
+   "startRating": 1000,
+   "leagues": [
+    {
+     "name": "Пепел",
+     "rating": 0,
+     "sparks": 20,
+     "glory": 100,
+     "essenceDays": 0.3
+    },
+    {
+     "name": "Бронза",
+     "rating": 1100,
+     "sparks": 40,
+     "glory": 200,
+     "essenceDays": 0.5
+    },
+    {
+     "name": "Серебро",
+     "rating": 1250,
+     "sparks": 60,
+     "glory": 300,
+     "essenceDays": 0.7
+    },
+    {
+     "name": "Золото",
+     "rating": 1400,
+     "sparks": 80,
+     "glory": 450,
+     "essenceDays": 1.0
+    },
+    {
+     "name": "Пламя",
+     "rating": 1600,
+     "sparks": 100,
+     "glory": 600,
+     "essenceDays": 1.3
+    },
+    {
+     "name": "Легенда Очага",
+     "rating": 1800,
+     "sparks": 150,
+     "glory": 800,
+     "essenceDays": 1.5
+    }
+   ],
+   "winEssence": 0.015,
+   "winGlory": 10,
+   "lossGlory": 3,
+   "raidUnlock": 17,
+   "flags": 3,
+   "flagHours": 4,
+   "lootHours": 0.5,
+   "trophyGlory": 20,
+   "revengeHours": 24,
+   "gloryShop": [
+    {
+     "goods": "Essence",
+     "price": 150,
+     "perWeek": 3,
+     "amount": 0.25
+    },
+    {
+     "goods": "Hourglass",
+     "price": 250,
+     "perWeek": 2,
+     "amount": 60
+    },
+    {
+     "goods": "Seal",
+     "price": 900,
+     "perWeek": 1,
+     "amount": 0
+    }
+   ]
+  },
   "events": [
    {
     "id": "LongNight",

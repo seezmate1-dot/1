@@ -46,6 +46,30 @@ namespace LastHearth.Core
         HourglassDeal,
     }
 
+    /// <summary>An arena defense or a fortress of another hearth (a ghost until the server exists).</summary>
+    [Serializable]
+    public sealed class PvpOpponent
+    {
+        public string Name = "";
+        public int HearthLevel;
+        public int Rating;
+        /// <summary>Strength against the player's squad: 1 = equal.</summary>
+        public double Power = 1;
+        public int Seed;
+        /// <summary>Revenge only: the free raid lasts until then.</summary>
+        public long Until;
+    }
+
+    /// <summary>A started arena fight or raid (finished by auto-battle if the game closes).</summary>
+    [Serializable]
+    public sealed class PvpBattle
+    {
+        public bool Raid;
+        public bool Revenge;
+        public PvpOpponent Opponent = new PvpOpponent();
+        public int Seed;
+    }
+
     [Serializable]
     public sealed class ShopItem
     {
@@ -206,6 +230,30 @@ namespace LastHearth.Core
         public int ShopRefreshes;
         public long ShopRefreshDay = -1;
         public List<ShopItem> Shop = new List<ShopItem>();
+
+        // Arena and raids (MODES.md, 2-3)
+        public int ArenaRating;
+        public int ArenaTickets = -1;
+        public long ArenaTicketAt;
+        public long ArenaBuyDay = -1;
+        public int ArenaBought;
+        public long ArenaWeek = -1;
+        public int ArenaWeekFights;
+        public int ArenaWins;
+        public long ArenaListAt;
+        public List<PvpOpponent> ArenaList = new List<PvpOpponent>();
+        public List<int> ArenaDefense = new List<int>();
+        public long DefenseDay = -1;
+        public int RaidFlags = -1;
+        public long RaidFlagAt;
+        public List<PvpOpponent> RaidList = new List<PvpOpponent>();
+        public List<PvpOpponent> Revenge = new List<PvpOpponent>();
+        public long GhostRaidDay = -1;
+        public int RaidWins;
+        public PvpBattle PvpBattle;
+        public List<string> PvpLog = new List<string>();
+        public long GloryWeek = -1;
+        public int[] GloryBought = new int[3];
 
         // Live events (EVENTS.md)
         public List<EventRun> Events = new List<EventRun>();

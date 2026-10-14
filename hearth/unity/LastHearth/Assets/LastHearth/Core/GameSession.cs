@@ -173,6 +173,7 @@ namespace LastHearth.Core
             SettleSiege(State.Time);
             SettleMissedSurges(State.Time);
             CheckLogin(State.Time);
+            SettlePvp(State.Time);
         }
 
         void Produce(long seconds)

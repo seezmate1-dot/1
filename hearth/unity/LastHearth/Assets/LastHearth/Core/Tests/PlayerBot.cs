@@ -33,7 +33,7 @@ namespace LastHearth.Core.Tests
         };
 
         public readonly GameSession S;
-        public int Hunts, HuntWins, Missions, Surges, SurgeStars, Routes;
+        public int Hunts, HuntWins, Missions, Surges, SurgeStars, Routes, ArenaFights, ArenaWins, Raids;
 
         public PlayerBot(GameSession s) => S = s;
 
@@ -88,6 +88,7 @@ namespace LastHearth.Core.Tests
             Heart();
             Specs();
             Events(now);
+            Pvp(now);
             Shop(now);
         }
 
@@ -124,6 +125,48 @@ namespace LastHearth.Core.Tests
                    S.State.Wallet[ResourceType.Silver] < S.Capacity(ResourceType.Silver) * 0.7 &&
                    S.BuyPack(now) == Fail.None)
             {
+            }
+        }
+
+        // ------------------------------------------------------------------ arena and raids
+
+        void Pvp(long now)
+        {
+            if (S.ArenaOpen)
+            {
+                while (S.ArenaTickets(now) > 0)
+                {
+                    // the middle defense: a fair fight for a fair rating
+                    if (S.StartArena(1, now, out var battle) != Fail.None)
+                        break;
+                    battle.Brain = Brains.Careful();
+                    S.FinishPvp(battle, now, out var reward);
+                    ArenaFights++;
+                    if (reward.Won)
+                        ArenaWins++;
+                }
+                for (int g = 0; g < S.Balance.Activities.Pvp.GloryShop.Count; g++)
+                {
+                    while (S.BuyGlory(g, now) == Fail.None)
+                    {
+                    }
+                }
+            }
+            if (!S.RaidsOpen)
+                return;
+            while (S.State.Revenge.Count > 0 && S.StartRaid(0, true, now, out var revenge) == Fail.None)
+            {
+                revenge.Brain = Brains.Careful();
+                S.FinishPvp(revenge, now, out _);
+                Raids++;
+            }
+            while (S.RaidFlags(now) > 0)
+            {
+                if (S.StartRaid(0, false, now, out var raid) != Fail.None)
+                    break;
+                raid.Brain = Brains.Careful();
+                S.FinishPvp(raid, now, out _);
+                Raids++;
             }
         }
 
@@ -454,13 +497,14 @@ namespace LastHearth.Core.Tests
             var squad = S.Squad();
             return string.Format(
                 "day {0,2}: hearth {1,2} | heroes {2} lvl {3}-{4} skill {5} | missions {6,3} | hunts {7}/{8} | surges {9} ({10:0.0}*) | routes {11} | " +
-                "heart {12} specs {13} | sparks {14} ember {15} cores {16} bp {17} | dwellers {18} rooms {19}",
+                "heart {12} specs {13} | sparks {14} ember {15} cores {16} bp {17} | dwellers {18} rooms {19} | arena {20}/{21} rating {22} raids {23} glory {24}",
                 day, S.State.HearthLevel, squad.Count, squad.Count == 0 ? 0 : squad.Min(d => d.HeroLevel),
                 squad.Count == 0 ? 0 : squad.Max(d => d.HeroLevel), squad.Count == 0 ? 0 : squad.Min(d => d.SkillLevel),
                 S.MissionsCleared, HuntWins, Hunts, Surges, Surges == 0 ? 0 : (double)SurgeStars / Surges, Routes,
                 S.HeartTotal, S.State.SpecChoice.Values.Sum(v => v.Count(x => x != 0)),
                 S.State.Wallet[ResourceType.Sparks], S.State.Wallet[ResourceType.Ember], S.State.Wallet[ResourceType.Cores],
-                S.State.Wallet[ResourceType.Blueprints], S.State.Dwellers.Count, S.State.Rooms.Count);
+                S.State.Wallet[ResourceType.Blueprints], S.State.Dwellers.Count, S.State.Rooms.Count,
+                ArenaWins, ArenaFights, S.State.ArenaRating, Raids, S.State.Wallet[ResourceType.Glory]);
         }
     }
 
@@ -497,6 +541,9 @@ namespace LastHearth.Core.Tests
             }
             Assert.That(builderDay, Is.InRange(10, 30), "the 4th builder is a goal of the first month");
             Assert.That(bot.Missions, Is.InRange(70, 130));
+            // PvP from day ~13: the careful player settles in Silver or Gold, raids every day from hearth 17
+            Assert.That(s.State.ArenaRating, Is.InRange(1250, 1600));
+            Assert.Greater(bot.Raids, 30);
             // a regular player finishes most events, but not every event gives the first place
             Assert.Greater(results.Count(r => r.Thresholds == 10), results.Count / 2);
             Assert.Less(results.Count(r => r.LastResult.Contains("место 1 из")), results.Count);

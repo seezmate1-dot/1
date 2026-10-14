@@ -17,13 +17,15 @@ namespace LastHearth.Core
         Cores,
         /// <summary>From expedition routes; spent on room specializations (ACTIVITIES.md, 4).</summary>
         Blueprints,
+        /// <summary>From the arena and raids; spent in the Glory shop (MODES.md, 2-4).</summary>
+        Glory,
     }
 
     /// <summary>Amounts of every resource. Whole numbers only, so the game stays deterministic.</summary>
     [Serializable]
     public sealed class ResourceBag
     {
-        public const int Count = 9;
+        public const int Count = 10;
 
         public long[] Amounts = new long[Count];
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LastHearth.Core.Combat
 {
@@ -48,6 +49,8 @@ namespace LastHearth.Core.Combat
         public double AttackMult = 1;
         /// <summary>Only bosses and elites telegraph heavy strikes.</summary>
         public bool Telegraphs = true;
+        /// <summary>PvP: health and attack follow the player's own squad (power ±10%), not the rank.</summary>
+        public bool Mirror;
     }
 
     public sealed class BattleSetup
@@ -198,8 +201,17 @@ namespace LastHearth.Core.Combat
             var boss = c.Boss;
             family = c.Family(w.Family);
             telegraphs = w.Telegraphs;
-            BossMaxHp = BossHp = boss.Hp * family.Hp * w.HpMult * Math.Pow(boss.HpGrowth, w.Rank - 1);
-            BossAttack = boss.Attack * family.Attack * w.AttackMult * Math.Pow(boss.AttackGrowth, w.Rank - 1);
+            if (w.Mirror)
+            {
+                // health: 100 ticks of the squad's damage; one hit: 5% of the squad's health (at x1)
+                BossMaxHp = BossHp = family.Hp * w.HpMult * 100 * Heroes.Sum(h => h.Attack / h.Interval);
+                BossAttack = family.Attack * w.AttackMult * Heroes.Sum(h => h.MaxHp) / 20;
+            }
+            else
+            {
+                BossMaxHp = BossHp = boss.Hp * family.Hp * w.HpMult * Math.Pow(boss.HpGrowth, w.Rank - 1);
+                BossAttack = boss.Attack * family.Attack * w.AttackMult * Math.Pow(boss.AttackGrowth, w.Rank - 1);
+            }
             BossArmor = boss.Armor * family.Armor;
             BossInterval = Math.Max(1, (int)Math.Round(boss.Interval * family.Interval));
             bossNext = Tick + BossInterval;

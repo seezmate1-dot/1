@@ -47,7 +47,9 @@
  "missionKinds": {
   "Normal": {"waves": 3, "hpMult": 0.3, "attackMult": 0.75, "telegraphs": false},
   "Elite":  {"waves": 1, "hpMult": 0.8, "attackMult": 0.95, "telegraphs": true},
-  "Boss":   {"waves": 1, "hpMult": 1.05, "attackMult": 1.0, "telegraphs": true}
+  "Boss":   {"waves": 1, "hpMult": 1.05, "attackMult": 1.0, "telegraphs": true},
+  "Arena":  {"waves": 3, "hpMult": 3.0, "attackMult": 1.2, "telegraphs": true},
+  "Raid":   {"waves": 3, "hpMult": 3.0, "attackMult": 1.2, "telegraphs": true}
  },
  "families": [
   {"family": "Fiend",     "name": "Тварь тумана",       "hp": 0.85, "attack": 0.8, "armor": 0.5, "interval": 0.7, "staggerMult": 1.0, "weak": "AshMage",   "weakMult": 1.5, "mechanics": ["Wave", "Grab"]},

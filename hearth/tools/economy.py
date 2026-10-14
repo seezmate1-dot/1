@@ -244,6 +244,25 @@ ARENA_UNLOCK = 16              # PvP waits until the two-week hook is over (docs
 ARENA_EXTRA_TICKETS = 20       # an extra arena ticket, bought twice a week (league weekends)
 SHOP_REFRESH = 10              # one paid refresh of the daily shop
 
+# ---------------------------------------------------------------- PvP (docs/MODES.md, 2-3)
+# Until the server exists both modes are played against ghosts of the same hearth level.
+ARENA_TICKETS = 5              # tickets in stock, one comes back every 3 hours
+ARENA_TICKET_HOURS = 3
+ARENA_START_RATING = 1000
+# league: (name, rating from, diamonds a week, Glory a week, essence days a week)
+ARENA_LEAGUES = [("Пепел", 0, 20, 100, 0.3), ("Бронза", 1100, 40, 200, 0.5), ("Серебро", 1250, 60, 300, 0.7),
+                 ("Золото", 1400, 80, 450, 1.0), ("Пламя", 1600, 100, 600, 1.3), ("Легенда Очага", 1800, 150, 800, 1.5)]
+ARENA_WIN_ESSENCE = 0.015      # of the daily essence per win (0.005 per loss): with the league, the 15% arena share
+ARENA_GLORY = (10, 3)          # Glory for a win, a loss
+RAID_UNLOCK = 17
+RAID_FLAGS = 3                 # flags in stock, one comes back every 4 hours
+RAID_FLAG_HOURS = 4
+RAID_LOOT_HOURS = 0.5          # materials of a won raid in hours of income, paid by the game, not by the defender
+RAID_TROPHY_GLORY = 20         # «Трофеи» of a 3-star raid go to the Glory shop
+RAID_REVENGE_HOURS = 24        # a free revenge raid with double loot
+# Glory shop: (goods, price, per week, amount: essence days or hourglass minutes)
+GLORY_SHOP = [("Essence", 150, 3, 0.25), ("Hourglass", 250, 2, 60), ("Seal", 900, 1, 0)]
+
 # ---------------------------------------------------------------- events (docs/EVENTS.md)
 # Day 1 of the 28-day cycle is a Monday. At most two events run at once.
 # name: (period, first day, days, diamonds won, diamonds a free player spends, essence days,
@@ -1210,6 +1229,14 @@ def export_balance(result):
             "shop": {"fourthBuilder": FOURTH_BUILDER_PRICE, "fourthBuilderFrom": 8, "packPrice": PACK_PRICE,
                      "packsPerWeek": PACKS_PER_WEEK, "refresh": [SHOP_REFRESH, 2 * SHOP_REFRESH, 4 * SHOP_REFRESH],
                      "slots": 8, "arenaTicket": [ARENA_EXTRA_TICKETS, 2 * ARENA_EXTRA_TICKETS, 3 * ARENA_EXTRA_TICKETS]},
+            "pvp": {"arenaUnlock": ARENA_UNLOCK, "tickets": ARENA_TICKETS, "ticketHours": ARENA_TICKET_HOURS,
+                    "startRating": ARENA_START_RATING,
+                    "leagues": [{"name": n, "rating": r, "sparks": d, "glory": g, "essenceDays": e}
+                                for n, r, d, g, e in ARENA_LEAGUES],
+                    "winEssence": ARENA_WIN_ESSENCE, "winGlory": ARENA_GLORY[0], "lossGlory": ARENA_GLORY[1],
+                    "raidUnlock": RAID_UNLOCK, "flags": RAID_FLAGS, "flagHours": RAID_FLAG_HOURS,
+                    "lootHours": RAID_LOOT_HOURS, "trophyGlory": RAID_TROPHY_GLORY, "revengeHours": RAID_REVENGE_HOURS,
+                    "gloryShop": [{"goods": g, "price": p, "perWeek": w, "amount": a} for g, p, w, a in GLORY_SHOP]},
             "events": [{"id": EVENT_IDS[name], "name": name, "period": spec[0], "first": spec[1], "days": spec[2],
                         "sparks": spec[3], "spend": spec[4], "essenceDays": spec[5], "materialHours": spec[6],
                         "hourglassMinutes": spec[7], "unlock": EVENT_UNLOCK_HEARTH[name]}
