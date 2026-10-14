@@ -483,6 +483,7 @@ def solve(iterations=4):
     # final replay with the habits of the final timeline
     result["reached"] = pacing.simulate(result["rows"], **habits)
     result["reached_plain"] = pacing.simulate(result["rows"])  # the same player ignoring all speed-ups
+    result["activities"] = activities(result)
     return result
 
 
@@ -551,7 +552,18 @@ def checks(result):
             problems.append("очаг %d: у обычного игрока герои %d-го уровня, а нужно %d" % (lv, have, need))
     if slack and sorted(slack)[len(slack) // 2] > 6:
         problems.append("требование к героям слишком мягкое: обычный игрок обгоняет его на %d уровней" % sorted(slack)[len(slack) // 2])
-    # 9. the real player meets the target days
+    # 9. activities: each resource feeds its own progression in about a year, nothing piles up
+    act = result["activities"]
+    if act["heart_done"] is None or not 250 <= act["heart_done"] <= DAYS:
+        problems.append("Сердце очага собрано на день %s (нужно 250-365)" % act["heart_done"])
+    if act["core5_done"] is None or not 120 <= act["core5_done"] <= 300:
+        problems.append("умения пятёрки героев прокачаны на день %s (нужно 120-300)" % act["core5_done"])
+    if act["spec_wait_avg"] > 15 or act["spec_wait_max"] > 45:
+        problems.append("специализации ждут чертежей в среднем %.0f, максимум %d дней (нужно 15 и 45)" % (
+            act["spec_wait_avg"], act["spec_wait_max"]))
+    if sum(m for _, m in PLAYTIME) > 55:
+        problems.append("в день нужно больше 55 минут игры")
+    # 10. the real player meets the target days
     for lv, want, got in pacing.deviations(result["reached"]):
         if abs(got - want) / want > 0.15:
             problems.append("очаг %d: день %.1f вместо %.1f" % (lv, got, want))
@@ -570,15 +582,193 @@ def dec(x, digits=1):
     return ("%.*f" % (digits, x)).replace(".", ",")
 
 
-PLAYTIME = [  # minutes a day of a typical free player, 4 sessions of 12 minutes
-    ("Сбор производства, стройка, расселение жителей", 8),
-    ("Кампания: новые бои, сложный режим, повторы", 8),
-    ("Арена: 5 боёв (с очага 16)", 5),
-    ("Вылазки, таверна, кузня, лазарет", 7),
-    ("Наплыв тумана (можно смотреть или пропустить)", 3),
-    ("События", 12),
-    ("Поручения дня и сюжетные диалоги", 5),
+PLAYTIME = [  # minutes a day of a typical free player, 4 sessions of 12-13 minutes
+    ("Сбор производства, стройка, расселение жителей", 7),
+    ("Кампания: новые бои, сложный режим, повторы", 6),
+    ("Охота на чудовищ: 3 боя с боссами по 2 минуты", 6),
+    ("Наплыв: живая оборона крепости вечером", 2),
+    ("Вылазки-маршруты: проложить путь, решить развилки", 3),
+    ("Арена: 5 боёв (с очага 16)", 4),
+    ("Таверна, кузня, лазарет, Сердце очага", 5),
+    ("События", 10),
+    ("Поручения дня и сюжетные диалоги", 4),
 ]
+
+
+# ---------------------------------------------------------------- activities (docs/ACTIVITIES.md)
+# Three action activities, each with its own resource for its own progression.
+SURGE_UNLOCK = 2                 # Наплыв: live defense every evening -> Жар
+SURGE_LIVE_DAYS = 5 / 7.0        # the player defends live 5 evenings of 7, the rest is automatic
+SURGE_AUTO_SHARE = 0.7           # automatic defense gives 70%
+SIEGE_EMBER = 150                # Осада застав adds Жар per event
+
+
+def ember_per_surge(level):
+    return 20 + 3 * level
+
+
+HEART_NODES = 30                 # Сердце очага: 30 talents in 3 branches of 10
+
+
+def heart_node_cost(n):
+    return int(round(85 * 1.14 ** (n - 1)))
+
+
+def heart_node_gate(n):
+    """Hearth level that opens the node: the first ten at once, the next at 12 and 20."""
+    return SURGE_UNLOCK if n <= 10 else 12 if n <= 20 else 20
+
+
+HUNT_UNLOCK = 6                  # Охота на чудовищ: tactical boss fights -> Сердцевины
+HUNTS_PER_DAY = 3                # Следы: 3 a day (1 every 8 hours, up to 3)
+LONG_NIGHT_CORES = 20            # Долгая ночь adds Сердцевины per event
+
+
+def cores_per_hunt(level):
+    return 2 + level // 2
+
+
+SKILL_MAX = 10                   # special skill of a hero, levels 1-10, +8% effect each
+
+
+def skill_cost(level):
+    """Cores to raise a skill from this level to the next."""
+    return int(round(15 * 1.4 ** (level - 1)))
+
+
+def skill_cap(hero_level):
+    """A skill cannot outgrow the hero: level 10 needs hero level 54."""
+    return min(SKILL_MAX, 1 + hero_level // 6)
+
+
+LEGENDARY_FROM = 20              # legendary gear from hearth 20: 6 slots for the five core heroes
+LEGENDARY_COST = 400
+
+ROUTES_UNLOCK = 9                # Вылазки-маршруты -> Чертежи
+
+
+def routes_per_day(level):
+    """Squads on routes at once: the watchtower trains a new one at hearth 12 and 18."""
+    return 0 if level < ROUTES_UNLOCK else 1 if level < 12 else 2 if level < 18 else 3
+
+
+def blueprints_per_route(level):
+    return 3 + (1 if level >= 20 else 0)
+
+
+TREASURE_BLUEPRINTS = 10         # Кладоискатели add Чертежи per event
+SPEC_TIERS = [(5, 3), (10, 6), (15, 14), (20, 30), (25, 50)]  # room level -> blueprints, choice of 2
+SPEC_RANKS_FROM = 25
+SPEC_RANKS = 3                   # rank 2 costs x2 and rank 3 x3 of the tier: +50% and +100% of the bonus
+
+
+def spec_room_types(level):
+    """Room types with specializations: every type but the hearth and the bedrooms."""
+    return [name for name, enum, unlock, *_ in ROOM_TYPES if unlock <= level and enum not in ("Hearth", "Bedrooms")]
+
+
+def activities(result):
+    """Day by day: Жар into Сердце очага, Сердцевины into skills and legendary gear, Чертежи into
+    room specializations. Hero levels come from the main run (the squad of the free player)."""
+    days = result["days"]
+    ember = cores = blueprints = 0.0
+    heart = 0
+    heart_done = None
+    skills = [1] * 9
+    core5_done = all_done = None
+    legendary = 0
+    specs_bought = set()
+    spec_waits = []          # days a specialization waited for blueprints after it opened
+    spec_open = {}
+    ranks = {}               # specialization -> rank 1..3
+    totals = {"ember": 0.0, "cores": 0.0, "blueprints": 0.0}
+    for rec in days:
+        day, lv = rec["day"], rec["level"]
+        # income
+        if lv >= SURGE_UNLOCK:
+            got = ember_per_surge(lv) * (SURGE_LIVE_DAYS + (1 - SURGE_LIVE_DAYS) * SURGE_AUTO_SHARE)
+            if lv >= EVENT_UNLOCK_HEARTH["Осада застав"] and event_starts("Осада застав", day):
+                got += SIEGE_EMBER
+            ember += got
+            totals["ember"] += got
+        if lv >= HUNT_UNLOCK:
+            got = HUNTS_PER_DAY * cores_per_hunt(lv)
+            if lv >= EVENT_UNLOCK_HEARTH["Долгая ночь"] and event_starts("Долгая ночь", day):
+                got += LONG_NIGHT_CORES
+            cores += got
+            totals["cores"] += got
+        got = routes_per_day(lv) * blueprints_per_route(lv)
+        if lv >= EVENT_UNLOCK_HEARTH["Кладоискатели"] and event_starts("Кладоискатели", day):
+            got += TREASURE_BLUEPRINTS
+        blueprints += got
+        totals["blueprints"] += got
+        # Сердце очага: next node when the hearth allows it
+        while heart < HEART_NODES and heart_node_gate(heart + 1) <= lv and ember >= heart_node_cost(heart + 1):
+            ember -= heart_node_cost(heart + 1)
+            heart += 1
+            if heart == HEART_NODES:
+                heart_done = day
+        # skills: the five core heroes first, then the rest of the squad
+        hero = int(rec["hero_level"])
+        squad = rec["squad"]
+        while True:
+            open_ = [i for i in range(squad) if skills[i] < skill_cap(hero)]
+            if not open_:
+                break
+            core = [i for i in open_ if i < 5]
+            i = min(core or open_, key=lambda k: skills[k])
+            if cores < skill_cost(skills[i]):
+                break
+            cores -= skill_cost(skills[i])
+            skills[i] += 1
+        if core5_done is None and all(skills[i] >= SKILL_MAX for i in range(5)):
+            core5_done = day
+        if all_done is None and squad == 9 and all(x >= SKILL_MAX for x in skills):
+            all_done = day
+        if lv >= LEGENDARY_FROM:
+            while legendary < 30 and cores >= LEGENDARY_COST and all(skills[i] >= skill_cap(hero) for i in range(5)):
+                cores -= LEGENDARY_COST
+                legendary += 1
+        # specializations open with room levels (rooms follow the hearth)
+        for name in spec_room_types(lv):
+            for need, cost in SPEC_TIERS:
+                key = (name, need)
+                if lv >= need and key not in spec_open:
+                    spec_open[key] = day
+        waiting = False
+        for key in sorted(spec_open, key=lambda k: (spec_open[k], k[1])):
+            if key in specs_bought:
+                continue
+            cost = dict(SPEC_TIERS)[key[1]]
+            if blueprints < cost:
+                waiting = True
+                break
+            blueprints -= cost
+            specs_bought.add(key)
+            ranks[key] = 1
+            spec_waits.append(day - spec_open[key])
+        # surplus goes into ranks of the cheapest bought specializations (mastery opens at hearth 25)
+        while not waiting and lv >= SPEC_RANKS_FROM:
+            options = [k for k in ranks if ranks[k] < SPEC_RANKS]
+            if not options:
+                break
+            key = min(options, key=lambda k: dict(SPEC_TIERS)[k[1]] * (ranks[k] + 1))
+            cost = dict(SPEC_TIERS)[key[1]] * (ranks[key] + 1)
+            if blueprints < cost:
+                break
+            blueprints -= cost
+            ranks[key] += 1
+        rec["heart"] = heart
+        rec["skills5"] = min(skills[:5])
+        rec["specs"] = len(specs_bought)
+    total_specs = len(spec_room_types(30)) * len(SPEC_TIERS)
+    return {"heart_done": heart_done, "heart": heart, "core5_done": core5_done, "all_done": all_done,
+            "legendary": legendary, "skills": skills, "specs": len(specs_bought), "total_specs": total_specs,
+            "spec_wait_max": max(spec_waits) if spec_waits else 0,
+            "spec_wait_avg": sum(spec_waits) / len(spec_waits) if spec_waits else 0, "totals": totals,
+            "ranks_bought": sum(r - 1 for r in ranks.values()), "ranks_total": total_specs * (SPEC_RANKS - 1),
+            "blueprints_left": blueprints, "ember_left": ember, "cores_left": cores,
+            "heart_cost": sum(heart_node_cost(n) for n in range(1, HEART_NODES + 1))}
 
 
 def report(result):
@@ -799,7 +989,26 @@ def report(result):
       "отряда, в Набегах — по уровню очага ±1 и силе ±15%%, в событиях — группы по уровню очага, так что слабый отряд с "
       "высоким очагом попадает к сильным соперникам; наборы ресурсов за алмазы — не больше %d в неделю." % PACKS_PER_WEEK)
     w("")
-    w("## 12. Проверки модели")
+    w("## 12. Активности и их ресурсы")
+    w("")
+    act = result["activities"]
+    w("Три активные части игры, у каждой свой ресурс для своего развития (`docs/ACTIVITIES.md`):")
+    w("")
+    w("| Активность | Открывается | Ресурс | В день на очаге 10 / 20 | На что | Итог года |")
+    w("|---|---|---|---|---|---|")
+    surge = SURGE_LIVE_DAYS + (1 - SURGE_LIVE_DAYS) * SURGE_AUTO_SHARE
+    w("| Наплыв — живая оборона вечером | очаг %d | Жар | %d / %d | Сердце очага: %d талантов, всего %s Жара | собрано на день %s |" % (
+        SURGE_UNLOCK, ember_per_surge(10) * surge, ember_per_surge(20) * surge, HEART_NODES, num(act["heart_cost"]), act["heart_done"]))
+    w("| Охота на чудовищ — бои с боссами | очаг %d | Сердцевины | %d / %d | умения героев 1–10, легендарное снаряжение | умения пятёрки — день %s, всех — день %s; легендарных вещей %d из 30 |" % (
+        HUNT_UNLOCK, HUNTS_PER_DAY * cores_per_hunt(10), HUNTS_PER_DAY * cores_per_hunt(20), act["core5_done"], act["all_done"], act["legendary"]))
+    w("| Вылазки-маршруты с развилками | очаг %d | Чертежи | %d / %d | специализации залов (5 ступеней × %d залов), ранги мастерства | все %d специализаций; ждут в среднем %d дней; рангов %d из %d |" % (
+        ROUTES_UNLOCK, routes_per_day(10) * blueprints_per_route(10), routes_per_day(20) * blueprints_per_route(20),
+        len(spec_room_types(30)), act["total_specs"], round(act["spec_wait_avg"]), act["ranks_bought"], act["ranks_total"]))
+    w("")
+    w("Жар, Сердцевины и Чертежи не продаются за алмазы: их приносит только игра в своей активности. Легендарное "
+      "снаряжение и ранги мастерства не заканчиваются за год — это цели второго года.")
+    w("")
+    w("## 13. Проверки модели")
     w("")
     problems = checks(result)
     if problems:
@@ -810,6 +1019,7 @@ def report(result):
           "требование к героям вовремя, а раш в него упирается; копить на очаг не дольше недели; источники и траты "
           "сходятся; угля хватает на Наплыв; четвёртый строитель доступен за 2 месяца, алмазы не копятся; события дают "
           "заявленную долю материалов; кампания проходится за год; ускорения покрывают 10–25% стройки; "
+          "Жар, Сердцевины и Чертежи расходуются по своим деревьям за год; "
           "игрок попадает в целевые дни с точностью 15%.")
     return "\n".join(out) + "\n", problems
 
@@ -910,6 +1120,21 @@ def export_balance(result):
         "rooms": [{"type": enum, "name": name, "unlock": unlock, "produces": produces, "stat": stat, "maxCount": count}
                   for name, enum, unlock, produces, stat, count in ROOM_TYPES],
         "grid": {"floors": 10, "cells": 6, "hearthFloor": 3, "hearthCells": [2, 3]},
+        "activities": {
+            "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE,
+                      "emberByLevel": [ember_per_surge(lv) for lv in range(1, 31)]},
+            "heart": {"nodeCost": [heart_node_cost(n) for n in range(1, HEART_NODES + 1)],
+                      "nodeGate": [heart_node_gate(n) for n in range(1, HEART_NODES + 1)]},
+            "hunt": {"unlock": HUNT_UNLOCK, "tracksPerDay": HUNTS_PER_DAY, "trackHours": 8,
+                     "coresByLevel": [cores_per_hunt(lv) for lv in range(1, 31)]},
+            "skills": {"max": SKILL_MAX, "heroLevelsPerSkill": 6,
+                       "cost": [skill_cost(k) for k in range(1, SKILL_MAX)]},
+            "legendary": {"fromHearth": LEGENDARY_FROM, "cores": LEGENDARY_COST},
+            "routes": {"unlock": ROUTES_UNLOCK, "squadsByLevel": [routes_per_day(lv) for lv in range(1, 31)],
+                       "blueprintsByLevel": [blueprints_per_route(lv) for lv in range(1, 31)]},
+            "specializations": {"tiers": [list(t) for t in SPEC_TIERS], "ranks": SPEC_RANKS,
+                                "ranksFromHearth": SPEC_RANKS_FROM},
+        },
     }
     os.makedirs(os.path.dirname(BALANCE_OUT), exist_ok=True)
     with open(BALANCE_OUT, "w", encoding="utf-8") as f:

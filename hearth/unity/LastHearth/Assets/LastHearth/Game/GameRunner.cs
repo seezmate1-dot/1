@@ -85,11 +85,12 @@ namespace LastHearth.Game
             GUILayout.Label(string.Format("Очаг {0} · режим {1} · тепло {2:0} · строителей {3}{4}",
                 st.HearthLevel, ModeName(st.Mode), Formulas.HearthWarmth(b, st.HearthLevel, st.Mode),
                 session.BuilderCount(), st.OutOfCoal ? " · <color=#6cf>НЕТ УГЛЯ — всё промерзает</color>" : ""), Rich());
-            GUILayout.Label(string.Format("Уголь {0} (−{1:0.0}/ч) · Еда {2} · Серебро {3}/{4} · Железо {5}/{6} · Эссенция {7} · Искры {8} · Часы {9}",
+            GUILayout.Label(string.Format("Уголь {0} (−{1:0.0}/ч) · Еда {2} · Серебро {3}/{4} · Железо {5}/{6} · Эссенция {7} · Искры {8} · Часы {9} · Жар {10} · Сердцевины {11} · Чертежи {12}",
                 st.Wallet[ResourceType.Coal], Formulas.CoalBurnPerHour(b, st.HearthLevel, st.Mode), st.Wallet[ResourceType.Food],
                 st.Wallet[ResourceType.Silver], session.Capacity(ResourceType.Silver),
                 st.Wallet[ResourceType.Iron], session.Capacity(ResourceType.Iron),
-                st.Wallet[ResourceType.Essence], st.Wallet[ResourceType.Sparks], Duration(st.HourglassSeconds)));
+                st.Wallet[ResourceType.Essence], st.Wallet[ResourceType.Sparks], Duration(st.HourglassSeconds),
+                st.Wallet[ResourceType.Ember], st.Wallet[ResourceType.Cores], st.Wallet[ResourceType.Blueprints]));
 
             GUILayout.BeginHorizontal();
             if (!st.Rewards.IsEmpty() && GUILayout.Button("Забрать награды (" + CostText(st.Rewards) + ")"))
@@ -311,12 +312,13 @@ namespace LastHearth.Game
 
         static string CostText(ResourceBag bag)
         {
-            string[] names = { "уголь", "еда", "железо", "серебро", "эссенция", "искры" };
+            string[] names = { "уголь", "еда", "железо", "серебро", "эссенция", "искры", "жар", "сердцевины", "чертежи" };
             var parts = new System.Collections.Generic.List<string>();
             for (int i = 0; i < ResourceBag.Count; i++)
             {
-                if (bag.Amounts[i] != 0)
-                    parts.Add(names[i] + " " + bag.Amounts[i]);
+                long amount = bag[(ResourceType)i];
+                if (amount != 0)
+                    parts.Add(names[i] + " " + amount);
             }
             return string.Join(", ", parts);
         }

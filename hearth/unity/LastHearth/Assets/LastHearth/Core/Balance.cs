@@ -29,6 +29,7 @@ namespace LastHearth.Core
         public ProductionData Production = new ProductionData();
         public List<RoomData> Rooms = new List<RoomData>();
         public GridData Grid = new GridData();
+        public ActivitiesData Activities = new ActivitiesData();
 
         public static Balance FromJson(string json)
         {
@@ -162,6 +163,66 @@ namespace LastHearth.Core
         public ResourceType? Produces;
         public Stat? Stat;
         public int MaxCount;
+    }
+
+    /// <summary>ACTIVITIES.md: Surge, Hunt and Routes with their own resources. Tables are by hearth level 1-30.</summary>
+    public sealed class ActivitiesData
+    {
+        public SurgeData Surge = new SurgeData();
+        public HeartData Heart = new HeartData();
+        public HuntData Hunt = new HuntData();
+        public SkillData Skills = new SkillData();
+        public LegendaryData Legendary = new LegendaryData();
+        public RouteData Routes = new RouteData();
+        public SpecializationData Specializations = new SpecializationData();
+    }
+
+    public sealed class SurgeData
+    {
+        public int Unlock;
+        public double AutoShare;
+        public int[] EmberByLevel = new int[0];
+    }
+
+    public sealed class HeartData
+    {
+        public int[] NodeCost = new int[0];
+        public int[] NodeGate = new int[0];
+    }
+
+    public sealed class HuntData
+    {
+        public int Unlock;
+        public int TracksPerDay;
+        public int TrackHours;
+        public int[] CoresByLevel = new int[0];
+    }
+
+    public sealed class SkillData
+    {
+        public int Max;
+        public int HeroLevelsPerSkill;
+        public int[] Cost = new int[0];
+    }
+
+    public sealed class LegendaryData
+    {
+        public int FromHearth;
+        public int Cores;
+    }
+
+    public sealed class RouteData
+    {
+        public int Unlock;
+        public int[] SquadsByLevel = new int[0];
+        public int[] BlueprintsByLevel = new int[0];
+    }
+
+    public sealed class SpecializationData
+    {
+        public List<int[]> Tiers = new List<int[]>();
+        public int Ranks;
+        public int RanksFromHearth;
     }
 
     public sealed class GridData

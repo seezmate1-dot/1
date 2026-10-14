@@ -11,20 +11,35 @@ namespace LastHearth.Core
         Silver,
         Essence,
         Sparks,
+        /// <summary>From the evening Surge; spent on the Heart of the Hearth (ACTIVITIES.md, 2).</summary>
+        Ember,
+        /// <summary>From the monster Hunt; spent on hero skills and legendary gear (ACTIVITIES.md, 3).</summary>
+        Cores,
+        /// <summary>From expedition routes; spent on room specializations (ACTIVITIES.md, 4).</summary>
+        Blueprints,
     }
 
     /// <summary>Amounts of every resource. Whole numbers only, so the game stays deterministic.</summary>
     [Serializable]
     public sealed class ResourceBag
     {
-        public const int Count = 6;
+        public const int Count = 9;
 
         public long[] Amounts = new long[Count];
 
         public long this[ResourceType type]
         {
-            get => Amounts[(int)type];
-            set => Amounts[(int)type] = value;
+            get { Fit(); return Amounts[(int)type]; }
+            set { Fit(); Amounts[(int)type] = value; }
+        }
+
+        /// <summary>Saves made before a resource was added have a shorter array: grow it.</summary>
+        void Fit()
+        {
+            if (Amounts == null)
+                Amounts = new long[Count];
+            else if (Amounts.Length < Count)
+                Array.Resize(ref Amounts, Count);
         }
 
         public static ResourceBag Of(ResourceType type, long amount)
@@ -46,6 +61,8 @@ namespace LastHearth.Core
 
         public bool Covers(ResourceBag cost)
         {
+            Fit();
+            cost.Fit();
             for (int i = 0; i < Count; i++)
             {
                 if (Amounts[i] < cost.Amounts[i])
@@ -64,12 +81,15 @@ namespace LastHearth.Core
 
         public void Add(ResourceBag other)
         {
+            Fit();
+            other.Fit();
             for (int i = 0; i < Count; i++)
                 Amounts[i] += other.Amounts[i];
         }
 
         public bool IsEmpty()
         {
+            Fit();
             for (int i = 0; i < Count; i++)
             {
                 if (Amounts[i] != 0)
@@ -80,6 +100,7 @@ namespace LastHearth.Core
 
         public ResourceBag Clone()
         {
+            Fit();
             var bag = new ResourceBag();
             Array.Copy(Amounts, bag.Amounts, Count);
             return bag;
@@ -87,6 +108,7 @@ namespace LastHearth.Core
 
         public override string ToString()
         {
+            Fit();
             var parts = new System.Collections.Generic.List<string>();
             for (int i = 0; i < Count; i++)
             {
