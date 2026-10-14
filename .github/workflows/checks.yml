@@ -1,0 +1,17 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rule tests (g++)
+        run: tools/run_rule_tests.sh
+      - name: Rule tests (clang++)
+        run: CXX=clang++ tools/run_rule_tests.sh
+      - name: TZ numbers
+        run: python3 tools/check_numbers.py
