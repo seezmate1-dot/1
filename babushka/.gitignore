@@ -1,0 +1,10 @@
+BabushkaGame/Binaries/
+BabushkaGame/Intermediate/
+BabushkaGame/Saved/
+BabushkaGame/DerivedDataCache/
+BabushkaGame/Build/
+BabushkaGame/.vs/
+BabushkaGame/*.sln
+BabushkaGame/.vsconfig
+# Third Person pack and other downloadable packs are re-added from the editor
+BabushkaGame/Content/ThirdParty/

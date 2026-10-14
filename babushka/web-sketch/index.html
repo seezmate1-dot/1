@@ -1,0 +1,919 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Бабушка накормит</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Neucha&family=Rubik+Mono+One&family=Rubik:wght@400;500;700&display=swap">
+<style>
+/* Layout: one column, the playable night first, the design below it like a pitch deck read top to bottom. */
+:root {
+  --night: #0e1822;      /* sky over the dacha */
+  --night-2: #162533;    /* raised surfaces */
+  --milk: #f2e8d6;       /* baked milk, main text */
+  --muted: #9aa8b1;      /* secondary text */
+  --crust: #e9a33b;      /* pie crust, the one accent */
+  --scarf: #d1493d;      /* grandma's headscarf, danger */
+  --dill: #7fa266;       /* garden green, success */
+  --line: #2a3b4a;
+  --display: "Rubik Mono One", "Arial Black", system-ui, sans-serif;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --hand: "Neucha", "Comic Sans MS", cursive;
+  color-scheme: dark;
+}
+html, body { background: var(--night); color: var(--milk); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.55; }
+.page {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px;
+}
+.page > * { min-width: 0; }
+[hidden] { display: none !important; }
+a { color: var(--crust); }
+:focus-visible { outline: 2px solid var(--crust); outline-offset: 2px; }
+
+/* Header */
+.top { display: grid; gap: 12px; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 7vw, 64px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h1 .pie { color: var(--crust); }
+.tagline { font-family: var(--hand); font-size: clamp(20px, 3.4vw, 28px); line-height: 1.25; color: var(--milk); margin: 0; max-width: 34ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+.chip b { color: var(--milk); font-weight: 500; }
+
+/* Game */
+.game { display: grid; gap: 10px; }
+.stage { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 72vh; background: #0a1118; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+@media (max-width: 640px) { .stage { aspect-ratio: 4 / 5; max-height: 78vh; } }
+canvas { display: block; width: 100%; height: 100%; }
+.hud { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 12px; pointer-events: none; background: linear-gradient(var(--night) 0%, transparent 100%); font-size: 13px; }
+.clock { font-family: var(--display); font-size: 18px; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.items { display: flex; gap: 6px; }
+.item { opacity: .28; font-size: 18px; filter: grayscale(1); transition: opacity .2s; }
+.item.got { opacity: 1; filter: none; }
+.fat { display: flex; align-items: center; gap: 8px; }
+.fat-bar { width: 84px; height: 8px; border-radius: 4px; background: var(--night-2); overflow: hidden; }
+.fat-fill { height: 100%; width: 0; background: var(--crust); transition: width .3s; }
+.toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: 90%; text-align: center; padding: 6px 12px; border-radius: 10px; background: rgba(14, 24, 34, .86); font-size: 14px; pointer-events: none; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(10, 17, 24, .84); text-align: center; }
+.panel { max-width: 460px; display: grid; gap: 12px; justify-items: center; }
+.panel h2 { font-family: var(--display); font-weight: 400; font-size: clamp(20px, 4.6vw, 30px); margin: 0; line-height: 1.1; text-wrap: balance; }
+.panel p { margin: 0; color: var(--muted); }
+.grandma-says { font-family: var(--hand); font-size: 22px; color: var(--milk); }
+.stats { display: grid; grid-template-columns: auto auto; gap: 4px 16px; font-size: 14px; text-align: left; font-variant-numeric: tabular-nums; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; }
+.btn { font: 500 16px var(--body); color: #1b1206; background: var(--crust); border: 0; border-radius: 12px; padding: 12px 22px; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--milk); border: 1px solid var(--line); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.keys { font-size: 13px; color: var(--muted); }
+kbd { font: 500 12px var(--body); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--milk); }
+
+/* Touch controls */
+.touch { position: absolute; inset: auto 0 0 0; display: none; justify-content: space-between; align-items: flex-end; padding: 12px; pointer-events: none; }
+@media (pointer: coarse) { .touch { display: flex; } .keys-desktop { display: none; } .toast { top: 64px; bottom: auto; } }
+.stick { width: 112px; height: 112px; border-radius: 50%; border: 2px solid rgba(242, 232, 214, .25); background: rgba(14, 24, 34, .35); position: relative; pointer-events: auto; touch-action: none; }
+.knob { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(242, 232, 214, .55); }
+.tbtns { display: grid; gap: 10px; pointer-events: auto; }
+.tbtn { width: 72px; height: 72px; border-radius: 50%; border: 0; font: 500 13px var(--body); color: #1b1206; background: var(--crust); touch-action: none; }
+.tbtn.alt { background: rgba(242, 232, 214, .2); color: var(--milk); }
+.tbtn.on { background: var(--dill); color: #0e1822; }
+
+/* Sections */
+section h2 { font-family: var(--display); font-weight: 400; font-size: clamp(20px, 3.6vw, 30px); margin: 0 0 14px; line-height: 1.15; text-wrap: balance; }
+section > p { max-width: 68ch; margin: 0 0 12px; }
+.lead { color: var(--muted); }
+.trends { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.trend { padding: 14px; border-top: 3px solid var(--line); display: grid; gap: 6px; }
+.trend .num { font-family: var(--display); font-size: 26px; color: var(--crust); font-variant-numeric: tabular-nums; }
+.trend p { margin: 0; font-size: 14px; color: var(--muted); }
+.trend b { color: var(--milk); font-weight: 500; }
+.variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.variant { padding: 16px; border: 1px solid var(--line); border-radius: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.variant.pick { border-color: var(--crust); background: var(--night-2); }
+.variant h3 { margin: 0; font-size: 18px; }
+.variant .vs { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.variant p { margin: 0; font-size: 14px; }
+.verdict { font-size: 13px; color: var(--muted); }
+.verdict b { color: var(--crust); font-weight: 500; }
+.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 10px; max-width: 72ch; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 34px 1fr; gap: 10px; }
+.steps li::before { content: counter(step); font-family: var(--display); color: var(--crust); font-size: 18px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.cols > div { min-width: 0; }
+.cols h3 { margin: 0 0 8px; font-size: 17px; }
+.cols ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 15px; }
+.quote { font-family: var(--hand); font-size: 22px; color: var(--crust); }
+footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+footer ul { margin: 0; padding-left: 18px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="eyebrow">Мемная кооп-игра · концепт и играбельный прототип</div>
+    <h1>Бабушка <span class="pie">накормит</span></h1>
+    <p class="tagline">Сбегите на дискотеку, пока бабушка не закормила вас пирожками до состояния колобка.</p>
+    <div class="chips">
+      <span class="chip"><b>1–4</b> игрока, кооп</span>
+      <span class="chip">ночь <b>20 минут</b></span>
+      <span class="chip">цена <b>$4.99</b></span>
+      <span class="chip">движок <b>Unreal Engine 5</b></span>
+    </div>
+  </header>
+
+  <section class="game" aria-label="Прототип">
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <span class="clock" id="clock">22:00</span>
+        <span class="items" aria-label="Что собрано">
+          <span class="item" id="it-shoes" title="Кроссовки (обязательно)">👟</span>
+          <span class="item" id="it-phone" title="Телефон из серванта">📱</span>
+          <span class="item" id="it-money" title="Деньги из банки">💰</span>
+          <span class="item" id="it-key" title="Ключ от калитки">🔑</span>
+        </span>
+        <span class="fat"><span class="fat-bar"><span class="fat-fill" id="fat-fill"></span></span><span id="fat-name">Как спичка</span></span>
+      </div>
+      <div class="toast" id="toast" hidden></div>
+      <div class="touch" id="touch">
+        <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+        <div class="tbtns">
+          <button class="tbtn alt" id="b-tip" type="button">Тихо</button>
+          <button class="tbtn" id="b-act" type="button">Действие</button>
+        </div>
+      </div>
+      <div class="overlay" id="ov-start">
+        <div class="panel">
+          <h2>Ночь у бабушки</h2>
+          <p class="grandma-says">«Ты чего такой худой? Садись, поешь!»</p>
+          <p>Найдите кроссовки и выберитесь за забор до 05:00. Бабушка поймает — накормит. Каждый пирожок делает вас толще и медленнее, а на пятом вы колобок: катитесь и сносите забор.</p>
+          <p class="keys keys-desktop"><kbd>WASD</kbd> идти · <kbd>Shift</kbd> на цыпочках · <kbd>E</kbd> действие</p>
+          <button class="btn" id="b-start" type="button">Начать ночь</button>
+        </div>
+      </div>
+      <div class="overlay" id="ov-end" hidden>
+        <div class="panel">
+          <h2 id="end-title">Колобок: от бабушки ушёл</h2>
+          <p class="grandma-says" id="end-line">«Хоть бы шапку надел…»</p>
+          <dl class="stats" id="end-stats"></dl>
+          <div class="btn-row">
+            <button class="btn" id="b-again" type="button">Ещё ночь</button>
+            <button class="btn ghost" id="b-copy" type="button">Скопировать результат</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="keys">Это набросок механики в браузере, чтобы показать идею на телефоне. Сама игра делается на Unreal Engine 5 в 3D: проект на C++ уже написан, с той же бабушкой, сытостью и колобком.</p>
+  </section>
+
+  <section>
+    <h2>Почему именно эта игра</h2>
+    <p class="lead">Хиты 2026 года объединяют три вещи: кооп с друзьями и хаосом, механика, понятная из пятисекундного ролика, и цена дешевле обеда.</p>
+    <div class="trends">
+      <div class="trend"><span class="num">15 млн</span><p><b>Meccha Chameleon</b> (июнь 2026): прятки, где игрок раскрашивает себя под стену. Сделали два человека, $4.79.</p></div>
+      <div class="trend"><span class="num">370 тыс.</span><p><b>How to Fish</b> (август 2026): одновременно в игре, хаотичная рыбалка вчетвером с физикой и голосовым чатом.</p></div>
+      <div class="trend"><span class="num">100 тыс.</span><p><b>RV There Yet?</b>: кооп-поездка на трейлере, выросла из геймджема на роликах игроков.</p></div>
+    </div>
+    <p style="margin-top:14px">Наш крючок: поимка не убивает, а меняет тело. Толстый внук медленный, но ломает заборы, худой пролезает под ними. Ролик «бабушку сбил катящийся внук» понятен без слов на любом языке.</p>
+  </section>
+
+  <section>
+    <h2>Четыре варианта</h2>
+    <div class="variants">
+      <div class="variant pick">
+        <span class="vs">Берём</span>
+        <h3>Бабушка накормит</h3>
+        <p>Кооп-стелс 1–4: сбежать с дачи на дискотеку. Поймали — накормили, вы толстеете и меняете способности.</p>
+        <p class="verdict"><b>Плюсы:</b> тренд кооп-хаоса, клип за 5 секунд, режим «игрок за бабушку» для стримеров, понятно во всём мире.</p>
+      </div>
+      <div class="variant">
+        <span class="vs">Запасной</span>
+        <h3>Шаурма-экспресс</h3>
+        <p>Вчетвером на одном мопеде везёте башню шаурмы через город. Один рулит, остальные держат.</p>
+        <p class="verdict"><b>Минус:</b> физика вождения дорогая, и ниша похожа на RV There Yet?</p>
+      </div>
+      <div class="variant">
+        <span class="vs">Отклонён</span>
+        <h3>Притворись ковром</h3>
+        <p>Прятки, где игроки превращаются в советские вещи: ковёр, хрусталь, кот на серванте.</p>
+        <p class="verdict"><b>Минус:</b> слишком близко к Meccha Chameleon и Prop Hunt, назовут клоном.</p>
+      </div>
+      <div class="variant">
+        <span class="vs">Отклонён</span>
+        <h3>Я только спросить</h3>
+        <p>Одиночный рогалик про очередь в поликлинике: локти, пакеты, бабушки без очереди.</p>
+        <p class="verdict"><b>Минус:</b> юмор понятен в основном в СНГ, без коопа меньше роликов.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Одна ночь</h2>
+    <ol class="steps">
+      <li><span>22:00. Бабушка уложила всех спать и вяжет у телевизора. У каждого внука своя кровать и цель на ночь.</span></li>
+      <li><span>Сбор: кроссовки в сенях обязательны, телефон в серванте, деньги в банке, ключ от калитки в курятнике. Курятник будит кур.</span></li>
+      <li><span>Отвлечение: включить её сериал, позвонить с домашнего от «соседки Вали», выпустить кур, разбудить пса.</span></li>
+      <li><span>С 01:00 до 02:30 бабушка спит, но храпит чутко: телефон из её серванта лучше брать сейчас.</span></li>
+      <li><span>Поймали — кормление. Друзья могут отвлечь бабушку и вытащить вас из-за стола. Баня сгоняет лишний пирожок, но съедает время.</span></li>
+      <li><span>Побег: через калитку с ключом, под забором (только худые) или сквозь забор (только колобки). Итог — карточка со статистикой для соцсетей.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Сытость</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Уровень</th><th>Скорость</th><th>Может</th><th>Не может</th></tr></thead>
+        <tbody>
+          <tr><td>0 · Как спичка</td><td class="n">100%</td><td>пролезть под забором, пройти по скрипучим доскам тихо</td><td>ломать что-либо</td></tr>
+          <tr><td>1 · Нормальный</td><td class="n">92%</td><td>ещё пролезает под забором</td><td></td></tr>
+          <tr><td>2 · Упитанный</td><td class="n">82%</td><td>толкать бочки и тачку</td><td>пролезть под забором</td></tr>
+          <tr><td>3 · Щёчки</td><td class="n">72%</td><td>выбивать двери сарая</td><td>прятаться в шкафу</td></tr>
+          <tr><td>4 · Пирожок</td><td class="n">62%</td><td>заслонять друзей от бабушки</td><td>прыгать, тихо ходить</td></tr>
+          <tr><td>5 · Колобок</td><td class="n">разгон до 190%</td><td>катиться, сбивать бабушку, ломать забор</td><td>поворачивать без разгона</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px">Пирожок можно съесть и самому: +1 уровень, зато 8 секунд «сахарного рывка». Это главный выбор игры: быть быстрым сейчас или толстым и сильным потом.</p>
+  </section>
+
+  <section>
+    <h2>Режимы, прогресс, деньги</h2>
+    <div class="cols">
+      <div>
+        <h3>Режимы</h3>
+        <ul>
+          <li>Кооп 1–4 против бабушки-ИИ, основной.</li>
+          <li>«Бабушка — игрок»: один кормит, четверо убегают. Для стримов.</li>
+          <li>Голосовой чат по расстоянию: громкий микрофон слышит и бабушка.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Прогресс</h3>
+        <ul>
+          <li>Карты: дача, деревня с курятником, хрущёвка с лифтом, санаторий.</li>
+          <li>Бабушки: огородница с тяпкой, бабушка со смартфоном, прабабушка-финал.</li>
+          <li>Косметика за ночи: тапки, панамки, кепки, рюкзаки. Только внешний вид.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Деньги и продвижение</h3>
+        <ul>
+          <li>$4.99 без доната, позже косметический набор «Бабушкин сундук».</li>
+          <li>Бесплатное демо на Steam Next Fest, кнопка «последние 15 секунд» для клипов.</li>
+          <li>Озвучка бабушки живыми бабушками на каждом языке.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="quote" style="margin-top:14px">«Ещё пирожочек!» · «Шапку надень!» · «Кто там шуршит?»</p>
+  </section>
+
+  <section>
+    <h2>Unreal Engine 5 под слабые ПК</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Что</th><th>Решение</th><th>Зачем</th></tr></thead>
+        <tbody>
+          <tr><td>Рендер</td><td>без Lumen, Nanite и виртуальных теней, DirectX 11</td><td>эти технологии съедают слабые видеокарты, стилизованной игре они не нужны</td></tr>
+          <tr><td>Свет</td><td>луна и тёплые лампы без теней, одна тень — фонарик бабушки</td><td>луч фонарика на полу и есть видимый конус её зрения</td></tr>
+          <tr><td>Графика</td><td>низкие полигоны, плоские цвета почти без текстур</td><td>CC0-ассеты Kenney и Quaternius, единый стиль бесплатно</td></tr>
+          <tr><td>Цель</td><td>60 FPS на GTX 1050 Ti в 1080p; около 30 FPS на встроенной Intel UHD 620 в 720p</td><td>игру смогут запустить друзья со слабыми ноутбуками</td></tr>
+          <tr><td>Сеть</td><td>Steam-лобби и P2P, бабушка считается у хоста</td><td>не нужны свои серверы и ежемесячные расходы</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>План до демо</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Месяц</th><th>Что готово</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td>Проект Unreal Engine 5 на C++ (написан): внук, сытость, колобок, бабушка-ИИ со зрением и слухом, дача-заготовка из скрипта. Первая сборка у автора.</td></tr>
+          <tr><td class="n">2</td><td>Кооп до четырёх игроков через Steam, голосовой чат по расстоянию, колобок-физика.</td></tr>
+          <tr><td class="n">3</td><td>Отвлечения, баня, курятник, пёс, карточка итогов, режим «бабушка — игрок».</td></tr>
+          <tr><td class="n">4</td><td>Демо и страница Steam, ролики для TikTok и Shorts, рассылка стримерам.</td></tr>
+          <tr><td class="n">5–6</td><td>Вторая и третья карты, локализация на 8 языков, ранний доступ.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Источники по трендам:</span>
+    <ul>
+      <li><a href="https://www.windowscentral.com/gaming/the-viral-hit-of-2026-has-sold-15-million-copies-in-a-month-on-steam-costs-usd5-and-was-made-by-2-people">Windows Central: Meccha Chameleon, 15 млн копий</a></li>
+      <li><a href="https://gamingonlinux.com/2026/06/meccha-chameleon-is-a-hide-and-seek-body-painting-game-taking-over-steam">GamingOnLinux: как играется Meccha Chameleon</a></li>
+      <li><a href="https://www.player.one/how-fish-steams-newest-viral-hit-why-are-chaotic-co-op-games-taking-over-163910">Player.One: How to Fish и мода на кооп-хаос</a></li>
+      <li><a href="https://www.gosugamers.net/entertainment/news/77522-rv-there-yet-hits-100k-players-as-steam-s-latest-co-op-success">GosuGamers: RV There Yet?, 100 тыс. игроков</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const T = 24, MW = 50, MH = 32, W = MW * T, H = MH * T;
+  const NIGHT_SECONDS = 420;            // 22:00 -> 05:00, one game minute per second
+  const SLEEP_FROM = 180, SLEEP_TO = 270; // 01:00 - 02:30
+  const LEVELS = [
+    { name: 'Как спичка', speed: 1.00, r: 9 },
+    { name: 'Нормальный', speed: 0.92, r: 10 },
+    { name: 'Упитанный', speed: 0.82, r: 11 },
+    { name: 'Щёчки', speed: 0.72, r: 13 },
+    { name: 'Пирожок', speed: 0.62, r: 15 },
+    { name: 'Колобок', speed: 1.00, r: 18 }
+  ];
+  const BASE_SPEED = 150;
+
+  // ---------------------------------------------------------------- map
+  let map;
+  function buildMap() {
+    map = [];
+    for (let y = 0; y < MH; y++) map.push(new Array(MW).fill(','));
+    const set = (x, y, c) => { if (x >= 0 && y >= 0 && x < MW && y < MH) map[y][x] = c; };
+    const rect = (x0, y0, x1, y1, c) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) set(x, y, c); };
+    const box = (x0, y0, x1, y1, inner) => { rect(x0, y0, x1, y1, '#'); rect(x0 + 1, y0 + 1, x1 - 1, y1 - 1, inner); };
+    for (let x = 0; x < MW; x++) { set(x, 0, '='); set(x, MH - 1, '='); }
+    for (let y = 0; y < MH; y++) { set(0, y, '='); set(MW - 1, y, '='); }
+    set(24, MH - 1, 'G'); set(25, MH - 1, 'G');
+    for (let y = 19; y <= 22; y++) set(MW - 1, y, 'w');
+    set(0, 26, 'g');
+    // garden beds
+    for (const row of [18, 19, 20, 23, 24, 25]) for (let x = 4; x <= 28; x++) if (x !== 10 && x !== 17 && x !== 24) set(x, row, '~');
+    // house
+    box(2, 2, 32, 15, '.');
+    for (let x = 2; x <= 32; x++) { set(x, 7, '#'); set(x, 10, '#'); }
+    for (const d of [7, 17, 27]) { set(d, 7, '.'); set(d, 10, '.'); }
+    for (let y = 3; y <= 6; y++) { set(12, y, '#'); set(22, y, '#'); }
+    for (let y = 11; y <= 14; y++) { set(12, y, '#'); set(22, y, '#'); }
+    set(17, 15, '.');        // door from the entry to the yard
+    set(32, 8, '.');         // side door from the corridor
+    // chicken coop and bathhouse
+    box(38, 3, 45, 8, 'c'); set(41, 8, 'c');
+    box(38, 22, 45, 27, 'h'); set(41, 22, 'h');
+  }
+
+  const OBJ = [];
+  function addObj(kind, tx, ty, extra) { OBJ.push(Object.assign({ kind, x: (tx + 0.5) * T, y: (ty + 0.5) * T, used: false }, extra || {})); }
+  function buildObjects() {
+    OBJ.length = 0;
+    addObj('hide', 4, 4, { label: 'кровать', icon: '🛏️' });
+    addObj('hide', 14, 13, { label: 'шкаф', icon: '🚪' });
+    addObj('hide', 8, 11, { label: 'ковёр на стене', icon: '🟥' });
+    addObj('hide', 30, 13, { label: 'банки с соленьями', icon: '🫙' });
+    addObj('hide', 36, 17, { label: 'смородина', icon: '🌳' });
+    addObj('hide', 7, 28, { label: 'малина', icon: '🌳' });
+    addObj('phone', 14, 3, { label: 'сервант', icon: '📱' });
+    addObj('money', 30, 3, { label: 'банка', icon: '💰' });
+    addObj('shoes', 19, 13, { label: 'кроссовки', icon: '👟' });
+    addObj('key', 43, 5, { label: 'ключ', icon: '🔑' });
+    addObj('pie', 27, 5, { label: 'пирожки', icon: '🥧', left: 3 });
+    addObj('tv', 4, 13, { label: 'телевизор', icon: '📺' });
+    addObj('gate', 24.5, 30, { label: 'калитка', icon: '' });
+  }
+
+  const tileAt = (px, py) => {
+    const tx = Math.floor(px / T), ty = Math.floor(py / T);
+    if (tx < 0 || ty < 0 || tx >= MW || ty >= MH) return 'out';
+    return map[ty][tx];
+  };
+  const opaque = c => c === '#' || c === 'G';
+  function solidFor(c, who) {
+    if (c === '#' || c === '=') return true;
+    if (c === 'G') return true;
+    if (c === 'w') return true;
+    if (c === 'g') return who === 'grandma' || state.level > 1;
+    if (c === 'out') return who === 'grandma' || !state.items.shoes;
+    return false;
+  }
+
+  // ---------------------------------------------------------------- state
+  let state, player, gran, noises, particles;
+  function reset() {
+    buildMap(); buildObjects();
+    state = { t: 0, level: 0, items: { shoes: false, phone: false, money: false, key: false },
+      pies: 0, caught: 0, rush: 0, banya: 0, over: false, running: false, msg: '', msgT: 0, feeding: 0, tvTimer: 0, tvCooldown: 0 };
+    player = { x: 7.5 * T, y: 5.5 * T, vx: 0, vy: 0, hidden: null, seenHiding: false, stepT: 0, face: 0 };
+    gran = { x: 17.5 * T, y: 12.5 * T, dir: 0, mode: 'patrol', path: [], target: null, wait: 1, line: 'Пирожки стынут…', lineT: 3,
+      seen: 0, lastSeen: null, lostT: 0, repath: 0, stun: 0, wp: 0 };
+    noises = []; particles = [];
+    renderStatic();
+    updateHud();
+  }
+
+  // ---------------------------------------------------------------- pathfinding (A* on tiles)
+  function findPath(sx, sy, ex, ey) {
+    const s = [Math.floor(sx / T), Math.floor(sy / T)], e = [Math.floor(ex / T), Math.floor(ey / T)];
+    if (e[0] < 0 || e[1] < 0 || e[0] >= MW || e[1] >= MH) return [];
+    if (solidFor(map[e[1]][e[0]], 'grandma')) return [];
+    const key = (x, y) => y * MW + x;
+    const open = [[0, s[0], s[1]]], g = new Map([[key(s[0], s[1]), 0]]), from = new Map();
+    let guard = 0;
+    while (open.length && guard++ < 4000) {
+      let bi = 0; for (let i = 1; i < open.length; i++) if (open[i][0] < open[bi][0]) bi = i;
+      const [, x, y] = open.splice(bi, 1)[0];
+      if (x === e[0] && y === e[1]) {
+        const out = []; let k = key(x, y);
+        while (from.has(k)) { out.push([(k % MW + 0.5) * T, (Math.floor(k / MW) + 0.5) * T]); k = from.get(k); }
+        return out.reverse();
+      }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= MW || ny >= MH || solidFor(map[ny][nx], 'grandma')) continue;
+        const ng = g.get(key(x, y)) + 1, nk = key(nx, ny);
+        if (!g.has(nk) || ng < g.get(nk)) { g.set(nk, ng); from.set(nk, key(x, y)); open.push([ng + Math.abs(nx - e[0]) + Math.abs(ny - e[1]), nx, ny]); }
+      }
+    }
+    return [];
+  }
+
+  // ---------------------------------------------------------------- helpers
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function los(ax, ay, bx, by) {
+    const d = Math.hypot(bx - ax, by - ay), n = Math.ceil(d / 8);
+    for (let i = 1; i < n; i++) { if (opaque(tileAt(ax + (bx - ax) * i / n, ay + (by - ay) * i / n))) return false; }
+    return true;
+  }
+  const indoors = (x, y) => { const c = tileAt(x, y); return c === '.' || c === 'c' || c === 'h'; };
+  function say(text, t) { gran.line = text; gran.lineT = t || 2.4; }
+  function toast(text, t) { state.msg = text; state.msgT = t || 2.2; }
+  function noise(x, y, r) { noises.push({ x, y, r, t: 0 }); hear(x, y, r); }
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  // ---------------------------------------------------------------- grandma
+  const WAYPOINTS = [[16, 5], [26, 4], [17, 8], [7, 12], [17, 12], [27, 12], [7, 8], [17, 17]];
+  const IDLE_LINES = ['Пирожки стынут…', 'Где мои очки…', 'Сериал скоро…', 'Тесто подходит…', 'Шапку бы им…'];
+  function grandmaGo(tx, ty) { gran.path = findPath(gran.x, gran.y, tx, ty); gran.target = [tx, ty]; }
+  function hear(x, y, r) {
+    if (state.over || gran.mode === 'feed' || gran.stun > 0) return;
+    let d = Math.hypot(x - gran.x, y - gran.y);
+    let rr = r;
+    if (gran.mode === 'tv') rr *= 0.45;
+    if (gran.mode === 'sleep') rr *= 0.3;
+    if (d > rr || gran.mode === 'chase') return;
+    if (gran.mode === 'sleep') say('Хр… А? Кто тут?');
+    else say(pick(['Кто там шуршит?', 'Внучек, это ты?', 'Ой, кто там?']));
+    gran.mode = 'suspicious'; gran.wait = 2.2; grandmaGo(x, y);
+  }
+  function updateGrandma(dt) {
+    if (gran.lineT > 0) gran.lineT -= dt;
+    if (gran.stun > 0) { gran.stun -= dt; if (gran.stun <= 0) { gran.mode = 'patrol'; say('Ох, поясница…'); } return; }
+    if (gran.mode === 'feed') return;
+
+    const clockSleep = state.t >= SLEEP_FROM && state.t < SLEEP_TO;
+    if (clockSleep && (gran.mode === 'patrol' || gran.mode === 'tv')) { gran.mode = 'tosleep'; grandmaGo(19.5 * T, 4.5 * T); say('Прилягу на минутку…'); }
+    if (!clockSleep && gran.mode === 'sleep') { gran.mode = 'patrol'; say('Ой, задремала…'); }
+
+    // sight
+    const canSee = gran.mode !== 'sleep' && gran.mode !== 'tosleep';
+    const pr = LEVELS[state.level].r;
+    let visible = false;
+    if (canSee && !player.hidden) {
+      const d = dist(gran, player);
+      const range = indoors(player.x, player.y) ? 200 : 130;
+      const ang = Math.atan2(player.y - gran.y, player.x - gran.x);
+      let da = Math.abs(((ang - gran.dir + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      if (d < 26 || (d < range && da < 0.7 && los(gran.x, gran.y, player.x, player.y))) visible = true;
+    }
+    if (visible) {
+      gran.seen = Math.min(1, gran.seen + dt * (1.6 + 220 / Math.max(dist(gran, player), 30)));
+      gran.lastSeen = { x: player.x, y: player.y };
+    } else {
+      gran.seen = Math.max(0, gran.seen - dt * 0.5);
+    }
+    if (gran.seen >= 1 && gran.mode !== 'chase') {
+      gran.mode = 'chase'; gran.lostT = 0;
+      say(state.level >= 5 ? 'Куда покатился?!' : pick(['А ну стой! Ты не доел!', 'Ещё пирожочек!', 'Ты чего такой худой?']));
+    }
+
+    let speed = 70;
+    if (gran.mode === 'chase') {
+      speed = 132;
+      if (visible) gran.lostT = 0; else gran.lostT += dt;
+      gran.repath -= dt;
+      if (gran.repath <= 0) { const t = player.hidden ? gran.lastSeen : (visible ? player : gran.lastSeen); if (t) grandmaGo(t.x, t.y); gran.repath = 0.3; }
+      if (gran.lostT > 2.5) { gran.mode = 'suspicious'; gran.wait = 2.5; say('Куда делся?..'); if (gran.lastSeen) grandmaGo(gran.lastSeen.x, gran.lastSeen.y); }
+      // catch
+      if (!player.hidden && dist(gran, player) < pr + 13) catchPlayer();
+      else if (player.hidden && player.seenHiding && dist(gran, player) < 40) { say('Я всё видела!'); unhide(); catchPlayer(); }
+    } else if (gran.mode === 'suspicious') {
+      speed = 88;
+    } else if (gran.mode === 'tv') {
+      if (!gran.path.length) { state.tvTimer -= dt; gran.dir = Math.PI; if (state.tvTimer <= 0) { gran.mode = 'patrol'; say('Ну и концовка…'); } }
+    }
+
+    // walk the path
+    if (gran.path.length) {
+      const [nx, ny] = gran.path[0];
+      const dx = nx - gran.x, dy = ny - gran.y, d = Math.hypot(dx, dy);
+      const want = Math.atan2(dy, dx);
+      gran.dir += ((((want - gran.dir) % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 8);
+      if (d < speed * dt + 1) { gran.x = nx; gran.y = ny; gran.path.shift(); }
+      else { gran.x += dx / d * speed * dt; gran.y += dy / d * speed * dt; }
+      return;
+    }
+    // arrived or idle
+    if (gran.mode === 'tosleep') { gran.mode = 'sleep'; say('Хр-р-р…', 99); return; }
+    if (gran.mode === 'sleep') { if (gran.lineT <= 0) say('Хр-р-р…', 99); return; }
+    if (gran.mode === 'tv') return;
+    if (gran.mode === 'chase') return;
+    gran.wait -= dt;
+    gran.dir += Math.sin(state.t * 2.3) * dt * 1.6; // looks around
+    if (gran.wait <= 0) {
+      if (gran.mode === 'suspicious') { gran.mode = 'patrol'; say('Показалось…'); }
+      gran.wp = (gran.wp + 1 + Math.floor(Math.random() * 3)) % WAYPOINTS.length;
+      const [wx, wy] = WAYPOINTS[gran.wp];
+      grandmaGo((wx + 0.5) * T, (wy + 0.5) * T);
+      gran.wait = 1.2 + Math.random() * 2;
+      if (Math.random() < 0.45) say(pick(IDLE_LINES));
+    }
+  }
+
+  function catchPlayer() {
+    if (state.level >= 5 && Math.hypot(player.vx, player.vy) > 150) {
+      gran.stun = 2.2; gran.mode = 'stunned'; gran.path = []; say('Ох! Колобок проклятый!');
+      toast('Колобок сбил бабушку!'); noise(gran.x, gran.y, 60);
+      return;
+    }
+    gran.mode = 'feed'; gran.path = []; state.feeding = 2.6; state.caught++;
+    player.vx = player.vy = 0;
+    say(state.level >= 5 ? 'Ну вот, хоть поправился!' : pick(['Ты чего такой худой?', 'Ешь, ешь, растёшь же!', 'С капустой! Горяченькие!']), 2.6);
+  }
+  function endFeeding() {
+    if (state.level < 5) { state.level++; state.pies++; }
+    player.x = 7.5 * T; player.y = 5.5 * T; player.vx = player.vy = 0;
+    gran.mode = 'patrol'; gran.seen = 0; gran.wait = 1.5; say('А теперь спать!');
+    toast(state.level >= 5 ? 'Вы колобок! Разгоняйтесь и сносите забор справа.' : 'Сытость +1: ' + LEVELS[state.level].name);
+    updateHud(); renderStatic();
+  }
+
+  // ---------------------------------------------------------------- player
+  const input = { x: 0, y: 0, tip: false, act: false };
+  const keys = new Set();
+  function readKeys() {
+    let x = 0, y = 0;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) x -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) x += 1;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) y -= 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) y += 1;
+    if (x || y) { const l = Math.hypot(x, y); input.x = x / l; input.y = y / l; }
+    else if (!stick.active) { input.x = 0; input.y = 0; }
+    input.tip = keys.has('ShiftLeft') || keys.has('ShiftRight') || tipToggle;
+  }
+
+  function collide(nx, ny, r) {
+    for (let ty = Math.floor((ny - r) / T); ty <= Math.floor((ny + r) / T); ty++) {
+      for (let tx = Math.floor((nx - r) / T); tx <= Math.floor((nx + r) / T); tx++) {
+        const c = (tx < 0 || ty < 0 || tx >= MW || ty >= MH) ? 'out' : map[ty][tx];
+        if (!solidFor(c, 'player')) continue;
+        const cx = Math.max(tx * T, Math.min(nx, tx * T + T)), cy = Math.max(ty * T, Math.min(ny, ty * T + T));
+        if ((nx - cx) ** 2 + (ny - cy) ** 2 < r * r) return { tx, ty, c };
+      }
+    }
+    return null;
+  }
+
+  function updatePlayer(dt) {
+    if (player.hidden) return;
+    const lv = LEVELS[state.level], r = lv.r;
+    if (state.rush > 0) state.rush -= dt;
+    const ball = state.level >= 5;
+    const tile = tileAt(player.x, player.y);
+    if (ball) {
+      const acc = 340;
+      player.vx += input.x * acc * dt; player.vy += input.y * acc * dt;
+      const f = Math.pow(0.55, dt); player.vx *= f; player.vy *= f;
+      const sp = Math.hypot(player.vx, player.vy), max = 285;
+      if (sp > max) { player.vx *= max / sp; player.vy *= max / sp; }
+    } else {
+      let sp = BASE_SPEED * lv.speed * (input.tip ? 0.5 : 1) * (state.rush > 0 ? 1.35 : 1) * (tile === '~' ? 0.85 : 1);
+      player.vx = input.x * sp; player.vy = input.y * sp;
+    }
+    // move with collision, axis by axis
+    let hit = null;
+    const nx = player.x + player.vx * dt;
+    const hx = collide(nx, player.y, r);
+    if (hx) { hit = hx; if (ball) player.vx *= -0.45; } else player.x = nx;
+    const ny = player.y + player.vy * dt;
+    const hy = collide(player.x, ny, r);
+    if (hy) { hit = hit || hy; if (ball) player.vy *= -0.45; } else player.y = ny;
+    if (hit && ball && hit.c === 'w') {
+      const speed = Math.hypot(player.vx, player.vy) / 0.45;
+      if (speed > 140) {
+        for (let y = 0; y < MH; y++) if (map[y][MW - 1] === 'w') map[y][MW - 1] = ',';
+        noise(player.x, player.y, 260); toast('Забор снесён! Катитесь наружу.'); burst(player.x, player.y, '#c79a5b', 18); renderStatic();
+      } else toast('Разгонитесь сильнее, чтобы пробить забор');
+    }
+    if (hit && hit.c === 'out' && !state.items.shoes && state.msgT <= 0) toast('В тапках на дискотеку? Сначала кроссовки из сеней.');
+    if (hit && hit.c === 'g' && state.level > 1 && state.msgT <= 0) toast('Под забором пролезают только худые (сытость 0–1)');
+
+    const moving = Math.hypot(player.vx, player.vy) > 10;
+    if (moving) player.face = Math.atan2(player.vy, player.vx);
+    // noise
+    player.stepT -= dt;
+    if (moving && player.stepT <= 0) {
+      let rr = ball ? 170 : input.tip ? 18 : 70 + 18 * state.level;
+      if (tile === '~') rr += 25;
+      if (tile === 'c') { rr = input.tip ? 120 : 230; if (Math.random() < 0.5) toast('Куры раскудахтались!', 1.2); }
+      noise(player.x, player.y, rr);
+      player.stepT = input.tip ? 0.6 : 0.35;
+    }
+    // bathhouse
+    if (tile === 'h' && state.level > 0) {
+      state.banya += dt;
+      if (Math.random() < dt * 14) particles.push({ x: player.x + (Math.random() - 0.5) * 30, y: player.y, vx: 0, vy: -24, t: 1.2, c: 'rgba(230,236,240,.5)', s: 6 });
+      if (state.banya > 4) { state.banya = 0; state.level--; toast('Пропотели в бане: сытость −1'); updateHud(); }
+    } else state.banya = 0;
+    // escaped
+    if (player.x < -r || player.x > W + r || player.y < -r || player.y > H + r) finish(true);
+  }
+
+  function nearest() {
+    let best = null, bd = 34;
+    for (const o of OBJ) { if (o.used && o.kind !== 'hide' && o.kind !== 'tv' && o.kind !== 'pie') continue; const d = dist(o, player); if (d < bd) { bd = d; best = o; } }
+    return best;
+  }
+  function unhide() { if (player.hidden) { player.hidden = null; player.seenHiding = false; } }
+  function act() {
+    if (!state.running || state.over || state.feeding > 0) return;
+    if (player.hidden) { unhide(); toast('Вылезли'); return; }
+    const o = nearest();
+    if (!o) return;
+    switch (o.kind) {
+      case 'hide':
+        if (state.level >= 3 && o.label === 'шкаф') { toast('В шкаф уже не помещаетесь'); return; }
+        if (state.level >= 5) { toast('Колобку не спрятаться'); return; }
+        // Hiding in front of grandma does not work: she remembers where you went.
+        player.seenHiding = gran.mode === 'chase' && dist(gran, player) < 240 && los(gran.x, gran.y, player.x, player.y);
+        player.hidden = o; player.x = o.x; player.y = o.y; toast(player.seenHiding ? 'Бабушка видела, куда вы спрятались!' : 'Спрятались: ' + o.label + '. E — вылезти'); break;
+      case 'phone': o.used = true; state.items.phone = true; noise(o.x, o.y, 75); toast('Телефон у вас. Хрусталь звякнул…'); break;
+      case 'money': o.used = true; state.items.money = true; noise(o.x, o.y, 55); toast('Деньги на дискотеку есть'); break;
+      case 'shoes': o.used = true; state.items.shoes = true; toast('Кроссовки! Теперь можно уходить'); break;
+      case 'key': o.used = true; state.items.key = true; noise(o.x, o.y, 200); toast('Ключ от калитки. Куры всё слышали!'); break;
+      case 'pie':
+        if (o.left <= 0) { toast('Пирожки кончились'); return; }
+        if (state.level >= 5) { toast('В колобка больше не лезет'); return; }
+        o.left--; state.level++; state.pies++; state.rush = 8; toast('Сахарный рывок 8 секунд! Сытость +1'); updateHud(); break;
+      case 'tv':
+        if (state.tvCooldown > 0) { toast('Сериал ещё не начался'); return; }
+        state.tvTimer = 18; state.tvCooldown = 40; noise(o.x, o.y, 700);
+        if (gran.mode !== 'chase' && gran.mode !== 'feed' && gran.mode !== 'sleep') { gran.mode = 'tv'; grandmaGo(6.5 * T, 12.5 * T); say('Ой, мой сериал!'); }
+        toast('Включили бабушкин сериал'); break;
+      case 'gate':
+        if (!state.items.key) { toast('Калитка заперта. Ключ где-то в курятнике'); return; }
+        if (map[MH - 1][24] !== 'G') return;
+        map[MH - 1][24] = '.'; map[MH - 1][25] = '.'; o.used = true; noise(o.x, o.y, 150); toast('Калитка скрипнула и открылась'); renderStatic(); break;
+    }
+    updateHud();
+  }
+
+  // ---------------------------------------------------------------- effects
+  function burst(x, y, c, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, s = 40 + Math.random() * 120; particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0.8, c, s: 4 }); } }
+
+  // ---------------------------------------------------------------- rendering
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const stage = document.getElementById('stage');
+  const bg = document.createElement('canvas'); bg.width = W; bg.height = H; const bctx = bg.getContext('2d');
+  const COL = { '.': '#7a5a3e', ',': '#1f3a2a', '~': '#3b2f22', '#': '#2c1f22', '=': '#5a4630', 'G': '#8c6a3c', 'w': '#6b5434', 'g': '#24402e', 'c': '#5b4a33', 'h': '#4a5560' };
+  function renderStatic() {
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+      const c = map[y][x];
+      bctx.fillStyle = COL[c] || '#000';
+      bctx.fillRect(x * T, y * T, T, T);
+      if (c === '.') { bctx.fillStyle = 'rgba(0,0,0,.12)'; bctx.fillRect(x * T, y * T + T - 2, T, 2); }
+      if (c === ',') { bctx.fillStyle = 'rgba(120,170,110,.10)'; if ((x * 7 + y * 13) % 5 === 0) bctx.fillRect(x * T + 6, y * T + 9, 3, 6); }
+      if (c === '~') { bctx.fillStyle = '#5f8a4a'; bctx.fillRect(x * T + 4, y * T + 6, 4, 4); bctx.fillRect(x * T + 15, y * T + 14, 4, 4); }
+      if (c === '=' || c === 'w') { bctx.fillStyle = 'rgba(0,0,0,.25)'; for (let i = 0; i < T; i += 6) bctx.fillRect(x * T + i, y * T, 2, T); }
+      if (c === 'g') { bctx.fillStyle = '#5a4630'; bctx.fillRect(x * T, y * T, T, 8); }
+      if (c === 'h') { bctx.fillStyle = 'rgba(255,255,255,.06)'; bctx.fillRect(x * T, y * T, T, T); }
+    }
+    // warm light in the house, dark yard
+    bctx.fillStyle = 'rgba(255,190,110,.06)'; bctx.fillRect(3 * T, 3 * T, 29 * T, 12 * T);
+    bctx.font = '600 11px Rubik, sans-serif'; bctx.fillStyle = 'rgba(242,232,214,.45)';
+    const labels = [['Спальня', 3.3, 3], ['Бабушкина', 13.3, 3], ['Кухня', 23.3, 3], ['Зал', 3.3, 11], ['Сени', 13.3, 11], ['Кладовка', 23.3, 11], ['Курятник', 39, 4], ['Баня', 39, 23], ['Огород', 4, 17.6], ['калитка', 22.6, 30.6]];
+    for (const [t, x, y] of labels) bctx.fillText(t, x * T, y * T + 12);
+  }
+
+  let scale = 1, camX = 0, camY = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = stage.getBoundingClientRect();
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    const viewTiles = r.width < 640 ? 17 : 30;
+    scale = cv.width / (viewTiles * T);
+  }
+
+  function drawKid(x, y, r, face, alpha) {
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#f0c9a0'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#3b82c4'; ctx.beginPath(); ctx.arc(x, y, r, Math.PI * 1.05, Math.PI * 1.95); ctx.fill(); // cap
+    const ex = Math.cos(face), ey = Math.sin(face);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.arc(x + ex * r * 0.45 - ey * r * 0.3, y + ey * r * 0.45 + ex * r * 0.3, Math.max(1.6, r * 0.13), 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + ex * r * 0.45 + ey * r * 0.3, y + ey * r * 0.45 - ex * r * 0.3, Math.max(1.6, r * 0.13), 0, 6.283); ctx.fill();
+    if (state.level >= 3) { ctx.fillStyle = 'rgba(230,110,110,.55)'; ctx.beginPath(); ctx.arc(x - ey * r * 0.6, y + ex * r * 0.6, r * 0.22, 0, 6.283); ctx.arc(x + ey * r * 0.6, y - ex * r * 0.6, r * 0.22, 0, 6.283); ctx.fill(); }
+    ctx.restore();
+  }
+  function drawGran() {
+    const { x, y } = gran;
+    ctx.fillStyle = '#d1493d'; ctx.beginPath(); ctx.arc(x, y, 13, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < 6; i++) { const a = i * 1.05; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 8, y + Math.sin(a) * 8, 1.6, 0, 6.283); ctx.fill(); }
+    const ex = Math.cos(gran.dir), ey = Math.sin(gran.dir);
+    ctx.fillStyle = '#f3d7b8'; ctx.beginPath(); ctx.arc(x + ex * 5, y + ey * 5, 7, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.4;
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + ex * 8 - ey * 3 * s, y + ey * 8 + ex * 3 * s, 2.6, 0, 6.283); ctx.stroke(); }
+    if (gran.mode === 'sleep') { ctx.fillStyle = 'rgba(242,232,214,.8)'; ctx.font = '14px Neucha, cursive'; ctx.fillText('z z', x + 12, y - 16 - Math.sin(state.t * 3) * 3); }
+    if (gran.seen > 0.05 && gran.mode !== 'chase' && gran.mode !== 'feed') {
+      ctx.fillStyle = '#e9a33b'; ctx.font = '700 16px Rubik, sans-serif'; ctx.fillText(gran.seen > 0.6 ? '?!' : '?', x - 4, y - 18);
+    }
+  }
+  function drawCone() {
+    if (gran.mode === 'sleep' || gran.mode === 'tosleep' || gran.mode === 'feed' || gran.stun > 0) return;
+    const range = 200, n = 26, span = 1.4;
+    ctx.beginPath(); ctx.moveTo(gran.x, gran.y);
+    for (let i = 0; i <= n; i++) {
+      const a = gran.dir - span / 2 + span * i / n;
+      let d = 0; const step = 8;
+      while (d < range) { const px = gran.x + Math.cos(a) * d, py = gran.y + Math.sin(a) * d; if (opaque(tileAt(px, py))) break; if (!indoors(px, py) && d > 130) break; d += step; }
+      ctx.lineTo(gran.x + Math.cos(a) * d, gran.y + Math.sin(a) * d);
+    }
+    ctx.closePath();
+    ctx.fillStyle = gran.mode === 'chase' ? 'rgba(209,73,61,.22)' : 'rgba(255,214,140,.14)';
+    ctx.fill();
+  }
+  function bubble(x, y, text, color) {
+    ctx.font = '17px Neucha, "Comic Sans MS", cursive';
+    const w = ctx.measureText(text).width + 16, h = 24, bx = x - w / 2, by = y - 46;
+    ctx.fillStyle = color || 'rgba(242,232,214,.95)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 8) : ctx.rect(bx, by, w, h); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 5, by + h); ctx.lineTo(x + 3, by + h); ctx.lineTo(x, by + h + 7); ctx.fill();
+    ctx.fillStyle = '#1b1206'; ctx.fillText(text, bx + 8, by + 17);
+  }
+
+  function draw() {
+    const vw = cv.width / scale, vh = cv.height / scale;
+    camX = Math.max(-T, Math.min(W + T - vw, player.x - vw / 2));
+    camY = Math.max(-T, Math.min(H + T - vh, player.y - vh / 2));
+    if (vw > W + 2 * T) camX = (W - vw) / 2;
+    if (vh > H + 2 * T) camY = (H - vh) / 2;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#0a1118'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(scale, 0, 0, scale, -camX * scale, -camY * scale);
+    ctx.drawImage(bg, 0, 0);
+    // objects
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const o of OBJ) {
+      if (o.kind === 'gate') continue;
+      if (o.used && o.kind !== 'hide' && o.kind !== 'tv') continue;
+      ctx.globalAlpha = (o.kind === 'pie' && o.left <= 0) ? 0.25 : 1;
+      ctx.font = '18px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+      ctx.fillText(o.icon, o.x, o.y);
+    }
+    ctx.globalAlpha = 1; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    // noise rings
+    for (const n of noises) { ctx.strokeStyle = `rgba(242,232,214,${0.22 * (1 - n.t / 0.6)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(n.x, n.y, n.r * Math.min(1, n.t / 0.6), 0, 6.283); ctx.stroke(); }
+    drawCone();
+    // player
+    const lv = LEVELS[state.level];
+    if (!player.hidden) drawKid(player.x, player.y, lv.r, player.face, 1);
+    else drawKid(player.x, player.y, lv.r * 0.8, player.face, 0.35);
+    drawGran();
+    for (const p of particles) { ctx.fillStyle = p.c; ctx.globalAlpha = Math.max(0, p.t); ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
+    ctx.globalAlpha = 1;
+    // hint over the nearest object
+    const o = state.running && !player.hidden ? nearest() : null;
+    if (o && state.feeding <= 0) {
+      ctx.font = '600 11px Rubik, sans-serif'; ctx.fillStyle = 'rgba(242,232,214,.9)';
+      const hint = (matchMedia('(pointer: coarse)').matches ? 'Действие: ' : 'E: ') + o.label;
+      ctx.fillText(hint, o.x - ctx.measureText(hint).width / 2, o.y + 24);
+    }
+    if (gran.lineT > 0) bubble(gran.x, gran.y, gran.line, gran.mode === 'chase' || gran.mode === 'feed' ? '#f6c9b8' : undefined);
+    if (state.feeding > 0) {
+      // plate of pies above the kid
+      ctx.font = '22px system-ui, "Apple Color Emoji", sans-serif';
+      ctx.fillText('🥧', player.x - 11, player.y - 22 - Math.abs(Math.sin(state.t * 10)) * 6);
+    }
+    // vignette
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const g = ctx.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.3, cv.width / 2, cv.height / 2, cv.height * 0.85);
+    g.addColorStop(0, 'rgba(10,17,24,0)'); g.addColorStop(1, 'rgba(10,17,24,.55)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+  }
+
+  // ---------------------------------------------------------------- HUD and flow
+  const $ = id => document.getElementById(id);
+  function clockText() { const m = 22 * 60 + Math.floor(state.t); const hh = Math.floor(m / 60) % 24, mm = m % 60; return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); }
+  function updateHud() {
+    $('clock').textContent = clockText();
+    for (const k of ['shoes', 'phone', 'money', 'key']) $('it-' + k).classList.toggle('got', state.items[k]);
+    $('fat-fill').style.width = (state.level / 5 * 100) + '%';
+    $('fat-name').textContent = LEVELS[state.level].name;
+  }
+  function showToast() {
+    const el = $('toast');
+    if (state.msgT > 0) { el.hidden = false; el.textContent = state.msg; } else el.hidden = true;
+  }
+
+  let resultText = '';
+  function finish(escaped) {
+    if (state.over) return;
+    state.over = true; state.running = false;
+    const left = Math.max(0, NIGHT_SECONDS - state.t);
+    const score = escaped ? 1000 + (state.items.phone ? 300 : 0) + (state.items.money ? 300 : 0) + Math.round(left) * 2 + state.level * 50 : state.pies * 10;
+    let title, line;
+    if (!escaped) { title = 'Остался на завтрак'; line = '«Вставай, блины стынут!»'; }
+    else if (state.level >= 5) { title = 'Колобок: от бабушки ушёл'; line = '«Хоть поправился немножко…»'; }
+    else if (state.level === 0) { title = 'Худой как спичка'; line = '«Кожа да кости! Кто ж тебя такого полюбит?»'; }
+    else if (state.pies >= 4) { title = 'Пирожковый магнат'; line = '«Вот это аппетит, весь в деда!»'; }
+    else { title = 'Сбежал на дискотеку'; line = '«Хоть бы шапку надел…»'; }
+    $('end-title').textContent = title; $('end-line').textContent = line;
+    const rows = [
+      ['Итог', escaped ? 'сбежал в ' + clockText() : 'рассвет, не сбежал'],
+      ['Очки', score],
+      ['Съедено пирожков', state.pies],
+      ['Поймала бабушка', state.caught + ' раз'],
+      ['Форма', LEVELS[state.level].name],
+      ['Телефон, деньги', (state.items.phone ? 'да' : 'нет') + ', ' + (state.items.money ? 'да' : 'нет')]
+    ];
+    $('end-stats').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+    resultText = `Бабушка накормит: ${title}. ${rows.map(([a, b]) => a + ': ' + b).join(', ')}.`;
+    $('ov-end').hidden = false;
+  }
+
+  let last = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
+    if (state.running && !state.over) {
+      readKeys();
+      state.t += dt;
+      if (state.t >= NIGHT_SECONDS) { state.t = NIGHT_SECONDS; finish(false); }
+      if (state.tvCooldown > 0) state.tvCooldown -= dt;
+      if (state.feeding > 0) { state.feeding -= dt; if (state.feeding <= 0) endFeeding(); }
+      else updatePlayer(dt);
+      updateGrandma(dt);
+      if (state.msgT > 0) state.msgT -= dt;
+      $('clock').textContent = clockText();
+    }
+    for (const n of noises) n.t += dt;
+    noises = noises.filter(n => n.t < 0.6);
+    for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.t -= dt; }
+    particles = particles.filter(p => p.t > 0);
+    showToast();
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------------------------------------------------------- input wiring
+  window.addEventListener('keydown', e => {
+    if (!state.running) return;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+    keys.add(e.code);
+    if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') { if (!e.repeat) act(); }
+  });
+  window.addEventListener('keyup', e => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+
+  const stick = { active: false, id: null, cx: 0, cy: 0 };
+  const stickEl = $('stick'), knob = $('knob');
+  stickEl.addEventListener('pointerdown', e => { stick.active = true; stick.id = e.pointerId; const r = stickEl.getBoundingClientRect(); stick.cx = r.left + r.width / 2; stick.cy = r.top + r.height / 2; stickEl.setPointerCapture(e.pointerId); moveStick(e); });
+  stickEl.addEventListener('pointermove', e => { if (stick.active && e.pointerId === stick.id) moveStick(e); });
+  const endStick = e => { if (e.pointerId !== stick.id) return; stick.active = false; input.x = input.y = 0; knob.style.transform = ''; };
+  stickEl.addEventListener('pointerup', endStick); stickEl.addEventListener('pointercancel', endStick);
+  function moveStick(e) {
+    let dx = e.clientX - stick.cx, dy = e.clientY - stick.cy; const d = Math.hypot(dx, dy), max = 40;
+    if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    const m = Math.min(1, d / max); input.x = d ? dx / Math.max(d, 1) * (m > 0.2 ? 1 : 0) : 0; input.y = d ? dy / Math.max(d, 1) * (m > 0.2 ? 1 : 0) : 0;
+  }
+  let tipToggle = false;
+  $('b-tip').addEventListener('click', () => { tipToggle = !tipToggle; $('b-tip').classList.toggle('on', tipToggle); });
+  $('b-act').addEventListener('pointerdown', e => { e.preventDefault(); act(); });
+
+  function start() { reset(); $('ov-start').hidden = true; $('ov-end').hidden = true; state.running = true; toast('Найдите кроссовки в сенях и выбирайтесь за забор', 3.5); }
+  $('b-start').addEventListener('click', start);
+  $('b-again').addEventListener('click', start);
+  $('b-copy').addEventListener('click', () => {
+    const b = $('b-copy');
+    const done = () => { b.textContent = 'Скопировано'; setTimeout(() => (b.textContent = 'Скопировать результат'), 1800); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(resultText).then(done, () => { b.textContent = 'Не вышло скопировать'; });
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) keys.clear(); });
+
+  new ResizeObserver(resize).observe(stage);
+  reset(); resize();
+  if (document.fonts && document.fonts.load) { document.fonts.load('17px Neucha').then(renderStatic, () => {}); }
+  requestAnimationFrame(t => { last = t; frame(t); });
+})();
+</script>
+</body></html>

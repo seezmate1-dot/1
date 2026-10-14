@@ -1,0 +1,10 @@
+BabushkaGame/**/*.uasset filter=lfs diff=lfs merge=lfs -text
+BabushkaGame/**/*.umap filter=lfs diff=lfs merge=lfs -text
+BabushkaGame/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+BabushkaGame/**/*.png filter=lfs diff=lfs merge=lfs -text
+BabushkaGame/**/*.wav filter=lfs diff=lfs merge=lfs -text
+*.cpp text eol=crlf
+*.h text eol=crlf
+*.cs text eol=crlf
+*.ini text eol=crlf
+*.uproject text eol=crlf
