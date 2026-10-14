@@ -10,9 +10,11 @@ namespace LastHearth.Game
     /// <summary>
     /// Starts the game in any scene and shows a debug screen of the core (no art yet, milestone M1).
     /// Press Play in an empty scene: the fortress lives in real time, saves itself and catches up
-    /// offline time on the next start. "+1 час" skips time to test long timers.
+    /// offline time on the next start. "+1 час" skips time to test long timers. Every system of the
+    /// core has a tab: fortress, fights (campaign, Hunt, arena, raids), the live Surge, growth (Heart,
+    /// specializations), routes, tasks and shops, live events.
     /// </summary>
-    public sealed class GameRunner : MonoBehaviour
+    public sealed partial class GameRunner : MonoBehaviour
     {
         const string SkipKey = "lasthearth.debugSkipSeconds";
 
@@ -25,11 +27,16 @@ namespace LastHearth.Game
 
         CombatBalance combat;
         Battle battle;
+        Func<Battle, string> battleFinish;
+        string battleTitle = "";
         bool autoBattle;
         float battleClock;
         int huntRank = 1;
         string battleResult;
         int promoteFor = -1;
+        int tab;
+
+        static readonly string[] Tabs = { "Крепость", "Бои", "Наплыв", "Развитие", "Вылазки", "Задания и лавки", "События" };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -55,11 +62,39 @@ namespace LastHearth.Game
         {
             session = s;
             session.Combat = combat;
+            session.State.UtcOffsetSeconds = (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds;
             session.JobCompleted += job => message = "Готово: " + JobName(job) + " → ур. " + job.ToLevel;
+            session.SurgeSettled += r => message = r.Live ? "" : string.Format("Наплыв отбит без вас: {0}, +{1} жара", StarText(r.Stars), r.Ember);
             session.Advance(Now());
-            var unfinished = session.ResolvePendingHunt();
-            if (unfinished != null)
-                message = string.Format("Незаконченная охота доиграна автобоем: {0}, +{1} сердцевин", StarText(unfinished.Stars), unfinished.Cores);
+            // fights left open when the game closed are finished by the auto-battle
+            var notes = new System.Collections.Generic.List<string>();
+            var hunt = session.ResolvePendingHunt();
+            if (hunt != null)
+                notes.Add(string.Format("охота доиграна автобоем: {0}, +{1} сердцевин", StarText(hunt.Stars), hunt.Cores));
+            var mission = session.ResolvePendingMission();
+            if (mission != null)
+                notes.Add("бой кампании доигран автобоем: " + StarText(mission.Stars));
+            var surge = session.ResolvePendingSurge(Now());
+            if (surge != null)
+                notes.Add("Наплыв доигран без вас: " + StarText(surge.Stars));
+            var ev = session.ResolvePendingEventBattle(Now());
+            if (ev != null)
+                notes.Add("бой события доигран: " + ev);
+            var pvp = session.ResolvePendingPvp(Now());
+            if (pvp != null)
+                notes.Add(pvp);
+            if (notes.Count > 0)
+                message = "Незаконченное: " + string.Join("; ", notes);
+        }
+
+        void BeginBattle(Battle started, Func<Battle, string> finish, string title = "")
+        {
+            battle = started;
+            battleTitle = title;
+            battleFinish = finish;
+            battleResult = null;
+            battleClock = 0;
+            battle.Brain = autoBattle ? Brains.AutoBattle() : null;
         }
 
         void Update()
@@ -72,12 +107,11 @@ namespace LastHearth.Game
                     battleClock -= (float)combat.TickSeconds;
                     battle.Step();
                 }
-                if (battle.Over && battleResult == null)
-                {
-                    session.FinishHunt(battle, out var reward);
-                    battleResult = string.Format("{0} {1} · +{2} сердцевин", battle.Won ? "Победа" : "Поражение", StarText(reward.Stars), reward.Cores);
-                }
             }
+            if (battle != null && battle.Over && battleResult == null)
+                battleResult = battleFinish(battle);
+            UpdateSurge();
+            UpdateLanterns();
             tick += Time.unscaledDeltaTime;
             if (tick >= 1f)
             {
@@ -115,7 +149,18 @@ namespace LastHearth.Game
                 GUILayout.EndArea();
                 return;
             }
-            scroll = GUILayout.BeginScrollView(scroll);
+            if (surge != null)
+            {
+                DrawSurge();
+                GUILayout.EndArea();
+                return;
+            }
+            if (lanternSeed != 0)
+            {
+                DrawLanterns();
+                GUILayout.EndArea();
+                return;
+            }
             long now = Now();
             var b = session.Balance;
             var st = session.State;
@@ -124,12 +169,13 @@ namespace LastHearth.Game
             GUILayout.Label(string.Format("Очаг {0} · режим {1} · тепло {2:0} · строителей {3}{4}",
                 st.HearthLevel, ModeName(st.Mode), Formulas.HearthWarmth(b, st.HearthLevel, st.Mode),
                 session.BuilderCount(), st.OutOfCoal ? " · <color=#6cf>НЕТ УГЛЯ — всё промерзает</color>" : ""), Rich());
-            GUILayout.Label(string.Format("Уголь {0} (−{1:0.0}/ч) · Еда {2} · Серебро {3}/{4} · Железо {5}/{6} · Эссенция {7} · Искры {8} · Часы {9} · Жар {10} · Сердцевины {11} · Чертежи {12}",
-                st.Wallet[ResourceType.Coal], Formulas.CoalBurnPerHour(b, st.HearthLevel, st.Mode), st.Wallet[ResourceType.Food],
+            GUILayout.Label(string.Format("Уголь {0} (−{1:0.0}/ч) · Еда {2} · Серебро {3}/{4} · Железо {5}/{6} · Эссенция {7} · Искры {8} · Часы {9}",
+                st.Wallet[ResourceType.Coal], session.CoalBurnPerHour(), st.Wallet[ResourceType.Food],
                 st.Wallet[ResourceType.Silver], session.Capacity(ResourceType.Silver),
                 st.Wallet[ResourceType.Iron], session.Capacity(ResourceType.Iron),
-                st.Wallet[ResourceType.Essence], st.Wallet[ResourceType.Sparks], Duration(st.HourglassSeconds),
-                st.Wallet[ResourceType.Ember], st.Wallet[ResourceType.Cores], st.Wallet[ResourceType.Blueprints]));
+                st.Wallet[ResourceType.Essence], st.Wallet[ResourceType.Sparks], Duration(st.HourglassSeconds)));
+            GUILayout.Label(string.Format("Жар {0} · Сердцевины {1} · Чертежи {2} · Слава {3}",
+                st.Wallet[ResourceType.Ember], st.Wallet[ResourceType.Cores], st.Wallet[ResourceType.Blueprints], st.Wallet[ResourceType.Glory]));
 
             GUILayout.BeginHorizontal();
             if (!st.Rewards.IsEmpty() && GUILayout.Button("Забрать награды (" + CostText(st.Rewards) + ")"))
@@ -146,6 +192,11 @@ namespace LastHearth.Game
                 skip += 3600;
                 session.Advance(Now());
             }
+            if (GUILayout.Button("+8 часов"))
+            {
+                skip += 8 * 3600;
+                session.Advance(Now());
+            }
             if (GUILayout.Button("Новая игра"))
             {
                 skip = 0;
@@ -154,13 +205,41 @@ namespace LastHearth.Game
             }
             GUILayout.EndHorizontal();
 
-            DrawHearth(now);
-            DrawQueue(now);
-            DrawRooms(now);
-            DrawBuild(now);
-            DrawHunt(now);
-            DrawDwellers();
-
+            tab = GUILayout.Toolbar(tab, Tabs, GUILayout.Height(32));
+            scroll = GUILayout.BeginScrollView(scroll);
+            switch (tab)
+            {
+                case 0:
+                    DrawHearth(now);
+                    DrawQueue(now);
+                    DrawRooms(now);
+                    DrawBuild(now);
+                    DrawDwellers();
+                    break;
+                case 1:
+                    DrawCampaign(now);
+                    DrawHunt(now);
+                    DrawArena(now);
+                    DrawRaids(now);
+                    break;
+                case 2:
+                    DrawSurgeTab(now);
+                    break;
+                case 3:
+                    DrawHeart();
+                    DrawSpecs();
+                    break;
+                case 4:
+                    DrawRoutes(now);
+                    break;
+                case 5:
+                    DrawDaily(now);
+                    DrawShops(now);
+                    break;
+                default:
+                    DrawEvents(now);
+                    break;
+            }
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -337,10 +416,11 @@ namespace LastHearth.Game
                     Report(fail);
                     if (fail == Fail.None)
                     {
-                        battle = started;
-                        battleResult = null;
-                        battleClock = 0;
-                        battle.Brain = autoBattle ? Brains.AutoBattle() : null;
+                        BeginBattle(started, done =>
+                        {
+                            session.FinishHunt(done, out var reward);
+                            return string.Format("{0} {1} · +{2} сердцевин", done.Won ? "Победа" : "Поражение", StarText(reward.Stars), reward.Cores);
+                        });
                     }
                 }
             }
@@ -350,7 +430,8 @@ namespace LastHearth.Game
         void DrawBattle()
         {
             var f = battle.Family;
-            GUILayout.Label(string.Format("<b>{0}</b> · {1:0.0} с из {2:0}", f.Name, battle.Tick * combat.TickSeconds, combat.MaxTicks * combat.TickSeconds), Rich());
+            GUILayout.Label(string.Format("<b>{0}{1}</b> · волна {2} из {3} · {4:0.0} с из {5:0}", battleTitle == "" ? "" : battleTitle + ": ", f.Name,
+                battle.Wave + 1, battle.WaveCount, battle.Tick * combat.TickSeconds, combat.MaxTicks * combat.TickSeconds), Rich());
             GUILayout.Label(string.Format("Здоровье {0:0} / {1:0} {2}", Math.Max(0, battle.BossHp), battle.BossMaxHp, Bar(battle.BossHp / battle.BossMaxHp)));
             GUILayout.Label(string.Format("Оглушение {0:0}/100 {1}{2}{3}{4}", battle.Stagger, Bar(battle.Stagger / 100),
                 battle.BossStunned ? " · <color=#fd5>ОГЛУШЁН</color>" : "", battle.Burning ? " · <color=#f84>горит</color>" : "",
@@ -521,14 +602,20 @@ namespace LastHearth.Game
                 case Fail.RoomFull: return "В зале нет мест";
                 case Fail.NoBarracks: return "Нужна казарма";
                 case Fail.HeroCap: return "Предел уровня героя: поднимите очаг";
-                case Fail.RulesNotMet: return "Не выполнены условия очага";
+                case Fail.RulesNotMet: return "Не выполнены условия";
+                case Fail.Locked: return "Ещё закрыто";
+                case Fail.NoTracks: return "Попытки на сегодня кончились";
+                case Fail.LimitReached: return "Лимит исчерпан";
+                case Fail.HuntInProgress: return "Сначала закончите начатый бой";
+                case Fail.NoHeroes: return "Нет героев: нужна казарма и герои";
+                case Fail.NotToday: return "Пока нельзя: подождите";
                 default: return fail.ToString();
             }
         }
 
         static string CostText(ResourceBag bag)
         {
-            string[] names = { "уголь", "еда", "железо", "серебро", "эссенция", "искры", "жар", "сердцевины", "чертежи" };
+            string[] names = { "уголь", "еда", "железо", "серебро", "эссенция", "искры", "жар", "сердцевины", "чертежи", "слава" };
             var parts = new System.Collections.Generic.List<string>();
             for (int i = 0; i < ResourceBag.Count; i++)
             {

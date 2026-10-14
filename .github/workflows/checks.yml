@@ -29,3 +29,5 @@ jobs:
           dotnet-version: 8.0.x
       - name: Core tests (the same C# that Unity compiles)
         run: dotnet test hearth/core-tests
+      - name: Unity debug screen smoke test (random clicks on every tab)
+        run: dotnet run --project hearth/ui-smoke
