@@ -59,7 +59,7 @@ MATERIAL_SINKS = {
     "Найм в таверне": 0.04,
 }
 
-BUILD_SHARE = 0.80              # = MATERIAL_SINKS["Стройка (очаг и залы)"]
+BUILD_SHARE = pacing.BUILD_SHARE  # = MATERIAL_SINKS["Стройка (очаг и залы)"]
 
 
 def total_income(level):
@@ -67,9 +67,7 @@ def total_income(level):
     return pacing.income(level) / BUILD_SHARE
 
 
-def hearth_job(row):
-    """The most expensive single job of a level: the hearth costs three room jobs."""
-    return row["cost"] / (row["rooms"] + 3) * 3
+hearth_job = pacing.hearth_job
 
 
 def nice(x):
@@ -83,8 +81,7 @@ def nice(x):
 def storage(row):
     """Warehouse capacity (silver + iron) at this hearth level: 12 hours of income, and always
     10% more than the hearth job, so a player can save up for it."""
-    lv = row["level"]
-    return nice(max(12 * total_income(lv), 1.1 * hearth_job(row)))
+    return nice(pacing.storage_cap(row))
 
 
 # ---------------------------------------------------------------- coal and food upkeep
@@ -126,15 +123,32 @@ def hero_level_cap(hearth_level):
 # ---------------------------------------------------------------- campaign (GDD 11)
 ACTS = 10
 MISSIONS_PER_ACT = 18  # plus a boss
-ACT_UNLOCK_HEARTH = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28]
+MISSIONS = ACTS * (MISSIONS_PER_ACT + 1)
+# Day by which a free player reaches mission N: fast at first, then a new battle every 2-3 days,
+# so the campaign never stalls for weeks (the gate inside it is squad power).
+CAMPAIGN_PACE = [(0, 0), (8, 1), (19, 3), (38, 8), (57, 16), (76, 30), (95, 50), (114, 80),
+                 (133, 120), (152, 165), (171, 215), (190, 270)]
+MISSIONS_PER_DAY_MAX = 8
+MAX_MISSION_GAP_DAYS = 3.5
+
+
+def mission_day(n):
+    """Target day of mission n (1..190), linear between the pace points."""
+    for (m0, d0), (m1, d1) in zip(CAMPAIGN_PACE, CAMPAIGN_PACE[1:]):
+        if n <= m1:
+            return d0 + (d1 - d0) * (n - m0) / (m1 - m0)
+    return CAMPAIGN_PACE[-1][1]
 
 # ---------------------------------------------------------------- diamonds (Iskry)
 SPEEDUP_POINTS = [(1, 1), (60, 20), (24 * 60, 260), (7 * 24 * 60, 1000)]  # minutes -> diamonds
 
 
+FREE_FINISH_MINUTES = 5  # the last 5 minutes of any job are finished for free
+
+
 def speedup_cost(minutes):
     """Diamonds to finish a timer: log-log interpolation (cheaper per minute for long timers)."""
-    if minutes <= 0:
+    if minutes <= FREE_FINISH_MINUTES:
         return 0
     pts = SPEEDUP_POINTS
     if minutes <= pts[0][0]:
@@ -163,18 +177,18 @@ SHOP_REFRESH = 10              # one paid refresh of the daily shop
 # name: (period, first day, days, diamonds won, diamonds a free player spends, essence days,
 #        materials in hours of income, hourglass minutes)
 EVENTS = {
-    "Долгая ночь":       (7, 6, 2, 50, 30, 1.0, 6, 60),
-    "Портал в Туман":    (14, 1, 4, 80, 100, 1.5, 12, 120),
-    "Турнир Стражей":    (14, 8, 3, 60, 40, 1.0, 8, 60),
-    "Кладоискатели":     (28, 10, 5, 150, 60, 1.0, 20, 240),
-    "Ярмарка Пепла":     (28, 18, 3, 20, 0, 0.5, 12, 60),
-    "Осада застав":      (28, 25, 4, 80, 60, 1.5, 16, 120),
-    "Праздник очага":    (91, 60, 10, 200, 100, 2.0, 24, 480),
+    "Долгая ночь":       (7, 6, 2, 50, 30, 1.0, 6, 90),
+    "Портал в Туман":    (14, 1, 4, 80, 100, 1.5, 12, 180),
+    "Турнир Стражей":    (14, 8, 3, 60, 40, 1.0, 8, 90),
+    "Кладоискатели":     (28, 10, 5, 150, 60, 1.0, 20, 360),
+    "Ярмарка Пепла":     (28, 18, 3, 20, 0, 0.5, 12, 90),
+    "Осада застав":      (28, 25, 4, 80, 60, 1.5, 16, 180),
+    "Праздник очага":    (91, 60, 10, 200, 100, 2.0, 24, 720),
 }
 EVENT_UNLOCK_HEARTH = {"Ярмарка Пепла": 4, "Кладоискатели": 5, "Долгая ночь": 6, "Портал в Туман": 8,
                        "Турнир Стражей": 10, "Осада застав": 12, "Праздник очага": 3}
 
-HOURGLASS_DAILY_MINUTES = 30   # daily tasks (3 of 5) give a 30-minute hourglass
+HOURGLASS_DAILY_MINUTES = 45   # daily tasks (3 of 5) give a 45-minute hourglass
 HOURGLASS_SURGE_MINUTES = 15   # a won evening Surge gives 15 minutes (from hearth 2)
 
 # Diamond shop (docs/MODES.md, section 5)
@@ -230,6 +244,7 @@ def run(rows, reached):
     missions_done = 0
     act_finish_day = {}
     act_power = {}
+    act_open_level = {}
     earned_by = {k: 0.0 for k in ("Поручения дня", "Календарь входа", "Достижения", "Кампания", "Арена", "События")}
     spent_by = {k: 0.0 for k in ("Четвёртый строитель", "Билет арены и обновление лавки", "Доп. попытки в событиях",
                                  "Ускорения", "Наборы ресурсов")}
@@ -262,12 +277,14 @@ def run(rows, reached):
         rec["squad"] = len(squad_levels)
         rec["hero_level"] = sum(squad_levels) / len(squad_levels)
 
-        # campaign: acts open by hearth level, about 4 new missions a day
-        open_acts = sum(1 for gate in ACT_UNLOCK_HEARTH if lv >= gate)
-        per_day = 4
-        while missions_done < open_acts * (MISSIONS_PER_ACT + 1) and per_day > 0:
+        # campaign: the recommended power of mission N is the squad power on its target day,
+        # so the player clears it on that day (at most 8 new battles a day)
+        per_day = MISSIONS_PER_DAY_MAX
+        while missions_done < MISSIONS and mission_day(missions_done + 1) <= day and per_day > 0:
             missions_done += 1
             per_day -= 1
+            if (missions_done - 1) % (MISSIONS_PER_ACT + 1) == 0:
+                act_open_level[(missions_done - 1) // (MISSIONS_PER_ACT + 1) + 1] = level_on[int(mission_day(missions_done))]
             diamonds += DIAMONDS_PER_3_STAR_CHEST
             earned_by["Кампания"] += DIAMONDS_PER_3_STAR_CHEST
             act = (missions_done - 1) // (MISSIONS_PER_ACT + 1) + 1
@@ -356,14 +373,14 @@ def run(rows, reached):
                                 for row in rows if row["level"] + 1 in reached and reached[row["level"] + 1] <= DAYS)
     return {
         "rows": rows, "reached": reached, "days": days, "fourth_builder_day": fourth_builder_day,
-        "act_finish_day": act_finish_day, "act_power": act_power, "habits": habits,
+        "act_finish_day": act_finish_day, "act_power": act_power, "act_open_level": act_open_level, "habits": habits,
         "speed_minutes_total": hourglass_total, "diamond_minutes_total": diamond_minutes_total,
         "builder_minutes_total": builder_minutes_total, "diamonds_left": diamonds,
         "earned_by": earned_by, "spent_by": spent_by, "packs_total": sum(packs.values()), "gated": gated,
     }
 
 
-def solve(iterations=3):
+def solve(iterations=4):
     """Calibrates the level table for a player who really uses hourglasses, diamonds and the 4th
     builder. Habits depend on the timeline and the timeline on habits, so a few rounds are run."""
     habits = {}
@@ -419,13 +436,16 @@ def checks(result):
     if abs(event_material_share() - MATERIAL_SOURCES["События"]) > 0.03:
         problems.append("события дают %.0f%% материалов, а заявлено %.0f%%" % (
             event_material_share() * 100, MATERIAL_SOURCES["События"] * 100))
-    # 6. campaign within the year
+    # 6. campaign within the year, without long pauses
     if ACTS not in result["act_finish_day"]:
         problems.append("кампания не пройдена за год")
+    gap = max(mission_day(n + 1) - mission_day(n) for n in range(8, MISSIONS))
+    if gap > MAX_MISSION_GAP_DAYS:
+        problems.append("в кампании пауза %.1f дня между боями" % gap)
     # 7. speed-ups help but do not replace waiting
     share = result["speed_minutes_total"] / max(result["builder_minutes_total"], 1)
-    if not 0.08 <= share <= 0.25:
-        problems.append("ускорения покрывают %.0f%% стройки (нужно 8-25%%)" % (share * 100))
+    if not 0.10 <= share <= 0.25:
+        problems.append("ускорения покрывают %.0f%% стройки (нужно 10-25%%)" % (share * 100))
     # 8. the real player meets the target days
     for lv, want, got in pacing.deviations(result["reached"]):
         if abs(got - want) / want > 0.15:
@@ -447,7 +467,7 @@ def dec(x, digits=1):
 
 PLAYTIME = [  # minutes a day of a typical free player, 4 sessions of 12 minutes
     ("Сбор производства, стройка, расселение жителей", 8),
-    ("Кампания: 4 новых боя по 2 минуты", 8),
+    ("Кампания: новые бои, сложный режим, повторы", 8),
     ("Арена: 5 боёв (с очага 12)", 5),
     ("Вылазки, таверна, кузня, лазарет", 7),
     ("Наплыв тумана (можно смотреть или пропустить)", 3),
@@ -500,7 +520,7 @@ def report(result):
         w("| %d | %s | %s (%+.0f%%) | %s |" % (lv, dec(want), dec(got), (got - want) / want * 100,
                                               dec(plain[lv]) if lv in plain else "после года"))
     w("")
-    w("Ускорения важны с 6-го по 21-й уровень очага, когда игрока держат строители. Позже держат материалы, "
+    w("Ускорения и четвёртый строитель важны с 5-го по 16-й уровень очага, когда игрока держат строители. Позже держат материалы, "
       "и алмазы выгоднее тратить на наборы ресурсов. Полная таблица таймеров и цен — `docs/pacing_table.md`.")
     w("")
     w("## 4. Материалы (серебро и железо)")
@@ -523,7 +543,7 @@ def report(result):
     for name, share in MATERIAL_SINKS.items():
         w("| %s | %d%% |" % (name, share * 100))
     w("")
-    w("Серебро — %d%% материалов, железо — %d%%. **Склад** вмещает не меньше 12 часов дохода и всегда на 10%% больше "
+    w("Серебро — %d%% материалов, железо — %d%%. **Склад** вмещает не меньше суток дохода (ночь не пропадает) и всегда на 10%% больше "
       "цены очага, чтобы на него можно было накопить:" % (SILVER_SHARE * 100, (1 - SILVER_SHARE) * 100))
     w("")
     w("| Очаг | Доход в час | Цена очага | Склад (серебро + железо) | Склад в часах дохода | Копить на очаг |")
@@ -554,14 +574,16 @@ def report(result):
     w("")
     w("## 7. Кампания")
     w("")
-    w("10 актов по 18 боёв и боссу. Акт открывается уровнем очага, внутри акта ворота — сила отряда. "
-      "**Рекомендуемая сила боя** — сила отряда бесплатного игрока в день, когда он до него доходит, ×0,95:")
+    w("10 актов по 18 боёв и боссу. Ворота кампании — сила отряда: новый бой открывается, когда отряд до него дорос. "
+      "Темп задан так, что в первые дни боёв много, а дальше новый бой появляется каждые 2–3 дня, без многонедельных пауз "
+      "(самая длинная пауза — %s дня). **Рекомендуемая сила боя** — сила отряда бесплатного игрока в день, когда он до "
+      "него доходит, ×0,95:" % dec(max(mission_day(n + 1) - mission_day(n) for n in range(8, MISSIONS))))
     w("")
-    w("| Акт | Открывается на очаге | Сила первого боя | Сила босса | Пройден (день) |")
+    w("| Акт | Начало (очаг у игрока) | Сила первого боя | Сила босса | Пройден (день) |")
     w("|---|---|---|---|---|")
     for act in range(1, ACTS + 1):
         p = result["act_power"].get(act, [0, 0])
-        w("| %d | %d | %s | %s | %s |" % (act, ACT_UNLOCK_HEARTH[act - 1], num(nice(p[0] * 0.95)), num(nice(p[1] * 0.95)),
+        w("| %d | %d | %s | %s | %s |" % (act, result["act_open_level"].get(act, 0), num(nice(p[0] * 0.95)), num(nice(p[1] * 0.95)),
                                           result["act_finish_day"].get(act, "после года")))
     w("")
     w("Бой длится 60–90 секунд. Звёзды: победа, никто не пал, быстрее 60 секунд. Повтор пройденного боя — "
@@ -598,7 +620,7 @@ def report(result):
     w("|---|---|")
     for minutes, label in ((1, "1 мин"), (5, "5 мин"), (15, "15 мин"), (60, "1 ч"), (180, "3 ч"), (480, "8 ч"),
                            (1440, "1 д"), (4320, "3 д"), (10080, "7 д")):
-        w("| %s | %s |" % (label, "бесплатно" if minutes <= 1 else speedup_cost(minutes)))
+        w("| %s | %s |" % (label, "бесплатно" if minutes <= FREE_FINISH_MINUTES else speedup_cost(minutes)))
     w("")
     share = result["speed_minutes_total"] / max(result["builder_minutes_total"], 1)
     w("Бесплатные **песочные часы**: %d минут в день за поручения, %d за победу в Наплыве, ещё больше в событиях. "
@@ -607,7 +629,7 @@ def report(result):
           HOURGLASS_DAILY_MINUTES, HOURGLASS_SURGE_MINUTES, num(result["speed_minutes_total"] / 60), share * 100,
           num(result["diamond_minutes_total"] / 60)))
     w("")
-    w("Правила: ускорение до 1 минуты бесплатно; цена за минуту падает с длиной таймера; час дохода в наборе ресурсов "
+    w("Правила: последние 5 минут любой стройки завершаются бесплатно; цена за минуту падает с длиной таймера; час дохода в наборе ресурсов "
       "стоит %d алмазов, дороже часа ускорения (20), чтобы алмазы не заменяли игру." % PACK_PRICE)
     w("")
     w("## 10. Время в игре")
@@ -629,7 +651,7 @@ def report(result):
     else:
         w("Все проверки пройдены: склад вмещает цену очага и копить на неё не дольше недели; источники и траты "
           "сходятся; угля хватает на Наплыв; четвёртый строитель доступен за 2 месяца, алмазы не копятся; события дают "
-          "заявленную долю материалов; кампания проходится за год; ускорения покрывают 8–25% стройки; "
+          "заявленную долю материалов; кампания проходится за год; ускорения покрывают 10–25% стройки; "
           "игрок попадает в целевые дни с точностью 15%.")
     return "\n".join(out) + "\n", problems
 

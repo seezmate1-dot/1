@@ -47,8 +47,23 @@ def rooms_at(level):
 
 
 def income(level):
-    """Materials per hour at this hearth level: production, battles and expeditions together."""
+    """Materials per hour that go to building (production, battles, expeditions, events)."""
     return 100.0 * 1.2 ** (level - 1)
+
+
+BUILD_SHARE = 0.80   # building takes 80% of all materials, the rest goes to gear and dwellers
+STORAGE_HOURS = 24   # the warehouse holds at least a day of all income
+
+
+def hearth_job(row):
+    """The most expensive single job of a level: the hearth costs three room jobs."""
+    return row["cost"] / (row["rooms"] + 3) * 3
+
+
+def storage_cap(row):
+    """Warehouse: 12 hours of income, and always 10% more than the hearth job. What does not fit
+    is spent on gear, training and recruits instead of piling up."""
+    return max(STORAGE_HOURS * income(row["level"]) / BUILD_SHARE, 1.1 * hearth_job(row))
 
 
 def target_day(level):
@@ -72,6 +87,9 @@ def round_timer(hours):
     return float(round(hours))
 
 
+BUILDER_GATED = range(5, 17)  # hearth levels where builders, not materials, hold the player back
+
+
 def design():
     """Timers from the early window (builder-gated), materials from the whole window."""
     rows = []
@@ -82,7 +100,10 @@ def design():
         work_h = played_h * builders(level)
         hearth_h = min(work_h / 3.0, MAX_HEARTH_TIMER_H)
         room_h = min((work_h - work_h / 3.0) / rooms_at(level), MAX_ROOM_TIMER_H)
-        cost = income(level) * window_h * 0.8  # the player earns a little more than needed
+        # Mid game the builders are the gate, so materials are left a quarter of slack:
+        # that is what makes the 4th builder and speed-ups worth having (GDD 9.4).
+        slack = 0.65 if level in BUILDER_GATED else 0.8
+        cost = income(level) * window_h * slack
         rows.append({"level": level, "hearth_h": hearth_h, "room_h": room_h,
                      "rooms": rooms_at(level), "cost": cost})
     return rows
@@ -136,7 +157,7 @@ def simulate(rows, extra_builder_day=None, income_mult=None, speedup_minutes=Non
                 queues.append([])
         rate = income(level) * (income_mult(day) if income_mult is not None else 1.0)
         if online(t):
-            materials += banked + rate * STEP_H
+            materials = min(materials + banked + rate * STEP_H, storage_cap(rows[level - 1]))
             banked = 0.0
             progress = True
             while jobs and progress:
@@ -212,9 +233,20 @@ def calibrate(rows, rounds=24, **habits):
             want = target_day(lv + 1) - target_day(lv)
             got = max(reached[lv + 1] - reached[lv], 1e-3)
             k = min(max(want / got, 0.4), 2.5) ** 0.8
-            row["hearth_h"] = min(row["hearth_h"] * k, MAX_HEARTH_TIMER_H)
-            row["room_h"] = min(row["room_h"] * k, MAX_ROOM_TIMER_H)
-            row["cost"] *= k
+            if lv in BUILDER_GATED:
+                # Stretch the timers; only if they hit the caps does the price take the rest.
+                before = row["hearth_h"] + row["room_h"] * row["rooms"]
+                row["hearth_h"] = min(row["hearth_h"] * k, MAX_HEARTH_TIMER_H)
+                row["room_h"] = min(row["room_h"] * k, MAX_ROOM_TIMER_H)
+                after = row["hearth_h"] + row["room_h"] * row["rooms"]
+                if k < 1:
+                    row["cost"] *= k
+                elif after < before * k * 0.999:
+                    row["cost"] *= k * before / after
+            else:
+                row["hearth_h"] = min(row["hearth_h"] * k, MAX_HEARTH_TIMER_H)
+                row["room_h"] = min(row["room_h"] * k, MAX_ROOM_TIMER_H)
+                row["cost"] *= k
         monotone(rows)
     for row in rows:
         row["hearth_h"] = round_timer(row["hearth_h"])
