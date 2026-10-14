@@ -54,6 +54,7 @@ public static class UiSmoke
                           "Крепость", "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
+        Console.WriteLine("Выходов кнопкой «Назад»: " + Application.Quits + ", подсветка экрана: " + Screen.sleepTimeout);
         Console.WriteLine("UI smoke passed");
         return 0;
     }
@@ -85,6 +86,14 @@ public static class UiSmoke
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
             Time.unscaledDeltaTime = 1.0f;
+            Time.realtimeSinceStartup += 1.0f;
+            // a finger drags the screen now and then, and the Android back button is pressed
+            int phase = frame % 40;
+            Input.Touches = phase == 0 ? new[] { new Touch { phase = TouchPhase.Began } }
+                : phase <= 3 ? new[] { new Touch { phase = TouchPhase.Moved, deltaPosition = new Vector2(0, phase == 3 ? -90 : 60) } }
+                : phase == 4 ? new[] { new Touch { phase = TouchPhase.Ended } }
+                : new Touch[0];
+            Input.Escape = frame % 211 == 210;
             GUILayout.Depth = 0;
             Call(runner, "OnGUI");
             if (GUILayout.Depth != 0)

@@ -32,7 +32,37 @@ namespace UnityEngine
         public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { }
     }
 
-    public static class Time { public static float unscaledDeltaTime = 0.1f; }
+    public static class Time
+    {
+        public static float unscaledDeltaTime = 0.1f;
+        public static float realtimeSinceStartup;
+    }
+
+    public enum KeyCode { Escape }
+
+    public enum TouchPhase { Began, Moved, Stationary, Ended, Canceled }
+
+    public struct Touch
+    {
+        public TouchPhase phase;
+        public Vector2 deltaPosition;
+    }
+
+    /// <summary>A scripted finger: UiSmoke feeds touches and the back button.</summary>
+    public static class Input
+    {
+        public static Touch[] Touches = new Touch[0];
+        public static bool Escape;
+        public static int touchCount => Touches.Length;
+        public static Touch GetTouch(int i) => Touches[i];
+        public static bool GetKeyDown(KeyCode k) => Escape;
+    }
+
+    public static class SleepTimeout
+    {
+        public const int NeverSleep = -1;
+        public const int SystemSetting = -2;
+    }
 
     public static class PlayerPrefs
     {
@@ -54,17 +84,43 @@ namespace UnityEngine
         }
     }
 
-    public static class Application { public static string persistentDataPath = Path.GetTempPath(); }
+    public static class Application
+    {
+        public static string persistentDataPath = Path.GetTempPath();
+        public static int targetFrameRate;
+        public static int Quits;
+        public static void Quit() => Quits++;
+    }
 
-    public struct Vector2 { }
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+        public static Vector2 zero => new Vector2(0, 0);
+        public float magnitude => (float)Math.Sqrt(x * x + y * y);
+    }
 
     public struct Vector3 { public Vector3(float x, float y, float z) { } }
 
     public struct Matrix4x4 { public static Matrix4x4 Scale(Vector3 v) => default; }
 
-    public struct Rect { public Rect(float x, float y, float w, float h) { } }
+    public struct Rect
+    {
+        public float x, y, width, height;
+        public Rect(float x, float y, float w, float h) { this.x = x; this.y = y; width = w; height = h; }
+        public float yMax => y + height;
+    }
 
-    public static class Screen { public static int width = 1600, height = 900; }
+    public class RectOffset { public RectOffset(int l, int r, int t, int b) { } }
+
+    /// <summary>A landscape phone: 2400 x 1080 at 420 dpi with a camera cut-out on the left.</summary>
+    public static class Screen
+    {
+        public static int width = 2400, height = 1080;
+        public static float dpi = 420;
+        public static Rect safeArea = new Rect(90, 0, 2310, 1080);
+        public static int sleepTimeout;
+    }
 
     public static class Mathf
     {
@@ -77,10 +133,31 @@ namespace UnityEngine
         public GUIStyle() { }
         public GUIStyle(GUIStyle o) { }
         public bool richText;
+        public bool wordWrap;
+        public int fontSize;
+        public float fixedWidth;
+        public RectOffset padding;
         public static implicit operator GUIStyle(string s) => new GUIStyle();
     }
 
-    public class GUISkin { public GUIStyle label = new GUIStyle(); }
+    public class GUISkin
+    {
+        public GUIStyle label = new GUIStyle();
+        public GUIStyle button = new GUIStyle();
+        public GUIStyle verticalScrollbar = new GUIStyle();
+        public GUIStyle verticalScrollbarThumb = new GUIStyle();
+    }
+
+    public enum EventType { MouseDown, MouseUp, MouseDrag, Repaint, Layout, Used }
+
+    public class Event
+    {
+        public static Event current = new Event();
+        public EventType type = EventType.Repaint;
+        public void Use() => type = EventType.Used;
+    }
+
+    public static class GUIUtility { public static int hotControl; }
 
     public static class GUI
     {

@@ -2,6 +2,8 @@
 
 Ядро игры без графики (этапы M1–M3 из `docs/GDD.md`, раздел 16): вся экономика и все режимы работают и проверены тестами, вместо арта пока отладочный экран.
 
+**На телефон:** см. [`hearth/INSTALL.md`](../INSTALL.md) — сборка APK в облаке GitHub или в Unity одной кнопкой меню «Последний очаг → Собрать APK для телефона».
+
 ## Как открыть
 
 1. Установите [Unity Hub](https://unity.com/download).
@@ -36,6 +38,7 @@ t Runner** → EditMode → Run All. Если пункта нет, добавь�
 | `Assets/LastHearth/Core/Combat` | бой с решениями: телеграфы, связки классов, автобой и «аккуратный игрок» для калибровки |
 | `Assets/LastHearth/Core/Surge` | Наплыв: твари лезут по этажам разреза к очагу |
 | `Assets/LastHearth/Core/Tests` | 94 теста NUnit: экономика, калибровка боя, Наплыва и PvP, события, лавки, бот на 30 дней |
+| `Assets/LastHearth/Editor` | сборка APK одной кнопкой: настройки Android (имя, иконка, горизонтальный экран, IL2CPP ARM64 + ARMv7, ключ подписи) и пустая сцена |
 | `Assets/LastHearth/Game` | Unity-слой: запуск, сохранение в `persistentDataPath`, отладочный экран (`GameRunner*.cs`, по файлу на группу вкладок) |
 | `Assets/LastHearth/Resources/balance.json` | все числа игры. Генерируется `python hearth/tools/economy.py`, руками не правится; CI проверяет, что файл совпадает с моделью |
 | `Assets/LastHearth/Resources/combat.json` | числа боя. Правятся руками; тесты калибровки проверяют, что бой остаётся честным |

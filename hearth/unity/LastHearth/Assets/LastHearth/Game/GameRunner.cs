@@ -36,6 +36,18 @@ namespace LastHearth.Game
         int promoteFor = -1;
         int tab;
 
+        // phone: scale by screen density, scroll with a finger, big buttons
+        Vector2 fightScroll;
+        float uiScale = 1;
+        bool dragging;
+        float dragDistance;
+        int releaseFrames;
+        bool styled;
+        bool showDebug;
+        float saveTimer;
+        string shownMessage = "";
+        float messageTime;
+
         static readonly string[] Tabs = { "Крепость", "Бои", "Наплыв", "Развитие", "Вылазки", "Задания и лавки", "События" };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -50,6 +62,7 @@ namespace LastHearth.Game
         void Awake()
         {
             DontDestroyOnLoad(gameObject);
+            Application.targetFrameRate = 60;
             skip = long.Parse(PlayerPrefs.GetString(SkipKey, "0"));
             var balance = Core.Balance.FromJson(UnityEngine.Resources.Load<TextAsset>("balance").text);
             savePath = Path.Combine(Application.persistentDataPath, "save.json");
@@ -112,12 +125,113 @@ namespace LastHearth.Game
                 battleResult = battleFinish(battle);
             UpdateSurge();
             UpdateLanterns();
+            UpdateTouchScroll();
+            if (Input.GetKeyDown(KeyCode.Escape))
+                Back();
+            bool live = battle != null || surge != null || lanternSeed != 0;
+            int sleep = live ? SleepTimeout.NeverSleep : SleepTimeout.SystemSetting;
+            if (Screen.sleepTimeout != sleep)
+                Screen.sleepTimeout = sleep;
             tick += Time.unscaledDeltaTime;
             if (tick >= 1f)
             {
                 tick = 0;
                 session.Advance(Now());
             }
+            saveTimer += Time.unscaledDeltaTime;
+            if (saveTimer >= 30f)
+            {
+                saveTimer = 0;
+                Save(); // a phone may kill the game at any moment
+            }
+        }
+
+        ref Vector2 ActiveScroll()
+        {
+            if (battle != null || surge != null || lanternSeed != 0)
+                return ref fightScroll;
+            return ref scroll;
+        }
+
+        /// <summary>IMGUI scroll views do not follow a finger: drag them by hand and swallow the tap that ends a drag.</summary>
+        void UpdateTouchScroll()
+        {
+            if (releaseFrames > 0 && --releaseFrames == 0)
+                dragging = false;
+            if (Input.touchCount != 1 || lanternSeed != 0)
+                return;
+            var t = Input.GetTouch(0);
+            if (t.phase == TouchPhase.Began)
+            {
+                dragDistance = 0;
+                dragging = false;
+            }
+            else if (t.phase == TouchPhase.Moved)
+            {
+                dragDistance += t.deltaPosition.magnitude;
+                if (dragDistance > 20 * uiScale)
+                    dragging = true;
+                if (dragging)
+                {
+                    ref Vector2 sv = ref ActiveScroll();
+                    sv.y = Mathf.Max(0, sv.y + t.deltaPosition.y / uiScale);
+                    sv.x = Mathf.Max(0, sv.x - t.deltaPosition.x / uiScale);
+                }
+            }
+            else if ((t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled) && dragging)
+            {
+                releaseFrames = 2;
+            }
+        }
+
+        /// <summary>The Android back button: close a finished fight, go back to the fortress, then leave.</summary>
+        void Back()
+        {
+            if (battle != null)
+            {
+                if (battleResult != null)
+                {
+                    message = battleResult;
+                    battle = null;
+                }
+                return;
+            }
+            if (surge != null)
+            {
+                if (surgeResult != null)
+                {
+                    message = surgeResult;
+                    surge = null;
+                }
+                return;
+            }
+            if (lanternSeed != 0)
+                return;
+            if (tab != 0)
+            {
+                tab = 0;
+                return;
+            }
+            Save();
+            Application.Quit();
+        }
+
+        /// <summary>Screen density decides the size: a finger needs about 7 mm per button.</summary>
+        static float UiScale()
+        {
+            float byHeight = Screen.height / 900f;
+            float byDensity = Screen.dpi > 0 ? Screen.dpi / 190f : 0;
+            return Mathf.Max(1f, Mathf.Max(byHeight, byDensity));
+        }
+
+        static void Style()
+        {
+            GUI.skin.label.fontSize = 14;
+            GUI.skin.label.wordWrap = true;
+            GUI.skin.button.fontSize = 14;
+            GUI.skin.button.padding = new RectOffset(10, 10, 9, 9);
+            GUI.skin.verticalScrollbar.fixedWidth = 14;
+            GUI.skin.verticalScrollbarThumb.fixedWidth = 14;
         }
 
         void OnApplicationPause(bool paused)
@@ -139,25 +253,33 @@ namespace LastHearth.Game
 
         void OnGUI()
         {
-            float scale = Mathf.Max(1f, Screen.height / 900f);
-            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
-            var area = new Rect(8, 8, Screen.width / scale - 16, Screen.height / scale - 16);
+            if (!styled)
+            {
+                Style();
+                styled = true;
+            }
+            if (dragging && (Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag))
+            {
+                GUIUtility.hotControl = 0;
+                Event.current.Use(); // the finger scrolled: this is not a tap
+            }
+            uiScale = UiScale();
+            GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1));
+            // the safe area keeps buttons away from the camera cut-out and rounded corners
+            var safe = Screen.safeArea;
+            float top = Screen.height - safe.yMax;
+            var area = new Rect(safe.x / uiScale + 6, top / uiScale + 4, safe.width / uiScale - 12, safe.height / uiScale - 8);
             GUILayout.BeginArea(area);
-            if (battle != null)
+            if (battle != null || surge != null || lanternSeed != 0)
             {
-                DrawBattle();
-                GUILayout.EndArea();
-                return;
-            }
-            if (surge != null)
-            {
-                DrawSurge();
-                GUILayout.EndArea();
-                return;
-            }
-            if (lanternSeed != 0)
-            {
-                DrawLanterns();
+                fightScroll = GUILayout.BeginScrollView(fightScroll);
+                if (battle != null)
+                    DrawBattle();
+                else if (surge != null)
+                    DrawSurge();
+                else
+                    DrawLanterns();
+                GUILayout.EndScrollView();
                 GUILayout.EndArea();
                 return;
             }
@@ -165,10 +287,23 @@ namespace LastHearth.Game
             var b = session.Balance;
             var st = session.State;
 
-            GUILayout.Label("<b>ПОСЛЕДНИЙ ОЧАГ — отладка ядра</b>   " + message, Rich());
-            GUILayout.Label(string.Format("Очаг {0} · режим {1} · тепло {2:0} · строителей {3}{4}",
-                st.HearthLevel, ModeName(st.Mode), Formulas.HearthWarmth(b, st.HearthLevel, st.Mode),
-                session.BuilderCount(), st.OutOfCoal ? " · <color=#6cf>НЕТ УГЛЯ — всё промерзает</color>" : ""), Rich());
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(string.Format("<b>ПОСЛЕДНИЙ ОЧАГ</b> · очаг {0} · {1} · строителей {2}{3}",
+                st.HearthLevel, ModeName(st.Mode), session.BuilderCount(),
+                st.OutOfCoal ? " · <color=#6cf>НЕТ УГЛЯ — всё промерзает</color>" : ""), Rich());
+            if (GUILayout.Button(showDebug ? "Скрыть отладку" : "Отладка", GUILayout.Width(130)))
+                showDebug = !showDebug;
+            GUILayout.EndHorizontal();
+            string hint = NextStep(now);
+            if (message != shownMessage)
+            {
+                shownMessage = message;
+                messageTime = Time.realtimeSinceStartup;
+            }
+            if (message != "" && (hint == "" || Time.realtimeSinceStartup - messageTime < 8f))
+                GUILayout.Label("<color=#fd5>" + message + "</color>", Rich());
+            else if (hint != "")
+                GUILayout.Label("<color=#9e9>Что дальше: " + hint + "</color>", Rich());
             GUILayout.Label(string.Format("Уголь {0} (−{1:0.0}/ч) · Еда {2} · Серебро {3}/{4} · Железо {5}/{6} · Эссенция {7} · Искры {8} · Часы {9}",
                 st.Wallet[ResourceType.Coal], session.CoalBurnPerHour(), st.Wallet[ResourceType.Food],
                 st.Wallet[ResourceType.Silver], session.Capacity(ResourceType.Silver),
@@ -187,25 +322,37 @@ namespace LastHearth.Game
                 if (GUILayout.Toggle(st.Mode == mode, ModeName(mode), "Button") && st.Mode != mode)
                     session.SetMode(mode);
             }
-            if (GUILayout.Button("+1 час"))
+            GUILayout.EndHorizontal();
+            if (showDebug)
             {
-                skip += 3600;
-                session.Advance(Now());
+                // cheats for testing on the phone: skip time, start over
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("+1 час"))
+                {
+                    skip += 3600;
+                    session.Advance(Now());
+                }
+                if (GUILayout.Button("+8 часов"))
+                {
+                    skip += 8 * 3600;
+                    session.Advance(Now());
+                }
+                if (GUILayout.Button("Новая игра"))
+                {
+                    skip = 0;
+                    StartSession(NewGame.Create(b, Now()));
+                    message = "";
+                }
+                GUILayout.EndHorizontal();
             }
-            if (GUILayout.Button("+8 часов"))
+
+            int newTab = GUILayout.Toolbar(tab, Tabs, GUILayout.Height(40));
+            if (newTab != tab)
             {
-                skip += 8 * 3600;
-                session.Advance(Now());
-            }
-            if (GUILayout.Button("Новая игра"))
-            {
-                skip = 0;
-                StartSession(NewGame.Create(b, Now()));
+                tab = newTab;
+                scroll = Vector2.zero;
                 message = "";
             }
-            GUILayout.EndHorizontal();
-
-            tab = GUILayout.Toolbar(tab, Tabs, GUILayout.Height(32));
             scroll = GUILayout.BeginScrollView(scroll);
             switch (tab)
             {
@@ -242,6 +389,41 @@ namespace LastHearth.Game
             }
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        /// <summary>A one-line guide for the first days: what to do now (RESEARCH.md: never leave the player lost).</summary>
+        string NextStep(long now)
+        {
+            var st = session.State;
+            var b = session.Balance;
+            if (!st.Rewards.IsEmpty())
+                return "заберите награды — кнопка ниже";
+            if (st.OutOfCoal)
+                return "кончился уголь: соберите его в угольной шахте, иначе залы промёрзнут";
+            if (session.SurgeOpen(now))
+                return "начался Наплыв — вкладка «Наплыв», «Защищать вживую»";
+            if (session.ActiveRuns(now).Any(r => r.Points <= 0))
+                return "идёт событие — загляните во вкладку «События»";
+            var unmet = session.HearthRequirements(now);
+            if (unmet.Count == 0 && st.HearthLevel < b.MaxHearthLevel)
+                return "можно улучшить очаг — первая кнопка во вкладке «Крепость»";
+            var barracks = b.Room(RoomType.Barracks);
+            if (session.MaxRoomLevel(RoomType.Barracks) == 0 && st.HearthLevel >= barracks.Unlock && session.CountRooms(RoomType.Barracks) == 0)
+                return "постройте Казарму: в ней жители становятся героями";
+            if (session.MaxRoomLevel(RoomType.Barracks) > 0 && session.Squad().Count < session.SquadSize() &&
+                st.Dwellers.Any(d => !d.IsHero))
+                return "сделайте жителя героем: «Жители» внизу, «Сделать героем»";
+            if (session.Squad().Count > 0 && st.PendingMission < 0 && session.MissionsCleared < b.Campaign.Missions.Count &&
+                session.Mission(session.MissionsCleared).Rank <= st.HearthLevel)
+                return "вас ждёт бой кампании — вкладка «Бои»";
+            if (session.TasksDone(now) >= b.Activities.Daily.TasksNeeded && !st.DailyClaimed)
+                return "поручения дня выполнены — заберите награду во вкладке «Задания и лавки»";
+            foreach (var r in unmet)
+            {
+                if (r.Kind != RequirementKind.AlreadyQueued && r.Kind != RequirementKind.QueueFull)
+                    return "для нового уровня очага: " + RequirementText(r);
+            }
+            return "";
         }
 
         void DrawHearth(long now)
