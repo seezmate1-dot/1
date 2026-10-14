@@ -52,7 +52,8 @@ def income(level):
 
 
 BUILD_SHARE = 0.80   # building takes 80% of all materials, the rest goes to gear and dwellers
-STORAGE_HOURS = 24   # the warehouse holds at least a day of all income
+STORAGE_MARGIN = 1.05  # a fully upgraded warehouse holds the hearth price plus 5%
+MIN_STORAGE = 1000     # the first levels (tutorial) are not limited by the warehouse
 
 
 def hearth_job(row):
@@ -61,9 +62,10 @@ def hearth_job(row):
 
 
 def storage_cap(row):
-    """Warehouse: 12 hours of income, and always 10% more than the hearth job. What does not fit
-    is spent on gear, training and recruits instead of piling up."""
-    return max(STORAGE_HOURS * income(row["level"]) / BUILD_SHARE, 1.1 * hearth_job(row))
+    """Anti-rush (GDD 9.5): the warehouse at its cap for this hearth level holds the hearth price
+    plus 5%, so the warehouse of the previous level is too small for it. Production that does not
+    fit waits in the rooms (up to OFFLINE_CAP_H hours of output), nothing is lost before that."""
+    return max(STORAGE_MARGIN * hearth_job(row), MIN_STORAGE)
 
 
 def target_day(level):
@@ -156,9 +158,12 @@ def simulate(rows, extra_builder_day=None, income_mult=None, speedup_minutes=Non
             while len(queues) < builder_count(level, t):
                 queues.append([])
         rate = income(level) * (income_mult(day) if income_mult is not None else 1.0)
+        # Production waits in the rooms (up to 10 hours of output) until it is collected.
+        banked = min(banked + rate * STEP_H, rate * OFFLINE_CAP_H)
         if online(t):
-            materials = min(materials + banked + rate * STEP_H, storage_cap(rows[level - 1]))
-            banked = 0.0
+            moved = min(banked, max(storage_cap(rows[level - 1]) - materials, 0.0))
+            materials += moved
+            banked -= moved
             progress = True
             while jobs and progress:
                 progress = False
@@ -177,6 +182,10 @@ def simulate(rows, extra_builder_day=None, income_mult=None, speedup_minutes=Non
                         hearth_q = qi
                     q.append(begin + hours)
                     materials -= cost
+                    # Collect again right away: room stock refills the warehouse within the session.
+                    moved = min(banked, max(storage_cap(rows[level - 1]) - materials, 0.0))
+                    materials += moved
+                    banked -= moved
                     jobs.pop(0)
                     progress = True
                     break
@@ -191,8 +200,6 @@ def simulate(rows, extra_builder_day=None, income_mult=None, speedup_minutes=Non
                     if hearth_end is not None and qi == hearth_q:
                         hearth_end -= shift
                     pool -= shift * 60.0
-        else:
-            banked = min(banked + rate * STEP_H, rate * OFFLINE_CAP_H)
         if hearth_end is not None and t >= hearth_end:
             level += 1
             reached[level] = (t - 8.0) / 24.0
@@ -220,6 +227,8 @@ def monotone(rows):
         row["hearth_h"] = max(row["hearth_h"], prev["hearth_h"])
         row["room_h"] = max(row["room_h"], prev["room_h"])
         row["cost"] = max(row["cost"], prev["cost"] * 1.1)
+        # The hearth job grows by 10% too, so the previous warehouse is always too small (GDD 9.5).
+        row["cost"] = max(row["cost"], 1.1 * hearth_job(prev) * (row["rooms"] + 3) / 3)
 
 
 def calibrate(rows, rounds=24, **habits):

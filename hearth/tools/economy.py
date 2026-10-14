@@ -70,18 +70,43 @@ def total_income(level):
 hearth_job = pacing.hearth_job
 
 
-def nice(x):
-    """Round up to two significant digits."""
+def nice(x, digits=2):
+    """Round up to two (or more) significant digits."""
     if x <= 0:
         return 0
-    p = 10 ** max(int(math.floor(math.log10(x))) - 1, 0)
+    p = 10 ** max(int(math.floor(math.log10(x))) - digits + 1, 0)
     return int(math.ceil(x / p) * p)
 
 
 def storage(row):
-    """Warehouse capacity (silver + iron) at this hearth level: 12 hours of income, and always
-    10% more than the hearth job, so a player can save up for it."""
-    return nice(pacing.storage_cap(row))
+    """Warehouse capacity (silver + iron) with the warehouse at the cap of this hearth level:
+    the hearth price plus 5% (anti-rush, GDD 9.5). Three significant digits keep the rule exact."""
+    return nice(pacing.storage_cap(row), 3)
+
+
+STORAGE_GATE_FROM = 8  # below this the warehouse holds the 1000 of the tutorial levels
+
+
+def hero_gate(result):
+    """(hearth level, requirement, five best heroes of the free player when the hearth job starts)."""
+    rows, reached = result["rows"], result["reached_run"]
+    by_day = {d["day"]: d for d in result["days"]}
+    out = []
+    for lv in range(5, pacing.MAX_LEVEL):
+        if lv + 1 not in reached or reached[lv + 1] > DAYS:
+            break
+        t = hearth_start_day(rows, reached, lv)
+        out.append((lv, hero_requirement(lv), by_day[max(1, int(t))]["top5"]))
+    return out
+
+
+def rusher_max_level(essence):
+    """The highest hearth a player can reach with this much essence, however many diamonds he has:
+    every hearth job from level 5 on needs five heroes at the requirement."""
+    level = 5
+    while level < 30 and core_essence(level) <= essence:
+        level += 1
+    return level
 
 
 # ---------------------------------------------------------------- coal and food upkeep
@@ -103,8 +128,10 @@ def food_per_hour(level):
 # ---------------------------------------------------------------- essence and heroes
 
 def essence_income_per_day(level):
-    """Campaign, Surge, arena and events (GDD 10, 11)."""
-    return 120 * 1.13 ** (level - 1)
+    """Daily essence from Surge, arena, expeditions and repeats (GDD 10, 11). First clears of the
+    campaign and events add their own. The sources follow campaign progress and squad power, and
+    essence is never sold for diamonds, so a player cannot rush it."""
+    return 160 * 1.13 ** (level - 1)
 
 
 def hero_level_cost(hero_level):
@@ -118,6 +145,34 @@ def hero_power(hero_level, hearth_level):
 
 def hero_level_cap(hearth_level):
     return 2 * hearth_level + 5
+
+
+# Anti-rush (GDD 9.5): the hearth job level -> level+1 starts only when five heroes have reached
+# this level. A free player is HERO_SLACK levels above it, so the rule stops only rushers.
+HERO_CORE = 5
+HERO_SLACK = 2
+MISSION_ESSENCE_DAYS = 0.6  # a first clear of a campaign battle gives 0.6 of a day of essence
+STARTER_ESSENCE = 3000      # starter quests of the first days (heroes grow fast at first)
+STARTER_DAYS = 3
+
+
+def hero_requirement(level):
+    return 0 if level < 5 else 2 * level - 2
+
+
+def essence_to_level(h):
+    """Essence to raise one hero from level 1 to level h."""
+    return sum(hero_level_cost(k) for k in range(1, h))
+
+
+def core_essence(level):
+    """Essence for five heroes at the requirement of this hearth level."""
+    return HERO_CORE * essence_to_level(hero_requirement(level))
+
+
+def hearth_start_day(rows, reached, level):
+    """Day the hearth job of this level starts (all rooms done)."""
+    return reached[level + 1] - rows[level - 1]["hearth_h"] / 24.0
 
 
 # ---------------------------------------------------------------- campaign (GDD 11)
@@ -245,6 +300,8 @@ def run(rows, reached):
     act_finish_day = {}
     act_power = {}
     act_open_level = {}
+    essence_by_day = {}  # day -> all essence received so far
+    essence_got = 0.0
     earned_by = {k: 0.0 for k in ("Поручения дня", "Календарь входа", "Достижения", "Кампания", "Арена", "События")}
     spent_by = {k: 0.0 for k in ("Четвёртый строитель", "Билет арены и обновление лавки", "Доп. попытки в событиях",
                                  "Ускорения", "Наборы ресурсов")}
@@ -259,23 +316,37 @@ def run(rows, reached):
         rec = {"day": day, "level": lv}
         rec["materials"] = total_income(lv) * EFFECTIVE_HOURS_PER_DAY
 
-        # essence -> heroes: level up the weakest hero within the cap
-        essence += essence_income_per_day(lv)
+        # essence -> heroes: the five core heroes first (the hearth requirement), then the rest of
+        # the squad up to three levels behind them, then everyone evenly up to the cap
+        got = essence_income_per_day(lv) + (STARTER_ESSENCE / STARTER_DAYS if day <= STARTER_DAYS else 0)
         for name, spec in EVENTS.items():
             if lv >= EVENT_UNLOCK_HEARTH[name] and event_starts(name, day):
-                essence += essence_income_per_day(lv) * spec[5]
+                got += essence_income_per_day(lv) * spec[5]
+        essence += got
+        essence_got += got
         while len(squad_levels) < squad_size(lv):
             squad_levels.append(max(1, min(squad_levels) - 2) if squad_levels else 1)
         cap = hero_level_cap(lv)
+        core_target = min(cap, hero_requirement(lv) + HERO_SLACK)
         while True:
-            i = min(range(len(squad_levels)), key=lambda k: squad_levels[k])
-            if squad_levels[i] >= cap or essence < hero_level_cost(squad_levels[i]):
+            squad_levels.sort(reverse=True)
+            core, rest = squad_levels[:HERO_CORE], squad_levels[HERO_CORE:]
+            if min(core) < core_target:
+                i = HERO_CORE - 1 - core[::-1].index(min(core))
+            elif rest and min(rest) < min(core) - 3:
+                i = HERO_CORE + rest.index(min(rest))
+            elif min(squad_levels) < cap:
+                i = squad_levels.index(min(squad_levels))
+            else:
+                break
+            if essence < hero_level_cost(squad_levels[i]):
                 break
             essence -= hero_level_cost(squad_levels[i])
             squad_levels[i] += 1
         rec["power"] = sum(hero_power(h, lv) for h in squad_levels)
         rec["squad"] = len(squad_levels)
         rec["hero_level"] = sum(squad_levels) / len(squad_levels)
+        rec["top5"] = sorted(squad_levels, reverse=True)[HERO_CORE - 1]
 
         # campaign: the recommended power of mission N is the squad power on its target day,
         # so the player clears it on that day (at most 8 new battles a day)
@@ -283,6 +354,8 @@ def run(rows, reached):
         while missions_done < MISSIONS and mission_day(missions_done + 1) <= day and per_day > 0:
             missions_done += 1
             per_day -= 1
+            essence += essence_income_per_day(lv) * MISSION_ESSENCE_DAYS  # first clear
+            essence_got += essence_income_per_day(lv) * MISSION_ESSENCE_DAYS
             if (missions_done - 1) % (MISSIONS_PER_ACT + 1) == 0:
                 act_open_level[(missions_done - 1) // (MISSIONS_PER_ACT + 1) + 1] = level_on[int(mission_day(missions_done))]
             diamonds += DIAMONDS_PER_3_STAR_CHEST
@@ -295,6 +368,7 @@ def run(rows, reached):
                 diamonds += DIAMONDS_PER_ACT_BOSS
                 earned_by["Кампания"] += DIAMONDS_PER_ACT_BOSS
         rec["missions"] = missions_done
+        essence_by_day[day] = essence_got
 
         # diamonds earned
         daily = {"Поручения дня": DIAMONDS_DAILY_TASKS, "Календарь входа": DIAMONDS_LOGIN_CALENDAR / 28.0}
@@ -372,8 +446,9 @@ def run(rows, reached):
     builder_minutes_total = sum((row["hearth_h"] + row["room_h"] * row["rooms"]) * 60
                                 for row in rows if row["level"] + 1 in reached and reached[row["level"] + 1] <= DAYS)
     return {
-        "rows": rows, "reached": reached, "days": days, "fourth_builder_day": fourth_builder_day,
-        "act_finish_day": act_finish_day, "act_power": act_power, "act_open_level": act_open_level, "habits": habits,
+        "rows": rows, "reached": reached, "reached_run": reached, "days": days, "fourth_builder_day": fourth_builder_day,
+        "act_finish_day": act_finish_day, "act_power": act_power, "act_open_level": act_open_level,
+        "essence_by_day": essence_by_day, "habits": habits,
         "speed_minutes_total": hourglass_total, "diamond_minutes_total": diamond_minutes_total,
         "builder_minutes_total": builder_minutes_total, "diamonds_left": diamonds,
         "earned_by": earned_by, "spent_by": spent_by, "packs_total": sum(packs.values()), "gated": gated,
@@ -446,7 +521,22 @@ def checks(result):
     share = result["speed_minutes_total"] / max(result["builder_minutes_total"], 1)
     if not 0.10 <= share <= 0.25:
         problems.append("ускорения покрывают %.0f%% стройки (нужно 10-25%%)" % (share * 100))
-    # 8. the real player meets the target days
+    # 8. anti-rush: the previous warehouse is too small, the free player meets the hero rule in time,
+    #    and the rule is tight enough to matter
+    rows = result["rows"]
+    for row in rows[STORAGE_GATE_FROM - 1:]:
+        lv = row["level"]
+        if not storage(rows[lv - 2]) < hearth_job(row) <= storage(row):
+            problems.append("очаг %d: склад не сдерживает раш (склад прошлого уровня %d, цена %d, склад %d)" % (
+                lv, storage(rows[lv - 2]), hearth_job(row), storage(row)))
+    slack = []
+    for lv, need, have in hero_gate(result):
+        slack.append(have - need)
+        if have < need:
+            problems.append("очаг %d: у обычного игрока герои %d-го уровня, а нужно %d" % (lv, have, need))
+    if slack and sorted(slack)[len(slack) // 2] > 6:
+        problems.append("требование к героям слишком мягкое: обычный игрок обгоняет его на %d уровней" % sorted(slack)[len(slack) // 2])
+    # 9. the real player meets the target days
     for lv, want, got in pacing.deviations(result["reached"]):
         if abs(got - want) / want > 0.15:
             problems.append("очаг %d: день %.1f вместо %.1f" % (lv, got, want))
@@ -543,8 +633,9 @@ def report(result):
     for name, share in MATERIAL_SINKS.items():
         w("| %s | %d%% |" % (name, share * 100))
     w("")
-    w("Серебро — %d%% материалов, железо — %d%%. **Склад** вмещает не меньше суток дохода (ночь не пропадает) и всегда на 10%% больше "
-      "цены очага, чтобы на него можно было накопить:" % (SILVER_SHARE * 100, (1 - SILVER_SHARE) * 100))
+    w("Серебро — %d%% материалов, железо — %d%%. **Склад**, улучшенный до предела уровня очага, вмещает цену очага "
+      "плюс 5%%, а склад уровнем ниже — меньше этой цены (защита от раша, раздел 11). Выработка, которая не влезла в склад, "
+      "ждёт в залах до 10 часов и не пропадает:" % (SILVER_SHARE * 100, (1 - SILVER_SHARE) * 100))
     w("")
     w("| Очаг | Доход в час | Цена очага | Склад (серебро + железо) | Склад в часах дохода | Копить на очаг |")
     w("|---|---|---|---|---|---|")
@@ -568,9 +659,14 @@ def report(result):
     w("")
     w("## 6. Эссенция и герои")
     w("")
-    w("Эссенция в день: `120 × 1,13^(очаг − 1)` из кампании, Наплыва и арены, плюс награды событий. "
-      "Уровень героя стоит `40 × 1,11^уровень`, предел уровня героя `2 × очаг + 5`. "
-      "Сила героя `100 × 1,07^уровень × 1,05^очаг` (вторая часть — снаряжение, которое растёт с кузней).")
+    w("Эссенция в день: `160 × 1,13^(очаг − 1)` из Наплыва, арены, вылазок и повторов боёв. Сверху: первая победа в "
+      "бою кампании даёт %s дневной нормы, события — по своей таблице, стартовые задания — %s эссенции за первые %d дня. "
+      "Уровень героя стоит `40 × 1,11^уровень`, предел уровня героя `2 × очаг + 5`, для стройки очага нужны пять героев "
+      "не ниже `2 × очаг − 2` (раздел 11). Сила героя `100 × 1,07^уровень × 1,05^очаг` (вторая часть — снаряжение, "
+      "которое растёт с кузней)." % (dec(MISSION_ESSENCE_DAYS), num(STARTER_ESSENCE), STARTER_DAYS))
+    w("")
+    w("Как тратит обычный игрок: сначала пятёрку основных героев до требования очага плюс %d, затем остальных бойцов "
+      "отряда до отставания в 3 уровня, затем всех поровну до предела." % HERO_SLACK)
     w("")
     w("## 7. Кампания")
     w("")
@@ -642,14 +738,51 @@ def report(result):
     w("")
     w("Первый день длиннее: около 3,5 часов, если игроку нравится (обучение, первые 4 уровня очага, первый босс).")
     w("")
-    w("## 11. Проверки модели")
+    w("## 11. Защита от раша")
+    w("")
+    w("Раш — это когда игрок гонит уровень очага, не развивая крепость и героев: потом он не тянет ни кампанию, ни "
+      "события, и ему скучно. Четыре правила не дают начать стройку очага с уровня L на L+1, пока не выполнено:")
+    w("")
+    w("1. **Склад.** Цена очага влезает только в склад, улучшенный до уровня L. Склад уровня L−1 меньше цены (с очага %d)." % STORAGE_GATE_FROM)
+    w("2. **Ключевые залы** на уровне L: склад, казарма, спальни, кухня, угольная шахта, рудник (с очага 3), "
+      "кузня (с 5), Часовня Угля (с 12).")
+    w("3. **Остальные залы** не ниже уровня L−1: ни один зал не отстаёт больше чем на уровень.")
+    w("4. **Герои.** Пять героев не ниже уровня `2 × L − 2` (с очага 5; предел уровня героя `2 × L + 5`).")
+    w("")
+    w("Обычный игрок выполняет все четыре правила сам и не замечает их: он и так поднимает все залы, а героев растит "
+      "с запасом. Проверка модели:")
+    w("")
+    w("| Очаг | Склад уровня L−1 | Цена очага | Склад уровня L | Нужен уровень героев | Пятёрка героев у игрока |")
+    w("|---|---|---|---|---|---|")
+    gate = {lv: (need, have) for lv, need, have in hero_gate(result)}
+    for row in rows:
+        lv = row["level"]
+        if lv in (5, 7, 8, 10, 12, 15, 18, 20, 22, 24, 26, 28) and lv in gate:
+            need, have = gate[lv]
+            w("| %d | %s | %s | %s | %d | %d |" % (lv, num(storage(rows[lv - 2])), num(hearth_job(row)), num(storage(row)), need, have))
+    w("")
+    w("Эссенция для героев не продаётся за алмазы и приходит из кампании (первые победы), Наплыва, арены, вылазок "
+      "и событий. Поэтому даже игрок с бесконечными алмазами упирается в героев:")
+    w("")
+    w("| День | Очаг обычного игрока | Максимум для раша с любыми алмазами |")
+    w("|---|---|---|")
+    by_day = {d["day"]: d for d in result["days"]}
+    for m in (3, 7, 14, 30, 60, 90, 180, 365):
+        w("| %d | %d | %d |" % (m, by_day[m]["level"], rusher_max_level(result["essence_by_day"][m])))
+    w("")
+    w("**Прочие меры:** уровень залов не выше уровня очага; уровень героя не выше `2 × L + 5`; на арене подбор по силе "
+      "отряда, в Набегах — по уровню очага ±1 и силе ±15%%, в событиях — группы по уровню очага, так что слабый отряд с "
+      "высоким очагом попадает к сильным соперникам; наборы ресурсов за алмазы — не больше %d в неделю." % PACKS_PER_WEEK)
+    w("")
+    w("## 12. Проверки модели")
     w("")
     problems = checks(result)
     if problems:
         for p in problems:
             w("- **Проблема:** %s" % p)
     else:
-        w("Все проверки пройдены: склад вмещает цену очага и копить на неё не дольше недели; источники и траты "
+        w("Все проверки пройдены: склад уровня очага вмещает его цену, а склад уровнем ниже — нет; обычный игрок выполняет "
+          "требование к героям вовремя, а раш в него упирается; копить на очаг не дольше недели; источники и траты "
           "сходятся; угля хватает на Наплыв; четвёртый строитель доступен за 2 месяца, алмазы не копятся; события дают "
           "заявленную долю материалов; кампания проходится за год; ускорения покрывают 10–25% стройки; "
           "игрок попадает в целевые дни с точностью 15%.")
