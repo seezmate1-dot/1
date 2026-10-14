@@ -1,0 +1,463 @@
+{
+ "decor": {
+  "armor": {
+   "height": 2.698,
+   "name": "Доспехи Стража",
+   "premium": true,
+   "width": 1.595
+  },
+  "banner_blue": {
+   "height": 4.155,
+   "name": "Синее знамя",
+   "premium": false,
+   "width": 1.95
+  },
+  "banner_green": {
+   "height": 4.155,
+   "name": "Зелёное знамя",
+   "premium": false,
+   "width": 4.81
+  },
+  "banner_red": {
+   "height": 4.155,
+   "name": "Алое знамя",
+   "premium": false,
+   "width": 1.95
+  },
+  "barrels": {
+   "height": 2.301,
+   "name": "Бочки",
+   "premium": false,
+   "width": 2.405
+  },
+  "candles": {
+   "height": 1.589,
+   "name": "Подсвечник",
+   "premium": false,
+   "width": 0.912
+  },
+  "chest_gold": {
+   "height": 1.859,
+   "name": "Сундук мастера",
+   "premium": true,
+   "width": 2.431
+  },
+  "crystal": {
+   "height": 2.279,
+   "name": "Кристалл угля",
+   "premium": true,
+   "width": 1.6
+  },
+  "gold_shield": {
+   "height": 2.168,
+   "name": "Золотой герб",
+   "premium": true,
+   "width": 2.902
+  },
+  "keg": {
+   "height": 2.133,
+   "name": "Бочонок эля",
+   "premium": false,
+   "width": 3.66
+  },
+  "plant": {
+   "height": 2.4,
+   "name": "Кадка с зеленью",
+   "premium": false,
+   "width": 1.462
+  },
+  "pumpkin": {
+   "height": 3.718,
+   "name": "Тыква-фонарь",
+   "premium": true,
+   "width": 4.29
+  },
+  "rug": {
+   "height": 3.025,
+   "name": "Гобелен Стражей",
+   "premium": false,
+   "width": 2.6
+  },
+  "shelf": {
+   "height": 1.551,
+   "name": "Полка со свечами",
+   "premium": false,
+   "width": 1.56
+  },
+  "shield": {
+   "height": 2.168,
+   "name": "Щит и мечи",
+   "premium": false,
+   "width": 2.902
+  },
+  "shrine": {
+   "height": 2.791,
+   "name": "Святилище свечей",
+   "premium": true,
+   "width": 1.715
+  },
+  "throne": {
+   "height": 3.17,
+   "name": "Трон старейшины",
+   "premium": true,
+   "width": 1.82
+  },
+  "treasure": {
+   "height": 1.902,
+   "name": "Сокровищница",
+   "premium": true,
+   "width": 4.275
+  }
+ },
+ "fire": {
+  "frames": 8,
+  "h": 0.2875,
+  "w": 0.20052083333333334,
+  "x": 0.3997395833333333,
+  "y": 0.3645833333333333
+ },
+ "map": {
+  "acts": [
+   {
+    "name": "Деревня у подножия",
+    "x": 0.537,
+    "y": 0.7887
+   },
+   {
+    "name": "Старые копи",
+    "x": 0.3519,
+    "y": 0.7127
+   },
+   {
+    "name": "Шепчущий лес",
+    "x": 0.2407,
+    "y": 0.6367
+   },
+   {
+    "name": "Разрушенный монастырь",
+    "x": 0.3519,
+    "y": 0.5608
+   },
+   {
+    "name": "Мельница на реке",
+    "x": 0.5741,
+    "y": 0.5608
+   },
+   {
+    "name": "Застава Двора",
+    "x": 0.7593,
+    "y": 0.4848
+   },
+   {
+    "name": "Мёртвая роща",
+    "x": 0.6111,
+    "y": 0.3329
+   },
+   {
+    "name": "Башня отшельника",
+    "x": 0.3889,
+    "y": 0.3329
+   },
+   {
+    "name": "Курганы",
+    "x": 0.3148,
+    "y": 0.1809
+   },
+   {
+    "name": "Сердце Тумана",
+    "x": 0.5,
+    "y": 0.105
+   }
+  ]
+ },
+ "rooms": {
+  "Archive": {
+   "cells": 1
+  },
+  "Barracks": {
+   "cells": 1
+  },
+  "Bedrooms": {
+   "cells": 1
+  },
+  "Chapel": {
+   "cells": 1
+  },
+  "CoalMine": {
+   "cells": 1
+  },
+  "Empty": {
+   "cells": 1
+  },
+  "Forge": {
+   "cells": 1
+  },
+  "Greenhouse": {
+   "cells": 1
+  },
+  "Hearth": {
+   "cells": 2
+  },
+  "Infirmary": {
+   "cells": 1
+  },
+  "Kitchen": {
+   "cells": 1
+  },
+  "Library": {
+   "cells": 1
+  },
+  "Mine": {
+   "cells": 1
+  },
+  "Tavern": {
+   "cells": 1
+  },
+  "TradingPost": {
+   "cells": 1
+  },
+  "TrainingHall": {
+   "cells": 1
+  },
+  "Warehouse": {
+   "cells": 1
+  },
+  "Watchtower": {
+   "cells": 1
+  }
+ },
+ "sheets": {
+  "CreatureFiend": {
+   "frames": 8,
+   "height": 2.176,
+   "rows": [
+    "walk",
+    "attack",
+    "hit",
+    "die"
+   ],
+   "size": 192
+  },
+  "CreatureKnight": {
+   "frames": 8,
+   "height": 2.648,
+   "rows": [
+    "walk",
+    "attack",
+    "hit",
+    "die"
+   ],
+   "size": 192
+  },
+  "CreaturePossessed": {
+   "frames": 8,
+   "height": 2.64,
+   "rows": [
+    "walk",
+    "attack",
+    "hit",
+    "die"
+   ],
+   "size": 192
+  },
+  "CreatureRoot": {
+   "frames": 8,
+   "height": 2.378,
+   "rows": [
+    "walk",
+    "attack",
+    "hit",
+    "die"
+   ],
+   "size": 192
+  },
+  "Dweller0": {
+   "frames": 8,
+   "height": 2.162,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller1": {
+   "frames": 8,
+   "height": 2.16,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller2": {
+   "frames": 8,
+   "height": 2.176,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller3": {
+   "frames": 8,
+   "height": 2.292,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller4": {
+   "frames": 8,
+   "height": 2.241,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller5": {
+   "frames": 8,
+   "height": 2.369,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller6": {
+   "frames": 8,
+   "height": 2.16,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller7": {
+   "frames": 8,
+   "height": 2.292,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller8": {
+   "frames": 8,
+   "height": 2.162,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "Dweller9": {
+   "frames": 8,
+   "height": 2.292,
+   "rows": [
+    "idle",
+    "walk",
+    "work",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "HeroArcher": {
+   "frames": 8,
+   "height": 2.655,
+   "rows": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "die",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "HeroAshMage": {
+   "frames": 8,
+   "height": 2.703,
+   "rows": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "die",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "HeroCleaver": {
+   "frames": 8,
+   "height": 2.363,
+   "rows": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "die",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "HeroCoalPriest": {
+   "frames": 8,
+   "height": 2.703,
+   "rows": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "die",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "HeroGuardian": {
+   "frames": 8,
+   "height": 2.454,
+   "rows": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "die",
+    "cheer"
+   ],
+   "size": 192
+  },
+  "HeroSwordsman": {
+   "frames": 8,
+   "height": 2.283,
+   "rows": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "die",
+    "cheer"
+   ],
+   "size": 192
+  }
+ }
+}

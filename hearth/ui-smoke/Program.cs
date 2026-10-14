@@ -57,6 +57,7 @@ public static class UiSmoke
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
         Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + ", нарисовано: " + GUI.Textures);
+        Console.WriteLine("Звуков сыграно: " + AudioSource.Played);
         Console.WriteLine("Выходов кнопкой «Назад»: " + Application.Quits + ", подсветка экрана: " + Screen.sleepTimeout);
         Console.WriteLine("UI smoke passed");
         return 0;
@@ -123,6 +124,9 @@ public static class UiSmoke
         Call(runner, "StartSession", session);
         GUILayout.Click = _ => false;
         Set(runner, "tab", 0);
+        Time.unscaledDeltaTime = 0.5f;
+        for (int i = 0; i < 12; i++)
+            Call(runner, "Update"); // the dwellers start walking
         GUI.Record = new List<string>();
         Call(runner, "OnGUI");
         File.WriteAllLines(path, GUI.Record);

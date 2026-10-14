@@ -18,8 +18,49 @@ namespace LastHearth.Game
 
         // ------------------------------------------------------------------ campaign
 
+        /// <summary>The map of the campaign: ten places, one per act; done ones flagged, the current one glows.</summary>
+        void DrawCampaignMap(long now)
+        {
+            var map = ArtLibrary.Data.Map;
+            var tex = ArtLibrary.Tex("Map");
+            if (map == null || tex == null)
+                return;
+            var c = session.Balance.Campaign;
+            int next = session.MissionsCleared;
+            int currentAct = next < c.Missions.Count ? session.Mission(next).Act : c.Acts.Count + 1;
+            float w = viewWidth, h = w * 0.625f;
+            var r = GUILayoutUtility.GetRect(w, h);
+            GUI.DrawTexture(r, tex);
+            for (int i = 0; i < map.Acts.Count && i < c.Acts.Count; i++)
+            {
+                var p = map.Acts[i];
+                int act = i + 1;
+                var at = new Vector2(r.x + p.X * r.width, r.y + p.Y * r.height);
+                var old = GUI.color;
+                if (act > currentAct)
+                {
+                    // the Fog still hides it
+                    GUI.color = new Color(0.25f, 0.22f, 0.35f, 0.75f);
+                    GUI.DrawTexture(new Rect(at.x - 38, at.y - 30, 76, 60), Texture2D.whiteTexture);
+                    GUI.color = old;
+                    CellText(new Rect(at.x - 34, at.y - 10, 120, 24), "<color=#bbb>туман</color>");
+                    continue;
+                }
+                bool current = act == currentAct;
+                float pulse = current ? 1 + 0.12f * Mathf.Sin(Time.time * 4) : 1;
+                GUI.color = current ? new Color(1f, 0.8f, 0.3f, 1) : new Color(0.5f, 0.9f, 0.5f, 1);
+                float s = 20 * pulse;
+                GUI.DrawTexture(new Rect(at.x - s / 2, at.y - s / 2, s, s), Texture2D.whiteTexture);
+                GUI.color = old;
+                CellText(new Rect(at.x - 60, at.y + 10, 180, 40), (current ? "<b>" : "") + act + ". " + c.Acts[i].Name + (current ? "</b>" : " ✓"));
+                if (current && next < c.Missions.Count && GUI.Button(new Rect(at.x - 30, at.y - 30, 60, 60), "", GUIStyle.none))
+                    StartMissionBattle(next, now);
+            }
+        }
+
         void DrawCampaign(long now)
         {
+            DrawCampaignMap(now);
             var c = session.Balance.Campaign;
             int next = session.MissionsCleared;
             GUILayout.Label(string.Format("<b>Кампания</b> · пройдено {0}/{1} · повторов сегодня {2}/{3}", next, c.Missions.Count,

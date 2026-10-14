@@ -14,8 +14,8 @@ def main(calls, out, scale=2):
     for l in open(calls, encoding="utf-8"):
         l = l.rstrip("\n")
         if l:
-            lines.append(l.split("|") if l.startswith("T|") else l.split("|", 4))
-    tex = [l for l in lines if l[0] == "T"]
+            lines.append(l.split("|") if l.startswith(("T|", "S|")) else l.split("|", 4))
+    tex = [l for l in lines if l[0] in "TS"]
     w = int(max(float(t[2]) + float(t[4]) for t in tex) * scale) + 4
     h = int(max(float(t[3]) + float(t[5]) for t in tex) * scale) + 4
     img = Image.new("RGBA", (w, h), (20, 18, 22, 255))
@@ -25,7 +25,23 @@ def main(calls, out, scale=2):
         font = ImageFont.load_default()
     d = ImageDraw.Draw(img)
     for l in lines:
-        if l[0] == "T":
+        if l[0] == "S":
+            # one frame of a sprite sheet: uv origin bottom-left, a negative width mirrors it
+            name = l[1]
+            x, y, rw, rh = (float(v) * scale for v in l[2:6])
+            u, v, uw, vh, a = (float(q) for q in l[6:11])
+            src = Image.open(os.path.join(ART, name + ".png")).convert("RGBA")
+            W_, H_ = src.size
+            left, right = sorted((u * W_, (u + uw) * W_))
+            top, bottom = (1 - v - vh) * H_, (1 - v) * H_
+            frame = src.crop((int(left), int(top), int(right), int(bottom)))
+            if uw < 0:
+                frame = frame.transpose(Image.FLIP_LEFT_RIGHT)
+            frame = frame.resize((max(1, int(rw)), max(1, int(rh))))
+            if a < 1:
+                frame.putalpha(frame.split()[3].point(lambda p: int(p * a)))
+            img.alpha_composite(frame, (int(x), int(y))) if int(x) >= 0 and int(y) >= 0 else None
+        elif l[0] == "T":
             name = l[1]
             x, y, rw, rh = (float(v) * scale for v in l[2:6])
             r, g, b, a = (float(v) for v in l[6:10])

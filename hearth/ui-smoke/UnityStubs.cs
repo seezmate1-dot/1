@@ -13,15 +13,28 @@ namespace UnityEngine
 
     public class Component : Object
     {
-        public GameObject gameObject => null;
+        public GameObject gameObject => GameObject.Host;
+    }
+
+    public class AudioClip : Object { public string Name = ""; }
+
+    public class AudioSource : Component
+    {
+        public static int Played;
+        public bool loop, playOnAwake;
+        public float volume = 1;
+        public AudioClip clip;
+        public void Play() { if (clip != null) Played++; }
+        public void PlayOneShot(AudioClip c, float v) { if (c != null) Played++; }
     }
 
     public class MonoBehaviour : Component { }
 
     public class GameObject : Object
     {
+        public static readonly GameObject Host = new GameObject("host");
         public GameObject(string n) { }
-        public T AddComponent<T>() where T : Component => null;
+        public T AddComponent<T>() where T : Component => (T)Activator.CreateInstance(typeof(T));
     }
 
     public enum RuntimeInitializeLoadType { AfterSceneLoad }
@@ -69,6 +82,8 @@ namespace UnityEngine
     {
         public static string GetString(string k, string d) => d;
         public static void SetString(string k, string v) { }
+        public static int GetInt(string k, int d) => d;
+        public static void SetInt(string k, int v) { }
         public static void Save() { }
     }
 
@@ -90,7 +105,14 @@ namespace UnityEngine
         public static T Load<T>(string p) where T : Object
         {
             object asset;
-            if (typeof(T) == typeof(Texture2D))
+            if (typeof(T) == typeof(AudioClip))
+            {
+                string ogg = Path.Combine(Folder, p + ".ogg");
+                if (!File.Exists(ogg))
+                    throw new FileNotFoundException("missing sound", ogg);
+                asset = new AudioClip { Name = p };
+            }
+            else if (typeof(T) == typeof(Texture2D))
             {
                 // the art must exist: a typo in a name would show an empty room on the phone
                 string png = Path.Combine(Folder, p + ".png");
@@ -128,6 +150,7 @@ namespace UnityEngine
         public float x, y;
         public Vector2(float x, float y) { this.x = x; this.y = y; }
         public static Vector2 zero => new Vector2(0, 0);
+        public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
         public float magnitude => (float)Math.Sqrt(x * x + y * y);
     }
 
@@ -159,6 +182,11 @@ namespace UnityEngine
         public static float Max(float a, float b) => Math.Max(a, b);
         public static int Clamp(int v, int a, int b) => Math.Max(a, Math.Min(b, v));
         public static float Sin(float f) => (float)Math.Sin(f);
+        public static float Abs(float f) => Math.Abs(f);
+        public static float Sign(float f) => f >= 0 ? 1 : -1;
+        public static int Min(int a, int b) => Math.Min(a, b);
+        public static float Clamp(float v, float a, float b) => Math.Max(a, Math.Min(b, v));
+        public static float Max(float a, float b, float c) => Math.Max(a, Math.Max(b, c));
     }
 
     public class GUIStyle
@@ -216,6 +244,17 @@ namespace UnityEngine
         }
 
         public static bool Button(Rect r, string t, GUIStyle s) => enabled && GUILayout.Click("[ячейка]" + t);
+
+        public static void DrawTextureWithTexCoords(Rect r, Texture t, Rect uv)
+        {
+            if (t == null)
+                throw new ArgumentNullException(nameof(t));
+            if (uv.width == 0 || uv.height <= 0 || uv.y < -0.001f || uv.y + uv.height > 1.001f)
+                throw new InvalidOperationException("bad texture coordinates " + uv.x + "," + uv.y + "," + uv.width + "," + uv.height);
+            Record?.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "S|{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}",
+                ((Texture2D)t).Name, r.x, r.y, r.width, r.height, uv.x, uv.y, uv.width, uv.height, color.a));
+            Textures++;
+        }
         public static void Label(Rect r, string t, GUIStyle s)
         {
             if (t == null)

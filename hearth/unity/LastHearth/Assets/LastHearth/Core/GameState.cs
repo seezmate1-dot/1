@@ -231,6 +231,10 @@ namespace LastHearth.Core
         public long ShopRefreshDay = -1;
         public List<ShopItem> Shop = new List<ShopItem>();
 
+        // Decorations (cosmetic): how many of each the player owns, and which one stands in a room
+        public Dictionary<string, int> DecorOwned = new Dictionary<string, int>();
+        public Dictionary<int, string> RoomDecor = new Dictionary<int, string>();
+
         // Arena and raids (MODES.md, 2-3)
         public int ArenaRating;
         public int ArenaTickets = -1;

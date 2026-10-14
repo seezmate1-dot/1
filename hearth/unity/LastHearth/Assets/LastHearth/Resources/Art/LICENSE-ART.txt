@@ -1,0 +1,4 @@
+The art of this folder is rendered by hearth/tools/art (Blender, Cycles) for "Последний очаг".
+Models: KayKit by Kay Lousberg (www.kaylousberg.com) - Character Pack: Adventurers, Skeletons,
+Dungeon Remastered, Furniture Bits, Restaurant Bits, Halloween Bits, Medieval Hexagon Pack -
+Creative Commons Zero (CC0). Shapes, materials, lighting and composition: made for this game.

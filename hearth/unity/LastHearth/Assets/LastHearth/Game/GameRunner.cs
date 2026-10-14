@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LastHearth.Core;
@@ -46,6 +47,14 @@ namespace LastHearth.Game
         bool showDebug;
         float saveTimer;
         string shownMessage = "";
+        AudioDirector sounds;
+        // what the fighters on the battle stage are doing (screen only)
+        readonly Dictionary<int, float> heroAttackAt = new Dictionary<int, float>();
+        readonly Dictionary<int, float> heroHitAt = new Dictionary<int, float>();
+        readonly Dictionary<int, int> heroLastNext = new Dictionary<int, int>();
+        readonly Dictionary<int, double> heroLastHp = new Dictionary<int, double>();
+        float enemyAttackAt = -9, enemyHitAt = -9, battleOverAt = -1;
+        double lastBossHp;
         float messageTime;
 
         static readonly string[] Tabs = { "Крепость", "Бои", "Наплыв", "Развитие", "Вылазки", "Задания и лавки", "События" };
@@ -63,6 +72,7 @@ namespace LastHearth.Game
         {
             DontDestroyOnLoad(gameObject);
             Application.targetFrameRate = 60;
+            sounds = new AudioDirector(gameObject);
             skip = long.Parse(PlayerPrefs.GetString(SkipKey, "0"));
             var balance = Core.Balance.FromJson(UnityEngine.Resources.Load<TextAsset>("balance").text);
             savePath = Path.Combine(Application.persistentDataPath, "save.json");
@@ -76,7 +86,11 @@ namespace LastHearth.Game
             session = s;
             session.Combat = combat;
             session.State.UtcOffsetSeconds = (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds;
-            session.JobCompleted += job => message = "Готово: " + JobName(job) + " → ур. " + job.ToLevel;
+            session.JobCompleted += job =>
+            {
+                message = "Готово: " + JobName(job) + " → ур. " + job.ToLevel;
+                sounds?.Play("Done");
+            };
             session.SurgeSettled += r => message = r.Live ? "" : string.Format("Наплыв отбит без вас: {0}, +{1} жара", StarText(r.Stars), r.Ember);
             session.Advance(Now());
             // fights left open when the game closed are finished by the auto-battle
@@ -108,6 +122,14 @@ namespace LastHearth.Game
             battleResult = null;
             battleClock = 0;
             battle.Brain = autoBattle ? Brains.AutoBattle() : null;
+            heroAttackAt.Clear();
+            heroHitAt.Clear();
+            heroLastNext.Clear();
+            heroLastHp.Clear();
+            enemyAttackAt = enemyHitAt = -9;
+            battleOverAt = -1;
+            lastBossHp = started.BossHp;
+            sounds?.Play("Blade");
         }
 
         void Update()
@@ -122,7 +144,13 @@ namespace LastHearth.Game
                 }
             }
             if (battle != null && battle.Over && battleResult == null)
+            {
                 battleResult = battleFinish(battle);
+                battleOverAt = Time.time;
+                sounds?.Play(battle.Won ? "Victory" : "Defeat", 0.7f);
+            }
+            UpdateWalkers(Time.unscaledDeltaTime);
+            sounds?.Tick(battle != null || surge != null, tab == 0);
             UpdateSurge();
             UpdateLanterns();
             UpdateTouchScroll();
@@ -292,6 +320,10 @@ namespace LastHearth.Game
             GUILayout.Label(string.Format("<b>ПОСЛЕДНИЙ ОЧАГ</b> · очаг {0} · {1} · строителей {2}{3}",
                 st.HearthLevel, ModeName(st.Mode), session.BuilderCount(),
                 st.OutOfCoal ? " · <color=#6cf>НЕТ УГЛЯ — всё промерзает</color>" : ""), Rich());
+            if (sounds != null && GUILayout.Button(sounds.MusicOn ? "Музыка: вкл" : "Музыка: выкл", GUILayout.Width(140)))
+                sounds.ToggleMusic();
+            if (sounds != null && GUILayout.Button(sounds.SoundOn ? "Звуки: вкл" : "Звуки: выкл", GUILayout.Width(130)))
+                sounds.ToggleSound();
             if (GUILayout.Button(showDebug ? "Скрыть отладку" : "Отладка", GUILayout.Width(130)))
                 showDebug = !showDebug;
             GUILayout.EndHorizontal();
@@ -305,19 +337,16 @@ namespace LastHearth.Game
                 GUILayout.Label("<color=#fd5>" + message + "</color>", Rich());
             else if (hint != "")
                 GUILayout.Label("<color=#9e9>Что дальше: " + hint + "</color>", Rich());
-            GUILayout.Label(string.Format("Уголь {0} (−{1:0.0}/ч) · Еда {2} · Серебро {3}/{4} · Железо {5}/{6} · Эссенция {7} · Искры {8} · Часы {9}",
-                st.Wallet[ResourceType.Coal], session.CoalBurnPerHour(), st.Wallet[ResourceType.Food],
-                st.Wallet[ResourceType.Silver], session.Capacity(ResourceType.Silver),
-                st.Wallet[ResourceType.Iron], session.Capacity(ResourceType.Iron),
-                st.Wallet[ResourceType.Essence], st.Wallet[ResourceType.Sparks], Duration(st.HourglassSeconds)));
-            GUILayout.Label(string.Format("Жар {0} · Сердцевины {1} · Чертежи {2} · Слава {3}",
-                st.Wallet[ResourceType.Ember], st.Wallet[ResourceType.Cores], st.Wallet[ResourceType.Blueprints], st.Wallet[ResourceType.Glory]));
+            DrawResourceBar(st);
 
             GUILayout.BeginHorizontal();
             if (!st.Rewards.IsEmpty() && GUILayout.Button("Забрать награды (" + CostText(st.Rewards) + ")"))
                 session.ClaimRewards();
             if (GUILayout.Button("Собрать всё"))
+            {
                 session.CollectAll();
+                sounds?.Play("Coins");
+            }
             foreach (HearthMode mode in Enum.GetValues(typeof(HearthMode)))
             {
                 if (GUILayout.Toggle(st.Mode == mode, ModeName(mode), "Button") && st.Mode != mode)
@@ -350,6 +379,7 @@ namespace LastHearth.Game
             int newTab = GUILayout.Toolbar(tab, Tabs, GUILayout.Height(40));
             if (newTab != tab)
             {
+                sounds?.Play("Page", 0.35f);
                 tab = newTab;
                 scroll = Vector2.zero;
                 message = "";
@@ -386,6 +416,42 @@ namespace LastHearth.Game
             }
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        /// <summary>The resources with their icons, like the top bar of the genre.</summary>
+        void DrawResourceBar(GameState st)
+        {
+            var items = new (ResourceType type, string text)[]
+            {
+                (ResourceType.Coal, string.Format("{0} (−{1:0}/ч)", ShortNum(st.Wallet[ResourceType.Coal]), session.CoalBurnPerHour())),
+                (ResourceType.Food, ShortNum(st.Wallet[ResourceType.Food])),
+                (ResourceType.Silver, ShortNum(st.Wallet[ResourceType.Silver]) + "/" + ShortNum(session.Capacity(ResourceType.Silver))),
+                (ResourceType.Iron, ShortNum(st.Wallet[ResourceType.Iron]) + "/" + ShortNum(session.Capacity(ResourceType.Iron))),
+                (ResourceType.Essence, ShortNum(st.Wallet[ResourceType.Essence])),
+                (ResourceType.Sparks, ShortNum(st.Wallet[ResourceType.Sparks])),
+                (ResourceType.Ember, ShortNum(st.Wallet[ResourceType.Ember])),
+                (ResourceType.Cores, ShortNum(st.Wallet[ResourceType.Cores])),
+                (ResourceType.Blueprints, ShortNum(st.Wallet[ResourceType.Blueprints])),
+                (ResourceType.Glory, ShortNum(st.Wallet[ResourceType.Glory])),
+            };
+            GUILayout.BeginHorizontal();
+            foreach (var (type, text) in items)
+            {
+                var icon = GUILayoutUtility.GetRect(28, 28, GUILayout.Width(28), GUILayout.Height(28));
+                ArtLibrary.Draw(icon, "Icons/" + type);
+                GUILayout.Label(text, GUILayout.Width(type == ResourceType.Coal || type == ResourceType.Silver || type == ResourceType.Iron ? 120 : 64));
+            }
+            GUILayout.Label("Часы " + Duration(st.HourglassSeconds));
+            GUILayout.EndHorizontal();
+        }
+
+        static string ShortNum(double v)
+        {
+            if (v >= 1000000)
+                return (v / 1000000).ToString("0.#") + "M";
+            if (v >= 10000)
+                return (v / 1000).ToString("0") + "K";
+            return v.ToString("0");
         }
 
         /// <summary>A one-line guide for the first days: what to do now (RESEARCH.md: never leave the player lost).</summary>
@@ -527,6 +593,8 @@ namespace LastHearth.Game
             foreach (var d in session.State.Dwellers.ToList())
             {
                 GUILayout.BeginHorizontal();
+                var face = GUILayoutUtility.GetRect(48, 48, GUILayout.Width(48));
+                ArtLibrary.Draw(face, "Portraits/" + (d.IsHero ? ArtLibrary.HeroSheet(d.HeroClass) : ArtLibrary.DwellerSheet(d.Id)));
                 var room = session.FindRoom(d.RoomId);
                 string where = room == null ? "без работы" : session.Balance.Room(room.Type).Name;
                 string hero = d.IsHero ? string.Format(" · {0} ур.{1}, умение {2}/{3}", ClassName(d.HeroClass), d.HeroLevel, d.SkillLevel, session.SkillCap(d)) : "";
@@ -606,8 +674,94 @@ namespace LastHearth.Game
             GUILayout.EndHorizontal();
         }
 
+        /// <summary>The fight on a stage: heroes on the left, the creature on the right, all animated.</summary>
+        void DrawBattleStage()
+        {
+            float w = viewWidth;
+            var stage = GUILayoutUtility.GetRect(w, w * 0.34f);
+            var oldColor = GUI.color;
+            GUI.color = new Color(0.8f, 0.8f, 0.9f, 1);
+            ArtLibrary.Draw(new Rect(stage.x, stage.y - w * 0.12f, w, w * 0.5f), "Mountain");
+            GUI.color = oldColor;
+            float now = Time.time;
+            float ground = stage.yMax - stage.height * 0.06f;
+            float heroH = stage.height * 0.42f;
+            // detect what happened since the last frame: who struck, who was hurt
+            foreach (var h in battle.Heroes)
+            {
+                if (heroLastNext.TryGetValue(h.Id, out int next) && h.NextAttack != next)
+                    heroAttackAt[h.Id] = now;
+                heroLastNext[h.Id] = h.NextAttack;
+                if (heroLastHp.TryGetValue(h.Id, out double hp) && h.Hp < hp - 0.5)
+                {
+                    heroHitAt[h.Id] = now;
+                    enemyAttackAt = now;
+                }
+                heroLastHp[h.Id] = h.Hp;
+            }
+            if (battle.BossHp < lastBossHp - 0.5)
+                enemyHitAt = now;
+            lastBossHp = battle.BossHp;
+            bool over = battle.Over;
+            for (int i = 0; i < battle.Heroes.Count; i++)
+            {
+                var h = battle.Heroes[i];
+                int rank = (int)h.Line; // the front line stands closest to the enemy
+                float x = stage.x + w * (0.36f - rank * 0.11f) - (i % 2) * w * 0.035f;
+                float y = ground - (i % 2) * stage.height * 0.06f;
+                string row;
+                float t;
+                if (!h.Alive)
+                {
+                    row = "die";
+                    t = now - (heroHitAt.TryGetValue(h.Id, out var hd) ? hd : now - 2);
+                    ArtLibrary.DrawCharacter(ArtLibrary.HeroSheet(h.Class), row, t, new Vector2(x, y), heroH, false, 9f, true);
+                    continue;
+                }
+                if (over && battle.Won)
+                {
+                    row = "cheer";
+                    t = now - battleOverAt;
+                }
+                else if (heroHitAt.TryGetValue(h.Id, out var hit) && now - hit < 0.35f)
+                {
+                    row = "hit";
+                    t = now - hit;
+                }
+                else if (heroAttackAt.TryGetValue(h.Id, out var at) && now - at < 0.8f)
+                {
+                    row = "attack";
+                    t = now - at;
+                }
+                else
+                {
+                    row = "idle";
+                    t = now + i;
+                }
+                ArtLibrary.DrawCharacter(ArtLibrary.HeroSheet(h.Class), row, t, new Vector2(x, y), heroH, false, 10f);
+            }
+            float enemyH = stage.height * (battle.WaveCount == 1 ? 0.78f : 0.6f);
+            var feet = new Vector2(stage.x + w * 0.74f, ground);
+            string sheet = ArtLibrary.CreatureSheet(battle.Family.Family);
+            if (over && battle.Won)
+                ArtLibrary.DrawCharacter(sheet, "die", now - battleOverAt, feet, enemyH, true, 9f, true);
+            else if (now - enemyHitAt < 0.3f)
+                ArtLibrary.DrawCharacter(sheet, "hit", now - enemyHitAt, feet, enemyH, true, 12f);
+            else if (now - enemyAttackAt < 0.8f)
+                ArtLibrary.DrawCharacter(sheet, "attack", now - enemyAttackAt, feet, enemyH, true, 10f);
+            else
+                ArtLibrary.DrawCharacter(sheet, "walk", now * 0.6f, feet, enemyH, true, 6f);
+            if (battle.Pending != null && !over)
+                GUI.Label(new Rect(feet.x - 20, feet.y - enemyH * 1.25f, 60, 50), "<size=40><color=#f33><b>!</b></color></size>", Rich());
+            if (battle.BossHp < lastBossHp + 1 && enemyHitAt == now)
+                sounds?.Play("Hit", 0.35f);
+            if (enemyAttackAt == now)
+                sounds?.Play("Clang", 0.3f);
+        }
+
         void DrawBattle()
         {
+            DrawBattleStage();
             var f = battle.Family;
             GUILayout.Label(string.Format("<b>{0}{1}</b> · волна {2} из {3} · {4:0.0} с из {5:0}", battleTitle == "" ? "" : battleTitle + ": ", f.Name,
                 battle.Wave + 1, battle.WaveCount, battle.Tick * combat.TickSeconds, combat.MaxTicks * combat.TickSeconds), Rich());
@@ -743,9 +897,11 @@ namespace LastHearth.Game
             return null;
         }
 
-        void Report(Fail fail)
+        void Report(Fail fail, string sound = "Click")
         {
             message = fail == Fail.None ? "" : FailText(fail);
+            if (fail == Fail.None && sound != null)
+                sounds?.Play(sound, 0.5f);
         }
 
         string JobName(BuildJob job)
