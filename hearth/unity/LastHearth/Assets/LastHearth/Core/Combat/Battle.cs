@@ -32,6 +32,11 @@ namespace LastHearth.Core.Combat
         public int Level = 1;
         public int SkillLevel = 1;
         public int[] Stats = new int[5];
+        /// <summary>Health carried over from an earlier battle (Portal floors), share of the maximum.</summary>
+        public double HpShare = 1;
+        /// <summary>Event blessings and modifiers.</summary>
+        public double AttackMult = 1;
+        public double HpMult = 1;
     }
 
     /// <summary>One enemy of a battle. Campaign battles have several waves; a hunt has one boss.</summary>
@@ -55,6 +60,9 @@ namespace LastHearth.Core.Combat
         /// <summary>Gear quality follows the hearth level (ECONOMY.md, section 6).</summary>
         public int GearLevel = 1;
         public int Seed = 1;
+        /// <summary>Tournament rules of the day: attack of a class, healing of the priest.</summary>
+        public Dictionary<HeroClass, double> ClassAttack = new Dictionary<HeroClass, double>();
+        public double HealMult = 1;
     }
 
     public sealed class Fighter
@@ -140,6 +148,9 @@ namespace LastHearth.Core.Combat
         public bool Won;
         public int HeavyLanded;
         public int HeavyCountered;
+        /// <summary>All damage the squad dealt (event scores).</summary>
+        public double DamageDealt;
+        double healMult = 1;
 
         /// <summary>Decides commands every tick; null for a battle driven only by Command().</summary>
         public Func<Battle, IEnumerable<BattleCommand>> Brain;
@@ -169,8 +180,14 @@ namespace LastHearth.Core.Combat
             waves = setup.Waves.Count > 0
                 ? setup.Waves
                 : new List<WaveSpec> { new WaveSpec { Family = setup.Family, Rank = setup.Rank } };
+            healMult = setup.HealMult;
             foreach (var h in setup.Heroes)
-                Heroes.Add(MakeHero(h, setup.GearLevel));
+            {
+                var f = MakeHero(h, setup.GearLevel);
+                if (setup.ClassAttack.TryGetValue(h.Class, out double mult))
+                    f.Attack *= mult;
+                Heroes.Add(f);
+            }
             StartWave(0);
         }
 
@@ -207,9 +224,9 @@ namespace LastHearth.Core.Combat
                 Name = h.Name,
                 Class = h.Class,
                 Line = cls.Line,
-                MaxHp = cls.Hp * growth,
-                Hp = cls.Hp * growth,
-                Attack = cls.Attack * growth * (1 + main * c.StatBonus),
+                MaxHp = cls.Hp * growth * h.HpMult,
+                Hp = cls.Hp * growth * h.HpMult * Math.Max(0, Math.Min(1, h.HpShare)),
+                Attack = cls.Attack * growth * (1 + main * c.StatBonus) * h.AttackMult,
                 Armor = cls.Armor, // gear adds health and attack, not armor: strikes stay dangerous at every rank
                 Crit = c.CritBase + Math.Max(0, agility - 10) * c.CritPerAgility,
                 Interval = cls.Interval,
@@ -325,7 +342,7 @@ namespace LastHearth.Core.Combat
                     foreach (var other in Heroes)
                     {
                         if (other.Alive)
-                            other.Hp = Math.Min(other.MaxHp, other.Hp + other.MaxHp * s.HealShare * h.SkillMult);
+                            other.Hp = Math.Min(other.MaxHp, other.Hp + other.MaxHp * s.HealShare * h.SkillMult * healMult);
                     }
                     HasteUntil = Tick + s.HasteTicks;
                     Log.Add(Tick + ": " + h.Name + " — Тёплые руки");
@@ -350,7 +367,7 @@ namespace LastHearth.Core.Combat
                         low = other;
                 }
                 if (low != null)
-                    low.Hp = Math.Min(low.MaxHp, low.Hp + h.Attack * c.Skills.PriestBasicHeal);
+                    low.Hp = Math.Min(low.MaxHp, low.Hp + h.Attack * c.Skills.PriestBasicHeal * healMult);
                 return;
             }
             bool crit = rng.Next() < h.Crit;
@@ -367,7 +384,9 @@ namespace LastHearth.Core.Combat
                 damage *= c.Skills.StunCritMult;
             if (BossStunned)
                 damage *= 1 + c.Boss.StunDamageBonus;
-            BossHp -= damage * 100 / (100 + BossArmor);
+            double dealt = damage * 100 / (100 + BossArmor);
+            BossHp -= dealt;
+            DamageDealt += dealt;
         }
 
         void AddStagger(double amount)

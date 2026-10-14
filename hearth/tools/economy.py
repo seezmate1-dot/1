@@ -257,6 +257,8 @@ EVENTS = {
     "Осада застав":      (28, 25, 4, 80, 60, 1.5, 16, 180),
     "Праздник очага":    (91, 60, 10, 200, 100, 2.0, 24, 720),
 }
+EVENT_IDS = {"Долгая ночь": "LongNight", "Портал в Туман": "Portal", "Турнир Стражей": "Tournament",
+             "Кладоискатели": "Treasure", "Ярмарка Пепла": "Fair", "Осада застав": "Siege", "Праздник очага": "Festival"}
 # Something new every day or two of the two-week hook: hearth 9 is the first evening, 15 is day 14.
 EVENT_UNLOCK_HEARTH = {"Праздник очага": 9, "Ярмарка Пепла": 9, "Кладоискатели": 10, "Долгая ночь": 11,
                        "Портал в Туман": 12, "Турнир Стражей": 13, "Осада застав": 15}
@@ -1205,6 +1207,13 @@ def export_balance(result):
                        "incomeByLevel": [int(round(total_income(lv))) for lv in range(1, 31)]},
             "specializations": {"tiers": [list(t) for t in SPEC_TIERS], "ranks": SPEC_RANKS,
                                 "ranksFromHearth": SPEC_RANKS_FROM},
+            "shop": {"fourthBuilder": FOURTH_BUILDER_PRICE, "fourthBuilderFrom": 8, "packPrice": PACK_PRICE,
+                     "packsPerWeek": PACKS_PER_WEEK, "refresh": [SHOP_REFRESH, 2 * SHOP_REFRESH, 4 * SHOP_REFRESH],
+                     "slots": 8, "arenaTicket": [ARENA_EXTRA_TICKETS, 2 * ARENA_EXTRA_TICKETS, 3 * ARENA_EXTRA_TICKETS]},
+            "events": [{"id": EVENT_IDS[name], "name": name, "period": spec[0], "first": spec[1], "days": spec[2],
+                        "sparks": spec[3], "spend": spec[4], "essenceDays": spec[5], "materialHours": spec[6],
+                        "hourglassMinutes": spec[7], "unlock": EVENT_UNLOCK_HEARTH[name]}
+                       for name, spec in EVENTS.items()],
             "daily": {"tasksNeeded": 3, "taskSparks": DIAMONDS_DAILY_TASKS, "taskHourglassMinutes": HOURGLASS_DAILY_MINUTES,
                       "calendarSparks": DIAMONDS_LOGIN_CALENDAR, "achievementSparks": ACHIEVEMENT_POOL},
         },

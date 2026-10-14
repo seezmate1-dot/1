@@ -87,6 +87,182 @@ namespace LastHearth.Core.Tests
             SendRoutes(now);
             Heart();
             Specs();
+            Events(now);
+            Shop(now);
+        }
+
+        // ------------------------------------------------------------------ shops and Sparks
+
+        const long Reserve = 300;
+
+        /// <summary>The 4th builder comes first: no Sparks on anything else until it is bought.</summary>
+        bool SavingForBuilder => !S.State.FourthBuilder;
+
+        void Shop(long now)
+        {
+            S.BuyFourthBuilder();
+            var items = S.BrikShop(now);
+            for (int i = 0; i < items.Count; i++)
+            {
+                var it = items[i];
+                if (it.Sold || it.PayWith != ResourceType.Silver)
+                    continue;
+                bool surplus = S.State.Wallet[ResourceType.Silver] >= S.Capacity(ResourceType.Silver) * 0.8;
+                if (surplus && (it.Goods == ShopGoods.Essence || it.Goods == ShopGoods.Hourglass))
+                    S.BuyShopItem(i, now);
+            }
+            if (SavingForBuilder)
+                return; // saving for the 4th builder first (ECONOMY.md, 8)
+            long spare = S.State.Wallet[ResourceType.Sparks] - Reserve;
+            var hearthJob = S.State.Queue.AllJobs().FirstOrDefault(j => j.IsHearth && j.IsRunning(now));
+            if (hearthJob != null && spare >= Formulas.SpeedupCost(S.Balance, hearthJob.Remaining(now)))
+            {
+                S.SpeedUpWithSparks(hearthJob.Id, now);
+                return;
+            }
+            while (S.State.Wallet[ResourceType.Sparks] - Reserve >= S.Balance.Activities.Shop.PackPrice &&
+                   S.State.Wallet[ResourceType.Silver] < S.Capacity(ResourceType.Silver) * 0.7 &&
+                   S.BuyPack(now) == Fail.None)
+            {
+            }
+        }
+
+        // ------------------------------------------------------------------ live events
+
+        public int EventBattles;
+
+        void Fight(string id, long now, int cell = -1)
+        {
+            if (S.StartEventBattle(id, now, out var battle, cell) != Fail.None)
+                return;
+            battle.Brain = Brains.Careful();
+            S.FinishEventBattle(battle, now, out _);
+            EventBattles++;
+        }
+
+        void Events(long now)
+        {
+            foreach (var run in S.ActiveRuns(now))
+            {
+                switch (run.Id)
+                {
+                    case "LongNight":
+                        if (S.State.Wallet[ResourceType.Sparks] > Reserve + 30 && !SavingForBuilder)
+                            S.BuyEventExtra("LongNight", now);
+                        while (S.NightAttacksLeft(run, now) > 0 && S.State.EventBattle == null)
+                            Fight("LongNight", now);
+                        break;
+                    case "Tournament":
+                        while (S.TournamentAttemptsLeft(run, now) > 0 && S.State.EventBattle == null)
+                            Fight("Tournament", now);
+                        break;
+                    case "Portal":
+                        for (int i = 0; i < 4; i++)
+                        {
+                            if (run.BlessingOffer.Count > 0)
+                                S.ChooseBlessing(0, now);
+                            if (!run.RunAlive && run.FreeRunDay == S.LocalDay(now) && run.Revives == 0 &&
+                                S.State.Wallet[ResourceType.Sparks] > Reserve + 50 && !SavingForBuilder)
+                                S.PortalRevive(now);
+                            int floor = run.Floor;
+                            Fight("Portal", now);
+                            if (run.Floor == floor)
+                                break;
+                        }
+                        break;
+                    case "Treasure":
+                        for (int i = 0; i < 8 && S.TorchesLeft(run, now) > 0; i++)
+                        {
+                            var targets = S.TreasureCandidates(run);
+                            var open = Enumerable.Range(0, GameSession.HexCells.Count).Where(c => S.CellOpenable(run, c)).ToList();
+                            if (open.Count == 0 || targets.Count == 0)
+                                break;
+                            int cell = open.OrderBy(c => targets.Min(t => GameSession.HexDistance(c, t))).First();
+                            if (S.OpenCell(cell, now, out var content) != Fail.None)
+                                break;
+                            if (content == GameSession.TreasureCell.Ambush)
+                                Fight("Treasure", now, cell);
+                        }
+                        break;
+                    case "Fair":
+                        Fair(run, now);
+                        break;
+                    case "Siege":
+                        if (run.Outposts.All(o => o.Garrison.Count == 0))
+                        {
+                            var guards = S.State.Dwellers.Where(d => !d.IsHero && d.RouteId == 0)
+                                .OrderByDescending(d => d.StatOf(Stat.Strength) + d.StatOf(Stat.Endurance)).Take(10).ToList();
+                            for (int o = 0; o < 5 && guards.Count > 0; o++)
+                            {
+                                var g = guards.Take(2).Select(d => d.Id).ToList();
+                                guards = guards.Skip(2).ToList();
+                                S.SetGarrison(o, g, now);
+                            }
+                        }
+                        for (int o = 0; o < 5; o++)
+                            S.UpgradeTraps(o, now);
+                        if (S.SiegeWindow(run, now) >= 0 && S.StartSiegeDefense(now, out var defense) == Fail.None)
+                        {
+                            defense.Brain = SurgeDefense.Careful();
+                            S.FinishSiegeDefense(defense, now);
+                        }
+                        for (int o = 0; o < 5; o++)
+                        {
+                            if (run.Outposts[o].Fallen)
+                                Fight("Siege", now, o);
+                        }
+                        break;
+                    case "Festival":
+                        while (S.StartLanterns(now, out int seed) == Fail.None)
+                        {
+                            var taps = GameSession.Lanterns(seed).Where((l, i) => i % 10 < 7).ToList();
+                            S.FinishLanterns(seed, taps, now, out _);
+                        }
+                        break;
+                }
+            }
+        }
+
+        double Fill(int good)
+        {
+            var type = GameSession.FairGoods[good];
+            long keep = type == ResourceType.Coal ? (long)(S.CoalBurnPerHour() * 24) : 0;
+            long cap = Math.Max(1, S.Capacity(type));
+            return (double)(S.State.Wallet[type] - keep) / cap;
+        }
+
+        /// <summary>Ash Fair: covers orders by trading the fullest good, then sells surplus for the emptiest.</summary>
+        void Fair(EventRun run, long now)
+        {
+            var rates = S.FairRates(run, now);
+            for (int o = run.Orders.Count - 1; o >= 0; o--)
+            {
+                var order = run.Orders[o];
+                for (int k = 0; k < 2; k++)
+                {
+                    int need = (int)order[k * 2];
+                    long missing = order[k * 2 + 1] - S.State.Wallet[GameSession.FairGoods[need]];
+                    if (missing <= 0)
+                        continue;
+                    int other = (int)order[(1 - k) * 2];
+                    int sell = Enumerable.Range(0, 4).Where(g => g != need && g != other).OrderByDescending(Fill).First();
+                    long amount = (long)Math.Ceiling(missing * GameSession.FairValue[need] * rates[need] /
+                                                     (GameSession.FairValue[sell] * rates[sell] * 0.92)) + 1;
+                    if (Fill(sell) * S.Capacity(GameSession.FairGoods[sell]) >= amount)
+                        S.FairTrade(sell, need, amount, now, out _);
+                }
+                S.FairDeliver(o, now);
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                var order = Enumerable.Range(0, 4).OrderByDescending(Fill).ToList();
+                int sell = order[0], buy = order[3];
+                if (Fill(sell) < 0.5)
+                    break;
+                long amount = (long)(Fill(sell) * S.Capacity(GameSession.FairGoods[sell]) * 0.3);
+                if (S.FairTrade(sell, buy, Math.Max(1, amount), now, out _) != Fail.None)
+                    break;
+            }
         }
 
         int KeyFirst(Room r)
@@ -290,6 +466,42 @@ namespace LastHearth.Core.Tests
 
     public class FullGameTests
     {
+        /// <summary>The economy model (pacing_sim): hearth level by the end of the day.</summary>
+        static readonly Dictionary<int, int> Model = new Dictionary<int, int>
+        {
+            { 1, 9 }, { 2, 10 }, { 5, 13 }, { 7, 14 }, { 10, 15 }, { 14, 16 }, { 18, 17 }, { 25, 18 },
+        };
+
+        [Test]
+        public void ThirtyDaysFollowTheEconomyModel()
+        {
+            var s = TestData.NewSession();
+            s.Combat = TestData.Combat();
+            var bot = new PlayerBot(s);
+            var hearth = new Dictionary<int, int>();
+            int builderDay = 0;
+            bot.PlayDays(TestData.Start, 30, day =>
+            {
+                hearth[day] = s.State.HearthLevel;
+                if (builderDay == 0 && s.State.FourthBuilder)
+                    builderDay = day;
+                TestContext.WriteLine(bot.Summary(day) + " | events " + string.Join(",", s.ActiveRuns(s.State.Time).Select(r => r.Id + ":" + r.Points.ToString("0") + "/" + r.Thresholds)) + " | 4th " + s.State.FourthBuilder);
+            });
+            var results = s.State.Events.Where(r => r.Closed).ToList();
+            foreach (var r in results)
+                TestContext.WriteLine(r.LastResult + " thresholds " + r.Thresholds + (r.Personal ? " (personal)" : ""));
+            foreach (var kv in Model)
+            {
+                TestContext.WriteLine("day " + kv.Key + ": bot " + hearth[kv.Key] + ", model " + kv.Value);
+                Assert.That(hearth[kv.Key], Is.InRange(kv.Value - 1, kv.Value + 1), "day " + kv.Key);
+            }
+            Assert.That(builderDay, Is.InRange(10, 30), "the 4th builder is a goal of the first month");
+            Assert.That(bot.Missions, Is.InRange(70, 130));
+            // a regular player finishes most events, but not every event gives the first place
+            Assert.Greater(results.Count(r => r.Thresholds == 10), results.Count / 2);
+            Assert.Less(results.Count(r => r.LastResult.Contains("место 1 из")), results.Count);
+        }
+
         [Test]
         public void TwoWeeksWithEverySystem()
         {

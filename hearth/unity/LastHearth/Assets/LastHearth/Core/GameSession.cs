@@ -128,7 +128,7 @@ namespace LastHearth.Core
                     total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value));
             }
             double warm = IsRoomWarm(room) ? 1.0 : Balance.Warmth.FrozenOutput;
-            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * (1 + SpecValue(room, SpecEffect.Output));
+            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * (1 + SpecValue(room, SpecEffect.Output)) * SiegePenalty(State.Time);
         }
 
         public bool CellFree(int floor, int cell)
@@ -169,6 +169,8 @@ namespace LastHearth.Core
                 due = State.Queue.NextToFinish();
             }
             ReturnRoutes(State.Time);
+            UpdateEvents(State.Time);
+            SettleSiege(State.Time);
             SettleMissedSurges(State.Time);
             CheckLogin(State.Time);
         }

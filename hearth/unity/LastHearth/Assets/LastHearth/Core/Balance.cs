@@ -220,6 +220,35 @@ namespace LastHearth.Core
         public RouteData Routes = new RouteData();
         public SpecializationData Specializations = new SpecializationData();
         public DailyData Daily = new DailyData();
+        public ShopData Shop = new ShopData();
+        public List<EventData> Events = new List<EventData>();
+    }
+
+    /// <summary>EVENTS.md: schedule and reward budget of one live event (from the economy model).</summary>
+    public sealed class EventData
+    {
+        public string Id = "";
+        public string Name = "";
+        public int Period;
+        public int First;
+        public int Days;
+        public long Sparks;
+        public long Spend;
+        public double EssenceDays;
+        public double MaterialHours;
+        public long HourglassMinutes;
+        public int Unlock;
+    }
+
+    public sealed class ShopData
+    {
+        public long FourthBuilder;
+        public int FourthBuilderFrom;
+        public long PackPrice;
+        public int PacksPerWeek;
+        public long[] Refresh = new long[0];
+        public int Slots;
+        public long[] ArenaTicket = new long[0];
     }
 
     public sealed class DailyData

@@ -3224,6 +3224,116 @@
    "ranks": 3,
    "ranksFromHearth": 25
   },
+  "shop": {
+   "fourthBuilder": 2500,
+   "fourthBuilderFrom": 8,
+   "packPrice": 30,
+   "packsPerWeek": 14,
+   "refresh": [
+    10,
+    20,
+    40
+   ],
+   "slots": 8,
+   "arenaTicket": [
+    20,
+    40,
+    60
+   ]
+  },
+  "events": [
+   {
+    "id": "LongNight",
+    "name": "Долгая ночь",
+    "period": 7,
+    "first": 6,
+    "days": 2,
+    "sparks": 50,
+    "spend": 30,
+    "essenceDays": 1.0,
+    "materialHours": 6,
+    "hourglassMinutes": 90,
+    "unlock": 11
+   },
+   {
+    "id": "Portal",
+    "name": "Портал в Туман",
+    "period": 14,
+    "first": 1,
+    "days": 4,
+    "sparks": 80,
+    "spend": 100,
+    "essenceDays": 1.5,
+    "materialHours": 12,
+    "hourglassMinutes": 180,
+    "unlock": 12
+   },
+   {
+    "id": "Tournament",
+    "name": "Турнир Стражей",
+    "period": 14,
+    "first": 8,
+    "days": 3,
+    "sparks": 60,
+    "spend": 40,
+    "essenceDays": 1.0,
+    "materialHours": 8,
+    "hourglassMinutes": 90,
+    "unlock": 13
+   },
+   {
+    "id": "Treasure",
+    "name": "Кладоискатели",
+    "period": 28,
+    "first": 10,
+    "days": 5,
+    "sparks": 150,
+    "spend": 60,
+    "essenceDays": 1.0,
+    "materialHours": 20,
+    "hourglassMinutes": 360,
+    "unlock": 10
+   },
+   {
+    "id": "Fair",
+    "name": "Ярмарка Пепла",
+    "period": 28,
+    "first": 18,
+    "days": 3,
+    "sparks": 20,
+    "spend": 0,
+    "essenceDays": 0.5,
+    "materialHours": 12,
+    "hourglassMinutes": 90,
+    "unlock": 9
+   },
+   {
+    "id": "Siege",
+    "name": "Осада застав",
+    "period": 28,
+    "first": 25,
+    "days": 4,
+    "sparks": 80,
+    "spend": 60,
+    "essenceDays": 1.5,
+    "materialHours": 16,
+    "hourglassMinutes": 180,
+    "unlock": 15
+   },
+   {
+    "id": "Festival",
+    "name": "Праздник очага",
+    "period": 91,
+    "first": 60,
+    "days": 10,
+    "sparks": 200,
+    "spend": 100,
+    "essenceDays": 2.0,
+    "materialHours": 24,
+    "hourglassMinutes": 720,
+    "unlock": 9
+   }
+  ],
   "daily": {
    "tasksNeeded": 3,
    "taskSparks": 10,

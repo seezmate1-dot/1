@@ -72,6 +72,7 @@ namespace LastHearth.Core
             State.DailyClaimed = true;
             State.Wallet[ResourceType.Sparks] += d.TaskSparks;
             State.HourglassSeconds += d.TaskHourglassMinutes * 60;
+            FestivalTasksDone(now);
             return Fail.None;
         }
 

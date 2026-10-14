@@ -36,6 +36,97 @@ namespace LastHearth.Core
         public int Card = -1;
     }
 
+    public enum ShopGoods
+    {
+        Essence,
+        Coal,
+        Food,
+        Hourglass,
+        RecruitSeal,
+        HourglassDeal,
+    }
+
+    [Serializable]
+    public sealed class ShopItem
+    {
+        public ShopGoods Goods;
+        public long Amount;
+        public ResourceType PayWith;
+        public long Price;
+        public bool Sold;
+    }
+
+    /// <summary>A battle of an event that has started (finished by auto-battle if the game closes).</summary>
+    [Serializable]
+    public sealed class EventBattle
+    {
+        public string EventId = "";
+        public int Seed;
+        public int Cell = -1;
+    }
+
+    [Serializable]
+    public sealed class Outpost
+    {
+        public List<int> Garrison = new List<int>();
+        public int Traps;
+        public bool Fallen;
+    }
+
+    /// <summary>One occurrence of a live event and everything its mechanics keep.</summary>
+    [Serializable]
+    public sealed class EventRun
+    {
+        public string Id = "";
+        public long Start;
+        public long End;
+        public bool Personal;
+        public bool Closed;
+        public double Points;
+        public int Thresholds;
+        public int Seed;
+        public string LastResult = "";
+
+        // per local day
+        public long Day = -1;
+        public int Attempts;
+        public int Extra;
+        public double DayBest;
+        public List<double> DayBests = new List<double>();
+
+        // Portal
+        public int Floor;
+        public int Checkpoint;
+        public bool RunAlive;
+        public int Revives;
+        public long FreeRunDay = -1;
+        public List<int> HpIds = new List<int>();
+        public List<double> HpShares = new List<double>();
+        public List<int> Blessings = new List<int>();
+        public List<int> BlessingOffer = new List<int>();
+
+        // Treasure
+        public List<int> Opened = new List<int>();
+        public int Torches;
+        public long TorchAt;
+        public int MapNo;
+        public int Pieces;
+        public int Treasures;
+
+        // Fair
+        public long RateKey = -1;
+        public double[] Rates = new double[4];
+        public List<long[]> Orders = new List<long[]>();
+        public int Trades;
+        public bool Wanderer;
+
+        // Siege
+        public List<Outpost> Outposts = new List<Outpost>();
+        public long Stone;
+        public List<long> WindowsDone = new List<long>();
+        public long LiveWindow = -1;
+    }
+
     [Serializable]
     public sealed class GameState
     {
@@ -107,6 +198,19 @@ namespace LastHearth.Core
         public int LoginCount;
         public int HuntWins;
         public List<string> Achievements = new List<string>();
+
+        // Shops (MODES.md, 4)
+        public long PacksWeek = -1;
+        public int PacksBought;
+        public long ShopKey = -1;
+        public int ShopRefreshes;
+        public long ShopRefreshDay = -1;
+        public List<ShopItem> Shop = new List<ShopItem>();
+
+        // Live events (EVENTS.md)
+        public List<EventRun> Events = new List<EventRun>();
+        public List<string> EventsSeen = new List<string>();
+        public EventBattle EventBattle;
 
         // Campaign (MODES.md, 1)
         /// <summary>Best stars of every mission; its length is the number of missions cleared.</summary>
