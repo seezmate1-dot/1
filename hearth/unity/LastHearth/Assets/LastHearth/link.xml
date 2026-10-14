@@ -1,0 +1,4 @@
+<!-- IL2CPP (Android, iOS) must not strip the core: save files and balance.json are read by reflection. -->
+<linker>
+  <assembly fullname="LastHearth.Core" preserve="all" />
+</linker>

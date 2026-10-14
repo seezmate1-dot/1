@@ -1,0 +1,714 @@
+{
+ "version": 1,
+ "generatedBy": "hearth/tools/economy.py",
+ "maxHearthLevel": 30,
+ "hearthLevels": [
+  {
+   "level": 1,
+   "hearthSeconds": 10,
+   "roomSeconds": 10,
+   "roomJobCost": 2,
+   "hearthJobCost": 4,
+   "storage": 500,
+   "builders": 1,
+   "keyRoom": "Bedrooms",
+   "heroRequirement": 0
+  },
+  {
+   "level": 2,
+   "hearthSeconds": 60,
+   "roomSeconds": 30,
+   "roomJobCost": 2,
+   "hearthJobCost": 5,
+   "storage": 500,
+   "builders": 1,
+   "keyRoom": "Kitchen",
+   "heroRequirement": 0
+  },
+  {
+   "level": 3,
+   "hearthSeconds": 180,
+   "roomSeconds": 60,
+   "roomJobCost": 2,
+   "hearthJobCost": 5,
+   "storage": 500,
+   "builders": 2,
+   "keyRoom": "CoalMine",
+   "heroRequirement": 0
+  },
+  {
+   "level": 4,
+   "hearthSeconds": 300,
+   "roomSeconds": 120,
+   "roomJobCost": 2,
+   "hearthJobCost": 6,
+   "storage": 500,
+   "builders": 2,
+   "keyRoom": "Barracks",
+   "heroRequirement": 0
+  },
+  {
+   "level": 5,
+   "hearthSeconds": 600,
+   "roomSeconds": 180,
+   "roomJobCost": 5,
+   "hearthJobCost": 15,
+   "storage": 500,
+   "builders": 2,
+   "keyRoom": "Mine",
+   "heroRequirement": 0
+  },
+  {
+   "level": 6,
+   "hearthSeconds": 1200,
+   "roomSeconds": 300,
+   "roomJobCost": 12,
+   "hearthJobCost": 34,
+   "storage": 500,
+   "builders": 2,
+   "keyRoom": "Forge",
+   "heroRequirement": 0
+  },
+  {
+   "level": 7,
+   "hearthSeconds": 2700,
+   "roomSeconds": 600,
+   "roomJobCost": 31,
+   "hearthJobCost": 92,
+   "storage": 500,
+   "builders": 2,
+   "keyRoom": "Infirmary",
+   "heroRequirement": 0
+  },
+  {
+   "level": 8,
+   "hearthSeconds": 5400,
+   "roomSeconds": 900,
+   "roomJobCost": 86,
+   "hearthJobCost": 256,
+   "storage": 500,
+   "builders": 2,
+   "keyRoom": "Library",
+   "heroRequirement": 0
+  },
+  {
+   "level": 9,
+   "hearthSeconds": 23400,
+   "roomSeconds": 3600,
+   "roomJobCost": 239,
+   "hearthJobCost": 717,
+   "storage": 753,
+   "builders": 2,
+   "keyRoom": "TrainingHall",
+   "heroRequirement": 0
+  },
+  {
+   "level": 10,
+   "hearthSeconds": 23400,
+   "roomSeconds": 3600,
+   "roomJobCost": 263,
+   "hearthJobCost": 789,
+   "storage": 828,
+   "builders": 2,
+   "keyRoom": "Barracks",
+   "heroRequirement": 18
+  },
+  {
+   "level": 11,
+   "hearthSeconds": 30600,
+   "roomSeconds": 3600,
+   "roomJobCost": 428,
+   "hearthJobCost": 1282,
+   "storage": 1350,
+   "builders": 2,
+   "keyRoom": "Forge",
+   "heroRequirement": 20
+  },
+  {
+   "level": 12,
+   "hearthSeconds": 64800,
+   "roomSeconds": 9000,
+   "roomJobCost": 658,
+   "hearthJobCost": 1974,
+   "storage": 2080,
+   "builders": 2,
+   "keyRoom": "Infirmary",
+   "heroRequirement": 22
+  },
+  {
+   "level": 13,
+   "hearthSeconds": 82800,
+   "roomSeconds": 10800,
+   "roomJobCost": 926,
+   "hearthJobCost": 2776,
+   "storage": 2920,
+   "builders": 2,
+   "keyRoom": "Library",
+   "heroRequirement": 24
+  },
+  {
+   "level": 14,
+   "hearthSeconds": 118800,
+   "roomSeconds": 14400,
+   "roomJobCost": 1669,
+   "hearthJobCost": 5006,
+   "storage": 5260,
+   "builders": 2,
+   "keyRoom": "TrainingHall",
+   "heroRequirement": 26
+  },
+  {
+   "level": 15,
+   "hearthSeconds": 180000,
+   "roomSeconds": 19800,
+   "roomJobCost": 2098,
+   "hearthJobCost": 6294,
+   "storage": 6610,
+   "builders": 3,
+   "keyRoom": "Barracks",
+   "heroRequirement": 28
+  },
+  {
+   "level": 16,
+   "hearthSeconds": 223200,
+   "roomSeconds": 27000,
+   "roomJobCost": 3628,
+   "hearthJobCost": 10883,
+   "storage": 11500,
+   "builders": 3,
+   "keyRoom": "Forge",
+   "heroRequirement": 30
+  },
+  {
+   "level": 17,
+   "hearthSeconds": 255600,
+   "roomSeconds": 39600,
+   "roomJobCost": 6588,
+   "hearthJobCost": 19764,
+   "storage": 20800,
+   "builders": 3,
+   "keyRoom": "Infirmary",
+   "heroRequirement": 32
+  },
+  {
+   "level": 18,
+   "hearthSeconds": 259200,
+   "roomSeconds": 54000,
+   "roomJobCost": 9320,
+   "hearthJobCost": 27959,
+   "storage": 29400,
+   "builders": 3,
+   "keyRoom": "Library",
+   "heroRequirement": 34
+  },
+  {
+   "level": 19,
+   "hearthSeconds": 259200,
+   "roomSeconds": 54000,
+   "roomJobCost": 17322,
+   "hearthJobCost": 51964,
+   "storage": 54600,
+   "builders": 3,
+   "keyRoom": "TrainingHall",
+   "heroRequirement": 36
+  },
+  {
+   "level": 20,
+   "hearthSeconds": 259200,
+   "roomSeconds": 66600,
+   "roomJobCost": 29890,
+   "hearthJobCost": 89668,
+   "storage": 94200,
+   "builders": 3,
+   "keyRoom": "Barracks",
+   "heroRequirement": 38
+  },
+  {
+   "level": 21,
+   "hearthSeconds": 259200,
+   "roomSeconds": 73800,
+   "roomJobCost": 39499,
+   "hearthJobCost": 118495,
+   "storage": 125000,
+   "builders": 3,
+   "keyRoom": "Forge",
+   "heroRequirement": 40
+  },
+  {
+   "level": 22,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 65443,
+   "hearthJobCost": 196328,
+   "storage": 207000,
+   "builders": 3,
+   "keyRoom": "Infirmary",
+   "heroRequirement": 42
+  },
+  {
+   "level": 23,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 101592,
+   "hearthJobCost": 304776,
+   "storage": 321000,
+   "builders": 3,
+   "keyRoom": "Library",
+   "heroRequirement": 44
+  },
+  {
+   "level": 24,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 156475,
+   "hearthJobCost": 469423,
+   "storage": 493000,
+   "builders": 3,
+   "keyRoom": "TrainingHall",
+   "heroRequirement": 46
+  },
+  {
+   "level": 25,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 270317,
+   "hearthJobCost": 810951,
+   "storage": 852000,
+   "builders": 3,
+   "keyRoom": "Barracks",
+   "heroRequirement": 48
+  },
+  {
+   "level": 26,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 347392,
+   "hearthJobCost": 1042175,
+   "storage": 1100000,
+   "builders": 3,
+   "keyRoom": "Forge",
+   "heroRequirement": 50
+  },
+  {
+   "level": 27,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 523068,
+   "hearthJobCost": 1569203,
+   "storage": 1650000,
+   "builders": 3,
+   "keyRoom": "Infirmary",
+   "heroRequirement": 52
+  },
+  {
+   "level": 28,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 691869,
+   "hearthJobCost": 2075606,
+   "storage": 2180000,
+   "builders": 3,
+   "keyRoom": "Library",
+   "heroRequirement": 54
+  },
+  {
+   "level": 29,
+   "hearthSeconds": 259200,
+   "roomSeconds": 86400,
+   "roomJobCost": 1004774,
+   "hearthJobCost": 3014320,
+   "storage": 3170000,
+   "builders": 3,
+   "keyRoom": "TrainingHall",
+   "heroRequirement": 56
+  }
+ ],
+ "warehouseStorage": [
+  500,
+  500,
+  500,
+  500,
+  500,
+  500,
+  500,
+  500,
+  753,
+  828,
+  1350,
+  2080,
+  2920,
+  5260,
+  6610,
+  11500,
+  20800,
+  29400,
+  54600,
+  94200,
+  125000,
+  207000,
+  321000,
+  493000,
+  852000,
+  1100000,
+  1650000,
+  2180000,
+  3170000,
+  4440000
+ ],
+ "silverShare": 0.6,
+ "rules": {
+  "storageGateFrom": 10,
+  "heroGateFrom": 10,
+  "heroCore": 5
+ },
+ "build": {
+  "queuePerBuilder": 3,
+  "freeFinishSeconds": 300
+ },
+ "offlineCapHours": 10.0,
+ "starter": {
+  "materials": 4000,
+  "essence": 9000,
+  "coal": 300,
+  "food": 200
+ },
+ "warmth": {
+  "base": 100,
+  "perLevel": 35,
+  "floorFalloff": 0.8,
+  "roomNeedBase": 60,
+  "roomNeedGrowth": 1.06,
+  "frozenOutput": 0.5
+ },
+ "hearthModes": [
+  {
+   "mode": "Smoldering",
+   "coal": 0.5,
+   "warmth": 0.7,
+   "output": 1.0
+  },
+  {
+   "mode": "Steady",
+   "coal": 1.0,
+   "warmth": 1.0,
+   "output": 1.0
+  },
+  {
+   "mode": "Blazing",
+   "coal": 2.0,
+   "warmth": 1.3,
+   "output": 1.15
+  }
+ ],
+ "coalPerWarmthHour": 0.085,
+ "foodPerDwellerHour": 1.0,
+ "dwellers": {
+  "capBase": 6,
+  "capPerLevel": 2
+ },
+ "heroes": {
+  "levelCostBase": 40,
+  "levelCostGrowth": 1.11,
+  "capBase": 5,
+  "capPerHearth": 2
+ },
+ "speedupPoints": [
+  [
+   1,
+   1
+  ],
+  [
+   60,
+   20
+  ],
+  [
+   1440,
+   260
+  ],
+  [
+   10080,
+   1000
+  ]
+ ],
+ "production": {
+  "statDivisor": 25,
+  "workersPerRoom": 2,
+  "base": {
+   "Coal": [
+    3.818,
+    4.852,
+    5.77,
+    6.592,
+    7.331,
+    8.0,
+    8.609,
+    9.164,
+    9.673,
+    10.142,
+    10.574,
+    10.974,
+    11.346,
+    11.692,
+    12.015,
+    12.317,
+    12.601,
+    12.867,
+    13.117,
+    13.353,
+    13.576,
+    13.787,
+    13.987,
+    14.177,
+    14.357,
+    14.528,
+    14.692,
+    14.847,
+    14.996,
+    15.138
+   ],
+   "Food": [
+    2.578,
+    3.235,
+    3.819,
+    4.342,
+    4.812,
+    5.238,
+    5.625,
+    2.989,
+    3.151,
+    3.3,
+    3.438,
+    3.565,
+    3.683,
+    3.793,
+    3.896,
+    3.992,
+    4.082,
+    4.167,
+    4.246,
+    4.321,
+    4.392,
+    4.459,
+    4.523,
+    4.583,
+    4.641,
+    4.695,
+    4.747,
+    4.797,
+    4.844,
+    4.889
+   ],
+   "Iron": [
+    10.156,
+    11.471,
+    13.0,
+    14.779,
+    16.848,
+    19.255,
+    22.056,
+    25.316,
+    29.113,
+    33.539,
+    38.698,
+    44.718,
+    51.745,
+    59.953,
+    69.546,
+    80.763,
+    93.887,
+    109.25,
+    127.244,
+    148.33,
+    173.052,
+    202.05,
+    236.079,
+    276.031,
+    322.956,
+    378.095,
+    442.911,
+    519.133,
+    608.801,
+    714.327
+   ],
+   "Silver": [
+    15.234,
+    17.206,
+    19.5,
+    22.168,
+    25.272,
+    28.882,
+    33.083,
+    37.974,
+    43.67,
+    50.308,
+    58.048,
+    67.077,
+    77.618,
+    89.93,
+    104.318,
+    121.144,
+    140.83,
+    163.875,
+    190.866,
+    222.495,
+    259.577,
+    303.074,
+    354.118,
+    414.046,
+    484.434,
+    567.142,
+    664.367,
+    778.699,
+    913.202,
+    1071.49
+   ]
+  }
+ },
+ "rooms": [
+  {
+   "type": "Hearth",
+   "name": "Очаг",
+   "unlock": 1,
+   "produces": null,
+   "stat": null,
+   "maxCount": 1
+  },
+  {
+   "type": "Bedrooms",
+   "name": "Спальни",
+   "unlock": 1,
+   "produces": null,
+   "stat": null,
+   "maxCount": 4
+  },
+  {
+   "type": "Kitchen",
+   "name": "Кухня",
+   "unlock": 1,
+   "produces": "Food",
+   "stat": "Agility",
+   "maxCount": 2
+  },
+  {
+   "type": "CoalMine",
+   "name": "Угольная шахта",
+   "unlock": 1,
+   "produces": "Coal",
+   "stat": "Endurance",
+   "maxCount": 2
+  },
+  {
+   "type": "Barracks",
+   "name": "Казарма",
+   "unlock": 2,
+   "produces": null,
+   "stat": "Strength",
+   "maxCount": 1
+  },
+  {
+   "type": "Warehouse",
+   "name": "Склад",
+   "unlock": 2,
+   "produces": null,
+   "stat": null,
+   "maxCount": 1
+  },
+  {
+   "type": "Mine",
+   "name": "Рудник",
+   "unlock": 3,
+   "produces": "Iron",
+   "stat": "Strength",
+   "maxCount": 2
+  },
+  {
+   "type": "Tavern",
+   "name": "Таверна",
+   "unlock": 3,
+   "produces": null,
+   "stat": "Spirit",
+   "maxCount": 1
+  },
+  {
+   "type": "TradingPost",
+   "name": "Торговая лавка",
+   "unlock": 4,
+   "produces": "Silver",
+   "stat": "Spirit",
+   "maxCount": 2
+  },
+  {
+   "type": "Forge",
+   "name": "Кузня",
+   "unlock": 5,
+   "produces": null,
+   "stat": "Strength",
+   "maxCount": 1
+  },
+  {
+   "type": "Infirmary",
+   "name": "Лазарет",
+   "unlock": 5,
+   "produces": null,
+   "stat": "Intellect",
+   "maxCount": 1
+  },
+  {
+   "type": "Library",
+   "name": "Библиотека",
+   "unlock": 6,
+   "produces": null,
+   "stat": "Intellect",
+   "maxCount": 1
+  },
+  {
+   "type": "TrainingHall",
+   "name": "Тренировочный зал",
+   "unlock": 7,
+   "produces": null,
+   "stat": null,
+   "maxCount": 1
+  },
+  {
+   "type": "Greenhouse",
+   "name": "Теплица",
+   "unlock": 8,
+   "produces": "Food",
+   "stat": "Intellect",
+   "maxCount": 1
+  },
+  {
+   "type": "Watchtower",
+   "name": "Сторожевая башня",
+   "unlock": 9,
+   "produces": null,
+   "stat": "Agility",
+   "maxCount": 1
+  },
+  {
+   "type": "Chapel",
+   "name": "Часовня Угля",
+   "unlock": 12,
+   "produces": null,
+   "stat": "Spirit",
+   "maxCount": 1
+  },
+  {
+   "type": "Archive",
+   "name": "Архив Стражей",
+   "unlock": 15,
+   "produces": null,
+   "stat": "Intellect",
+   "maxCount": 1
+  }
+ ],
+ "grid": {
+  "floors": 10,
+  "cells": 6,
+  "hearthFloor": 3,
+  "hearthCells": [
+   2,
+   3
+  ]
+ }
+}

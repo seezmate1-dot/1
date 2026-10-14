@@ -814,6 +814,109 @@ def report(result):
     return "\n".join(out) + "\n", problems
 
 
+# ---------------------------------------------------------------- export for the game (Unity)
+BALANCE_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                           "unity", "LastHearth", "Assets", "LastHearth", "Resources", "balance.json")
+
+# GDD 6: room types. name: (enum, unlock hearth, produces, key stat, how many can be built)
+ROOM_TYPES = [
+    ("Очаг", "Hearth", 1, None, None, 1),
+    ("Спальни", "Bedrooms", 1, None, None, 4),
+    ("Кухня", "Kitchen", 1, "Food", "Agility", 2),
+    ("Угольная шахта", "CoalMine", 1, "Coal", "Endurance", 2),
+    ("Казарма", "Barracks", 2, None, "Strength", 1),
+    ("Склад", "Warehouse", 2, None, None, 1),
+    ("Рудник", "Mine", 3, "Iron", "Strength", 2),
+    ("Таверна", "Tavern", 3, None, "Spirit", 1),
+    ("Торговая лавка", "TradingPost", 4, "Silver", "Spirit", 2),
+    ("Кузня", "Forge", 5, None, "Strength", 1),
+    ("Лазарет", "Infirmary", 5, None, "Intellect", 1),
+    ("Библиотека", "Library", 6, None, "Intellect", 1),
+    ("Тренировочный зал", "TrainingHall", 7, None, None, 1),
+    ("Теплица", "Greenhouse", 8, "Food", "Intellect", 1),
+    ("Сторожевая башня", "Watchtower", 9, None, "Agility", 1),
+    ("Часовня Угля", "Chapel", 12, None, "Spirit", 1),
+    ("Архив Стражей", "Archive", 15, None, "Intellect", 1),
+]
+ROOM_ENUM = {name: enum for name, enum, *_ in ROOM_TYPES}
+STAT_DIVISOR = 25          # GDD 6: output x (1 + stat / 25)
+WORKERS_PER_ROOM = 2       # one cell holds two workers (merged rooms come later)
+
+
+def expected_stat(level):
+    """Main stat of a typical worker at this hearth level (training and recruiting)."""
+    return 5 + 2 * level
+
+
+def production_base(resource, level):
+    """Output per worker-hour at stat 0 so that a typical fortress meets the economy model:
+    materials = production share of the income, coal = the burn + 15%, food = the dwellers + 10%."""
+    if resource == "Silver":
+        target, rooms = total_income(level) * MATERIAL_SOURCES["Производство залов"] * SILVER_SHARE, 1
+    elif resource == "Iron":
+        target, rooms = total_income(level) * MATERIAL_SOURCES["Производство залов"] * (1 - SILVER_SHARE), 1
+    elif resource == "Coal":
+        target, rooms = coal_production_per_hour(level), 1
+    else:
+        target, rooms = food_per_hour(level) * 1.1, (2 if level >= 8 else 1)
+    return target / (rooms * WORKERS_PER_ROOM * (1 + expected_stat(level) / STAT_DIVISOR))
+
+
+def export_balance(result):
+    """Everything the game needs, from the same model that the checks passed on (docs/ECONOMY.md)."""
+    import json
+    rows = result["rows"]
+    levels = []
+    for row in rows:
+        lv = row["level"]
+        room_job = row["cost"] / (row["rooms"] + 3)
+        levels.append({
+            "level": lv,
+            "hearthSeconds": int(round(row["hearth_h"] * 3600)),
+            "roomSeconds": int(round(row["room_h"] * 3600)),
+            "roomJobCost": int(math.ceil(room_job)),
+            "hearthJobCost": int(math.ceil(hearth_job(row))),
+            "storage": storage(row),
+            "builders": pacing.builders(lv),
+            "keyRoom": ROOM_ENUM[key_room(lv)],
+            "heroRequirement": hero_requirement(lv),
+        })
+    data = {
+        "version": 1,
+        "generatedBy": "hearth/tools/economy.py",
+        "maxHearthLevel": pacing.MAX_LEVEL,
+        "hearthLevels": levels,
+        "warehouseStorage": [storage(row) for row in rows] + [nice(storage(rows[-1]) * 1.4, 3)],
+        "silverShare": SILVER_SHARE,
+        "rules": {"storageGateFrom": STORAGE_GATE_FROM, "heroGateFrom": HERO_GATE_FROM, "heroCore": HERO_CORE},
+        "build": {"queuePerBuilder": pacing.QUEUE_PER_BUILDER, "freeFinishSeconds": FREE_FINISH_MINUTES * 60},
+        "offlineCapHours": pacing.OFFLINE_CAP_H,
+        "starter": {"materials": int(pacing.STARTER_MATERIALS), "essence": STARTER_ESSENCE, "coal": 300, "food": 200},
+        "warmth": {"base": 100, "perLevel": 35, "floorFalloff": 0.8, "roomNeedBase": 60, "roomNeedGrowth": 1.06,
+                   "frozenOutput": 0.5},
+        "hearthModes": [
+            {"mode": "Smoldering", "coal": 0.5, "warmth": 0.7, "output": 1.0},
+            {"mode": "Steady", "coal": 1.0, "warmth": 1.0, "output": 1.0},
+            {"mode": "Blazing", "coal": 2.0, "warmth": 1.3, "output": 1.15},
+        ],
+        "coalPerWarmthHour": 0.085,
+        "foodPerDwellerHour": 1.0,
+        "dwellers": {"capBase": 6, "capPerLevel": 2},
+        "heroes": {"levelCostBase": 40, "levelCostGrowth": 1.11, "capBase": 5, "capPerHearth": 2},
+        "speedupPoints": [[m, d] for m, d in SPEEDUP_POINTS],
+        "production": {"statDivisor": STAT_DIVISOR, "workersPerRoom": WORKERS_PER_ROOM,
+                       "base": {r: [round(production_base(r, lv), 3) for lv in range(1, 31)]
+                                for r in ("Coal", "Food", "Iron", "Silver")}},
+        "rooms": [{"type": enum, "name": name, "unlock": unlock, "produces": produces, "stat": stat, "maxCount": count}
+                  for name, enum, unlock, produces, stat, count in ROOM_TYPES],
+        "grid": {"floors": 10, "cells": 6, "hearthFloor": 3, "hearthCells": [2, 3]},
+    }
+    os.makedirs(os.path.dirname(BALANCE_OUT), exist_ok=True)
+    with open(BALANCE_OUT, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+        f.write("\n")
+
+
 def main():
     result = solve()
     text, problems = report(result)
@@ -822,6 +925,7 @@ def main():
     with open(os.path.join(os.path.dirname(OUT), "pacing_table.md"), "w", encoding="utf-8") as f:
         f.write("# Уровни очага\n\nСобрано `hearth/tools/economy.py` для бесплатного игрока с ускорениями и "
                 "четвёртым строителем.\n\n" + "\n".join(pacing.table(result["rows"], result["reached"])) + "\n")
+    export_balance(result)
     print(text)
     if problems:
         sys.exit(1)

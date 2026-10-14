@@ -17,3 +17,15 @@ jobs:
         run: python3 tools/check_numbers.py
       - name: Hearth economy model
         run: python3 hearth/tools/economy.py > /dev/null
+      - name: Hearth balance.json is generated, not edited by hand
+        run: git diff --exit-code hearth/unity/LastHearth/Assets/LastHearth/Resources/balance.json
+
+  hearth-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Core tests (the same C# that Unity compiles)
+        run: dotnet test hearth/core-tests

@@ -10,3 +10,4 @@
 - [`docs/pacing_table.md`](docs/pacing_table.md) — таймеры и стоимость каждого уровня очага (результат симуляции).
 - [`tools/economy.py`](tools/economy.py) — модель года игры без покупок с проверками баланса: `python hearth/tools/economy.py` (около минуты; код выхода 1, если проверка не прошла).
 - [`tools/pacing_sim.py`](tools/pacing_sim.py) — минутная симуляция стройки, на ней стоит модель экономики.
+- [`unity/`](unity/README.md) — проект Unity 6.3: ядро игры на C# с тестами и отладочный экран (этап M1). Как открыть — в README.
