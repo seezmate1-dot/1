@@ -79,6 +79,10 @@ namespace LastHearth.Core
         public int HeroLevel;
         /// <summary>Level of the hero's special skill, 1-10, raised with Cores (ACTIVITIES.md, 3).</summary>
         public int SkillLevel = 1;
+        /// <summary>Id of the expedition the dweller walks with, or 0.</summary>
+        public int RouteId;
+        /// <summary>Hurt on a route: no new route until then (the infirmary heals).</summary>
+        public long InjuredUntil;
 
         [Newtonsoft.Json.JsonIgnore]
         public bool IsHero => HeroClass != HeroClass.None;

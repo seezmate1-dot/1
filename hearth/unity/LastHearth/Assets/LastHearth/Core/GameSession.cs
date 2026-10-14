@@ -106,8 +106,13 @@ namespace LastHearth.Core
 
         public bool IsRoomWarm(Room room)
         {
-            return !State.OutOfCoal &&
-                   Formulas.IsFloorHabitable(Balance, State.HearthLevel, State.Mode, room.Floor, room.Level);
+            if (Specialized(room, SpecEffect.NoFreeze))
+                return true; // «Тёплые стены» keep the room warm even without coal
+            if (State.OutOfCoal)
+                return false;
+            if (State.Time < State.FrostUntil && Math.Abs(room.Floor - Balance.Grid.HearthFloor) > 1)
+                return false;
+            return Formulas.IsFloorHabitable(Balance, State.HearthLevel, State.Mode, room.Floor, room.Level, WarmthMult());
         }
 
         public double RoomOutputPerHour(Room room)
@@ -123,7 +128,7 @@ namespace LastHearth.Core
                     total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value));
             }
             double warm = IsRoomWarm(room) ? 1.0 : Balance.Warmth.FrozenOutput;
-            return total * warm * Balance.Mode(State.Mode).Output;
+            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * (1 + SpecValue(room, SpecEffect.Output));
         }
 
         public bool CellFree(int floor, int cell)
@@ -163,6 +168,9 @@ namespace LastHearth.Core
                 Complete(due);
                 due = State.Queue.NextToFinish();
             }
+            ReturnRoutes(State.Time);
+            SettleMissedSurges(State.Time);
+            CheckLogin(State.Time);
         }
 
         void Produce(long seconds)
@@ -174,7 +182,7 @@ namespace LastHearth.Core
 
             // Upkeep is counted in fractions and paid in whole units, so ticking every second costs
             // exactly the same as one long offline step.
-            State.CoalDebt += Formulas.CoalBurnPerHour(Balance, State.HearthLevel, State.Mode) * hours;
+            State.CoalDebt += CoalBurnPerHour() * hours;
             long burn = (long)Math.Floor(State.CoalDebt);
             State.OutOfCoal = wallet[ResourceType.Coal] < burn;
             wallet[ResourceType.Coal] = Math.Max(0, wallet[ResourceType.Coal] - burn);
@@ -190,7 +198,7 @@ namespace LastHearth.Core
                 double rate = RoomOutputPerHour(room);
                 if (rate <= 0)
                     continue;
-                room.Stock = Math.Min(room.Stock + rate * hours, rate * Balance.OfflineCapHours);
+                room.Stock = Math.Min(room.Stock + rate * hours, rate * (Balance.OfflineCapHours + SpecValue(room, SpecEffect.StockHours)));
             }
         }
 
@@ -202,6 +210,7 @@ namespace LastHearth.Core
                 State.HearthLevel = job.ToLevel;
                 State.Queue.EnsureBuilders(BuilderCount());
                 RefugeesArrive();
+                CheckAchievements();
             }
             else
             {
@@ -234,6 +243,8 @@ namespace LastHearth.Core
             long whole = (long)Math.Floor(room.Stock);
             long taken = Deposit(data.Produces.Value, whole);
             room.Stock -= taken;
+            if (taken > 0)
+                Count(DailyTask.Collect);
             return taken;
         }
 
@@ -267,7 +278,7 @@ namespace LastHearth.Core
                 return Fail.LimitReached;
             if (!CellFree(floor, cell))
                 return Fail.CellTaken;
-            if (!Formulas.IsFloorHabitable(Balance, State.HearthLevel, State.Mode, floor, 1))
+            if (!Formulas.IsFloorHabitable(Balance, State.HearthLevel, State.Mode, floor, 1, WarmthMult()))
                 return Fail.TooCold;
             int builder = State.Queue.PickBuilder(Balance.Build.QueuePerBuilder, now);
             if (builder < 0)
@@ -302,6 +313,7 @@ namespace LastHearth.Core
                 return Fail.NotEnough;
             State.Wallet.Subtract(cost);
             State.Queue.Enqueue(builder, roomId, to, RoomJob(to).seconds, now);
+            Count(DailyTask.Build);
             Advance(now);
             return Fail.None;
         }
@@ -386,7 +398,7 @@ namespace LastHearth.Core
             var room = FindRoom(roomId);
             if (d == null || room == null)
                 return Fail.NotFound;
-            if (room.Workers.Count >= Balance.Production.WorkersPerRoom)
+            if (room.Workers.Count >= Balance.Production.WorkersPerRoom + (int)SpecValue(room, SpecEffect.WorkerSlot))
                 return Fail.RoomFull;
             Unassign(dwellerId);
             room.Workers.Add(dwellerId);
@@ -431,6 +443,7 @@ namespace LastHearth.Core
                 return Fail.NotEnough;
             State.Wallet[ResourceType.Essence] -= cost;
             d.HeroLevel++;
+            Count(DailyTask.HeroGrowth);
             return Fail.None;
         }
     }

@@ -36,6 +36,19 @@
   "stunTicks": 40, "stunDamageBonus": 0.25, "staggerPerHit": 3,
   "smash": 3.0, "wave": 1.6, "grab": 4.0
  },
+ "surge": {
+  "ticks": 1200, "ticksPerFloor": 60, "blazingSlow": 0.3,
+  "waves": [[10, 4], [400, 6], [800, 8]], "spawnEvery": 30,
+  "creatureHp": 180, "creatureGrowth": 1.21, "lastWaveHp": 1.6,
+  "heroDps": 14, "heroLevelGrowth": 1.07, "gearGrowth": 1.05, "dwellerDps": 0.35,
+  "flashCoal": 20, "flashCooldown": 150, "flashDamage": 1.2, "flashReach": 1,
+  "hatchUses": 2, "hatchTicks": 100
+ },
+ "missionKinds": {
+  "Normal": {"waves": 3, "hpMult": 0.3, "attackMult": 0.75, "telegraphs": false},
+  "Elite":  {"waves": 1, "hpMult": 0.8, "attackMult": 0.95, "telegraphs": true},
+  "Boss":   {"waves": 1, "hpMult": 1.05, "attackMult": 1.0, "telegraphs": true}
+ },
  "families": [
   {"family": "Fiend",     "name": "Тварь тумана",       "hp": 0.85, "attack": 0.8, "armor": 0.5, "interval": 0.7, "staggerMult": 1.0, "weak": "AshMage",   "weakMult": 1.5, "mechanics": ["Wave", "Grab"]},
   {"family": "Possessed", "name": "Одержимый",          "hp": 1.0,  "attack": 1.0,  "armor": 1.0, "interval": 1.0, "staggerMult": 1.0, "weak": "Swordsman", "weakMult": 1.4, "mechanics": ["Grab", "Smash", "Wave"]},

@@ -34,9 +34,22 @@ namespace LastHearth.Core.Combat
         public int[] Stats = new int[5];
     }
 
+    /// <summary>One enemy of a battle. Campaign battles have several waves; a hunt has one boss.</summary>
+    public sealed class WaveSpec
+    {
+        public MonsterFamily Family;
+        public int Rank = 1;
+        public double HpMult = 1;
+        public double AttackMult = 1;
+        /// <summary>Only bosses and elites telegraph heavy strikes.</summary>
+        public bool Telegraphs = true;
+    }
+
     public sealed class BattleSetup
     {
         public List<HeroSetup> Heroes = new List<HeroSetup>();
+        /// <summary>Empty: one boss of Family and Rank (the Hunt).</summary>
+        public List<WaveSpec> Waves = new List<WaveSpec>();
         public MonsterFamily Family;
         public int Rank = 1;
         /// <summary>Gear quality follows the hearth level (ECONOMY.md, section 6).</summary>
@@ -95,7 +108,9 @@ namespace LastHearth.Core.Combat
     public sealed class Battle
     {
         readonly CombatBalance c;
-        readonly FamilyData family;
+        FamilyData family;
+        readonly List<WaveSpec> waves;
+        bool telegraphs;
         readonly Rng rng;
         readonly Queue<BattleCommand> commands = new Queue<BattleCommand>();
         int bossNext;
@@ -105,6 +120,8 @@ namespace LastHearth.Core.Combat
 
         public readonly List<Fighter> Heroes = new List<Fighter>();
         public readonly List<string> Log = new List<string>();
+        public int Wave;
+        public int WaveCount => waves.Count;
         public double BossMaxHp;
         public double BossHp;
         public double BossAttack;
@@ -148,17 +165,34 @@ namespace LastHearth.Core.Combat
         public Battle(CombatBalance numbers, BattleSetup setup)
         {
             c = numbers;
-            family = c.Family(setup.Family);
             rng = new Rng(setup.Seed);
-            var boss = c.Boss;
-            BossMaxHp = BossHp = boss.Hp * family.Hp * Math.Pow(boss.HpGrowth, setup.Rank - 1);
-            BossAttack = boss.Attack * family.Attack * Math.Pow(boss.AttackGrowth, setup.Rank - 1);
-            BossArmor = boss.Armor * family.Armor;
-            BossInterval = Math.Max(1, (int)Math.Round(boss.Interval * family.Interval));
-            bossNext = BossInterval;
-            nextTelegraph = boss.FirstTelegraph;
+            waves = setup.Waves.Count > 0
+                ? setup.Waves
+                : new List<WaveSpec> { new WaveSpec { Family = setup.Family, Rank = setup.Rank } };
             foreach (var h in setup.Heroes)
                 Heroes.Add(MakeHero(h, setup.GearLevel));
+            StartWave(0);
+        }
+
+        void StartWave(int index)
+        {
+            Wave = index;
+            var w = waves[index];
+            var boss = c.Boss;
+            family = c.Family(w.Family);
+            telegraphs = w.Telegraphs;
+            BossMaxHp = BossHp = boss.Hp * family.Hp * w.HpMult * Math.Pow(boss.HpGrowth, w.Rank - 1);
+            BossAttack = boss.Attack * family.Attack * w.AttackMult * Math.Pow(boss.AttackGrowth, w.Rank - 1);
+            BossArmor = boss.Armor * family.Armor;
+            BossInterval = Math.Max(1, (int)Math.Round(boss.Interval * family.Interval));
+            bossNext = Tick + BossInterval;
+            nextTelegraph = Tick + boss.FirstTelegraph;
+            Stagger = 0;
+            StunnedUntil = Tick;
+            BurnUntil = Tick;
+            Pending = null;
+            if (index > 0)
+                Log.Add(Tick + ": волна " + (index + 1) + " из " + waves.Count);
         }
 
         Fighter MakeHero(HeroSetup h, int gearLevel)
@@ -363,7 +397,7 @@ namespace LastHearth.Core.Combat
         {
             if (Pending != null && Tick >= Pending.ImpactTick)
                 Impact(Pending);
-            if (Pending == null && Tick >= nextTelegraph)
+            if (telegraphs && Pending == null && Tick >= nextTelegraph)
             {
                 var mechanic = family.Mechanics[mechanicIndex++ % family.Mechanics.Count];
                 var target = mechanic == Mechanic.Grab ? BackMost() : null;
@@ -473,7 +507,11 @@ namespace LastHearth.Core.Combat
 
         void CheckEnd()
         {
-            if (BossHp <= 0)
+            if (BossHp <= 0 && Wave + 1 < waves.Count)
+            {
+                StartWave(Wave + 1);
+            }
+            else if (BossHp <= 0)
             {
                 Over = true;
                 Won = true;

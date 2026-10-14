@@ -24,9 +24,9 @@ namespace LastHearth.Core
             return b.Warmth.RoomNeedBase * Math.Pow(b.Warmth.RoomNeedGrowth, roomLevel - 1);
         }
 
-        public static bool IsFloorHabitable(Balance b, int hearthLevel, HearthMode mode, int floor, int roomLevel)
+        public static bool IsFloorHabitable(Balance b, int hearthLevel, HearthMode mode, int floor, int roomLevel, double warmthMult = 1)
         {
-            return FloorWarmth(b, hearthLevel, mode, floor) >= RoomWarmthNeed(b, roomLevel);
+            return FloorWarmth(b, hearthLevel, mode, floor) * warmthMult >= RoomWarmthNeed(b, roomLevel);
         }
 
         /// <summary>Coal per hour: rooms use 85% of the hearth warmth, 10 warmth burn 1 coal (x mode).</summary>

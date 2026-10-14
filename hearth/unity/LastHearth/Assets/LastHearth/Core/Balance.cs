@@ -32,6 +32,7 @@ namespace LastHearth.Core
         /// <summary>GDD 10: hearth levels that open the 6th-9th squad slots.</summary>
         public int[] SquadSlots = new int[0];
         public ActivitiesData Activities = new ActivitiesData();
+        public CampaignData Campaign = new CampaignData();
 
         public static Balance FromJson(string json)
         {
@@ -167,9 +168,50 @@ namespace LastHearth.Core
         public int MaxCount;
     }
 
+    /// <summary>MODES.md, 1: ten acts of 18 battles and a boss; ranks follow the free player's pace.</summary>
+    public sealed class CampaignData
+    {
+        public List<ActData> Acts = new List<ActData>();
+        public List<MissionData> Missions = new List<MissionData>();
+        public long ChestSparks;
+        public int RepeatsPerDay;
+        public double RepeatEssenceShare;
+        public double RepeatMaterialHours;
+        public double FirstClearHours;
+    }
+
+    public sealed class ActData
+    {
+        public string Name = "";
+        public string Boss = "";
+        public List<string> Families = new List<string>();
+    }
+
+    public enum MissionKind
+    {
+        Normal,
+        Elite,
+        Boss,
+    }
+
+    public sealed class MissionData
+    {
+        public int Act;
+        public int Index;
+        public MissionKind Kind;
+        public int Rank;
+        public Combat.MonsterFamily Family;
+        public double Day;
+        public long Essence;
+        public long Materials;
+        public long Sparks;
+    }
+
     /// <summary>ACTIVITIES.md: Surge, Hunt and Routes with their own resources. Tables are by hearth level 1-30.</summary>
     public sealed class ActivitiesData
     {
+        /// <summary>The free player's daily essence at each hearth level (ECONOMY.md, section 6).</summary>
+        public int[] EssenceByLevel = new int[0];
         public SurgeData Surge = new SurgeData();
         public HeartData Heart = new HeartData();
         public HuntData Hunt = new HuntData();
@@ -177,12 +219,25 @@ namespace LastHearth.Core
         public LegendaryData Legendary = new LegendaryData();
         public RouteData Routes = new RouteData();
         public SpecializationData Specializations = new SpecializationData();
+        public DailyData Daily = new DailyData();
+    }
+
+    public sealed class DailyData
+    {
+        public int TasksNeeded;
+        public long TaskSparks;
+        public long TaskHourglassMinutes;
+        public long CalendarSparks;
+        public long AchievementSparks;
     }
 
     public sealed class SurgeData
     {
         public int Unlock;
         public double AutoShare;
+        public int StartHour;
+        public double EssenceShare;
+        public long HourglassMinutes;
         public int[] EmberByLevel = new int[0];
     }
 
@@ -190,6 +245,11 @@ namespace LastHearth.Core
     {
         public int[] NodeCost = new int[0];
         public int[] NodeGate = new int[0];
+        public int PerBranch;
+        public double Warmth;
+        public double Coal;
+        public double Output;
+        public double Defense;
     }
 
     public sealed class HuntData
@@ -218,6 +278,10 @@ namespace LastHearth.Core
         public int Unlock;
         public int[] SquadsByLevel = new int[0];
         public int[] BlueprintsByLevel = new int[0];
+        public double EssenceShare;
+        public double MaterialHours;
+        /// <summary>All materials per hour of a typical fortress at each hearth level.</summary>
+        public int[] IncomeByLevel = new int[0];
     }
 
     public sealed class SpecializationData

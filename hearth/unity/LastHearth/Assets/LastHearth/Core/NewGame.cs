@@ -6,6 +6,7 @@ namespace LastHearth.Core
         public static GameSession Create(Balance b, long now)
         {
             var state = new GameState { Time = now };
+            state.SurgeDay = (now + state.UtcOffsetSeconds) / 86400 - 1; // today's Surge is still ahead
             var s = new GameSession(b, state);
             int floor = b.Grid.HearthFloor;
             var bedrooms = AddRoom(s, RoomType.Bedrooms, floor, 1);

@@ -601,6 +601,9 @@ PLAYTIME = [  # minutes a day of a typical free player, 4 sessions of 12-13 minu
 # ---------------------------------------------------------------- activities (docs/ACTIVITIES.md)
 # Three action activities, each with its own resource for its own progression.
 SURGE_UNLOCK = 2                 # Наплыв: live defense every evening -> Жар
+SURGE_ESSENCE_SHARE = 0.3        # the Surge pays 30% of the daily essence, repeats 40%, routes 15%, arena 15%
+ROUTE_ESSENCE_SHARE = 0.05       # per route
+ROUTE_MATERIAL_HOURS = 1.5       # per route: three routes a day are the 10% "expeditions" share
 SURGE_LIVE_DAYS = 5 / 7.0        # the player defends live 5 evenings of 7, the rest is automatic
 SURGE_AUTO_SHARE = 0.7           # automatic defense gives 70%
 SIEGE_EMBER = 150                # Осада застав adds Жар per event
@@ -1075,6 +1078,56 @@ def production_base(resource, level):
     return target / (rooms * WORKERS_PER_ROOM * (1 + expected_stat(level) / STAT_DIVISOR))
 
 
+# Campaign content (MODES.md, section 1): acts, bosses and the monster families of each act.
+ACT_CONTENT = [
+    ("Последний обоз", "Вожак стаи тварей", ["Fiend"]),
+    ("Копи под Сторожевой", "Одержимый штейгер", ["Possessed", "Fiend"]),
+    ("Шёпот в инее", "Ледяная вдова", ["Fiend", "Possessed"]),
+    ("Мост Пепельных", "Пепельный мостник", ["Knight", "Possessed"]),
+    ("Бледные послы", "Посол Бледного Двора", ["Knight"]),
+    ("Чаща просыпается", "Дитя Матери Чащи", ["Root", "Fiend"]),
+    ("Осада Стражей", "Рыцарь-командор Двора", ["Knight", "Root"]),
+    ("Предатель в Архиве", "Архивариус Сайлас", ["Possessed", "Knight"]),
+    ("Сердце тумана", "Сердце тумана", ["Fiend", "Root", "Possessed"]),
+    ("Последний очаг", "Мать Чащи", ["Root", "Knight", "Possessed"]),
+]
+ELITE_SLOTS = (9, 15)                 # mission numbers inside an act; 19 is the boss
+CAMPAIGN_FIRST_CLEAR_HOURS = 3        # first clear: three hours of full material income
+CAMPAIGN_REPEATS_PER_DAY = 10         # repeats: instant auto-battle (MODES.md, 1)
+# Ten repeats give about 40% of the daily essence (0.07 x 0.6 day x 10) and 5 hours of materials,
+# which is the campaign's 15% of the material income (ECONOMY.md, section 4).
+CAMPAIGN_REPEAT_ESSENCE_SHARE = 0.07
+CAMPAIGN_REPEAT_MATERIAL_HOURS = 0.5
+
+
+def level_at(reached, t):
+    level = 1
+    for lv, day in reached.items():
+        if day <= t and lv > level:
+            level = lv
+    return level
+
+
+def campaign_missions(reached):
+    missions = []
+    for n in range(1, MISSIONS + 1):
+        act = (n - 1) // (MISSIONS_PER_ACT + 1) + 1
+        index = (n - 1) % (MISSIONS_PER_ACT + 1) + 1
+        name, boss, families = ACT_CONTENT[act - 1]
+        kind = "Boss" if index == MISSIONS_PER_ACT + 1 else "Elite" if index in ELITE_SLOTS else "Normal"
+        day = mission_day(n)
+        lv = level_at(reached, day)
+        missions.append({
+            "act": act, "index": index, "kind": kind, "rank": lv,
+            "family": families[(index - 1) % len(families)],
+            "day": round(day, 2),
+            "essence": int(round(essence_income_per_day(lv) * MISSION_ESSENCE_DAYS)),
+            "materials": int(round(total_income(lv) * CAMPAIGN_FIRST_CLEAR_HOURS)),
+            "sparks": DIAMONDS_PER_ACT_BOSS if kind == "Boss" else 0,
+        })
+    return missions
+
+
 def export_balance(result):
     """Everything the game needs, from the same model that the checks passed on (docs/ECONOMY.md)."""
     import json
@@ -1124,20 +1177,36 @@ def export_balance(result):
                   for name, enum, unlock, produces, stat, count in ROOM_TYPES],
         "grid": {"floors": 10, "cells": 6, "hearthFloor": 3, "hearthCells": [2, 3]},
         "squadSlots": list(SQUAD_SLOTS),
+        "campaign": {
+            "acts": [{"name": n, "boss": bname, "families": fam} for n, bname, fam in ACT_CONTENT],
+            "missions": campaign_missions(result["reached"]),
+            "chestSparks": DIAMONDS_PER_3_STAR_CHEST,
+            "repeatsPerDay": CAMPAIGN_REPEATS_PER_DAY,
+            "repeatEssenceShare": CAMPAIGN_REPEAT_ESSENCE_SHARE,
+            "repeatMaterialHours": CAMPAIGN_REPEAT_MATERIAL_HOURS,
+            "firstClearHours": CAMPAIGN_FIRST_CLEAR_HOURS,
+        },
         "activities": {
-            "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE,
+            "essenceByLevel": [int(round(essence_income_per_day(lv))) for lv in range(1, 31)],
+            "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE, "startHour": 19,
+                      "essenceShare": SURGE_ESSENCE_SHARE, "hourglassMinutes": HOURGLASS_SURGE_MINUTES,
                       "emberByLevel": [ember_per_surge(lv) for lv in range(1, 31)]},
             "heart": {"nodeCost": [heart_node_cost(n) for n in range(1, HEART_NODES + 1)],
-                      "nodeGate": [heart_node_gate(n) for n in range(1, HEART_NODES + 1)]},
+                      "nodeGate": [heart_node_gate(n) for n in range(1, HEART_NODES + 1)],
+                      "perBranch": HEART_NODES // 3, "warmth": 0.03, "coal": 0.03, "output": 0.02, "defense": 0.05},
             "hunt": {"unlock": HUNT_UNLOCK, "tracksPerDay": HUNTS_PER_DAY, "trackHours": 8,
                      "coresByLevel": [cores_per_hunt(lv) for lv in range(1, 31)]},
             "skills": {"max": SKILL_MAX, "heroLevelsPerSkill": 6,
                        "cost": [skill_cost(k) for k in range(1, SKILL_MAX)]},
             "legendary": {"fromHearth": LEGENDARY_FROM, "cores": LEGENDARY_COST},
             "routes": {"unlock": ROUTES_UNLOCK, "squadsByLevel": [routes_per_day(lv) for lv in range(1, 31)],
-                       "blueprintsByLevel": [blueprints_per_route(lv) for lv in range(1, 31)]},
+                       "blueprintsByLevel": [blueprints_per_route(lv) for lv in range(1, 31)],
+                       "essenceShare": ROUTE_ESSENCE_SHARE, "materialHours": ROUTE_MATERIAL_HOURS,
+                       "incomeByLevel": [int(round(total_income(lv))) for lv in range(1, 31)]},
             "specializations": {"tiers": [list(t) for t in SPEC_TIERS], "ranks": SPEC_RANKS,
                                 "ranksFromHearth": SPEC_RANKS_FROM},
+            "daily": {"tasksNeeded": 3, "taskSparks": DIAMONDS_DAILY_TASKS, "taskHourglassMinutes": HOURGLASS_DAILY_MINUTES,
+                      "calendarSparks": DIAMONDS_LOGIN_CALENDAR, "achievementSparks": ACHIEVEMENT_POOL},
         },
     }
     os.makedirs(os.path.dirname(BALANCE_OUT), exist_ok=True)

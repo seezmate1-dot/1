@@ -29,9 +29,9 @@ namespace LastHearth.Core
         /// Until the tavern exists, refugees come out of the fog as the hearth grows: two per level
         /// while there is room (GDD 8). Stats are fixed by order, so the game stays deterministic.
         /// </summary>
-        void RefugeesArrive()
+        void RefugeesArrive(int count = 2)
         {
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < count; i++)
             {
                 if (State.Dwellers.Count >= Formulas.DwellerCap(Balance, State.HearthLevel))
                     return;
@@ -88,7 +88,7 @@ namespace LastHearth.Core
             var hunt = Balance.Activities.Hunt;
             if (State.HearthLevel < hunt.Unlock)
                 return Fail.Locked;
-            if (State.Hunt != null)
+            if (State.Hunt != null || State.PendingMission >= 0)
                 return Fail.HuntInProgress;
             if (!HuntDens(now).Contains(family))
                 return Fail.NotToday;
@@ -108,19 +108,9 @@ namespace LastHearth.Core
 
         Battle MakeBattle(PendingHunt hunt)
         {
-            var setup = new BattleSetup { Family = hunt.Family, Rank = hunt.Rank, GearLevel = State.HearthLevel, Seed = hunt.Seed };
-            foreach (var d in Squad())
-            {
-                setup.Heroes.Add(new HeroSetup
-                {
-                    Id = d.Id,
-                    Name = d.Name,
-                    Class = d.HeroClass,
-                    Level = d.HeroLevel,
-                    SkillLevel = d.SkillLevel,
-                    Stats = (int[])d.Stats.Clone(),
-                });
-            }
+            var setup = SquadSetup(hunt.Seed);
+            setup.Family = hunt.Family;
+            setup.Rank = hunt.Rank;
             return new Battle(Combat, setup);
         }
 
@@ -138,10 +128,26 @@ namespace LastHearth.Core
             long cores = (long)Math.Round(Balance.Activities.Hunt.CoresByLevel[hunt.Rank - 1] * Combat.StarReward[stars]);
             State.Wallet[ResourceType.Cores] += cores;
             reward = new HuntReward { Stars = stars, Cores = cores };
+            if (battle.Won)
+            {
+                Count(DailyTask.Hunt);
+                State.HuntWins++;
+                CheckAchievements();
+            }
             return Fail.None;
         }
 
         /// <summary>A hunt left unfinished (the game was closed) is fought out by auto-battle.</summary>
+        /// <summary>A campaign battle left unfinished: fought out by auto-battle on the next start.</summary>
+        public MissionReward ResolvePendingMission()
+        {
+            if (State.PendingMission < 0)
+                return null;
+            var battle = new Battle(Combat, MissionSetup(State.PendingMission, State.PendingMissionSeed)) { Brain = Brains.AutoBattle() };
+            FinishMission(battle, out var reward);
+            return reward;
+        }
+
         public HuntReward ResolvePendingHunt()
         {
             if (State.Hunt == null)
@@ -173,6 +179,7 @@ namespace LastHearth.Core
                 return Fail.NotEnough;
             State.Wallet[ResourceType.Cores] -= cost;
             d.SkillLevel++;
+            Count(DailyTask.HeroGrowth);
             return Fail.None;
         }
     }

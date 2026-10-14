@@ -52,6 +52,8 @@ namespace LastHearth.Core.Combat
         public SkillNumbers Skills = new SkillNumbers();
         public BossData Boss = new BossData();
         public List<FamilyData> Families = new List<FamilyData>();
+        public Dictionary<string, MissionKindData> MissionKinds = new Dictionary<string, MissionKindData>();
+        public Surge.SurgeBalance Surge = new Surge.SurgeBalance();
 
         public static CombatBalance FromJson(string json)
         {
@@ -129,6 +131,15 @@ namespace LastHearth.Core.Combat
         public double Smash;
         public double Wave;
         public double Grab;
+    }
+
+    /// <summary>How a campaign battle of each kind is built from the boss numbers.</summary>
+    public sealed class MissionKindData
+    {
+        public int Waves;
+        public double HpMult;
+        public double AttackMult;
+        public bool Telegraphs;
     }
 
     public sealed class FamilyData
