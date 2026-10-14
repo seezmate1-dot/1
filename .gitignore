@@ -1,4 +1,26 @@
+# Python tools
 __pycache__/
 *.pyc
+
+# Office lock files
 ~$*.docx
 .~lock.*#
+
+# Unreal Engine: generated, rebuilt on every machine
+AshRPG/Binaries/
+AshRPG/Intermediate/
+AshRPG/Saved/
+AshRPG/DerivedDataCache/
+AshRPG/Build/
+AshRPG/Plugins/*/Binaries/
+AshRPG/Plugins/*/Intermediate/
+AshRPG/.vs/
+AshRPG/.idea/
+AshRPG/*.sln
+AshRPG/*.code-workspace
+AshRPG/.vsconfig
+
+# Large third-party packs from Fab and Megascans are not stored in Git.
+# Import them into Content/ThirdParty/ and record them in docs/ASSETS.csv,
+# so they can be downloaded again on any machine.
+AshRPG/Content/ThirdParty/
