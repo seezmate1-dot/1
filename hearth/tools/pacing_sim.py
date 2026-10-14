@@ -13,6 +13,8 @@ The script replays a free player minute by minute for a year:
   * builders can be restarted only while the game is open;
   * production accumulates offline, capped at 10 hours (GDD 9.3).
 It prints the tables used in docs/GDD.md (section 9) and checks the targets.
+tools/economy.py reruns the same calibration with the player's real habits (hourglasses, diamonds,
+the 4th builder) and writes docs/pacing_table.md and docs/ECONOMY.md.
 
 Run: python hearth/tools/pacing_sim.py
 """
@@ -95,12 +97,19 @@ def online(t):
 QUEUE_PER_BUILDER = 3  # GDD 9.2: each builder takes up to three jobs in a row
 
 
-def simulate(rows):
-    """Minute-by-minute replay. Jobs are queued only while the player is online."""
+def simulate(rows, extra_builder_day=None, income_mult=None, speedup_minutes=None):
+    """Minute-by-minute replay. Jobs are queued only while the player is online.
+
+    Optional habits of the real free player (tools/economy.py fills them in):
+      extra_builder_day  day the 4th builder is bought with diamonds;
+      income_mult(day)   extra materials from diamond resource packs (1.0 = none);
+      speedup_minutes(day) free hourglasses and diamond speed-ups gained that day.
+    """
     t = 8.0
     level = 1
     materials = 0.0
     banked = 0.0  # offline production waiting to be collected
+    pool = 0.0    # speed-up minutes waiting to be used
     reached = {1: 0.0}
 
     def jobs_for(lv):
@@ -108,11 +117,24 @@ def simulate(rows):
         per_job = row["cost"] / (row["rooms"] + 3)  # the hearth job costs three room jobs
         return [("room", row["room_h"], per_job)] * row["rooms"] + [("hearth", row["hearth_h"], per_job * 3)]
 
+    def builder_count(lv, now):
+        extra = 1 if extra_builder_day is not None and now >= 8.0 + extra_builder_day * 24 else 0
+        return builders(lv) + extra
+
     jobs = jobs_for(level)
-    queues = [[] for _ in range(builders(level))]  # end times of queued jobs per builder
+    queues = [[] for _ in range(builder_count(level, t))]  # end times of queued jobs per builder
     hearth_end = None
+    hearth_q = None
+    day_seen = -1
     while level < MAX_LEVEL and t < 24 * 420:
-        rate = income(level)
+        day = int((t - 8.0) // 24) + 1
+        if day != day_seen:
+            day_seen = day
+            if speedup_minutes is not None:
+                pool += speedup_minutes(day)
+            while len(queues) < builder_count(level, t):
+                queues.append([])
+        rate = income(level) * (income_mult(day) if income_mult is not None else 1.0)
         if online(t):
             materials += banked + rate * STEP_H
             banked = 0.0
@@ -122,7 +144,7 @@ def simulate(rows):
                 kind, hours, cost = jobs[0]
                 if materials < cost:
                     break
-                for q in queues:
+                for qi, q in enumerate(queues):
                     q[:] = [e for e in q if e > t]
                     if len(q) >= QUEUE_PER_BUILDER:
                         continue
@@ -131,20 +153,33 @@ def simulate(rows):
                         # The hearth starts after every room of this level is finished.
                         begin = max([begin] + [e for other in queues for e in other])
                         hearth_end = begin + hours
+                        hearth_q = qi
                     q.append(begin + hours)
                     materials -= cost
                     jobs.pop(0)
                     progress = True
                     break
+            if pool > 0:
+                # Speed up the hearth first, otherwise the job that ends soonest.
+                live = [qi for qi, q in enumerate(queues) if q and q[0] > t]
+                if live:
+                    qi = hearth_q if hearth_end is not None and hearth_q in live else min(live, key=lambda k: queues[k][0])
+                    q = queues[qi]
+                    shift = min(pool / 60.0, q[0] - t)
+                    q[:] = [e - shift for e in q]
+                    if hearth_end is not None and qi == hearth_q:
+                        hearth_end -= shift
+                    pool -= shift * 60.0
         else:
             banked = min(banked + rate * STEP_H, rate * OFFLINE_CAP_H)
         if hearth_end is not None and t >= hearth_end:
             level += 1
             reached[level] = (t - 8.0) / 24.0
             hearth_end = None
+            hearth_q = None
             if level < MAX_LEVEL:
                 jobs = jobs_for(level)
-                queues += [[] for _ in range(builders(level) - len(queues))]
+                queues += [[] for _ in range(builder_count(level, t) - len(queues))]
         t += STEP_H
     return reached
 
@@ -166,10 +201,10 @@ def monotone(rows):
         row["cost"] = max(row["cost"], prev["cost"] * 1.1)
 
 
-def calibrate(rows, rounds=24):
+def calibrate(rows, rounds=24, **habits):
     """Scales each level's timers and cost until the replayed player meets the target days."""
     for _ in range(rounds):
-        reached = simulate(rows)
+        reached = simulate(rows, **habits)
         for row in rows:
             lv = row["level"]
             if lv + 1 not in reached:
@@ -187,20 +222,29 @@ def calibrate(rows, rounds=24):
     return rows
 
 
-def main():
-    rows = calibrate(design())
-    reached = simulate(rows)
-    print("| Очаг | Таймер очага | Таймер комнаты | Комнат | Строителей | Материалы на уровень | Цель, день | Симуляция, день |")
-    print("|---|---|---|---|---|---|---|---|")
+def table(rows, reached):
+    """Markdown table of every hearth level (docs/pacing_table.md)."""
+    out = ["| Очаг | Таймер очага | Таймер комнаты | Комнат | Строителей | Материалы на уровень | Цель, день | Симуляция, день |",
+           "|---|---|---|---|---|---|---|---|"]
     for row in rows:
         lv = row["level"]
-        print("| %d → %d | %s | %s | %d | %d | %s | %s | %s |" % (
+        out.append("| %d → %d | %s | %s | %d | %d | %s | %s | %s |" % (
             lv, lv + 1, fmt_h(row["hearth_h"]), fmt_h(row["room_h"]), row["rooms"], builders(lv),
             "{:,}".format(int(round(row["cost"], -2))).replace(",", " "),
             ("%.1f" % target_day(lv + 1)).replace(".", ","), ("%.1f" % reached.get(lv + 1, float("nan"))).replace(".", ",")))
-    deviations = [(lv, reached[lv], target_day(lv)) for lv in TARGETS if lv > 1 and lv in reached]
+    return out
+
+
+def deviations(reached):
+    return [(lv, target_day(lv), reached[lv]) for lv in TARGETS if lv > 1 and lv in reached]
+
+
+def main():
+    rows = calibrate(design())
+    reached = simulate(rows)
+    print("\n".join(table(rows, reached)))
     print("\nКонтрольные точки (цель → симуляция):")
-    for lv, got, want in deviations:
+    for lv, want, got in deviations(reached):
         print("  очаг %2d: день %5.1f → %5.1f (%+.0f%%)" % (lv, want, got, (got - want) / want * 100))
 
 
