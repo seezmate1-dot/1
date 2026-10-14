@@ -270,6 +270,7 @@ namespace LastHearth.Game
             float top = Screen.height - safe.yMax;
             var area = new Rect(safe.x / uiScale + 6, top / uiScale + 4, safe.width / uiScale - 12, safe.height / uiScale - 8);
             GUILayout.BeginArea(area);
+            viewWidth = area.width - 24; // minus the scroll bar
             if (battle != null || surge != null || lanternSeed != 0)
             {
                 fightScroll = GUILayout.BeginScrollView(fightScroll);
@@ -357,11 +358,7 @@ namespace LastHearth.Game
             switch (tab)
             {
                 case 0:
-                    DrawHearth(now);
-                    DrawQueue(now);
-                    DrawRooms(now);
-                    DrawBuild(now);
-                    DrawDwellers();
+                    DrawFortressTab(now);
                     break;
                 case 1:
                     DrawCampaign(now);

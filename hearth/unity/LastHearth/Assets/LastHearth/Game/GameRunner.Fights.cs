@@ -254,6 +254,9 @@ namespace LastHearth.Game
             GUILayout.Label(string.Format("<b>Наплыв</b> · {0:0} с из {1:0} · тварей {2}/{3} · убито {4} · прорвалось {5} → {6}",
                 surge.Tick * combat.TickSeconds, c.Ticks * combat.TickSeconds, surge.Creatures.Count, surge.TotalCreatures,
                 surge.Killed, surge.Breaches, StarText(surge.Stars)), Rich());
+            // the real fortress with the creatures on it (the Siege has no rooms: only the list below)
+            if (surge.Setup.HearthFloor == session.Balance.Grid.HearthFloor)
+                DrawCutaway(Now(), surge);
             var floors = surge.Setup.SpawnFloors.Concat(surge.Defenders.Select(d => d.Floor)).Concat(new[] { surge.HearthFloor })
                 .Distinct().OrderByDescending(f => f).ToList();
             int top = floors.Max(), bottom = floors.Min();

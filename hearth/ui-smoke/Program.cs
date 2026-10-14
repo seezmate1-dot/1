@@ -35,6 +35,8 @@ public static class UiSmoke
             played.Combat = combat;
             new PlayerBot(played).PlayDays(TestData.Start, 20);
             Run("крепость бота, 20 дней", played, frames, 2, clicks);
+            if (args.Length > 1)
+                Preview(played, args[1]);
 
             var late = NewGame.Create(balance, TestData.Start);
             late.Combat = combat;
@@ -50,10 +52,11 @@ public static class UiSmoke
         foreach (var kv in clicks.OrderByDescending(kv => kv.Value).Take(25))
             Console.WriteLine("  " + kv.Value + " × " + kv.Key.Replace("\n", " / "));
         // every system must have been reached through its buttons
-        string[] must = { "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "Другие соперники",
+        string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "Другие соперники",
                           "Крепость", "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
+        Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + ", нарисовано: " + GUI.Textures);
         Console.WriteLine("Выходов кнопкой «Назад»: " + Application.Quits + ", подсветка экрана: " + Screen.sleepTimeout);
         Console.WriteLine("UI smoke passed");
         return 0;
@@ -87,6 +90,7 @@ public static class UiSmoke
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
             Time.unscaledDeltaTime = 1.0f;
             Time.realtimeSinceStartup += 1.0f;
+            Time.time += 0.5f;
             // a finger drags the screen now and then, and the Android back button is pressed
             int phase = frame % 40;
             Input.Touches = phase == 0 ? new[] { new Touch { phase = TouchPhase.Began } }
@@ -108,6 +112,21 @@ public static class UiSmoke
         var s = (GameSession)Get(runner, "session");
         Console.WriteLine(string.Format("{0}: {1} кадров, кадров в бою {2}, в Наплыве {3}, очаг {4}, сообщение «{5}»", name, frames, battles, surges,
             s.State.HearthLevel, Get(runner, "message")));
+    }
+
+    /// <summary>Writes what the fortress tab draws, for hearth/ui-smoke/preview.py.</summary>
+    static void Preview(GameSession session, string path)
+    {
+        var runner = new GameRunner();
+        Call(runner, "Awake");
+        Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        Call(runner, "StartSession", session);
+        GUILayout.Click = _ => false;
+        Set(runner, "tab", 0);
+        GUI.Record = new List<string>();
+        Call(runner, "OnGUI");
+        File.WriteAllLines(path, GUI.Record);
+        GUI.Record = null;
     }
 
     static object Get(object o, string field) => o.GetType().GetField(field, Any).GetValue(o);
