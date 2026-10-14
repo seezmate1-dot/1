@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using LastHearth.Core;
+using LastHearth.Core.Combat;
 using UnityEngine;
 
 namespace LastHearth.Game
@@ -22,6 +23,14 @@ namespace LastHearth.Game
         Vector2 scroll;
         string message = "";
 
+        CombatBalance combat;
+        Battle battle;
+        bool autoBattle;
+        float battleClock;
+        int huntRank = 1;
+        string battleResult;
+        int promoteFor = -1;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
@@ -38,13 +47,37 @@ namespace LastHearth.Game
             var balance = Core.Balance.FromJson(UnityEngine.Resources.Load<TextAsset>("balance").text);
             savePath = Path.Combine(Application.persistentDataPath, "save.json");
             GameState state = File.Exists(savePath) ? SaveSystem.FromJson(File.ReadAllText(savePath)) : null;
-            session = state != null ? new GameSession(balance, state) : NewGame.Create(balance, Now());
+            combat = CombatBalance.FromJson(UnityEngine.Resources.Load<TextAsset>("combat").text);
+            StartSession(state != null ? new GameSession(balance, state) : NewGame.Create(balance, Now()));
+        }
+
+        void StartSession(GameSession s)
+        {
+            session = s;
+            session.Combat = combat;
             session.JobCompleted += job => message = "Готово: " + JobName(job) + " → ур. " + job.ToLevel;
             session.Advance(Now());
+            var unfinished = session.ResolvePendingHunt();
+            if (unfinished != null)
+                message = string.Format("Незаконченная охота доиграна автобоем: {0}, +{1} сердцевин", StarText(unfinished.Stars), unfinished.Cores);
         }
 
         void Update()
         {
+            if (battle != null && !battle.Over)
+            {
+                battleClock += Time.unscaledDeltaTime;
+                while (battleClock >= (float)combat.TickSeconds && !battle.Over)
+                {
+                    battleClock -= (float)combat.TickSeconds;
+                    battle.Step();
+                }
+                if (battle.Over && battleResult == null)
+                {
+                    session.FinishHunt(battle, out var reward);
+                    battleResult = string.Format("{0} {1} · +{2} сердцевин", battle.Won ? "Победа" : "Поражение", StarText(reward.Stars), reward.Cores);
+                }
+            }
             tick += Time.unscaledDeltaTime;
             if (tick >= 1f)
             {
@@ -76,6 +109,12 @@ namespace LastHearth.Game
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
             var area = new Rect(8, 8, Screen.width / scale - 16, Screen.height / scale - 16);
             GUILayout.BeginArea(area);
+            if (battle != null)
+            {
+                DrawBattle();
+                GUILayout.EndArea();
+                return;
+            }
             scroll = GUILayout.BeginScrollView(scroll);
             long now = Now();
             var b = session.Balance;
@@ -110,7 +149,7 @@ namespace LastHearth.Game
             if (GUILayout.Button("Новая игра"))
             {
                 skip = 0;
-                session = NewGame.Create(b, Now());
+                StartSession(NewGame.Create(b, Now()));
                 message = "";
             }
             GUILayout.EndHorizontal();
@@ -119,6 +158,7 @@ namespace LastHearth.Game
             DrawQueue(now);
             DrawRooms(now);
             DrawBuild(now);
+            DrawHunt(now);
             DrawDwellers();
 
             GUILayout.EndScrollView();
@@ -231,7 +271,7 @@ namespace LastHearth.Game
                 GUILayout.BeginHorizontal();
                 var room = session.FindRoom(d.RoomId);
                 string where = room == null ? "без работы" : session.Balance.Room(room.Type).Name;
-                string hero = d.IsHero ? string.Format(" · герой ур.{0}", d.HeroLevel) : "";
+                string hero = d.IsHero ? string.Format(" · {0} ур.{1}, умение {2}/{3}", ClassName(d.HeroClass), d.HeroLevel, d.SkillLevel, session.SkillCap(d)) : "";
                 GUILayout.Label(string.Format("{0} [С{1} Л{2} У{3} Ст{4} Д{5}] · {6}{7}",
                     d.Name, d.Stats[0], d.Stats[1], d.Stats[2], d.Stats[3], d.Stats[4], where, hero));
                 if (producers.Count > 0 && GUILayout.Button("Перевести", GUILayout.Width(110)))
@@ -239,11 +279,187 @@ namespace LastHearth.Game
                     int index = room == null ? 0 : (producers.IndexOf(room) + 1) % producers.Count;
                     Report(session.Assign(d.Id, producers[index].Id));
                 }
-                if (!d.IsHero && GUILayout.Button("Сделать героем", GUILayout.Width(150)))
-                    Report(session.Promote(d.Id, HeroClass.Swordsman));
+                if (!d.IsHero && GUILayout.Button(promoteFor == d.Id ? "Отмена" : "Сделать героем", GUILayout.Width(150)))
+                    promoteFor = promoteFor == d.Id ? -1 : d.Id;
                 if (d.IsHero && GUILayout.Button("Ур.+1 (" + Formulas.HeroLevelCost(session.Balance, d.HeroLevel) + " эсс.)", GUILayout.Width(170)))
                     Report(session.LevelUpHero(d.Id));
+                if (d.IsHero && d.SkillLevel < session.Balance.Activities.Skills.Max &&
+                    GUILayout.Button("Умение +1 (" + session.SkillCost(d) + " серд.)", GUILayout.Width(190)))
+                    Report(session.UpgradeSkill(d.Id));
                 GUILayout.EndHorizontal();
+                if (promoteFor == d.Id)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("   Класс:", GUILayout.Width(70));
+                    foreach (HeroClass c in Enum.GetValues(typeof(HeroClass)))
+                    {
+                        if (c != HeroClass.None && GUILayout.Button(ClassName(c)))
+                        {
+                            Report(session.Promote(d.Id, c));
+                            promoteFor = -1;
+                        }
+                    }
+                    GUILayout.EndHorizontal();
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------ hunt
+
+        void DrawHunt(long now)
+        {
+            var hunt = session.Balance.Activities.Hunt;
+            GUILayout.Label("<b>Охота на чудовищ</b>", Rich());
+            if (session.State.HearthLevel < hunt.Unlock)
+            {
+                GUILayout.Label("Откроется на " + hunt.Unlock + "-м уровне очага");
+                return;
+            }
+            int tracks = session.HuntTracks(now);
+            string next = session.State.HuntTrackAt > 0 ? " · следующий через " + Duration(session.State.HuntTrackAt - now) : "";
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(string.Format("Следы {0}/{1}{2} · отряд {3}/{4} героев · ранг чудовища:", tracks, hunt.TracksPerDay, next,
+                session.Squad().Count, session.SquadSize()));
+            huntRank = Mathf.Clamp(huntRank, 1, session.State.HearthLevel);
+            if (GUILayout.Button("−", GUILayout.Width(30)))
+                huntRank = Math.Max(1, huntRank - 1);
+            GUILayout.Label(huntRank.ToString(), GUILayout.Width(30));
+            if (GUILayout.Button("+", GUILayout.Width(30)))
+                huntRank = Math.Min(session.State.HearthLevel, huntRank + 1);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            foreach (var family in session.HuntDens(now))
+            {
+                var f = combat.Family(family);
+                if (GUILayout.Button(string.Format("{0}\nслабость: {1} · +{2} серд.", f.Name, ClassName(f.Weak), hunt.CoresByLevel[huntRank - 1])))
+                {
+                    var fail = session.StartHunt(family, huntRank, now, out var started);
+                    Report(fail);
+                    if (fail == Fail.None)
+                    {
+                        battle = started;
+                        battleResult = null;
+                        battleClock = 0;
+                        battle.Brain = autoBattle ? Brains.AutoBattle() : null;
+                    }
+                }
+            }
+            GUILayout.EndHorizontal();
+        }
+
+        void DrawBattle()
+        {
+            var f = battle.Family;
+            GUILayout.Label(string.Format("<b>{0}</b> · {1:0.0} с из {2:0}", f.Name, battle.Tick * combat.TickSeconds, combat.MaxTicks * combat.TickSeconds), Rich());
+            GUILayout.Label(string.Format("Здоровье {0:0} / {1:0} {2}", Math.Max(0, battle.BossHp), battle.BossMaxHp, Bar(battle.BossHp / battle.BossMaxHp)));
+            GUILayout.Label(string.Format("Оглушение {0:0}/100 {1}{2}{3}{4}", battle.Stagger, Bar(battle.Stagger / 100),
+                battle.BossStunned ? " · <color=#fd5>ОГЛУШЁН</color>" : "", battle.Burning ? " · <color=#f84>горит</color>" : "",
+                battle.WallUp ? " · <color=#8cf>Стена</color>" : ""), Rich());
+            if (battle.Pending != null)
+            {
+                double left = (battle.Pending.ImpactTick - battle.Tick) * combat.TickSeconds;
+                GUILayout.Label(string.Format("<size=20><color=#f55>!!! {0} через {1:0.0} с — {2}</color></size>",
+                    MechanicName(battle.Pending.Mechanic), left, MechanicAnswer(battle.Pending.Mechanic)), Rich());
+            }
+            else
+            {
+                GUILayout.Label(" ");
+            }
+
+            foreach (var h in battle.Heroes)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(string.Format("{0} ({1}) {2:0}/{3:0} {4}", h.Name, ClassName(h.Class), Math.Max(0, h.Hp), h.MaxHp,
+                    h.Alive ? Bar(h.Hp / h.MaxHp) : "пал"), GUILayout.Width(420));
+                GUI.enabled = h.Ready && !battle.Over && !autoBattle;
+                string label = SkillName(h.Class) + (h.Ready ? "" : string.Format(" ({0:0}%)", 100.0 * h.Charge / h.ChargeMax));
+                if (GUILayout.Button(label, GUILayout.Width(220)))
+                    battle.Command(BattleCommand.Skill(h.Id));
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.BeginHorizontal();
+            GUI.enabled = !battle.Over && !autoBattle && battle.Tick >= battle.RetreatReadyAt;
+            if (GUILayout.Button("Отход передней линии", GUILayout.Height(40)))
+                battle.Command(BattleCommand.Retreat());
+            GUI.enabled = !battle.Over;
+            bool auto = GUILayout.Toggle(autoBattle, "Автобой", "Button", GUILayout.Height(40));
+            if (auto != autoBattle)
+            {
+                autoBattle = auto;
+                battle.Brain = autoBattle ? Brains.AutoBattle() : null;
+            }
+            GUI.enabled = true;
+            GUILayout.EndHorizontal();
+
+            foreach (string line in battle.Log.Skip(Math.Max(0, battle.Log.Count - 6)))
+                GUILayout.Label("   " + line);
+
+            if (battleResult != null)
+            {
+                GUILayout.Label("<size=22><b>" + battleResult + "</b></size>", Rich());
+                if (GUILayout.Button("Закрыть", GUILayout.Height(40)))
+                {
+                    message = battleResult;
+                    battle = null;
+                }
+            }
+        }
+
+        static string Bar(double share)
+        {
+            int n = (int)Math.Round(Math.Max(0, Math.Min(1, share)) * 20);
+            return "[" + new string('█', n) + new string('·', 20 - n) + "]";
+        }
+
+        static string StarText(int stars) => new string('★', stars) + new string('☆', 3 - stars);
+
+        static string ClassName(HeroClass c)
+        {
+            switch (c)
+            {
+                case HeroClass.Guardian: return "Страж";
+                case HeroClass.Swordsman: return "Мечник";
+                case HeroClass.Cleaver: return "Секач";
+                case HeroClass.Archer: return "Стрелок";
+                case HeroClass.CoalPriest: return "Угольный жрец";
+                case HeroClass.AshMage: return "Пепельный маг";
+                default: return "житель";
+            }
+        }
+
+        static string SkillName(HeroClass c)
+        {
+            switch (c)
+            {
+                case HeroClass.Guardian: return "Стена";
+                case HeroClass.Swordsman: return "Ответный выпад";
+                case HeroClass.Cleaver: return "Сокрушение";
+                case HeroClass.Archer: return "Залп";
+                case HeroClass.CoalPriest: return "Тёплые руки";
+                case HeroClass.AshMage: return "Огненный снаряд";
+                default: return "—";
+            }
+        }
+
+        static string MechanicName(Mechanic m)
+        {
+            switch (m)
+            {
+                case Mechanic.Smash: return "Удар по передней линии";
+                case Mechanic.Wave: return "Волна по всему отряду";
+                default: return "Захват героя";
+            }
+        }
+
+        static string MechanicAnswer(Mechanic m)
+        {
+            switch (m)
+            {
+                case Mechanic.Smash: return "ОТХОД или Стена";
+                case Mechanic.Wave: return "СТЕНА или сбить Сокрушением";
+                default: return "СТЕНА или сбить Сокрушением";
             }
         }
 

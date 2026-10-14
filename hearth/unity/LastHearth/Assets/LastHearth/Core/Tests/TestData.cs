@@ -36,5 +36,34 @@ namespace LastHearth.Core.Tests
         }
 
         public static GameSession NewSession() => NewGame.Create(Balance(), Start);
+
+        static Combat.CombatBalance combat;
+
+        public static Combat.CombatBalance Combat()
+        {
+            if (combat != null)
+                return combat;
+            string balance = FindFile("balance.json");
+            return combat = Core.Combat.CombatBalance.FromJson(File.ReadAllText(Path.Combine(Path.GetDirectoryName(balance), "combat.json")));
+        }
+
+        static string FindFile(string name)
+        {
+            foreach (string root in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+            {
+                var dir = new DirectoryInfo(root);
+                while (dir != null)
+                {
+                    foreach (string rel in new[] { Relative, FromRepo })
+                    {
+                        string path = Path.Combine(dir.FullName, rel.Replace("balance.json", name));
+                        if (File.Exists(path))
+                            return path;
+                    }
+                    dir = dir.Parent;
+                }
+            }
+            throw new FileNotFoundException(name);
+        }
     }
 }

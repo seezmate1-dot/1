@@ -1,0 +1,45 @@
+{
+ "tickSeconds": 0.1,
+ "maxTicks": 900,
+ "starTicks": 700,
+ "critBase": 0.05,
+ "critPerAgility": 0.003,
+ "critMult": 1.5,
+ "levelGrowth": 1.07,
+ "gearGrowth": 1.05,
+ "statBonus": 0.01,
+ "skillPerLevel": 0.08,
+ "autoAnswerChance": 0.4,
+ "retreatTicks": 15,
+ "retreatCooldown": 100,
+ "starReward": [0, 0.5, 0.75, 1.0],
+ "classes": [
+  {"class": "Guardian",   "line": "Front",  "hp": 320, "attack": 16, "armor": 60, "interval": 12, "skillCharge": 110, "mainStat": "Endurance"},
+  {"class": "Swordsman",  "line": "Front",  "hp": 220, "attack": 30, "armor": 30, "interval": 10, "skillCharge": 90,  "mainStat": "Strength"},
+  {"class": "Cleaver",    "line": "Middle", "hp": 240, "attack": 26, "armor": 35, "interval": 14, "skillCharge": 100, "mainStat": "Strength"},
+  {"class": "Archer",     "line": "Back",   "hp": 150, "attack": 30, "armor": 12, "interval": 11, "skillCharge": 90,  "mainStat": "Agility"},
+  {"class": "CoalPriest", "line": "Back",   "hp": 160, "attack": 22, "armor": 15, "interval": 15, "skillCharge": 120, "mainStat": "Intellect"},
+  {"class": "AshMage",    "line": "Middle", "hp": 140, "attack": 28, "armor": 12, "interval": 16, "skillCharge": 100, "mainStat": "Intellect"}
+ ],
+ "skills": {
+  "wallReduction": 0.8, "wallTicks": 30,
+  "counterMult": 3.0,
+  "crushStagger": 45,
+  "volleyMult": 1.6, "explosionMult": 2.0,
+  "healShare": 0.3, "priestBasicHeal": 1.0, "hasteTicks": 50, "haste": 0.2,
+  "fireballMult": 2.0, "burnTicks": 60, "burnShare": 0.05,
+  "stunCritMult": 2.0
+ },
+ "boss": {
+  "hp": 7500, "attack": 60, "armor": 40, "hpGrowth": 1.25, "attackGrowth": 1.2,
+  "interval": 15, "firstTelegraph": 60, "telegraphEvery": 120, "windup": 25,
+  "stunTicks": 40, "stunDamageBonus": 0.25, "staggerPerHit": 3,
+  "smash": 3.0, "wave": 1.6, "grab": 4.0
+ },
+ "families": [
+  {"family": "Fiend",     "name": "Тварь тумана",       "hp": 0.85, "attack": 0.8, "armor": 0.5, "interval": 0.7, "staggerMult": 1.0, "weak": "AshMage",   "weakMult": 1.5, "mechanics": ["Wave", "Grab"]},
+  {"family": "Possessed", "name": "Одержимый",          "hp": 1.0,  "attack": 1.0,  "armor": 1.0, "interval": 1.0, "staggerMult": 1.0, "weak": "Swordsman", "weakMult": 1.4, "mechanics": ["Grab", "Smash", "Wave"]},
+  {"family": "Knight",    "name": "Рыцарь Бледного Двора", "hp": 0.7, "attack": 1.0, "armor": 2.2, "interval": 1.1, "staggerMult": 1.5, "weak": "Cleaver",   "weakMult": 1.4, "mechanics": ["Smash", "Wave"]},
+  {"family": "Root",      "name": "Корневое чудовище",  "hp": 1.1, "attack": 1.1,  "armor": 0.6, "interval": 1.4, "staggerMult": 0.8, "weak": "Archer",    "weakMult": 1.4, "mechanics": ["Smash", "Grab"]}
+ ]
+}

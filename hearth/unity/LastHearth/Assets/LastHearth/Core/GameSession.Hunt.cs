@@ -1,0 +1,179 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using LastHearth.Core.Combat;
+
+namespace LastHearth.Core
+{
+    public sealed class HuntReward
+    {
+        public int Stars;
+        public long Cores;
+    }
+
+    /// <summary>ACTIVITIES.md, 3: the Hunt — tactical boss fights for Cores, and hero skills.</summary>
+    public sealed partial class GameSession
+    {
+        static readonly string[] RefugeeNames =
+        {
+            "Олег", "Рада", "Борис", "Ясна", "Кир", "Злата", "Ефим", "Лада", "Савва", "Нея", "Гордей", "Мила",
+            "Тихон", "Веда", "Остап", "Устя", "Прохор", "Варя", "Демид", "Агна",
+        };
+
+        /// <summary>Numbers of the battle; the game sets it after loading Resources/combat.json.</summary>
+        public CombatBalance Combat { get; set; }
+
+        public int SquadSize() => 5 + Balance.SquadSlots.Count(gate => State.HearthLevel >= gate);
+
+        /// <summary>
+        /// Until the tavern exists, refugees come out of the fog as the hearth grows: two per level
+        /// while there is room (GDD 8). Stats are fixed by order, so the game stays deterministic.
+        /// </summary>
+        void RefugeesArrive()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                if (State.Dwellers.Count >= Formulas.DwellerCap(Balance, State.HearthLevel))
+                    return;
+                int n = State.NextDwellerId;
+                int lead = (n * 3) % 5;
+                var stats = new int[5];
+                for (int k = 0; k < 5; k++)
+                    stats[k] = 3 + (n + k * 7) % 5 + 2 * State.HearthLevel / 3;
+                stats[lead] += 4;
+                AddDweller(RefugeeNames[(n - 1) % RefugeeNames.Length], stats);
+            }
+        }
+
+        // ------------------------------------------------------------------ tracks and dens
+
+        long TrackSeconds => Balance.Activities.Hunt.TrackHours * 3600L;
+
+        /// <summary>Tracks left: one comes back every 8 hours, up to three.</summary>
+        public int HuntTracks(long now)
+        {
+            int max = Balance.Activities.Hunt.TracksPerDay;
+            while (State.HuntTracks < max && State.HuntTrackAt > 0 && now >= State.HuntTrackAt)
+            {
+                State.HuntTracks++;
+                State.HuntTrackAt = State.HuntTracks < max ? State.HuntTrackAt + TrackSeconds : 0;
+            }
+            return State.HuntTracks;
+        }
+
+        /// <summary>Three dens a day out of the four monster families; they rotate with the date.</summary>
+        public List<MonsterFamily> HuntDens(long now)
+        {
+            int resting = (int)((now / 86400) % 4);
+            var dens = new List<MonsterFamily>();
+            foreach (MonsterFamily f in Enum.GetValues(typeof(MonsterFamily)))
+            {
+                if ((int)f != resting)
+                    dens.Add(f);
+            }
+            return dens;
+        }
+
+        /// <summary>The squad: heroes by level, as many as the barracks allow.</summary>
+        public List<Dweller> Squad()
+        {
+            return State.Dwellers.Where(d => d.IsHero).OrderByDescending(d => d.HeroLevel).ThenBy(d => d.Id)
+                .Take(SquadSize()).ToList();
+        }
+
+        public Fail StartHunt(MonsterFamily family, int rank, long now, out Battle battle)
+        {
+            battle = null;
+            Advance(now);
+            var hunt = Balance.Activities.Hunt;
+            if (State.HearthLevel < hunt.Unlock)
+                return Fail.Locked;
+            if (State.Hunt != null)
+                return Fail.HuntInProgress;
+            if (!HuntDens(now).Contains(family))
+                return Fail.NotToday;
+            if (rank < 1 || rank > State.HearthLevel)
+                return Fail.RankTooHigh;
+            if (Squad().Count == 0)
+                return Fail.NoHeroes;
+            if (HuntTracks(now) <= 0)
+                return Fail.NoTracks;
+            if (State.HuntTracks == hunt.TracksPerDay)
+                State.HuntTrackAt = now + TrackSeconds;
+            State.HuntTracks--;
+            State.Hunt = new PendingHunt { Family = family, Rank = rank, Seed = State.NextBattleSeed++ };
+            battle = MakeBattle(State.Hunt);
+            return Fail.None;
+        }
+
+        Battle MakeBattle(PendingHunt hunt)
+        {
+            var setup = new BattleSetup { Family = hunt.Family, Rank = hunt.Rank, GearLevel = State.HearthLevel, Seed = hunt.Seed };
+            foreach (var d in Squad())
+            {
+                setup.Heroes.Add(new HeroSetup
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Class = d.HeroClass,
+                    Level = d.HeroLevel,
+                    SkillLevel = d.SkillLevel,
+                    Stats = (int[])d.Stats.Clone(),
+                });
+            }
+            return new Battle(Combat, setup);
+        }
+
+        /// <summary>Pays the hunt: Cores by stars (half for one star, three quarters for two, all for three).</summary>
+        public Fail FinishHunt(Battle battle, out HuntReward reward)
+        {
+            reward = null;
+            if (State.Hunt == null)
+                return Fail.NoHunt;
+            if (!battle.Over)
+                battle.RunToEnd();
+            var hunt = State.Hunt;
+            State.Hunt = null;
+            int stars = battle.Stars;
+            long cores = (long)Math.Round(Balance.Activities.Hunt.CoresByLevel[hunt.Rank - 1] * Combat.StarReward[stars]);
+            State.Wallet[ResourceType.Cores] += cores;
+            reward = new HuntReward { Stars = stars, Cores = cores };
+            return Fail.None;
+        }
+
+        /// <summary>A hunt left unfinished (the game was closed) is fought out by auto-battle.</summary>
+        public HuntReward ResolvePendingHunt()
+        {
+            if (State.Hunt == null)
+                return null;
+            var battle = MakeBattle(State.Hunt);
+            battle.Brain = Brains.AutoBattle();
+            FinishHunt(battle, out var reward);
+            return reward;
+        }
+
+        // ------------------------------------------------------------------ skills
+
+        public int SkillCap(Dweller d) =>
+            Math.Min(Balance.Activities.Skills.Max, 1 + d.HeroLevel / Balance.Activities.Skills.HeroLevelsPerSkill);
+
+        public long SkillCost(Dweller d) => Balance.Activities.Skills.Cost[d.SkillLevel - 1];
+
+        public Fail UpgradeSkill(int dwellerId)
+        {
+            var d = FindDweller(dwellerId);
+            if (d == null)
+                return Fail.NotFound;
+            if (!d.IsHero)
+                return Fail.NotAHero;
+            if (d.SkillLevel >= SkillCap(d))
+                return Fail.SkillCap;
+            long cost = SkillCost(d);
+            if (State.Wallet[ResourceType.Cores] < cost)
+                return Fail.NotEnough;
+            State.Wallet[ResourceType.Cores] -= cost;
+            d.SkillLevel++;
+            return Fail.None;
+        }
+    }
+}

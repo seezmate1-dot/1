@@ -29,6 +29,8 @@ namespace LastHearth.Core
         public ProductionData Production = new ProductionData();
         public List<RoomData> Rooms = new List<RoomData>();
         public GridData Grid = new GridData();
+        /// <summary>GDD 10: hearth levels that open the 6th-9th squad slots.</summary>
+        public int[] SquadSlots = new int[0];
         public ActivitiesData Activities = new ActivitiesData();
 
         public static Balance FromJson(string json)

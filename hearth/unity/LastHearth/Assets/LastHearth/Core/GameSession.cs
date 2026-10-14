@@ -21,13 +21,20 @@ namespace LastHearth.Core
         NoBarracks,
         RulesNotMet,
         NotRunning,
+        NoTracks,
+        NotToday,
+        RankTooHigh,
+        NoHeroes,
+        SkillCap,
+        HuntInProgress,
+        NoHunt,
     }
 
     /// <summary>
     /// The rules of the fortress. Every command takes the current time explicitly, so the core is
     /// deterministic and can be replayed (offline progress, tests, a server later).
     /// </summary>
-    public sealed class GameSession
+    public sealed partial class GameSession
     {
         public readonly Balance Balance;
         public readonly GameState State;
@@ -194,6 +201,7 @@ namespace LastHearth.Core
             {
                 State.HearthLevel = job.ToLevel;
                 State.Queue.EnsureBuilders(BuilderCount());
+                RefugeesArrive();
             }
             else
             {

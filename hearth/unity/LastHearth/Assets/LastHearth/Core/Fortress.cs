@@ -77,6 +77,8 @@ namespace LastHearth.Core
         public int RoomId = -1;
         public HeroClass HeroClass = HeroClass.None;
         public int HeroLevel;
+        /// <summary>Level of the hero's special skill, 1-10, raised with Cores (ACTIVITIES.md, 3).</summary>
+        public int SkillLevel = 1;
 
         [Newtonsoft.Json.JsonIgnore]
         public bool IsHero => HeroClass != HeroClass.None;

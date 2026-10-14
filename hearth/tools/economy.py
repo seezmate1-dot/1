@@ -29,9 +29,12 @@ def dweller_cap(level):
     return 6 + 2 * (level - 1)
 
 
+SQUAD_SLOTS = (8, 14, 20, 26)
+
+
 def squad_size(level):
     """GDD 10: 5 heroes, slots open at hearth 8, 14, 20, 26."""
-    return 5 + sum(1 for gate in (8, 14, 20, 26) if level >= gate)
+    return 5 + sum(1 for gate in SQUAD_SLOTS if level >= gate)
 
 
 def builders(level, bought_fourth):
@@ -1120,6 +1123,7 @@ def export_balance(result):
         "rooms": [{"type": enum, "name": name, "unlock": unlock, "produces": produces, "stat": stat, "maxCount": count}
                   for name, enum, unlock, produces, stat, count in ROOM_TYPES],
         "grid": {"floors": 10, "cells": 6, "hearthFloor": 3, "hearthCells": [2, 3]},
+        "squadSlots": list(SQUAD_SLOTS),
         "activities": {
             "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE,
                       "emberByLevel": [ember_per_surge(lv) for lv in range(1, 31)]},

@@ -711,6 +711,12 @@
    3
   ]
  },
+ "squadSlots": [
+  8,
+  14,
+  20,
+  26
+ ],
  "activities": {
   "surge": {
    "unlock": 2,
