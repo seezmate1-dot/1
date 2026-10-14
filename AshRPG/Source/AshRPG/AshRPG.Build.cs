@@ -9,6 +9,6 @@ public class AshRPG : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags", "GameplayAbilities", "AshCore", "AshCombat", "AshInventory", "AshQuests", "AshUI" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "DeveloperSettings", "GameplayTags", "GameplayAbilities", "GameplayTasks", "AshCore", "AshCombat", "AshInventory", "AshQuests", "AshUI" });
 	}
 }

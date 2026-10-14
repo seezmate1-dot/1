@@ -1,6 +1,6 @@
 # Dark Fantasy Action RPG на Unreal Engine 5
 
-Локальная Action RPG для ПК в тёмном фэнтези, с архитектурой, готовой к будущему MMO. Сейчас идёт **этап 0** (раздел 12 ТЗ): каркас проекта UE5 готов, дальше его нужно установить и собрать по [`docs/SETUP.md`](docs/SETUP.md).
+Локальная Action RPG для ПК в тёмном фэнтези, с архитектурой, готовой к будущему MMO. Написан код этапов 0 и 1 (раздел 12 ТЗ) и начало этапа 2. Его нужно установить и собрать по [`docs/SETUP.md`](docs/SETUP.md). Что готово и что дальше: [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
 ## Что читать
 
@@ -21,6 +21,8 @@
 | `tools/content_v3.py` | Текст разделов 44–52 |
 | `tools/build_doc.py` | Правит старые разделы и дописывает 44–52 |
 | `tools/check_numbers.py` | Проверяет, что числа сходятся |
+| `AshRPG/Source/AshCore/Public/Rules/` | Формулы ТЗ на чистом C++ (бой, опыт, цены, статусы, оглушение) |
+| `AshRPG/Tests/Rules/`, `tools/run_rule_tests.sh` | Тесты формул, запускаются без движка и на GitHub при каждом пуше |
 
 ```
 pip install python-docx
