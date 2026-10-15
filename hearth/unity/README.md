@@ -37,7 +37,7 @@ t Runner** → EditMode → Run All. Если пункта нет, добавь�
 | `Assets/LastHearth/Core` | чистое ядро на C# без UnityEngine: детерминированное, всё время передаётся явно, поэтому его можно проверить тестами и позже на сервере |
 | `Assets/LastHearth/Core/Combat` | бой с решениями: телеграфы, связки классов, автобой и «аккуратный игрок» для калибровки |
 | `Assets/LastHearth/Core/Surge` | Наплыв: твари лезут по этажам разреза к очагу |
-| `Assets/LastHearth/Core/Tests` | 94 теста NUnit: экономика, калибровка боя, Наплыва и PvP, события, лавки, бот на 30 дней |
+| `Assets/LastHearth/Core/Tests~` (Unity пропускает папки с `~`; запуск: `dotnet test hearth/core-tests`) | 94 теста NUnit: экономика, калибровка боя, Наплыва и PvP, события, лавки, бот на 30 дней |
 | `Assets/LastHearth/Editor` | сборка APK одной кнопкой: настройки Android (имя, иконка, горизонтальный экран, IL2CPP ARM64 + ARMv7, ключ подписи) и пустая сцена |
 | `Assets/LastHearth/Game` | Unity-слой: запуск, сохранение в `persistentDataPath`, отладочный экран (`GameRunner*.cs`, по файлу на группу вкладок) |
 | `Assets/LastHearth/Resources/balance.json` | все числа игры. Генерируется `python hearth/tools/economy.py`, руками не правится; CI проверяет, что файл совпадает с моделью |
