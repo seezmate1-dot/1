@@ -1,5 +1,7 @@
 """Renders the draw calls recorded by `dotnet run --project hearth/ui-smoke 6000 calls.txt` into a PNG,
-to look at the cutaway without Unity: python hearth/ui-smoke/preview.py calls.txt out.png"""
+to look at the cutaway without Unity: python hearth/ui-smoke/preview.py calls.txt out.png
+(`dotnet run --project hearth/ui-smoke -- --scene 6000 calls.txt` records the places on the surface;
+the pictures not painted yet show as labelled placeholders)."""
 import os
 import re
 import sys
@@ -10,6 +12,23 @@ ART = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "unity", "L
 
 
 FONT = os.path.join(ART, "Fonts", "Nunito-ExtraBold.ttf")
+
+
+def picture(name):
+    """A picture of Resources/Art; a place on the surface not painted yet is a placeholder: a translucent
+    box with its name, standing on the bottom edge like the real picture will."""
+    path = os.path.join(ART, name + ".png")
+    if os.path.exists(path) or not name.startswith("Art/Scene/"):
+        return Image.open(path).convert("RGBA")
+    src = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+    d = ImageDraw.Draw(src)
+    d.rounded_rectangle((64, 128, 448, 511), radius=40, fill=(120, 70, 160, 170), outline=(255, 230, 170, 255), width=10)
+    try:
+        f = ImageFont.truetype(FONT, 64)
+    except OSError:
+        f = ImageFont.load_default()
+    d.text((256, 300), name.split("/")[-1], font=f, anchor="mm", fill=(255, 245, 225, 255))
+    return src
 
 
 def main(calls, out, scale=2):
@@ -34,7 +53,7 @@ def main(calls, out, scale=2):
             name = l[1]
             x, y, rw, rh = (float(v) * scale for v in l[2:6])
             u, v, uw, vh, a = (float(q) for q in l[6:11])
-            src = Image.open(os.path.join(ART, name + ".png")).convert("RGBA")
+            src = picture(name)
             W_, H_ = src.size
             if abs(uw) > 1 or vh > 1:
                 # a tiled texture (the stone background): repeat it over the rectangle
@@ -60,7 +79,7 @@ def main(calls, out, scale=2):
             if name == "white":
                 src = Image.new("RGBA", (1, 1), (255, 255, 255, 255))
             else:
-                src = Image.open(os.path.join(ART, name + ".png")).convert("RGBA")
+                src = picture(name)
             src = src.resize((max(1, int(rw)), max(1, int(rh))))
             px = src.load()
             for yy in range(src.height):

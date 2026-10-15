@@ -62,6 +62,10 @@ namespace LastHearth.Game
             public bool Rubble;
             /// <summary>Scaffolding over a room that is being built or upgraded is painted (Rooms/Scaffold, transparent).</summary>
             public bool Scaffold;
+            /// <summary>The places on the surface around the mountain gate are painted (Scene/Merchant, Scene/Portal,
+            /// Scene/Arena, Scene/Board, Scene/Pier, Scene/Pen; 512 x 512, transparent, the object on the bottom
+            /// edge): they open their windows from the fortress instead of the buttons along the right edge.</summary>
+            public bool Scene;
         }
 
         static Manifest manifest;

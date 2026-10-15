@@ -113,6 +113,10 @@ namespace UnityEngine
     {
         public static string Folder = "";
         public static int TexturesLoaded;
+        /// <summary>Pictures still being painted ("Art/Scene/Pier"): while missing they load as 512 x 512
+        /// placeholders, so the layout made for them can be run before they exist. Any other must exist.</summary>
+        public static readonly HashSet<string> Placeholders = new HashSet<string>();
+        public static int PlaceholdersLoaded;
 
         public static T Load<T>(string p) where T : Object
         {
@@ -128,6 +132,11 @@ namespace UnityEngine
             {
                 // the art must exist: a typo in a name would show an empty room on the phone
                 string png = Path.Combine(Folder, p + ".png");
+                if (!File.Exists(png) && Placeholders.Contains(p))
+                {
+                    PlaceholdersLoaded++;
+                    return (T)(object)new Texture2D { Name = p, width = 512, height = 512 };
+                }
                 if (!File.Exists(png))
                     throw new FileNotFoundException("missing art", png);
                 TexturesLoaded++;

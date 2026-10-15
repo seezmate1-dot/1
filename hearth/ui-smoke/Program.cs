@@ -12,22 +12,42 @@ using UnityEngine;
 /// <summary>
 /// Smoke test of the Unity debug screen: a fresh game and a fortress played by the bot for 20 days
 /// are clicked through every tab at random for thousands of frames. Fails on any exception or on
-/// unbalanced Begin/End layout groups (which would break Unity's IMGUI).
+/// unbalanced Begin/End layout groups (which would break Unity's IMGUI). A last run turns on the
+/// places on the surface (Art.json "scene") with placeholders for the pictures not painted yet;
+/// --scene turns them on for every run and the preview.
 /// </summary>
 public static class UiSmoke
 {
     static readonly BindingFlags Any = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
+    /// <summary>The pictures of the places on the surface (GameRunner.Scene.cs), Resources/Art/Scene.</summary>
+    static readonly string[] ScenePlaces = { "Pier", "Board", "Merchant", "Pen", "Arena", "Portal" };
+
+    /// <summary>Turns the places on the surface on; the pictures not painted yet load as placeholders.</summary>
+    static void SceneOn()
+    {
+        foreach (string place in ScenePlaces)
+            UnityEngine.Resources.Placeholders.Add("Art/Scene/" + place);
+        ArtLibrary.Data.Scene = true;
+    }
+
     public static int Main(string[] args)
     {
         string resources = FindResources();
         UnityEngine.Resources.Folder = resources;
+        // --scene: every run (and the preview) with the places on the surface, on placeholders until they are painted
+        bool sceneMode = args.Contains("--scene");
+        args = args.Where(a => a != "--scene").ToArray();
         int frames = args.Length > 0 ? int.Parse(args[0]) : 8100; // three rounds of the 18 windows, 150 frames each
         var clicks = new Dictionary<string, int>();
         try
         {
             var balance = Balance.FromJson(File.ReadAllText(Path.Combine(resources, "balance.json")));
             var combat = CombatBalance.FromJson(File.ReadAllText(Path.Combine(resources, "combat.json")));
+            // while Art.json has no "scene", the runs below must load no Scene/* picture: the stubs throw on missing art
+            bool scenePainted = ArtLibrary.Data.Scene;
+            if (sceneMode)
+                SceneOn();
 
             Run("новая игра", null, frames, 1, clicks);
 
@@ -42,6 +62,18 @@ public static class UiSmoke
             late.Combat = combat;
             new PlayerBot(late).PlayDays(TestData.Start, 35);
             Run("крепость бота, 35 дней", late, frames, 3, clicks);
+
+            // the places on the surface instead of the side buttons (Art.json "scene"), on placeholders until painted
+            var surface = NewGame.Create(balance, TestData.Start);
+            surface.Combat = combat;
+            new PlayerBot(surface).PlayDays(TestData.Start, 20);
+            SceneOn();
+            Run("крепость бота, 20 дней, места на поверхности", surface, frames / 3, 4, clicks);
+            ArtLibrary.Data.Scene = scenePainted || sceneMode;
+            var loaded = (Dictionary<string, Texture2D>)typeof(ArtLibrary).GetField("textures", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            var unseen = ScenePlaces.Where(p => !loaded.ContainsKey("Scene/" + p)).ToList();
+            if (unseen.Count > 0)
+                throw new InvalidOperationException("places on the surface never drawn: " + string.Join(", ", unseen));
         }
         catch (Exception e)
         {
@@ -57,7 +89,8 @@ public static class UiSmoke
                           "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
-        Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + ", нарисовано: " + GUI.Textures);
+        Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + " (заглушек мест на поверхности: " +
+                          UnityEngine.Resources.PlaceholdersLoaded + "), нарисовано: " + GUI.Textures);
         Console.WriteLine("Звуков сыграно: " + AudioSource.Played);
         Console.WriteLine("Выходов кнопкой «Назад»: " + Application.Quits + ", подсветка экрана: " + Screen.sleepTimeout);
         Console.WriteLine("UI smoke passed");

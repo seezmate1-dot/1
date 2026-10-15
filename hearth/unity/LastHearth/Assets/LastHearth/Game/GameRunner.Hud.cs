@@ -15,6 +15,9 @@ namespace LastHearth.Game
     {
         enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero }
 
+        // the HUD's bands: the resource plates on top, the round buttons along the bottom and the right edge
+        const float HudTop = 50, HudBottom = 92, HudRight = 74;
+
         Win window;
         Vector2 windowScroll;
         bool blockCutaway;           // a window is open, or the finger is on the interface: the rooms ignore taps
@@ -65,17 +68,20 @@ namespace LastHearth.Game
         void DrawMainScreen(Rect area, long now)
         {
             HudStyles();
-            const float top = 50, bottom = 92, right = 74;
+            const float top = HudTop, bottom = HudBottom, right = HudRight;
+            // the places on the surface (GameRunner.Scene.cs) take over the side buttons once they are painted
+            bool scene = ArtLibrary.Data.Scene;
             // the HUD's places: taps there do not reach the rooms under it
-            float sideButtons = (session.State.Rewards.IsEmpty() ? 4 : 5) * 76;
             hudRects = new[]
             {
                 new Rect(area.x, area.y, area.width, top),
                 new Rect(area.x, area.yMax - bottom, area.width, bottom),
-                new Rect(area.xMax - right, area.y + top, right, sideButtons),
+                new Rect(area.xMax - right, area.y + top, right, SideButtons(scene) * 76),
             };
             var mouse = Event.current.mousePosition;
             blockCutaway = window != Win.None || hudRects.Any(r => r.Contains(mouse));
+            // what the bars leave of the fortress, on the screen: the obstacles' signs keep inside it
+            cutawayBand = new Vector2(ToScreen(new Vector2(0, area.y + top)).y, ToScreen(new Vector2(0, area.yMax - bottom)).y);
 
             GUILayout.BeginArea(area);
             viewWidth = area.width;
@@ -87,16 +93,22 @@ namespace LastHearth.Game
                 float cellW = Math.Max(60, (viewWidth - 8) / g.Cells), cellH = cellW * 0.5f;
                 float hearthTop = (top - 6) + cellW * g.Cells * 0.5f * 0.8f + (ShownFloors().top - g.HearthFloor) * cellH;
                 scroll.y = Math.Max(0, hearthTop + cellH / 2 - (top + (area.height - top - bottom) / 2));
+                // with the places on the surface, like Hustle Castle: they stand whole under the plates, the rooms below them
+                if (scene)
+                    scroll.y = Math.Max(0, Math.Min(scroll.y, (top - 6) + SceneTop(cellW * g.Cells) - (top + 4)));
             }
             scroll = GUILayout.BeginScrollView(scroll, GUIStyle.none, GUIStyle.none);
             GUILayout.Space(top - 6);
+            cutawayScene = scene;
             DrawCutaway(now);
+            cutawayScene = false;
             GUILayout.Space(bottom + 6);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+            cutawayBand = null;
 
             DrawTopBar(new Rect(area.x, area.y, area.width, top));
-            DrawSideButtons(new Rect(area.xMax - right, area.y + top + 4, right, area.height - top - bottom - 8), now);
+            DrawSideButtons(new Rect(area.xMax - right, area.y + top + 4, right, area.height - top - bottom - 8), now, scene);
             DrawBottomButtons(new Rect(area.x, area.yMax - bottom, area.width - right, bottom), now);
             DrawToast(area);
         }
@@ -226,7 +238,15 @@ namespace LastHearth.Game
             }
         }
 
-        void DrawSideButtons(Rect col, long now)
+        /// <summary>How many round buttons stand along the right edge: «Награды» while there are rewards,
+        /// and the four windows that the places on the surface open, unless those are shown.</summary>
+        int SideButtons(bool scene) => (session.State.Rewards.IsEmpty() ? 0 : 1) + (scene ? 0 : 4);
+
+        /// <summary>The daily tasks are done and their chest waits: «Задания» (the button or the board) wears a red dot.</summary>
+        bool QuestsWait(long now) =>
+            session.TasksDone(now) >= session.Balance.Activities.Daily.TasksNeeded && !session.State.DailyClaimed;
+
+        void DrawSideButtons(Rect col, long now, bool scene)
         {
             var st = session.State;
             float size = Mathf.Min(56, col.width - 14);
@@ -242,8 +262,9 @@ namespace LastHearth.Game
                 }
                 y += size + 20;
             }
-            if (RoundButton(new Rect(x, y, size, size), "Buttons/Quests", "Задания",
-                    session.TasksDone(now) >= session.Balance.Activities.Daily.TasksNeeded && !st.DailyClaimed))
+            if (scene)
+                return; // the board, the merchant, the pen and the portal open these from the surface
+            if (RoundButton(new Rect(x, y, size, size), "Buttons/Quests", "Задания", QuestsWait(now)))
                 Open(Win.Quests);
             y += size + 20;
             if (RoundButton(new Rect(x, y, size, size), "Buttons/Shop", "Лавка", false))

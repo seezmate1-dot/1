@@ -16,6 +16,7 @@ namespace LastHearth.Game
         bool onMap;
         bool mapFramed;
         Vector2 mapScroll;
+        Rect sideOnScreen;
 
         static readonly (string key, string name, Win win)[] MapPlaces =
         {
@@ -52,14 +53,15 @@ namespace LastHearth.Game
         void DrawWorldMap(Rect area, long now)
         {
             HudStyles();
-            const float top = 50, bottom = 92, right = 74;
-            float sideButtons = (session.State.Rewards.IsEmpty() ? 3 : 4) * 76;
+            const float top = HudTop, bottom = HudBottom, right = HudRight;
             hudRects = new[]
             {
                 new Rect(area.x, area.y, area.width, top),
                 new Rect(area.x, area.yMax - bottom, area.width, bottom),
-                new Rect(area.xMax - right, area.y + top, right, sideButtons),
+                new Rect(area.xMax - right, area.y + top, right, SideButtons(false) * 76),
             };
+            // the islands' names keep out from under the buttons along the right edge (MapPlate)
+            sideOnScreen = ToScreen(hudRects[2]);
             var mouse = Event.current.mousePosition;
             blockCutaway = window != Win.None || hudRects.Any(r => r.Contains(mouse));
 
@@ -100,7 +102,7 @@ namespace LastHearth.Game
             GUILayout.EndArea();
 
             DrawTopBar(new Rect(area.x, area.y, area.width, top));
-            DrawSideButtons(new Rect(area.xMax - right, area.y + top + 4, right, area.height - top - bottom - 8), now);
+            DrawSideButtons(new Rect(area.xMax - right, area.y + top + 4, right, area.height - top - bottom - 8), now, false);
             DrawBottomButtons(new Rect(area.x, area.yMax - bottom, area.width - right, bottom), now);
             DrawToast(area);
         }
@@ -109,7 +111,7 @@ namespace LastHearth.Game
         /// building over it and the plaque take the tap.</summary>
         bool MapMarker(Vector2 at, string name, float size, bool dot)
         {
-            var plaque = new Rect(at.x - 56, at.y + size * 0.28f, 112, 28);
+            var plaque = MapPlate(new Rect(at.x - 56, at.y + size * 0.28f, 112, 28));
             ArtLibrary.DrawSliced(plaque, "UI/Pill", 30);
             UiSkin.Outlined(plaque, name, buttonLabel);
             if (dot)
@@ -119,6 +121,16 @@ namespace LastHearth.Game
                 return false;
             sounds?.Play("Click", 0.4f);
             return true;
+        }
+
+        /// <summary>A name plate on the map moved to the left, out from under the buttons along the right edge
+        /// («Награды», «Задания»...), so neither hides the other; anywhere else it stays under its place.</summary>
+        Rect MapPlate(Rect plate)
+        {
+            var col = FromScreen(sideOnScreen); // the map scrolls: the column in the map's own coordinates
+            if (plate.xMax > col.x - 4 && plate.x < col.xMax && plate.yMax > col.y && plate.y < col.yMax)
+                plate.x = col.x - 4 - plate.width;
+            return plate;
         }
 
         /// <summary>The ten acts of the campaign: the passed ones carry their number, the current one pulses
@@ -146,7 +158,7 @@ namespace LastHearth.Game
                 {
                     // as wide as the name, so it hides as little of the acts next to it as it can
                     float pw = Mathf.Clamp(c.Acts[i].Name.Length * 8.5f + 30, 90, 200);
-                    var plaque = new Rect(at.x - pw / 2, b.yMax - 2, pw, 26);
+                    var plaque = MapPlate(new Rect(at.x - pw / 2, b.yMax - 2, pw, 26));
                     ArtLibrary.DrawSliced(plaque, "UI/Pill", 30);
                     UiSkin.Outlined(plaque, c.Acts[i].Name, buttonLabel);
                     if (MissionWaits())

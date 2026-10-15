@@ -24,6 +24,8 @@ namespace LastHearth.Game
         bool pairPicker;
         int pairMan = -1, pairWoman = -1;
         GUIStyle cellStyle;
+        Vector2? cutawayBand;        // the main screen: the top and bottom of the fortress the bars leave visible, screen y
+        bool cutawayScene;           // the main screen with the places on the surface (GameRunner.Scene.cs)
 
         /// <summary>Where each dweller is in its room and what it is doing (screen only, not saved).</summary>
         sealed class Walker
@@ -250,6 +252,8 @@ namespace LastHearth.Game
             if (mountainH > 0)
                 ArtLibrary.Draw(new Rect(area.x, area.y, cellW * g.Cells, mountainH), "Mountain");
             float gridY = area.y + mountainH * 0.8f;
+            if (mountainH > 0 && cutawayScene)
+                DrawScene(new Rect(area.x, area.y, cellW * g.Cells, mountainH), gridY, now);
             for (int f = top; f >= bottom; f--)
             {
                 float y = gridY + (top - f) * cellH;
@@ -441,6 +445,26 @@ namespace LastHearth.Game
                 ArtLibrary.Draw(r, "Rooms/Rubble");
         }
 
+        /// <summary>
+        /// Where the «Расчистить» sign of an obstacle goes: a little above the middle of the cell, but
+        /// inside what the top plates and the bottom buttons leave visible (cutawayBand), so the sign of a
+        /// half hidden row climbs out from under the bar; it keeps to its cell (at most half over its top
+        /// edge) and waits for the scroll (null) when the bars hide nearly all of the cell.
+        /// </summary>
+        float? SignY(Rect r, float h)
+        {
+            float y = r.center.y - r.height * 0.1f;
+            float low = r.y - h * 0.5f, high = r.yMax - h - r.height * 0.06f;
+            if (!(cutawayBand is Vector2 band))
+                return y;
+            // the band is in screen points: back into the scrolled cutaway's own coordinates
+            float visibleTop = FromScreen(new Vector2(0, band.x)).y + 4, visibleBottom = FromScreen(new Vector2(0, band.y)).y - 4;
+            y = Mathf.Max(Mathf.Min(y, visibleBottom - h), visibleTop);
+            if (y < low || y > high)
+                return null;
+            return y;
+        }
+
         /// <summary>An obstacle next to a room, the Hearth or a free cell: the one to clear next.</summary>
         bool ReachableObstacle(int floor, int cell)
         {
@@ -477,10 +501,10 @@ namespace LastHearth.Game
                 {
                     DrawRubble(r);
                     // like Hustle Castle: only the obstacles next to the dug-out part carry a sign, the rest is plain rubble
-                    if (ReachableObstacle(floor, cell))
+                    float bw = Mathf.Clamp(10 * 8.5f + 30, r.width * 0.6f, r.width - 8), bh = Mathf.Max(22, r.height * 0.2f);
+                    if (ReachableObstacle(floor, cell) && SignY(r, bh) is float sy)
                     {
-                        float bw = Mathf.Clamp(10 * 8.5f + 30, r.width * 0.6f, r.width - 8);
-                        var b = new Rect(r.center.x - bw / 2, r.center.y - r.height * 0.1f, bw, Mathf.Max(22, r.height * 0.2f));
+                        var b = new Rect(r.center.x - bw / 2, sy, bw, bh);
                         ArtLibrary.DrawSliced(b, "UI/Pill", 30);
                         UiSkin.Outlined(b, "Расчистить", BadgeStyle());
                     }
