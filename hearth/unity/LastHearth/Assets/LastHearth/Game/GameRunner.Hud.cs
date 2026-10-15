@@ -79,9 +79,12 @@ namespace LastHearth.Game
             viewWidth = area.width;
             if (!framed)
             {
-                // open on the rooms, not on the sky: the mountain above is mostly scrolled away
+                // open on the Hearth's floor, in the middle of what the HUD leaves visible
                 framed = true;
-                scroll.y = viewWidth * 0.5f * 0.62f;
+                var g = session.Balance.Grid;
+                float cellW = Math.Max(60, (viewWidth - 8) / g.Cells), cellH = cellW * 0.5f;
+                float hearthTop = (top - 6) + cellW * g.Cells * 0.5f * 0.8f + (ShownFloors().top - g.HearthFloor) * cellH;
+                scroll.y = Math.Max(0, hearthTop + cellH / 2 - (top + (area.height - top - bottom) / 2));
             }
             scroll = GUILayout.BeginScrollView(scroll, GUIStyle.none, GUIStyle.none);
             GUILayout.Space(top - 6);
@@ -182,6 +185,8 @@ namespace LastHearth.Game
 
         void DrawBottomButtons(Rect bar, long now)
         {
+            // the buttons stand on their own wooden panel along the bottom, not on the rooms
+            ArtLibrary.Draw(new Rect(bar.x - 8, bar.y + 22, Screen.width / uiScale + 16, bar.height), "UI/Bar");
             var st = session.State;
             var b = session.Balance;
             float size = Mathf.Min(64, bar.height - 22);
@@ -195,14 +200,14 @@ namespace LastHearth.Game
                 ("Buttons/Growth", "Развитие", Win.Growth, false),
                 ("Buttons/Routes", "Вылазки", Win.Routes, false),
             };
-            // "collect all" on the left, the windows to the right of it
-            float x = bar.x + 6;
+            // "collect all" first, the windows after it, all centred on the panel
+            float x = bar.x + Math.Max(6, (bar.width - (buttons.Length + 1) * (size + 22) - 4) / 2);
             if (RoundButton(new Rect(x, bar.y + 4, size, size), "Buttons/Collect", "Собрать", st.Rooms.Any(r => r.Stock >= 1)))
             {
                 session.CollectAll();
                 sounds?.Play("Coins");
             }
-            x += size + 26;
+            x += size + 22;
             foreach (var (icon, label, win, dot) in buttons)
             {
                 if (RoundButton(new Rect(x, bar.y + 4, size, size), icon, label, dot))

@@ -143,15 +143,27 @@ def badge(size=64):
 
 
 def bubble(size=96):
-    """The cloud over a room with something to collect: white, round, a little tail (the game puts
-    the resource's icon in it)."""
+    """The cloud over a room with something to collect: a white disc with a soft shadow and a little
+    tail (the game puts the resource's icon in its middle)."""
     S = size * 4
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).ellipse((S * 0.1, S * 0.12, S * 0.94, S * 0.9), fill=(0, 0, 0, 110))
+    img.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(10)))
     d = ImageDraw.Draw(img)
-    d.ellipse((14, 18, S - 6, S - 34), fill=(0, 0, 0, 90))
-    d.polygon([(S * 0.42, S * 0.78), (S * 0.58, S * 0.78), (S * 0.5, S * 0.97)], fill=(255, 255, 255, 255))
-    d.ellipse((6, 6, S - 14, S - 46), fill=(255, 255, 255, 255), outline=(90, 70, 50, 255), width=8)
+    d.polygon([(S * 0.4, S * 0.78), (S * 0.6, S * 0.78), (S * 0.5, S * 0.98)], fill=(255, 255, 255, 255))
+    d.ellipse((S * 0.06, S * 0.06, S * 0.94, S * 0.86), fill=(255, 255, 255, 255), outline=(120, 90, 60, 255), width=10)
     return img.resize((size, size), Image.LANCZOS)
+
+
+def bar(size=(512, 112)):
+    """The bottom panel under the main screen's round buttons: dark wood with a gold top edge."""
+    w, h = size
+    wood = plank((w, h), brightness=0.55, studs=False, crop_y=20).convert("RGBA")
+    d = ImageDraw.Draw(wood)
+    d.rectangle((0, 0, w, 5), fill=GOLD + (255,))
+    d.rectangle((0, 5, w, 8), fill=DARK + (255,))
+    return wood
 
 
 def plus(size=96):
@@ -277,6 +289,7 @@ def render_all(out_dir=OUT):
     plus().save(os.path.join(out_dir, "Plus.png"))
     pill().save(os.path.join(out_dir, "Pill.png"))
     round_button().save(os.path.join(out_dir, "Round.png"))
+    bar().save(os.path.join(out_dir, "Bar.png"))
     window().save(os.path.join(out_dir, "Window.png"))
     close_button().save(os.path.join(out_dir, "Close.png"))
     dot().save(os.path.join(out_dir, "Dot.png"))

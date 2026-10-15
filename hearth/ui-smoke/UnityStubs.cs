@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System;
 using System.IO;
 
@@ -303,7 +304,10 @@ namespace UnityEngine
         {
             if (w <= 0 || h <= 0)
                 throw new InvalidOperationException("empty layout rectangle");
-            return new Rect(0, 0, w, h);
+            // a simple vertical layout, like Unity's: inside the area, under what came before, moved by the scroll
+            var r = new Rect(GUILayout.X, GUILayout.Y - GUILayout.ScrollY, w, h);
+            GUILayout.Y += h;
+            return r;
         }
     }
 
@@ -314,11 +318,33 @@ namespace UnityEngine
         public static Func<string, bool> Click = _ => false;
         public static int Depth;
 
-        public static void BeginArea(Rect r) => Depth++;
-        public static void EndArea() => Depth--;
-        public static Vector2 BeginScrollView(Vector2 v, params GUILayoutOption[] o) { Depth++; return v; }
-        public static Vector2 BeginScrollView(Vector2 v, GUIStyle h, GUIStyle w, params GUILayoutOption[] o) { Depth++; return v; }
-        public static void EndScrollView() => Depth--;
+        // where the next layout rectangle goes (only vertical stacking is modelled)
+        public static float X, Y, ScrollY;
+        static readonly Stack<(float x, float y, float scroll)> saved = new Stack<(float, float, float)>();
+
+        public static void BeginArea(Rect r)
+        {
+            Depth++;
+            saved.Push((X, Y, ScrollY));
+            X = r.x;
+            Y = r.y;
+            ScrollY = 0;
+        }
+
+        public static void EndArea()
+        {
+            Depth--;
+            (X, Y, ScrollY) = saved.Pop();
+        }
+
+        public static Vector2 BeginScrollView(Vector2 v, params GUILayoutOption[] o) { Depth++; saved.Push((X, Y, ScrollY)); ScrollY += v.y; return v; }
+        public static Vector2 BeginScrollView(Vector2 v, GUIStyle h, GUIStyle w, params GUILayoutOption[] o) => BeginScrollView(v);
+
+        public static void EndScrollView()
+        {
+            Depth--;
+            (X, Y, ScrollY) = saved.Pop();
+        }
         public static void Label(string t, params GUILayoutOption[] o) => Check(t);
         public static void Label(string t, GUIStyle s, params GUILayoutOption[] o) => Check(t);
         public static bool Button(string t, params GUILayoutOption[] o) { Check(t); return GUI.enabled && Click(t); }
@@ -327,7 +353,7 @@ namespace UnityEngine
         public static void EndHorizontal() => Depth--;
         public static void BeginVertical(params GUILayoutOption[] o) => Depth++;
         public static void EndVertical() => Depth--;
-        public static void Space(float p) { }
+        public static void Space(float p) => Y += p;
         public static void FlexibleSpace() { }
         public static GUILayoutOption Width(float w) => null;
         public static GUILayoutOption Height(float h) => null;

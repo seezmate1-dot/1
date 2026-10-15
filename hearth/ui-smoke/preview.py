@@ -15,9 +15,9 @@ def main(calls, out, scale=2):
         l = l.rstrip("\n")
         if l:
             lines.append(l.split("|") if l.startswith(("T|", "S|")) else l.split("|", 4))
-    tex = [l for l in lines if l[0] in "TS"]
-    w = int(max(float(t[2]) + float(t[4]) for t in tex) * scale) + 4
-    h = int(max(float(t[3]) + float(t[5]) for t in tex) * scale) + 4
+    # the phone of the stubs: 2400 x 1080 px at 420 dpi, the interface scaled by 420 / 190
+    ui = 420 / 190
+    w, h = int(2400 / ui * scale), int(1080 / ui * scale)
     img = Image.new("RGBA", (w, h), (20, 18, 22, 255))
     try:
         font = ImageFont.truetype("DejaVuSans-Bold.ttf", 12 * scale)

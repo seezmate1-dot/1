@@ -72,9 +72,11 @@ namespace LastHearth.Game
         {
             float s = Mathf.Max(28, r.height * 0.34f);
             float bob = Mathf.Sin(Time.time * 2.5f + seed) * s * 0.06f;
-            var b = new Rect(r.center.x - s / 2, r.y + r.height * 0.1f + bob, s, s);
+            var b = new Rect(r.center.x - s / 2, r.y + r.height * 0.14f + bob, s, s);
             ArtLibrary.Draw(b, "UI/Bubble");
-            ArtLibrary.Draw(new Rect(b.x + s * 0.2f, b.y + s * 0.13f, s * 0.6f, s * 0.6f), "Icons/" + resource);
+            // the disc of the cloud is 0.06..0.94 wide and 0.06..0.86 high: the icon fills its middle
+            float icon = s * 0.62f;
+            ArtLibrary.Draw(new Rect(b.x + s * 0.5f - icon / 2, b.y + s * 0.46f - icon / 2, icon, icon), "Icons/" + resource);
             return Tap(new Rect(b.x - s * 0.15f, b.y - s * 0.15f, s * 1.3f, s * 1.3f));
         }
 
