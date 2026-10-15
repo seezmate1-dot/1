@@ -71,6 +71,7 @@ namespace UnityEngine
         public static int touchCount => Touches.Length;
         public static Touch GetTouch(int i) => Touches[i];
         public static bool GetKeyDown(KeyCode k) => Escape;
+        public static bool GetMouseButton(int button) => false;
     }
 
     public static class SleepTimeout
@@ -215,6 +216,8 @@ namespace UnityEngine
         public static float Min(float a, float b) => Math.Min(a, b);
         public static float Clamp(float v, float a, float b) => Math.Max(a, Math.Min(b, v));
         public static float Max(float a, float b, float c) => Math.Max(a, Math.Max(b, c));
+        public static float Pow(float f, float p) => (float)Math.Pow(f, p);
+        public static int RoundToInt(float f) => (int)Math.Round(f);
     }
 
     public class GUIStyleState
@@ -264,7 +267,18 @@ namespace UnityEngine
         public void Use() => type = EventType.Used;
     }
 
-    public static class GUIUtility { public static int hotControl; }
+    public static class GUIUtility
+    {
+        public static int hotControl;
+        // the stub's rectangles are already on the screen (no clipping groups): the points stay
+        public static Vector2 GUIToScreenPoint(Vector2 p) => p;
+        public static Vector2 ScreenToGUIPoint(Vector2 p) => p;
+        public static void ScaleAroundPivot(Vector2 scale, Vector2 pivot)
+        {
+            if (!(scale.x > 0) || !(scale.y > 0))
+                throw new InvalidOperationException("scaled to nothing");
+        }
+    }
 
     public static class GUI
     {

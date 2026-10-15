@@ -71,9 +71,8 @@ namespace LastHearth.Game
             skip = long.Parse(PlayerPrefs.GetString(SkipKey, "0"));
             var balance = Core.Balance.FromJson(UnityEngine.Resources.Load<TextAsset>("balance").text);
             savePath = Path.Combine(Application.persistentDataPath, "save.json");
-            GameState state = File.Exists(savePath) ? SaveSystem.FromJson(File.ReadAllText(savePath)) : null;
             combat = CombatBalance.FromJson(UnityEngine.Resources.Load<TextAsset>("combat").text);
-            StartSession(state != null ? new GameSession(balance, state) : NewGame.Create(balance, Now()));
+            BeginLoading(balance); // the save is read behind the loading screen (LoadingScreen.cs)
         }
 
         void StartSession(GameSession s)
@@ -129,6 +128,8 @@ namespace LastHearth.Game
 
         void Update()
         {
+            if (LoadingTick())
+                return;
             if (battle != null && !battle.Over)
             {
                 battleClock += Time.unscaledDeltaTime;
@@ -277,6 +278,8 @@ namespace LastHearth.Game
 
         void Save()
         {
+            if (session == null)
+                return; // still loading
             File.WriteAllText(savePath, SaveSystem.ToJson(session.State));
             PlayerPrefs.SetString(SkipKey, skip.ToString());
             PlayerPrefs.Save();
@@ -298,6 +301,8 @@ namespace LastHearth.Game
             }
             uiScale = UiScale();
             GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1));
+            if (DrawLoading())
+                return;
             UiSkin.DrawBackground(new Rect(0, 0, Screen.width / uiScale, Screen.height / uiScale));
             // the safe area keeps buttons away from the camera cut-out and rounded corners
             var safe = Screen.safeArea;
@@ -323,8 +328,8 @@ namespace LastHearth.Game
                 DrawWorldMap(area, now);
             else
                 DrawMainScreen(area, now);
-            if (window != Win.None)
-                DrawWindow(area, now);
+            AnimWindow(area, now); // DrawWindow with its pop (GameRunner.Anim.cs)
+            DrawFx();
         }
 
         static string ShortNum(double v)
@@ -398,7 +403,7 @@ namespace LastHearth.Game
                 GUILayout.Label(string.Format("{0} ур.{1} (этаж {2}, работников {3}){4}{5}",
                     data.Name, room.Level, room.Floor + 1, room.Workers.Count, output, cold), Rich());
                 if (data.Produces != null && GUILayout.Button("Собрать", GUILayout.Width(90)))
-                    session.Collect(room.Id);
+                    Collecting(() => session.Collect(room.Id));
                 if (room.Level < session.State.HearthLevel && !session.State.Queue.IsQueued(room.Id) &&
                     GUILayout.Button("Улучшить: " + CostText(session.RoomJobCost(room.Level + 1)), GUILayout.Width(260)))
                     Report(session.UpgradeRoom(room.Id, now));

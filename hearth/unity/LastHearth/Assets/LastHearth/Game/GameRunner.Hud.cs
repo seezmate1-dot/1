@@ -105,7 +105,7 @@ namespace LastHearth.Game
             var st = session.State;
             float x = bar.x;
             // the Hearth: its level on the big badge, a tap opens its window (upgrade, mode, builders)
-            var badge = new Rect(x, bar.y + 2, 46, 46);
+            var badge = HearthBadgeFx(new Rect(x, bar.y + 2, 46, 46));
             ArtLibrary.Draw(badge, "UI/Badge");
             UiSkin.Outlined(new Rect(badge.x, badge.y - 1, badge.width - 3, badge.height - 3), st.HearthLevel.ToString(), titleText);
             if (window == Win.None && GUI.Button(badge, "", GUIStyle.none))
@@ -142,6 +142,7 @@ namespace LastHearth.Game
         /// <summary>One resource: a dark plate, its icon on the left, the amount, a thin bar of the storage.</summary>
         void Plate(Rect r, ResourceType type, string text, float fill, bool alarm)
         {
+            text = PlateText(type, r, text); // counts up as collected icons land
             ArtLibrary.DrawSliced(r, "UI/Pill", 30);
             ArtLibrary.Draw(new Rect(r.x - 4, r.y - 5, 38, 38), "Icons/" + type);
             var old = GUI.color;
@@ -164,7 +165,8 @@ namespace LastHearth.Game
         bool RoundButton(Rect r, string icon, string label, bool dot)
         {
             float pulse = dot ? 1 + 0.04f * Mathf.Sin(Time.time * 5) : 1;
-            var b = new Rect(r.center.x - r.width * pulse / 2, r.y + (r.width - r.width * pulse) / 2, r.width * pulse, r.width * pulse);
+            var hit = new Rect(r.center.x - r.width * pulse / 2, r.y + (r.width - r.width * pulse) / 2, r.width * pulse, r.width * pulse);
+            var b = Pressable(icon, hit); // sinks under the finger
             ArtLibrary.Draw(b, "UI/Round");
             float pad = b.width * 0.14f;
             ArtLibrary.Draw(new Rect(b.x + pad, b.y + pad * 0.8f, b.width - 2 * pad, b.width - 2 * pad), icon);
@@ -174,7 +176,7 @@ namespace LastHearth.Game
             {
                 UiSkin.Outlined(new Rect(r.x - 10, b.yMax - 6, r.width + 20, 16), label, buttonLabel);
             }
-            if (window != Win.None || !GUI.Button(b, "", GUIStyle.none))
+            if (window != Win.None || !GUI.Button(hit, "", GUIStyle.none))
                 return false;
             sounds?.Play("Click", 0.4f);
             return true;
@@ -200,7 +202,7 @@ namespace LastHearth.Game
             float x = bar.x + Math.Max(6, (bar.width - (buttons.Length + 1) * (size + 22) - 4) / 2);
             if (RoundButton(new Rect(x, bar.y + 4, size, size), "Buttons/Collect", "Собрать", st.Rooms.Any(r => r.Stock >= 1)))
             {
-                session.CollectAll();
+                CollectingAll(session.CollectAll, new Rect(x, bar.y + 4, size, size));
                 sounds?.Play("Coins");
             }
             x += size + 22;
@@ -228,7 +230,7 @@ namespace LastHearth.Game
                 if (RoundButton(new Rect(x, y, size, size), "Buttons/Rewards", "Награды", true))
                 {
                     message = "Получено: " + CostText(st.Rewards);
-                    session.ClaimRewards();
+                    CollectingAll(session.ClaimRewards, new Rect(x, y, size, size));
                     sounds?.Play("Coins");
                 }
                 y += size + 20;
@@ -268,10 +270,7 @@ namespace LastHearth.Game
         void DrawWindow(Rect area, long now)
         {
             // the fortress dims under the window
-            var old = GUI.color;
-            GUI.color = new Color(0, 0, 0, 0.55f);
-            GUI.DrawTexture(new Rect(0, 0, Screen.width / uiScale, Screen.height / uiScale), Texture2D.whiteTexture);
-            GUI.color = old;
+            DimScreen();
             var w = new Rect(area.x + area.width * 0.04f, area.y + 6, area.width * 0.92f, area.height - 10);
             ArtLibrary.DrawSliced(w, "UI/Window", 60);
             string title = Titles.First(t => t.win == window).title;
@@ -281,7 +280,7 @@ namespace LastHearth.Game
             ArtLibrary.DrawSliced(plank, "UI/ButtonOn", 16);
             UiSkin.Outlined(plank, title, titleText, 2f);
             var close = new Rect(w.xMax - 46, w.y - 8, 50, 50);
-            ArtLibrary.Draw(close, "UI/Close");
+            ArtLibrary.Draw(Pressable("close", close), "UI/Close");
             if (GUI.Button(close, "", GUIStyle.none))
             {
                 sounds?.Play("Click", 0.4f);

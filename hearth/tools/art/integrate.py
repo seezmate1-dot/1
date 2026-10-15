@@ -5,6 +5,7 @@
 - Rooms/Frame.png: the opening a room sits in, cut out of that rock (nine slices: GameRunner.View
   DrawInterior), with a dark inner shadow so the rooms look sunk into the mountain.
 - Map.png, Mountain.png, Battlefield.png: the painted world.
+- Splash.png: the loading screen (1920 x 1080), and "splash" in Art.json.
 
     python hearth/tools/art/integrate.py [--from DIR]
 """
@@ -79,6 +80,15 @@ def main(stage):
         else:
             fit(img, size).save(os.path.join(ART, "Rooms", f))
         print("room", name)
+    splash = os.path.join(stage, "Splash.png")
+    if os.path.exists(splash):
+        # the loading screen's key art (LoadingScreen.cs shows it when the manifest says so)
+        fit(Image.open(splash).convert("RGB"), (1920, 1080)).save(os.path.join(ART, "Splash.png"))
+        manifest = os.path.join(ART, "Art.json")
+        m = json.load(open(manifest, encoding="utf-8"))
+        m["splash"] = True
+        json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        print("splash")
     for name, size in (("Map", (2400, 1350)), ("Mountain", (1536, 768)), ("Battlefield", (1536, 768))):
         p = os.path.join(stage, name + ".png")
         if os.path.exists(p):

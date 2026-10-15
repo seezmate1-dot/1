@@ -125,14 +125,22 @@ public static class UiSmoke
         Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         Call(runner, "StartSession", session);
         GUILayout.Click = _ => false;
-        // window -1: the map of the islands
-        Set(runner, "onMap", window < 0);
+        // window -1: the map of the islands; -2: the loading screen; -3: the effects (collect all, «Готово», a level up) in flight
+        Set(runner, "onMap", window == -1);
         SetEnum(runner, "window", Math.Max(0, window));
         if (window == 2)
             Set(runner, "selectedRoom", session.State.Rooms[0].Id);
         Time.unscaledDeltaTime = 0.5f;
-        for (int i = 0; i < 12; i++)
+        for (int i = 0; i < (window == -2 ? 3 : 12); i++)
             Call(runner, "Update"); // the dwellers start walking
+        if (window == -3)
+        {
+            Call(runner, "OnGUI"); // where the rooms and the plates are
+            Call(runner, "CollectingAll", (Action)session.CollectAll, null);
+            ((Dictionary<int, float>)Get(runner, "roomDoneAt"))[session.State.Rooms[0].Id] = Time.realtimeSinceStartup;
+            Set(runner, "levelUpAt", Time.realtimeSinceStartup);
+            Time.realtimeSinceStartup += 0.5f;
+        }
         GUI.Record = new List<string>();
         Call(runner, "OnGUI");
         File.WriteAllLines(path, GUI.Record);

@@ -337,6 +337,7 @@ namespace LastHearth.Game
             Badge(r, session.State.HearthLevel);
             if (job != null)
                 Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "ждёт");
+            RoomFx(r, HearthFx);
             if (Tap(r))
             {
                 selectedRoom = -1;
@@ -370,9 +371,10 @@ namespace LastHearth.Game
                 Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "в очереди");
             if (selectedRoom == room.Id)
                 Outline(r);
+            RoomFx(r, room.Id); // the «Готово» glow, where the collected icons fly from
             if (data.Produces != null && room.Stock >= 1 && Bubble(r, data.Produces.Value, room.Id))
             {
-                message = string.Format("Собрано {0}", session.Collect(room.Id));
+                message = string.Format("Собрано {0}", Collecting(() => session.Collect(room.Id)));
                 sounds?.Play("Coins");
                 return;
             }
@@ -465,7 +467,7 @@ namespace LastHearth.Game
             GUILayout.BeginHorizontal();
             if (data.Produces != null && GUILayout.Button("Собрать"))
             {
-                message = "Собрано " + session.Collect(room.Id);
+                message = "Собрано " + Collecting(() => session.Collect(room.Id));
                 sounds?.Play("Coins");
             }
             if (room.Level < session.State.HearthLevel && !session.State.Queue.IsQueued(room.Id) &&

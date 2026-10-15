@@ -54,6 +54,8 @@ namespace LastHearth.Game
             public bool Passages;
             /// <summary>The rooms are painted interiors that sit in the rock's opening (Rooms/Frame).</summary>
             public bool Framed;
+            /// <summary>The loading screen's painted key art is there (Splash).</summary>
+            public bool Splash;
         }
 
         static Manifest manifest;
