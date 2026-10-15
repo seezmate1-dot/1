@@ -308,7 +308,7 @@ namespace LastHearth.Game
                 return r;
             }
             float h = r.height;
-            var inner = new Rect(r.x + h * 0.055f, r.y + h * 0.08f, r.width - h * 0.11f, h * 0.85f);
+            var inner = new Rect(r.x + h * 0.03f, r.y + h * 0.06f, r.width - h * 0.06f, h * 0.88f);
             ArtLibrary.Draw(inner, path);
             ArtLibrary.DrawSliced(r, "Rooms/Frame", 48, h * 0.125f);
             return inner;
