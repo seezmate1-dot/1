@@ -74,12 +74,12 @@ def grade(img):
     return img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=40, threshold=2))
 
 
-def draw(prompt, size, steps=8, seed=7, guidance=2.0):
+def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
     """A picture from the prompt alone (text to image, the same model)."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
     t2i = StableDiffusionXLPipeline(**pipe().components)
     g = torch.Generator().manual_seed(seed)
-    return t2i(prompt=prompt + ", " + STYLE, negative_prompt=NEGATIVE, num_inference_steps=steps, guidance_scale=guidance,
+    return t2i(prompt=prompt + ", " + STYLE, negative_prompt=negative, num_inference_steps=steps, guidance_scale=guidance,
                generator=g, width=w, height=h).images[0]
 
 
@@ -180,6 +180,17 @@ def ladder(args):
     _save(out.crop(bbox) if bbox else out, "Rooms/Ladder.png", args)
 
 
+def splash(args):
+    """The loading screen's key art: the fortress in the mountain at dusk, painted big, then grown to 1920x1080."""
+    img = draw("epic key art painting, a mighty fortress carved into a snowy mountain cliff at dusk, many small windows glowing "
+               "with warm orange firelight, cold blue twilight sky, thick purple fog creeping in the valley below, "
+               "three small hero silhouettes with a sword and a banner standing on a rocky ledge in the foreground, "
+               "wide cinematic composition, dramatic scale",
+               (1216, 704), seed=args.seed, guidance=2.2,
+               negative=NEGATIVE.replace(", people, person, face", ", faces, close-up, crowd, frame, border"))
+    _save(grade(img.resize((1920, 1080), Image.LANCZOS)), "Splash.png", args)
+
+
 def _save(img, rel, args):
     path = os.path.join(args.out or aigen.ART, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -206,5 +217,7 @@ if __name__ == "__main__":
             door(args)
         elif n == "Ladder":
             ladder(args)
+        elif n == "Splash":
+            splash(args)
         else:
             print("unknown:", n)

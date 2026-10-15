@@ -40,7 +40,8 @@ jobs:
           import json, sys
           groups = {"rooms": ["Hearth", "Bedrooms", "Kitchen", "CoalMine", "Barracks", "Warehouse", "Mine", "Tavern", "TradingPost",
                               "Forge", "Infirmary", "Library", "TrainingHall", "Greenhouse", "Watchtower", "Chapel", "Archive", "Empty"],
-                    "world": ["Map", "Mountain", "Battlefield", "Rock"], "extras": ["Door", "Ladder"]}
+                    "world": ["Map", "Mountain", "Battlefield", "Rock"], "extras": ["Door", "Ladder"],
+                    "splash": ["Splash"]}
           groups["tiers"] = [r + "_" + t for r in groups["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")]
           names = [n for a in sys.argv[1].replace(",", " ").split() for n in groups.get(a, [a])]
           chunks = names  # one picture per runner: the slow runners take up to 40 minutes a picture
