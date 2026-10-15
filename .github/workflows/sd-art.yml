@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       names:
-        description: "Pictures or groups: rooms, world, extras"
+        description: "Pictures or groups: rooms, world, extras, tiers, pieces"
         default: "rooms world extras"
       strength:
         default: "0.65"
@@ -41,7 +41,16 @@ jobs:
           groups = {"rooms": ["Hearth", "Bedrooms", "Kitchen", "CoalMine", "Barracks", "Warehouse", "Mine", "Tavern", "TradingPost",
                               "Forge", "Infirmary", "Library", "TrainingHall", "Greenhouse", "Watchtower", "Chapel", "Archive", "Empty"],
                     "world": ["Map", "Mountain", "Battlefield", "Rock"], "extras": ["Door", "Ladder"],
-                    "splash": ["Splash"]}
+                    "splash": ["Splash"],
+                    # the transparent pieces (sdpaint.PIECES): resource icons, round-button icons, decorations, obstacles
+                    "pieces": ["Icons/" + n for n in ("Coal", "Food", "Iron", "Silver", "Essence", "Sparks", "Blueprints",
+                                                      "Cores", "Ember", "Glory")]
+                              + ["Buttons/" + n for n in ("Collect", "Fights", "Growth", "Routes", "Quests", "Shop", "Events",
+                                                          "Rewards", "Map", "Fortress")]
+                              + ["Decor/" + n for n in ("armor", "banner_blue", "banner_green", "banner_red", "barrels",
+                                                        "candles", "chest_gold", "crystal", "gold_shield", "keg", "plant",
+                                                        "pumpkin", "rug", "shelf", "shield", "shrine", "throne", "treasure")]
+                              + ["Rooms/Rubble", "Rooms/Scaffold"]}
           groups["tiers"] = [r + "_" + t for r in groups["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")]
           names = [n for a in sys.argv[1].replace(",", " ").split() for n in groups.get(a, [a])]
           chunks = names  # one picture per runner: the slow runners take up to 40 minutes a picture
@@ -67,10 +76,19 @@ jobs:
         run: |
           pip install -q --index-url https://download.pytorch.org/whl/cpu torch
           pip install -q diffusers transformers accelerate safetensors pillow huggingface_hub
+      - name: Install rembg
+        if: contains(matrix.names, '/')
+        # the transparent pieces are cut out with rembg; without it sdpaint.py falls back to a flood fill
+        run: pip install -q "rembg[cpu]" || echo "no rembg"
       - uses: actions/cache@v4
         with:
           path: ~/models
           key: dreamshaper-xl-turbo-v2-1
+      - uses: actions/cache@v4
+        if: contains(matrix.names, '/')
+        with:
+          path: ~/.u2net
+          key: rembg-isnet-general-use
       - name: Model
         run: |
           mkdir -p ~/models

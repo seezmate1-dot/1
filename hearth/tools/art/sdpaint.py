@@ -7,6 +7,10 @@ floor where the dwellers walk and the places on the map stay where the game expe
 
     sdenv/bin/python hearth/tools/art/sdpaint.py [names or groups] [--strength 0.6] [--steps 8] [--out DIR]
 
+Transparent pieces (group "pieces": Icons/<Name>, Buttons/<Name>, Decor/<name>, Rooms/Rubble, Rooms/Scaffold)
+are painted from text on a plain white ground and cut out with rembg (pip install "rembg[cpu]"; without
+it, a flood fill of the ground from the borders).
+
 MODEL: the checkpoint file (default: $SD_MODEL or ~/models/DreamShaperXL_Turbo_v2_1.safetensors).
 """
 import argparse
@@ -191,6 +195,131 @@ def splash(args):
     _save(grade(img.resize((1920, 1080), Image.LANCZOS)), "Splash.png", args)
 
 
+# ------------------------------------------------------------------ the transparent pieces
+
+# what each piece shows (after aigen's ICONS, BUTTONS and DECOR, worded for this model: the object, its
+# shape and colours; no "glowing", the negative prompt rules glow out)
+ICONS = {
+    "Coal": "a pile of black coal lumps with dark grey facets",
+    "Food": "a wicker basket full of bread loaves, red apples and a wedge of yellow cheese",
+    "Iron": "a stack of three dark grey iron ingots",
+    "Silver": "a stack of silver coins with a silver ingot",
+    "Essence": "a round glass flask of violet magic potion with a cork stopper",
+    "Sparks": "one faceted blue-white crystal gem",
+    "Blueprints": "two rolled blue blueprint scrolls tied with string",
+    "Cores": "a faceted red crystal heart",
+    "Ember": "a round orange ember stone with red-hot cracks",
+    "Glory": "a golden laurel wreath with a golden star in the middle",
+}
+BUTTONS = {
+    "Collect": "a heap of gold coins", "Fights": "a crossed steel sword and round wooden shield",
+    "Growth": "an iron anvil with a blacksmith hammer", "Routes": "a leather travel bag with a pickaxe",
+    "Quests": "a rolled parchment scroll with a red wax seal", "Shop": "a leather pouch full of gold coins",
+    "Events": "a golden chalice", "Rewards": "an open wooden treasure chest full of gold coins",
+    "Map": "a folded parchment map with a red cross", "Fortress": "a small stone castle with red roofs and flags",
+}
+DECOR = dict(aigen.DECOR)
+DECOR.update({
+    "candles": "a tall iron candelabrum with five lit candles", "crystal": "a large blue magic crystal on a stone base",
+    "keg": "a wooden barrel full of red apples", "plant": "a green leafy plant in a clay pot",
+    "rug": "an ornate red and gold rug lying flat, seen at an angle", "shelf": "a wooden wall shelf with bottles and jars",
+})
+OBSTACLES = {
+    "Rubble": "a wide low heap of fallen grey-brown rocks, boulders and broken wooden planks, a collapsed rubble pile, "
+              "side view",
+    "Scaffold": "wooden construction scaffolding, front view, a frame of wooden poles and planks tied with ropes, "
+                "a wooden ladder, a bucket hanging on a rope, sparse with empty gaps",
+}
+
+
+def _piece_list():
+    out = {}
+    for n, what in ICONS.items():
+        out["Icons/" + n] = ("a game resource icon: " + what, (256, 256))
+    for n, what in BUTTONS.items():
+        out["Buttons/" + n] = ("a game button icon: " + what, (256, 256))
+    for n, what in DECOR.items():
+        p = os.path.join(aigen.ART, "Decor", n + ".png")
+        out["Decor/" + n] = ("a room decoration: " + what + ", seen from the front",
+                             Image.open(p).size if os.path.exists(p) else (320, 320))
+    for n, what in OBSTACLES.items():
+        out["Rooms/" + n] = (what, (768, 384))
+    return out
+
+
+PIECES = _piece_list()
+BACKDROP = ", single object, centered, isolated on a plain flat white background, no shadow, no ground"
+
+_rembg = None
+
+
+def _matte(img, bg, holes=False):
+    """The piece's alpha: rembg's matte (isnet-general-use) when it is installed, else the background
+    flooded from the borders; holes: also cut every patch of the background colour inside the piece
+    (the gaps of the scaffolding)."""
+    import numpy as np
+    global _rembg
+    alpha = None
+    try:
+        import rembg
+        if _rembg is None:
+            _rembg = rembg.new_session(os.environ.get("REMBG_MODEL", "isnet-general-use"))
+        alpha = np.asarray(rembg.remove(img.convert("RGB"), session=_rembg).getchannel("A"), dtype=np.float32) / 255
+    except Exception as e:  # noqa: BLE001  (no rembg, or its model could not be fetched: the flood fill)
+        print("  rembg unavailable (%s), flood fill" % type(e).__name__, flush=True)
+        alpha = np.asarray(_cutout(img).getchannel("A"), dtype=np.float32) / 255
+    if holes:
+        d = np.abs(np.asarray(img.convert("RGB"), dtype=np.float32) - bg).max(axis=2)
+        alpha = np.minimum(alpha, np.clip((d - 14) / 26, 0, 1))
+    alpha[alpha < 0.06] = 0
+    return alpha
+
+
+def _unmix(img, alpha, bg):
+    """The colours at the soft edges without the background mixed in (no white fringe)."""
+    import numpy as np
+    c = np.asarray(img.convert("RGB"), dtype=np.float32)
+    a = np.maximum(alpha, 1e-3)[..., None]
+    c = np.clip((c - (1 - a) * bg) / a, 0, 255)
+    rgba = np.dstack([c, alpha[..., None] * 255]).round().astype(np.uint8)
+    return Image.fromarray(rgba, "RGBA")
+
+
+def _place(img, size, pad=0.04, bottom=False):
+    """The piece cropped to what it shows and fitted into its picture: centred, or standing on the bottom."""
+    bbox = img.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox() or (0, 0, img.width, img.height)
+    p = img.crop(bbox)
+    W, H = size
+    k = min(W * (1 - 2 * pad) / p.width, H * (1 - 2 * pad) / p.height)
+    p = p.resize((max(1, round(p.width * k)), max(1, round(p.height * k))), Image.LANCZOS)
+    out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    y = H - p.height - round(H * pad * 0.5) if bottom else (H - p.height) // 2
+    out.alpha_composite(p, ((W - p.width) // 2, y))
+    return out
+
+
+def _ground(img):
+    """The colour of the plain ground: the median of the picture's border."""
+    import numpy as np
+    c = np.asarray(img.convert("RGB"), dtype=np.float32)
+    return np.median(np.concatenate([c[:8].reshape(-1, 3), c[-8:].reshape(-1, 3),
+                                     c[:, :8].reshape(-1, 3), c[:, -8:].reshape(-1, 3)]), axis=0)
+
+
+def piece(name, args):
+    """A transparent piece: painted on a plain white ground, the ground cut away, the colours graded,
+    trimmed to the object and scaled down into the game's size (painted large for smooth edges)."""
+    prompt, size = PIECES[name]
+    wide = size[0] >= size[1] * 1.6
+    gen = (1216, 608) if wide else (1024, 1024)
+    img = draw(prompt + BACKDROP, gen, steps=args.steps, seed=args.seed)
+    alpha = _matte(img, _ground(img), holes=name.startswith("Rooms/"))
+    graded = grade(img)
+    out = _unmix(graded, alpha, _ground(graded))
+    out = _place(out, size, pad=0.02 if wide else 0.05, bottom=wide)
+    _save(out, name + ".png", args)
+
+
 def _save(img, rel, args):
     path = os.path.join(args.out or aigen.ART, rel)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -207,9 +336,12 @@ if __name__ == "__main__":
     ap.add_argument("--out", default="")
     args = ap.parse_args()
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder"],
-              "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")]}
+              "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
+              "pieces": list(PIECES)}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
-        if n.partition("_")[0] in aigen.ROOMS:
+        if n in PIECES:
+            piece(n, args)
+        elif n.partition("_")[0] in aigen.ROOMS:
             room(n, args)
         elif n in aigen.WORLD:
             world(n, args)
