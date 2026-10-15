@@ -34,8 +34,8 @@ class Building:
         self.root = bpy.data.objects.new("building", None)
         bpy.context.scene.collection.objects.link(self.root)
 
-    def put(self, name, loc, rot_z=0.0, scale=1.0, tint=None):
-        p = q.put(name, loc, rot_z=rot_z, scale=scale, tint=tint)
+    def put(self, name, loc, rot_z=0.0, scale=1.0, tint=None, mul=None):
+        p = q.put(name, loc, rot_z=rot_z, scale=scale, tint=tint, mul=mul)
         p.parent = self.root
         return p
 
