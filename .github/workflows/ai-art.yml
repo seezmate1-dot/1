@@ -1,0 +1,62 @@
+# Paints the game's art with OpenAI's image model (hearth/tools/art/aigen.py) and commits it to the branch.
+# Needs the repository secret OPENAI_API_KEY (Settings → Secrets and variables → Actions).
+# Runs by hand (Actions → AI art → Run workflow), or when hearth/tools/art/ai/request.txt changes:
+# its first line names the pictures or groups (rooms, world, ui, icons, buttons, decor, all), the second the quality.
+name: AI art
+
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        description: "Pictures or groups: rooms, world, ui, icons, buttons, decor, all"
+        default: "all"
+      quality:
+        description: "medium or high"
+        default: "medium"
+  push:
+    branches: [main, master, 'claude/**']
+    paths:
+      - 'hearth/tools/art/ai/request.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ai-art-${{ github.ref }}
+
+jobs:
+  paint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow
+      - name: Paint
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EVENT: ${{ github.event_name }}
+          IN_NAMES: ${{ inputs.names }}
+          IN_QUALITY: ${{ inputs.quality }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::Add the repository secret OPENAI_API_KEY (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            NAMES="$IN_NAMES"; QUALITY="$IN_QUALITY"
+          else
+            NAMES="$(sed -n 1p hearth/tools/art/ai/request.txt)"; QUALITY="$(sed -n 2p hearth/tools/art/ai/request.txt)"
+          fi
+          python hearth/tools/art/aigen.py $NAMES --quality=${QUALITY:-medium}
+      - name: Commit the pictures
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hearth/tools/art/ai hearth/unity/LastHearth/Assets/LastHearth/Resources/Art
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "AI art: $(sed -n 1p hearth/tools/art/ai/request.txt 2>/dev/null || echo by hand)"
+          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
