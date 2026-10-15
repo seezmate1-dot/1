@@ -179,6 +179,88 @@ def pill(size=(128, 40)):
     return img
 
 
+def round_button(size=128):
+    """A round button: a deep blue disc in a gold rim (the icons of the main screen stand out on it)."""
+    S = size * 4
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((14, 26, S - 6, S - 2), fill=(0, 0, 0, 120))
+    d.ellipse((4, 4, S - 4, S - 4), fill=DARK + (255,))
+    d.ellipse((10, 10, S - 10, S - 10), fill=(196, 140, 52, 255))
+    d.ellipse((22, 22, S - 22, S - 22), fill=GOLD + (255,))
+    inner = Image.new("RGBA", (S - 80, S - 80), (0, 0, 0, 0))
+    di = ImageDraw.Draw(inner)
+    n = S - 80
+    for k in range(60):
+        f = k / 60
+        col = (int(30 + 40 * f), int(58 + 60 * f), int(120 + 70 * f), 255)
+        pad = int(f * n * 0.35)
+        di.ellipse((pad, pad * 0.6, n - pad, n - pad * 1.4), fill=col)
+    mask = Image.new("L", (n, n), 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, n, n), fill=255)
+    img.paste(inner, (40, 40), mask)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def window(size=(512, 384), frame=26):
+    """A window over the fortress: a dark wooden board in a gold-studded frame; light text reads on it."""
+    w, h = size
+    board = plank((w, h), brightness=0.42, studs=False, crop_y=20).convert("RGB")
+    inner = Image.new("RGB", (w - 2 * frame, h - 2 * frame), (44, 28, 18))
+    grain = plank((w - 2 * frame, h - 2 * frame), brightness=0.3, studs=False, crop_y=300).convert("RGB")
+    inner = Image.blend(inner, grain, 0.45)
+    board.paste(inner, (frame, frame), _rounded_mask(inner.size, 10))
+    d = ImageDraw.Draw(board)
+    d.rounded_rectangle((frame - 3, frame - 3, w - frame + 2, h - frame + 2), radius=12, outline=GOLD, width=3)
+    d.rounded_rectangle((0, 0, w - 1, h - 1), radius=16, outline=DARK, width=4)
+    d.rounded_rectangle((5, 5, w - 6, h - 6), radius=13, outline=(150, 100, 40), width=2)
+    _studs(board, GOLD, r=6, inset=13)
+    out = Image.new("RGBA", size, (0, 0, 0, 0))
+    out.paste(board, (0, 0), _rounded_mask(size, 16))
+    return out
+
+
+def close_button(size=96):
+    """The round red button with a white cross that closes a window."""
+    S = size * 4
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((10, 20, S - 2, S - 2), fill=(0, 0, 0, 120))
+    d.ellipse((4, 4, S - 12, S - 12), fill=(180, 40, 30, 255), outline=GOLD + (255,), width=18)
+    d.ellipse((40, 30, S - 60, S * 0.45), fill=(215, 80, 60, 255))
+    c, r = (S - 8) / 2, S * 0.2
+    for a, b in (((c - r, c - r), (c + r, c + r)), ((c - r, c + r), (c + r, c - r))):
+        d.line((a, b), fill=(255, 245, 230, 255), width=int(S * 0.1))
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def dot(size=32):
+    """The red dot on a button: something is waiting there."""
+    S = size * 4
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((4, 4, S - 4, S - 4), fill=(225, 40, 30, 255), outline=(255, 240, 220, 255), width=12)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def gear(size=128):
+    """Settings: a gold gear on the round wooden button."""
+    import math
+    img = round_button(size).resize((size * 4, size * 4), Image.LANCZOS)
+    d = ImageDraw.Draw(img)
+    S = size * 4
+    c = S / 2
+    teeth = []
+    for k in range(16):
+        a = k * math.pi / 8
+        r = S * (0.3 if k % 2 == 0 else 0.23)
+        for da in (-0.17, 0.17):
+            teeth.append((c + r * math.cos(a + da), c + r * math.sin(a + da)))
+    d.polygon(teeth, fill=GOLD + (255,), outline=DARK + (255,))
+    d.ellipse((c - S * 0.09, c - S * 0.09, c + S * 0.09, c + S * 0.09), fill=(60, 36, 18, 255))
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def render_all(out_dir=OUT):
     os.makedirs(out_dir, exist_ok=True)
     plank(brightness=1.0).save(os.path.join(out_dir, "Button.png"))
@@ -194,6 +276,11 @@ def render_all(out_dir=OUT):
     bubble().save(os.path.join(out_dir, "Bubble.png"))
     plus().save(os.path.join(out_dir, "Plus.png"))
     pill().save(os.path.join(out_dir, "Pill.png"))
+    round_button().save(os.path.join(out_dir, "Round.png"))
+    window().save(os.path.join(out_dir, "Window.png"))
+    close_button().save(os.path.join(out_dir, "Close.png"))
+    dot().save(os.path.join(out_dir, "Dot.png"))
+    gear().save(os.path.join(out_dir, "Gear.png"))
     print("ui written to", out_dir)
 
 

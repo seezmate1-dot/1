@@ -82,6 +82,7 @@ def world(m):
 def icons(m):
     import icons as i
     i.render_all(os.path.join(OUT, "Icons"))
+    i.render_buttons(os.path.join(OUT, "Buttons"))
 
 
 def ui(m):

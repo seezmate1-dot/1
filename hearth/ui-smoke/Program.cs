@@ -36,7 +36,7 @@ public static class UiSmoke
             new PlayerBot(played).PlayDays(TestData.Start, 20);
             Run("крепость бота, 20 дней", played, frames, 2, clicks);
             if (args.Length > 1)
-                Preview(played, args[1]);
+                Preview(played, args[1], args.Length > 2 ? int.Parse(args[2]) : 0);
 
             var late = NewGame.Create(balance, TestData.Start);
             late.Combat = combat;
@@ -53,7 +53,7 @@ public static class UiSmoke
             Console.WriteLine("  " + kv.Value + " × " + kv.Key.Replace("\n", " / "));
         // every system must have been reached through its buttons
         string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "Другие соперники",
-                          "Крепость", "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:" };
+                          "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
         Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + ", нарисовано: " + GUI.Textures);
@@ -86,7 +86,8 @@ public static class UiSmoke
         int battles = 0, surges = 0;
         for (int frame = 0; frame < frames; frame++)
         {
-            Set(runner, "tab", (frame / 150) % 7);
+            // open every window in turn, and the bare fortress between them
+            SetEnum(runner, "window", (frame / 150) % 13);
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
             Time.unscaledDeltaTime = 1.0f;
@@ -102,7 +103,7 @@ public static class UiSmoke
             GUILayout.Depth = 0;
             Call(runner, "OnGUI");
             if (GUILayout.Depth != 0)
-                throw new InvalidOperationException(name + ": layout groups not balanced (" + GUILayout.Depth + ") on tab " + Get(runner, "tab"));
+                throw new InvalidOperationException(name + ": layout groups not balanced (" + GUILayout.Depth + ") in window " + Get(runner, "window"));
             Call(runner, "Update");
             if (Get(runner, "battle") != null)
                 battles++;
@@ -115,15 +116,17 @@ public static class UiSmoke
             s.State.HearthLevel, Get(runner, "message")));
     }
 
-    /// <summary>Writes what the fortress tab draws, for hearth/ui-smoke/preview.py.</summary>
-    static void Preview(GameSession session, string path)
+    /// <summary>Writes what the main screen draws (the fortress and its HUD), for hearth/ui-smoke/preview.py.</summary>
+    static void Preview(GameSession session, string path, int window)
     {
         var runner = new GameRunner();
         Call(runner, "Awake");
         Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         Call(runner, "StartSession", session);
         GUILayout.Click = _ => false;
-        Set(runner, "tab", 0);
+        SetEnum(runner, "window", window);
+        if (window == 2)
+            Set(runner, "selectedRoom", session.State.Rooms[0].Id);
         Time.unscaledDeltaTime = 0.5f;
         for (int i = 0; i < 12; i++)
             Call(runner, "Update"); // the dwellers start walking
@@ -136,6 +139,12 @@ public static class UiSmoke
     static object Get(object o, string field) => o.GetType().GetField(field, Any).GetValue(o);
 
     static void Set(object o, string field, object value) => o.GetType().GetField(field, Any).SetValue(o, value);
+
+    static void SetEnum(object o, string field, int value)
+    {
+        var f = o.GetType().GetField(field, Any);
+        f.SetValue(o, Enum.ToObject(f.FieldType, value));
+    }
 
     static void Call(object o, string method, params object[] args)
     {

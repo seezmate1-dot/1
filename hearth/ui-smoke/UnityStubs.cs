@@ -95,7 +95,7 @@ namespace UnityEngine
 
     public enum FontStyle { Normal, Bold }
 
-    public enum TextAnchor { UpperLeft, MiddleCenter }
+    public enum TextAnchor { UpperLeft, MiddleLeft, MiddleCenter }
 
     public class Texture2D : Texture
     {
@@ -172,6 +172,7 @@ namespace UnityEngine
         public float yMax => y + height;
         public float xMax => x + width;
         public Vector2 center => new Vector2(x + width / 2, y + height / 2);
+        public bool Contains(Vector2 p) => p.x >= x && p.x < x + width && p.y >= y && p.y < y + height;
     }
 
     public class RectOffset { public RectOffset(int l, int r, int t, int b) { } }
@@ -193,6 +194,7 @@ namespace UnityEngine
         public static float Abs(float f) => Math.Abs(f);
         public static float Sign(float f) => f >= 0 ? 1 : -1;
         public static int Min(int a, int b) => Math.Min(a, b);
+        public static float Min(float a, float b) => Math.Min(a, b);
         public static float Clamp(float v, float a, float b) => Math.Max(a, Math.Min(b, v));
         public static float Max(float a, float b, float c) => Math.Max(a, Math.Max(b, c));
     }
@@ -238,6 +240,7 @@ namespace UnityEngine
     {
         public static Event current = new Event();
         public EventType type = EventType.Repaint;
+        public Vector2 mousePosition = new Vector2(400, 300);
         public void Use() => type = EventType.Used;
     }
 
@@ -266,6 +269,14 @@ namespace UnityEngine
         }
 
         public static bool Button(Rect r, string t, GUIStyle s) => enabled && GUILayout.Click("[ячейка]" + t);
+
+        /// <summary>A box in a style: the frames drawn as nine slices (the stub draws the background stretched).</summary>
+        public static void Box(Rect r, string t, GUIStyle s)
+        {
+            if (s.normal.background == null)
+                throw new InvalidOperationException("a box without a picture");
+            DrawTexture(r, s.normal.background);
+        }
 
         public static void DrawTextureWithTexCoords(Rect r, Texture t, Rect uv)
         {
@@ -306,6 +317,7 @@ namespace UnityEngine
         public static void BeginArea(Rect r) => Depth++;
         public static void EndArea() => Depth--;
         public static Vector2 BeginScrollView(Vector2 v, params GUILayoutOption[] o) { Depth++; return v; }
+        public static Vector2 BeginScrollView(Vector2 v, GUIStyle h, GUIStyle w, params GUILayoutOption[] o) { Depth++; return v; }
         public static void EndScrollView() => Depth--;
         public static void Label(string t, params GUILayoutOption[] o) => Check(t);
         public static void Label(string t, GUIStyle s, params GUILayoutOption[] o) => Check(t);

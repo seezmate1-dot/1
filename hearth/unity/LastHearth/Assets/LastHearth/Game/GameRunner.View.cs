@@ -19,7 +19,6 @@ namespace LastHearth.Game
         int selectedRoom = -1;
         int selectedFloor = -1, selectedCell = -1;
         float viewWidth = 900;
-        bool listView;
         bool decorPicker;
         GUIStyle cellStyle;
 
@@ -64,7 +63,7 @@ namespace LastHearth.Game
         void Pill(Rect r, string text)
         {
             var p = new Rect(r.center.x - r.width * 0.2f, r.y + r.height * 0.84f, r.width * 0.4f, Mathf.Max(18, r.height * 0.13f));
-            ArtLibrary.Draw(p, "UI/Pill");
+            ArtLibrary.DrawSliced(p, "UI/Pill", 18);
             GUI.Label(p, text, BadgeStyle());
         }
 
@@ -76,7 +75,7 @@ namespace LastHearth.Game
             var b = new Rect(r.center.x - s / 2, r.y + r.height * 0.1f + bob, s, s);
             ArtLibrary.Draw(b, "UI/Bubble");
             ArtLibrary.Draw(new Rect(b.x + s * 0.2f, b.y + s * 0.13f, s * 0.6f, s * 0.6f), "Icons/" + resource);
-            return GUI.Button(new Rect(b.x - s * 0.15f, b.y - s * 0.15f, s * 1.3f, s * 1.3f), "", GUIStyle.none);
+            return Tap(new Rect(b.x - s * 0.15f, b.y - s * 0.15f, s * 1.3f, s * 1.3f));
         }
 
         /// <summary>1 234 → 1,2 тыс.: numbers that fit a narrow cell.</summary>
@@ -274,11 +273,11 @@ namespace LastHearth.Game
             Badge(r, session.State.HearthLevel);
             if (job != null)
                 Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "ждёт");
-            if (GUI.Button(r, "", GUIStyle.none))
+            if (Tap(r))
             {
                 selectedRoom = -1;
                 selectedFloor = -1;
-                message = "Очаг: улучшение — кнопка над разрезом; режим — кнопки вверху";
+                Open(Win.Hearth);
             }
         }
 
@@ -313,12 +312,11 @@ namespace LastHearth.Game
                 sounds?.Play("Coins");
                 return;
             }
-            if (GUI.Button(r, "", GUIStyle.none))
+            if (Tap(r))
             {
-                sounds?.Play("Click", 0.4f);
                 selectedRoom = room.Id;
                 selectedFloor = -1;
-                decorPicker = false;
+                Open(Win.Room);
             }
         }
 
@@ -344,12 +342,12 @@ namespace LastHearth.Game
             }
             if (selectedFloor == floor && selectedCell == cell)
                 Outline(r);
-            if (GUI.Button(r, "", GUIStyle.none))
+            if (near && Tap(r))
             {
-                sounds?.Play("Click", 0.4f);
                 selectedFloor = floor;
                 selectedCell = cell;
                 selectedRoom = -1;
+                Open(Win.Build);
             }
         }
 
@@ -389,20 +387,6 @@ namespace LastHearth.Game
 
         // ------------------------------------------------------------------ panels under the cutaway
 
-        void DrawSelection(long now)
-        {
-            var room = selectedRoom >= 0 ? session.FindRoom(selectedRoom) : null;
-            if (room != null)
-            {
-                DrawRoomPanel(room, now);
-                return;
-            }
-            if (selectedFloor >= 0 && session.CellFree(selectedFloor, selectedCell))
-                DrawBuildPanel(now);
-            else
-                GUILayout.Label("Нажмите на зал, чтобы увидеть его дела, или на пустую ячейку, чтобы построить.");
-        }
-
         void DrawRoomPanel(Room room, long now)
         {
             var b = session.Balance;
@@ -429,8 +413,6 @@ namespace LastHearth.Game
             }
             if (GUILayout.Button(decorPicker ? "Скрыть украшения" : "Украсить"))
                 decorPicker = !decorPicker;
-            if (GUILayout.Button("Закрыть", GUILayout.Width(110)))
-                selectedRoom = -1;
             GUILayout.EndHorizontal();
             if (decorPicker)
                 DrawDecorPicker(room, now);
@@ -511,6 +493,7 @@ namespace LastHearth.Game
                     {
                         selectedRoom = built.Id;
                         selectedFloor = -1;
+                        window = Win.Room;
                     }
                 }
                 GUILayout.EndVertical();
@@ -523,21 +506,6 @@ namespace LastHearth.Game
             if (shown == 0)
                 GUILayout.Label("Всё доступное уже построено: новые залы открываются с уровнем очага");
             GUILayout.EndHorizontal();
-        }
-
-        void DrawFortressTab(long now)
-        {
-            DrawHearth(now);
-            DrawCutaway(now);
-            DrawSelection(now);
-            DrawQueue(now);
-            listView = GUILayout.Toggle(listView, listView ? "Скрыть залы списком" : "Залы списком", "Button");
-            if (listView)
-            {
-                DrawRooms(now);
-                DrawBuild(now);
-            }
-            DrawDwellers();
         }
     }
 }

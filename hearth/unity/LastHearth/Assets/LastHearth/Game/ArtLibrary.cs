@@ -81,6 +81,25 @@ namespace LastHearth.Game
                 GUI.DrawTexture(r, t);
         }
 
+        static readonly Dictionary<string, GUIStyle> sliced = new Dictionary<string, GUIStyle>();
+
+        /// <summary>Draws a frame picture as nine slices: the corners (border pixels) keep their size, the
+        /// middle stretches (windows, plates, the title plank).</summary>
+        public static void DrawSliced(Rect r, string path, int border)
+        {
+            string key = path + "#" + border;
+            if (!sliced.TryGetValue(key, out var style))
+            {
+                var t = Tex(path);
+                if (t == null)
+                    return;
+                style = new GUIStyle { border = new RectOffset(border, border, border, border) };
+                style.normal.background = t;
+                sliced[key] = style;
+            }
+            GUI.Box(r, "", style);
+        }
+
         public static SheetInfo Sheet(string name) => Data.Sheets.TryGetValue(name, out var s) ? s : null;
 
         /// <summary>

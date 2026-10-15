@@ -9,11 +9,10 @@ using UnityEngine;
 namespace LastHearth.Game
 {
     /// <summary>
-    /// Starts the game in any scene and shows a debug screen of the core (no art yet, milestone M1).
-    /// Press Play in an empty scene: the fortress lives in real time, saves itself and catches up
-    /// offline time on the next start. "+1 час" skips time to test long timers. Every system of the
-    /// core has a tab: fortress, fights (campaign, Hunt, arena, raids), the live Surge, growth (Heart,
-    /// specializations), routes, tasks and shops, live events.
+    /// Starts the game in any scene. The fortress fills the screen and lives in real time, saves itself
+    /// and catches up offline time on the next start; every part of the game opens in a window over it
+    /// (GameRunner.Hud.cs): fights (campaign, Hunt, arena, raids), the Surge, dwellers, growth, routes,
+    /// tasks, the shop, live events, settings (with "+1 час" to test long timers).
     /// </summary>
     public sealed partial class GameRunner : MonoBehaviour
     {
@@ -35,7 +34,6 @@ namespace LastHearth.Game
         int huntRank = 1;
         string battleResult;
         int promoteFor = -1;
-        int tab;
 
         // phone: scale by screen density, scroll with a finger, big buttons
         Vector2 fightScroll;
@@ -44,7 +42,6 @@ namespace LastHearth.Game
         float dragDistance;
         int releaseFrames;
         bool styled;
-        bool showDebug;
         float saveTimer;
         string shownMessage = "";
         AudioDirector sounds;
@@ -56,8 +53,6 @@ namespace LastHearth.Game
         float enemyAttackAt = -9, enemyHitAt = -9, battleOverAt = -1;
         double lastBossHp;
         float messageTime;
-
-        static readonly string[] Tabs = { "Крепость", "Бои", "Наплыв", "Развитие", "Вылазки", "Задания и лавки", "События" };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -150,7 +145,7 @@ namespace LastHearth.Game
                 sounds?.Play(battle.Won ? "Victory" : "Defeat", 0.7f);
             }
             UpdateWalkers(Time.unscaledDeltaTime);
-            sounds?.Tick(battle != null || surge != null, tab == 0);
+            sounds?.Tick(battle != null || surge != null, window == Win.None);
             UpdateSurge();
             UpdateLanterns();
             UpdateTouchScroll();
@@ -178,6 +173,8 @@ namespace LastHearth.Game
         {
             if (battle != null || surge != null || lanternSeed != 0)
                 return ref fightScroll;
+            if (window != Win.None)
+                return ref windowScroll;
             return ref scroll;
         }
 
@@ -235,9 +232,9 @@ namespace LastHearth.Game
             }
             if (lanternSeed != 0)
                 return;
-            if (tab != 0)
+            if (window != Win.None)
             {
-                tab = 0;
+                CloseWindow();
                 return;
             }
             Save();
@@ -299,10 +296,10 @@ namespace LastHearth.Game
             var safe = Screen.safeArea;
             float top = Screen.height - safe.yMax;
             var area = new Rect(safe.x / uiScale + 6, top / uiScale + 4, safe.width / uiScale - 12, safe.height / uiScale - 8);
-            GUILayout.BeginArea(area);
-            viewWidth = area.width - 24; // minus the scroll bar
             if (battle != null || surge != null || lanternSeed != 0)
             {
+                GUILayout.BeginArea(area);
+                viewWidth = area.width - 24; // minus the scroll bar
                 fightScroll = GUILayout.BeginScrollView(fightScroll);
                 if (battle != null)
                     DrawBattle();
@@ -315,136 +312,9 @@ namespace LastHearth.Game
                 return;
             }
             long now = Now();
-            var b = session.Balance;
-            var st = session.State;
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(string.Format("<b>ПОСЛЕДНИЙ ОЧАГ</b> · очаг {0} · {1} · строителей {2}{3}",
-                st.HearthLevel, ModeName(st.Mode), session.BuilderCount(),
-                st.OutOfCoal ? " · <color=#6cf>НЕТ УГЛЯ — всё промерзает</color>" : ""), Rich());
-            if (sounds != null && GUILayout.Button(sounds.MusicOn ? "Музыка: вкл" : "Музыка: выкл", GUILayout.Width(140)))
-                sounds.ToggleMusic();
-            if (sounds != null && GUILayout.Button(sounds.SoundOn ? "Звуки: вкл" : "Звуки: выкл", GUILayout.Width(130)))
-                sounds.ToggleSound();
-            if (GUILayout.Button(showDebug ? "Скрыть отладку" : "Отладка", GUILayout.Width(130)))
-                showDebug = !showDebug;
-            GUILayout.EndHorizontal();
-            string hint = NextStep(now);
-            if (message != shownMessage)
-            {
-                shownMessage = message;
-                messageTime = Time.realtimeSinceStartup;
-            }
-            if (message != "" && (hint == "" || Time.realtimeSinceStartup - messageTime < 8f))
-                GUILayout.Label("<color=#fd5>" + message + "</color>", Rich());
-            else if (hint != "")
-                GUILayout.Label("<color=#9e9>Что дальше: " + hint + "</color>", Rich());
-            DrawResourceBar(st);
-
-            GUILayout.BeginHorizontal();
-            if (!st.Rewards.IsEmpty() && GUILayout.Button("Забрать награды (" + CostText(st.Rewards) + ")"))
-                session.ClaimRewards();
-            if (GUILayout.Button("Собрать всё"))
-            {
-                session.CollectAll();
-                sounds?.Play("Coins");
-            }
-            foreach (HearthMode mode in Enum.GetValues(typeof(HearthMode)))
-            {
-                if (GUILayout.Toggle(st.Mode == mode, ModeName(mode), "Button") && st.Mode != mode)
-                    session.SetMode(mode);
-            }
-            GUILayout.EndHorizontal();
-            if (showDebug)
-            {
-                // cheats for testing on the phone: skip time, start over
-                GUILayout.BeginHorizontal();
-                if (GUILayout.Button("+1 час"))
-                {
-                    skip += 3600;
-                    session.Advance(Now());
-                }
-                if (GUILayout.Button("+8 часов"))
-                {
-                    skip += 8 * 3600;
-                    session.Advance(Now());
-                }
-                if (GUILayout.Button("Новая игра"))
-                {
-                    skip = 0;
-                    StartSession(NewGame.Create(b, Now()));
-                    message = "";
-                }
-                GUILayout.EndHorizontal();
-            }
-
-            int newTab = GUILayout.Toolbar(tab, Tabs, GUILayout.Height(40));
-            if (newTab != tab)
-            {
-                sounds?.Play("Page", 0.35f);
-                tab = newTab;
-                scroll = Vector2.zero;
-                message = "";
-            }
-            scroll = GUILayout.BeginScrollView(scroll);
-            switch (tab)
-            {
-                case 0:
-                    DrawFortressTab(now);
-                    break;
-                case 1:
-                    DrawCampaign(now);
-                    DrawHunt(now);
-                    DrawArena(now);
-                    DrawRaids(now);
-                    break;
-                case 2:
-                    DrawSurgeTab(now);
-                    break;
-                case 3:
-                    DrawHeart();
-                    DrawSpecs();
-                    break;
-                case 4:
-                    DrawRoutes(now);
-                    break;
-                case 5:
-                    DrawDaily(now);
-                    DrawShops(now);
-                    break;
-                default:
-                    DrawEvents(now);
-                    break;
-            }
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
-        }
-
-        /// <summary>The resources with their icons, like the top bar of the genre.</summary>
-        void DrawResourceBar(GameState st)
-        {
-            var items = new (ResourceType type, string text)[]
-            {
-                (ResourceType.Coal, string.Format("{0} (−{1:0}/ч)", ShortNum(st.Wallet[ResourceType.Coal]), session.CoalBurnPerHour())),
-                (ResourceType.Food, ShortNum(st.Wallet[ResourceType.Food])),
-                (ResourceType.Silver, ShortNum(st.Wallet[ResourceType.Silver]) + "/" + ShortNum(session.Capacity(ResourceType.Silver))),
-                (ResourceType.Iron, ShortNum(st.Wallet[ResourceType.Iron]) + "/" + ShortNum(session.Capacity(ResourceType.Iron))),
-                (ResourceType.Essence, ShortNum(st.Wallet[ResourceType.Essence])),
-                (ResourceType.Sparks, ShortNum(st.Wallet[ResourceType.Sparks])),
-                (ResourceType.Ember, ShortNum(st.Wallet[ResourceType.Ember])),
-                (ResourceType.Cores, ShortNum(st.Wallet[ResourceType.Cores])),
-                (ResourceType.Blueprints, ShortNum(st.Wallet[ResourceType.Blueprints])),
-                (ResourceType.Glory, ShortNum(st.Wallet[ResourceType.Glory])),
-            };
-            GUILayout.BeginHorizontal();
-            foreach (var (type, text) in items)
-            {
-                var icon = GUILayoutUtility.GetRect(28, 28, GUILayout.Width(28), GUILayout.Height(28));
-                ArtLibrary.Draw(icon, "Icons/" + type);
-                GUILayout.Label(text, GUILayout.Width(type == ResourceType.Coal || type == ResourceType.Silver || type == ResourceType.Iron ? 120 : 64));
-            }
-            GUILayout.Label("Часы " + Duration(st.HourglassSeconds));
-            GUILayout.EndHorizontal();
+            DrawMainScreen(area, now);
+            if (window != Win.None)
+                DrawWindow(area, now);
         }
 
         static string ShortNum(double v)
@@ -454,41 +324,6 @@ namespace LastHearth.Game
             if (v >= 10000)
                 return (v / 1000).ToString("0") + "K";
             return v.ToString("0");
-        }
-
-        /// <summary>A one-line guide for the first days: what to do now (RESEARCH.md: never leave the player lost).</summary>
-        string NextStep(long now)
-        {
-            var st = session.State;
-            var b = session.Balance;
-            if (!st.Rewards.IsEmpty())
-                return "заберите награды — кнопка ниже";
-            if (st.OutOfCoal)
-                return "кончился уголь: соберите его в угольной шахте, иначе залы промёрзнут";
-            if (session.SurgeOpen(now))
-                return "начался Наплыв — вкладка «Наплыв», «Защищать вживую»";
-            if (session.ActiveRuns(now).Any(r => r.Points <= 0))
-                return "идёт событие — загляните во вкладку «События»";
-            var unmet = session.HearthRequirements(now);
-            if (unmet.Count == 0 && st.HearthLevel < b.MaxHearthLevel)
-                return "можно улучшить очаг — первая кнопка во вкладке «Крепость»";
-            var barracks = b.Room(RoomType.Barracks);
-            if (session.MaxRoomLevel(RoomType.Barracks) == 0 && st.HearthLevel >= barracks.Unlock && session.CountRooms(RoomType.Barracks) == 0)
-                return "постройте Казарму: в ней жители становятся героями";
-            if (session.MaxRoomLevel(RoomType.Barracks) > 0 && session.Squad().Count < session.SquadSize() &&
-                st.Dwellers.Any(d => !d.IsHero))
-                return "сделайте жителя героем: «Жители» внизу, «Сделать героем»";
-            if (session.Squad().Count > 0 && st.PendingMission < 0 && session.MissionsCleared < b.Campaign.Missions.Count &&
-                session.Mission(session.MissionsCleared).Rank <= st.HearthLevel)
-                return "вас ждёт бой кампании — вкладка «Бои»";
-            if (session.TasksDone(now) >= b.Activities.Daily.TasksNeeded && !st.DailyClaimed)
-                return "поручения дня выполнены — заберите награду во вкладке «Задания и лавки»";
-            foreach (var r in unmet)
-            {
-                if (r.Kind != RequirementKind.AlreadyQueued && r.Kind != RequirementKind.QueueFull)
-                    return "для нового уровня очага: " + RequirementText(r);
-            }
-            return "";
         }
 
         void DrawHearth(long now)
@@ -561,47 +396,20 @@ namespace LastHearth.Game
             }
         }
 
-        void DrawBuild(long now)
-        {
-            GUILayout.Label("<b>Построить</b>", Rich());
-            GUILayout.BeginHorizontal();
-            int shown = 0;
-            foreach (var data in session.Balance.Rooms)
-            {
-                if (data.Type == RoomType.Hearth || session.State.HearthLevel < data.Unlock ||
-                    session.CountRooms(data.Type) >= data.MaxCount)
-                    continue;
-                if (GUILayout.Button(data.Name))
-                {
-                    var cell = FreeCell();
-                    if (cell == null)
-                        message = "Нет тёплого места: поднимите очаг или включите «Пылающий»";
-                    else
-                        Report(session.BuildRoom(data.Type, cell.Value.floor, cell.Value.cell, now, out _));
-                }
-                if (++shown % 4 == 0)
-                {
-                    GUILayout.EndHorizontal();
-                    GUILayout.BeginHorizontal();
-                }
-            }
-            GUILayout.EndHorizontal();
-        }
-
         void DrawDwellers()
         {
-            GUILayout.Label("<b>Жители</b>", Rich());
             var producers = session.State.Rooms.Where(r => session.Balance.Room(r.Type).Stat != null).ToList();
             foreach (var d in session.State.Dwellers.ToList())
             {
                 GUILayout.BeginHorizontal();
-                var face = GUILayoutUtility.GetRect(48, 48, GUILayout.Width(48));
+                var face = GUILayoutUtility.GetRect(64, 64, GUILayout.Width(64));
                 ArtLibrary.Draw(face, "Portraits/" + (d.IsHero ? ArtLibrary.HeroSheet(d.HeroClass) : ArtLibrary.DwellerSheet(d.Id)));
                 var room = session.FindRoom(d.RoomId);
-                string where = room == null ? "без работы" : session.Balance.Room(room.Type).Name;
-                string hero = d.IsHero ? string.Format(" · {0} ур.{1}, умение {2}/{3}", ClassName(d.HeroClass), d.HeroLevel, d.SkillLevel, session.SkillCap(d)) : "";
-                GUILayout.Label(string.Format("{0} [С{1} Л{2} У{3} Ст{4} Д{5}] · {6}{7}",
-                    d.Name, d.Stats[0], d.Stats[1], d.Stats[2], d.Stats[3], d.Stats[4], where, hero));
+                string where = room == null ? "<color=#f9a>без работы</color>" : session.Balance.Room(room.Type).Name;
+                string role = d.IsHero ? string.Format("{0}, уровень {1}, умение {2} из {3}", ClassName(d.HeroClass), d.HeroLevel, d.SkillLevel, session.SkillCap(d))
+                    : where;
+                var stats = string.Join("  ", Enum.GetValues(typeof(Stat)).Cast<Stat>().Select(st => StatName(st) + " " + d.StatOf(st)));
+                GUILayout.Label(string.Format("<b>{0}</b> · {1}\n<size=12><color=#d8c8a8>{2}</color></size>", d.Name, role, stats), Rich());
                 if (producers.Count > 0 && GUILayout.Button("Перевести", GUILayout.Width(110)))
                 {
                     int index = room == null ? 0 : (producers.IndexOf(room) + 1) % producers.Count;
@@ -878,24 +686,6 @@ namespace LastHearth.Game
         }
 
         // ------------------------------------------------------------------ helpers
-
-        (int floor, int cell)? FreeCell()
-        {
-            var g = session.Balance.Grid;
-            for (int d = 0; d < g.Floors; d++)
-            {
-                foreach (int floor in new[] { g.HearthFloor + d, g.HearthFloor - d })
-                {
-                    for (int cell = 0; cell < g.Cells; cell++)
-                    {
-                        if (session.CellFree(floor, cell) &&
-                            Formulas.IsFloorHabitable(session.Balance, session.State.HearthLevel, session.State.Mode, floor, 1))
-                            return (floor, cell);
-                    }
-                }
-            }
-            return null;
-        }
 
         void Report(Fail fail, string sound = "Click")
         {

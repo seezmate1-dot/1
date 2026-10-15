@@ -74,6 +74,52 @@ ICONS = {
 }
 
 
+# icons of the main screen's round buttons: models of the props kit (name, location, turn, scale)
+BUTTONS = {
+    "Fights": [("Shield_Wooden", (0, 0.1, 0.0), 0, 1.6), ("Sword_Bronze", (0.0, -0.05, -0.3), 0, 1.0)],
+    "Growth": [("Anvil", (0, 0, 0), 20, 1.6)],
+    "Routes": [("Bag", (-0.2, 0, 0), 15, 1.6), ("Pickaxe_Bronze", (0.35, -0.1, 0), -30, 0.8)],
+    "Quests": [("Scroll_2", (0, 0, 0), 25, 4.5), ("Scroll_1", (0.1, -0.2, 0.15), -20, 4.5)],
+    "Shop": [("Pouch_Large", (0.15, 0.1, 0), 20, 1.6), ("Coin_Pile_2", (-0.25, -0.2, 0), 0, 4.0)],
+    "Events": [("Chalice", (0, 0, 0), 0, 2.4)],
+    "Collect": [("Coin_Pile", (0, 0, 0), 0, 3.0), ("Coin_Pile_2", (0.3, -0.1, 0), 0, 3.0)],
+    "Rewards": [("Chest_Wood", (0, 0, 0), 20, 1.0)],
+}
+
+
+def render_buttons(out_dir):
+    from characters import _bounds
+    import qkit as q
+    for name, parts in BUTTONS.items():
+        t.reset(world=(0.45, 0.45, 0.5))
+        sc = bpy.context.scene
+        sc.render.resolution_x = sc.render.resolution_y = SIZE * 2
+        sc.cycles.samples = 48
+        for model, loc, rot, scale in parts:
+            p = q.put(model, loc, rot_z=rot, scale=scale)
+            if model == "Sword_Bronze":
+                p.rotation_euler = (0, math.radians(35), 0)
+            if model == "Shield_Wooden":
+                p.rotation_euler = (math.radians(-10), 0, 0)
+            if model.startswith(("Coin", "Chalice")):
+                # coins and the cup in gold
+                q.multiply([o for o in p.children_recursive], (1.0, 0.72, 0.25))
+        meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+        lo, hi = _bounds(meshes)
+        size = max(hi.x - lo.x, hi.z - lo.z) * 1.15
+        cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
+        sc.collection.objects.link(cam)
+        cam.data.type = "ORTHO"
+        cam.data.ortho_scale = size
+        cam.location = ((lo.x + hi.x) / 2, -20, (lo.z + hi.z) / 2 + 20 * math.tan(math.radians(15)))
+        cam.rotation_euler = (math.radians(75), 0, 0)
+        sc.camera = cam
+        t.light("AREA", (-3, -6, 6), 900, color=(1.0, 0.95, 0.88), size=5, rot=(math.radians(50), 0, math.radians(-25)))
+        t.light("AREA", (4, 3, 3), 400, color=(1.0, 0.7, 0.4), size=3, rot=(math.radians(-60), 0, math.radians(140)))
+        t.render(os.path.join(out_dir, name + ".png"), transparent=True)
+        print("button", name, flush=True)
+
+
 def render_all(out_dir):
     from characters import _bounds
     for name, build in ICONS.items():
