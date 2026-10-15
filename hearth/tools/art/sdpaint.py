@@ -14,7 +14,7 @@ import os
 import sys
 
 import torch
-from diffusers import DPMSolverMultistepScheduler, StableDiffusionXLImg2ImgPipeline
+from diffusers import DPMSolverMultistepScheduler, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLPipeline
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -56,6 +56,15 @@ def paint(layout, prompt, size, strength=0.75, steps=8, seed=7, guidance=2.0):
                  num_inference_steps=max(steps, int(round(2 / strength))), guidance_scale=guidance, generator=g,
                  width=w, height=h)
     return out.images[0]
+
+
+def draw(prompt, size, steps=8, seed=7, guidance=2.0):
+    """A picture from the prompt alone (text to image, the same model)."""
+    w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
+    t2i = StableDiffusionXLPipeline(**pipe().components)
+    g = torch.Generator().manual_seed(seed)
+    return t2i(prompt=prompt + ", " + STYLE, negative_prompt=NEGATIVE, num_inference_steps=steps, guidance_scale=guidance,
+               generator=g, width=w, height=h).images[0]
 
 
 def room(name, args):

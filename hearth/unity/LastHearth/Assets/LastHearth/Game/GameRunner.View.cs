@@ -250,6 +250,67 @@ namespace LastHearth.Game
                 if (live != null)
                     DrawCreatures(area, gridY, top, f, cellW, cellH, live);
             }
+            DrawPassages(area.x, gridY, top, bottom, cellW, cellH);
+        }
+
+        /// <summary>A built room (or the Hearth) stands in this cell: passages and ladders join such cells.</summary>
+        bool Built(int floor, int cell)
+        {
+            var g = session.Balance.Grid;
+            if (floor == g.HearthFloor && Array.IndexOf(g.HearthCells, cell) >= 0)
+                return true;
+            return session.State.Rooms.Any(x => x.Floor == floor && x.Cell == cell);
+        }
+
+        /// <summary>
+        /// The rooms join like Hustle Castle's: an arched passage through the rock between two built
+        /// neighbours on a floor, a ladder through the floor between a built room and the one under it.
+        /// </summary>
+        void DrawPassages(float x0, float gridY, int top, int bottom, float cellW, float cellH)
+        {
+            var g = session.Balance.Grid;
+            for (int f = top; f >= bottom; f--)
+            {
+                float y = gridY + (top - f) * cellH;
+                for (int c = 0; c + 1 < g.Cells; c++)
+                {
+                    bool inHearth = f == g.HearthFloor && Array.IndexOf(g.HearthCells, c) >= 0 && Array.IndexOf(g.HearthCells, c + 1) >= 0;
+                    if (inHearth || !Built(f, c) || !Built(f, c + 1))
+                        continue;
+                    float w = cellH * 0.34f, h = cellH * 0.5f, bx = x0 + (c + 1) * cellW;
+                    ArtLibrary.Draw(new Rect(bx - w / 2, y + cellH * 0.89f - h, w, h), "Rooms/Passage");
+                }
+                if (f == bottom)
+                    continue;
+                for (int c = 0; c < g.Cells; c++)
+                {
+                    if (!Built(f, c) || !Built(f - 1, c))
+                        continue;
+                    // one ladder by the left wall of the room, down through the floor into the room below
+                    float w = cellH * 0.17f, lx = x0 + c * cellW + cellH * 0.16f;
+                    float from = y + cellH * 0.6f, to = y + cellH + cellH * 0.88f;
+                    ArtLibrary.Draw(new Rect(lx, from, w, to - from), "Rooms/Ladder");
+                }
+            }
+        }
+
+        /// <summary>
+        /// A room's picture in its cell. Painted rooms are interiors: they sit in an opening cut into the
+        /// mountain's rock (Rooms/Frame, nine slices), so the cells join into one cutaway like Hustle
+        /// Castle's. Returns where the interior was drawn. Without the frame, the picture fills the cell.
+        /// </summary>
+        Rect DrawInterior(Rect r, string path)
+        {
+            if (ArtLibrary.Tex("Rooms/Frame") == null)
+            {
+                ArtLibrary.Draw(r, path);
+                return r;
+            }
+            float h = r.height;
+            var inner = new Rect(r.x + h * 0.055f, r.y + h * 0.08f, r.width - h * 0.11f, h * 0.85f);
+            ArtLibrary.Draw(inner, path);
+            ArtLibrary.DrawSliced(r, "Rooms/Frame", 48, h * 0.125f);
+            return inner;
         }
 
         void DrawHearthCell(Rect r, long now)
@@ -257,7 +318,7 @@ namespace LastHearth.Game
             var old = GUI.color;
             if (session.State.OutOfCoal)
                 GUI.color = new Color(0.55f, 0.6f, 0.75f, 1);
-            ArtLibrary.Draw(r, "Rooms/Hearth");
+            var inner = DrawInterior(r, "Rooms/Hearth");
             GUI.color = old;
             // the living fire: its frames over the fireplace, dimmer when coal runs out
             var fire = ArtLibrary.Data.Fire;
@@ -265,7 +326,7 @@ namespace LastHearth.Game
             if (fire != null && tex != null && fire.Frames > 0)
             {
                 int frame = (int)(Time.time * 10) % fire.Frames;
-                var fr = new Rect(r.x + fire.X * r.width, r.y + fire.Y * r.height, fire.W * r.width, fire.H * r.height);
+                var fr = new Rect(inner.x + fire.X * inner.width, inner.y + fire.Y * inner.height, fire.W * inner.width, fire.H * inner.height);
                 if (session.State.OutOfCoal)
                     fr = new Rect(fr.x + fr.width * 0.2f, fr.y + fr.height * 0.5f, fr.width * 0.6f, fr.height * 0.5f);
                 GUI.DrawTextureWithTexCoords(fr, tex, new Rect((float)frame / fire.Frames, 0, 1f / fire.Frames, 1));
@@ -286,7 +347,7 @@ namespace LastHearth.Game
         void DrawRoomCell(Rect r, Room room, long now)
         {
             var data = session.Balance.Room(room.Type);
-            ArtLibrary.Draw(r, "Rooms/" + room.Type);
+            DrawInterior(r, "Rooms/" + room.Type);
             string decor = session.RoomDecorId(room.Id);
             if (decor != null && ArtLibrary.Data.Decor.TryGetValue(decor, out var di))
             {
@@ -336,7 +397,10 @@ namespace LastHearth.Game
             bool hearthNear = floor == g.HearthFloor && (Array.IndexOf(g.HearthCells, cell - 1) >= 0 || Array.IndexOf(g.HearthCells, cell + 1) >= 0);
             bool near = hearthNear || session.State.Rooms.Any(x => x.Floor == floor && Math.Abs(x.Cell - cell) == 1)
                         || session.State.Rooms.Any(x => x.Cell == cell && Math.Abs(x.Floor - floor) == 1);
-            ArtLibrary.Draw(r, near ? "Rooms/Empty" : "Rooms/Rock");
+            if (near)
+                DrawInterior(r, "Rooms/Empty");
+            else
+                ArtLibrary.Draw(r, "Rooms/Rock");
             if (near)
             {
                 float s = r.height * 0.36f * (1 + 0.05f * Mathf.Sin(Time.time * 3 + cell));
