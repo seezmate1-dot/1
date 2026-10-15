@@ -250,10 +250,11 @@ namespace LastHearth.Game
                 if (live != null)
                     DrawCreatures(area, gridY, top, f, cellW, cellH, live);
             }
-            DrawPassages(area.x, gridY, top, bottom, cellW, cellH);
+            if (live == null && ArtLibrary.Data.Passages)
+                DrawPassages(area.x, gridY, top, bottom, cellW, cellH);
         }
 
-        /// <summary>A built room (or the Hearth) stands in this cell: passages and ladders join such cells.</summary>
+        /// <summary>A built room (or the Hearth) stands in this cell: doors and ladders join such cells.</summary>
         bool Built(int floor, int cell)
         {
             var g = session.Balance.Grid;
@@ -263,7 +264,7 @@ namespace LastHearth.Game
         }
 
         /// <summary>
-        /// The rooms join like Hustle Castle's: an arched passage through the rock between two built
+        /// The rooms join like Hustle Castle's: a wooden door in the rock between two built
         /// neighbours on a floor, a ladder through the floor between a built room and the one under it.
         /// </summary>
         void DrawPassages(float x0, float gridY, int top, int bottom, float cellW, float cellH)
@@ -277,8 +278,8 @@ namespace LastHearth.Game
                     bool inHearth = f == g.HearthFloor && Array.IndexOf(g.HearthCells, c) >= 0 && Array.IndexOf(g.HearthCells, c + 1) >= 0;
                     if (inHearth || !Built(f, c) || !Built(f, c + 1))
                         continue;
-                    float w = cellH * 0.34f, h = cellH * 0.5f, bx = x0 + (c + 1) * cellW;
-                    ArtLibrary.Draw(new Rect(bx - w / 2, y + cellH * 0.89f - h, w, h), "Rooms/Passage");
+                    float w = cellH * 0.3f, h = cellH * 0.5f, bx = x0 + (c + 1) * cellW;
+                    ArtLibrary.Draw(new Rect(bx - w / 2, y + cellH * 0.9f - h, w, h), "Rooms/Door");
                 }
                 if (f == bottom)
                     continue;
@@ -301,7 +302,7 @@ namespace LastHearth.Game
         /// </summary>
         Rect DrawInterior(Rect r, string path)
         {
-            if (ArtLibrary.Tex("Rooms/Frame") == null)
+            if (!ArtLibrary.Data.Framed)
             {
                 ArtLibrary.Draw(r, path);
                 return r;

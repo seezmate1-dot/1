@@ -50,6 +50,10 @@ namespace LastHearth.Game
             public FireInfo Fire;
             public MapInfo Map;
             public Dictionary<string, DecorInfo> Decor = new Dictionary<string, DecorInfo>();
+            /// <summary>Doors between the rooms and ladders between the floors are painted (Rooms/Door, Rooms/Ladder).</summary>
+            public bool Passages;
+            /// <summary>The rooms are painted interiors that sit in the rock's opening (Rooms/Frame).</summary>
+            public bool Framed;
         }
 
         static Manifest manifest;

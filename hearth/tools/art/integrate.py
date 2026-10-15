@@ -52,14 +52,30 @@ def fit(src, size):
 
 
 def main(stage):
+    import json
+    for piece in ("Door", "Ladder"):
+        p = os.path.join(stage, "Rooms", piece + ".png")
+        if os.path.exists(p):
+            Image.open(p).save(os.path.join(ART, "Rooms", piece + ".png"))
+    if all(os.path.exists(os.path.join(ART, "Rooms", n + ".png")) for n in ("Door", "Ladder")):
+        manifest = os.path.join(ART, "Art.json")
+        m = json.load(open(manifest, encoding="utf-8"))
+        m["passages"] = True
+        json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     rooms = os.path.join(stage, "Rooms")
     for f in sorted(os.listdir(rooms)) if os.path.isdir(rooms) else []:
         name = f[:-4]
+        if name in ("Door", "Ladder"):
+            continue
         img = Image.open(os.path.join(rooms, f)).convert("RGB")
         size = (2048, 512) if name == "Hearth" else (1024, 512)
         if name == "Rock":
             fit(img, (768, 384)).save(os.path.join(ART, "Rooms", "Rock.png"))
             frame(img).save(os.path.join(ART, "Rooms", "Frame.png"))
+            manifest = os.path.join(ART, "Art.json")
+            m = json.load(open(manifest, encoding="utf-8"))
+            m["framed"] = True
+            json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         else:
             fit(img, size).save(os.path.join(ART, "Rooms", f))
         print("room", name)
