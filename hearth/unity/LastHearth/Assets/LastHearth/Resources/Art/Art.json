@@ -4,109 +4,109 @@
    "height": 2.036,
    "name": "Доспехи Стража",
    "premium": true,
-   "width": 1.818
+   "width": 0.935
   },
   "banner_blue": {
    "height": 1.931,
    "name": "Синее знамя",
    "premium": false,
-   "width": 0.81
+   "width": 1.116
   },
   "banner_green": {
    "height": 2.246,
    "name": "Зелёное знамя",
    "premium": false,
-   "width": 0.81
+   "width": 1.305
   },
   "banner_red": {
    "height": 2.246,
    "name": "Алое знамя",
    "premium": false,
-   "width": 0.81
+   "width": 2.246
   },
   "barrels": {
    "height": 1.257,
    "name": "Бочки",
    "premium": false,
-   "width": 1.359
+   "width": 1.167
   },
   "candles": {
    "height": 1.313,
    "name": "Подсвечник",
    "premium": false,
-   "width": 0.732
+   "width": 0.788
   },
   "chest_gold": {
    "height": 1.299,
    "name": "Сундук мастера",
    "premium": true,
-   "width": 1.531
+   "width": 1.501
   },
   "crystal": {
    "height": 2.279,
    "name": "Кристалл угля",
    "premium": true,
-   "width": 1.6
+   "width": 1.731
   },
   "gold_shield": {
    "height": 1.175,
    "name": "Золотой герб",
    "premium": true,
-   "width": 1.807
+   "width": 0.885
   },
   "keg": {
    "height": 0.988,
    "name": "Бочка яблок",
    "premium": false,
-   "width": 0.768
+   "width": 1.068
   },
   "plant": {
    "height": 2.119,
    "name": "Кадка с зеленью",
    "premium": false,
-   "width": 1.265
+   "width": 1.715
   },
   "pumpkin": {
    "height": 0.963,
    "name": "Тыква-фонарь",
    "premium": true,
-   "width": 1.028
+   "width": 0.87
   },
   "rug": {
    "height": 3.025,
    "name": "Гобелен Стражей",
    "premium": false,
-   "width": 2.6
+   "width": 3.063
   },
   "shelf": {
    "height": 0.906,
    "name": "Полка с бутылями",
    "premium": false,
-   "width": 1.592
+   "width": 0.866
   },
   "shield": {
    "height": 1.175,
    "name": "Щит и мечи",
    "premium": false,
-   "width": 1.807
+   "width": 1.109
   },
   "shrine": {
    "height": 1.32,
    "name": "Святилище свечей",
    "premium": true,
-   "width": 2.932
+   "width": 0.875
   },
   "throne": {
    "height": 3.17,
    "name": "Трон старейшины",
    "premium": true,
-   "width": 1.82
+   "width": 1.872
   },
   "treasure": {
    "height": 1.104,
    "name": "Сокровищница",
    "premium": true,
-   "width": 2.15
+   "width": 1.51
   }
  },
  "fire": {
@@ -485,5 +485,12 @@
    ],
    "size": 192
   }
- }
+ },
+ "passages": true,
+ "framed": true,
+ "roomTiers": true,
+ "scene": true,
+ "rubble": true,
+ "scaffold": true,
+ "splash": true
 }

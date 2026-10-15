@@ -10,6 +10,7 @@
   "roomTiers" in Art.json once every room has both.
 - Rooms/Rubble, Rooms/Scaffold: drawn over a cell (obstacle) and over a room being built; "rubble", "scaffold".
 - Icons/<Name>, Buttons/<Name> (256 x 256), Decor/<name> (320 high, its width in Art.json follows the picture).
+- Scene/<Place>: the places around the fortress (512 x 512, standing on the bottom), and "scene" in Art.json.
 
     python hearth/tools/art/integrate.py [--from DIR]
 """
@@ -64,15 +65,15 @@ def flag(name):
     json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
-def tone(img, ref):
-    """The colours of img moved to those of ref (mean and spread of each channel in Lab), half way:
+def tone(img, ref, amount=0.5):
+    """The colours of img moved towards those of ref (mean and spread of each channel), half way:
     the richer looks keep their own light but share the palette of the room's first look."""
     import numpy as np
-    a = np.asarray(img.convert("LAB"), dtype=np.float32)
-    b = np.asarray(ref.convert("LAB"), dtype=np.float32)
+    a = np.asarray(img.convert("RGB"), dtype=np.float32)
+    b = np.asarray(ref.convert("RGB"), dtype=np.float32)
     out = (a - a.mean((0, 1))) / (a.std((0, 1)) + 1e-3) * b.std((0, 1)) + b.mean((0, 1))
-    out = a + (out - a) * 0.6
-    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "LAB").convert("RGB")
+    out = a + (out - a) * amount
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB")
 
 
 def trim(img, size, bottom=False, margin=6):
@@ -114,6 +115,15 @@ def pieces(stage):
         m["decor"][name]["width"] = round(m["decor"][name]["height"] * img.width / img.height, 3)
         print("decor", name)
     json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    # the places around the fortress (GameRunner.Scene): all six, or the side buttons stay
+    d = os.path.join(stage, "Scene")
+    places = ("Merchant", "Portal", "Arena", "Board", "Pier", "Pen")
+    if all(os.path.exists(os.path.join(d, n + ".png")) for n in places):
+        os.makedirs(os.path.join(ART, "Scene"), exist_ok=True)
+        for n in places:
+            trim(Image.open(os.path.join(d, n + ".png")), (512, 512), bottom=True, margin=2).save(os.path.join(ART, "Scene", n + ".png"))
+        flag("scene")
+        print("scene", " ".join(places))
     for name, bottom in (("Rubble", True), ("Scaffold", False)):
         p = os.path.join(stage, "Rooms", name + ".png")
         if os.path.exists(p):

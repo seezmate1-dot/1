@@ -76,13 +76,13 @@ def embeds(prompt, negative):
     return {n: t.to(p.unet.dtype) for n, t in zip(names, e)}
 
 
-def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0):
+def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
     """Repaints the layout picture (scaled to size, multiples of 8) after the prompt."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
     init = layout.convert("RGB").resize((w, h), Image.LANCZOS)
     g = torch.Generator().manual_seed(seed)
     # the subject first: the text encoders read only 77 tokens
-    out = pipe()(**embeds(prompt + ", " + STYLE, NEGATIVE), image=init, strength=strength,
+    out = pipe()(**embeds(prompt + ", " + STYLE, negative), image=init, strength=strength,
                  num_inference_steps=max(steps, int(round(2 / strength))), guidance_scale=guidance, generator=g,
                  width=w, height=h)
     return grade(out.images[0])
@@ -111,13 +111,30 @@ def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
                generator=g, width=w, height=h).images[0]
 
 
+# rooms where nobody sleeps: the model reads a long table in the layout as a bed
+SLEEP = ("Bedrooms", "Barracks", "Infirmary")
+
+
+def room_negative(name):
+    return NEGATIVE if name in SLEEP else NEGATIVE + ", bed, beds"
+
+
 # the living quarters of a family: the layout has three beds, the painting one double bed and a cradle
 BEDS = ("one big wooden double bed for two with a red quilt and two white pillows standing in the middle against the back "
         "wall, a small wooden baby cradle on rockers next to the bed, a rug on the floor")
 
 
-def family_beds(img, steps=8, seed=7):
-    """The beds of the living quarters painted again in place (inpainting): one double bed and a cradle."""
+# what stands in the middle of a room when the layout's furniture is read wrongly (inpainting)
+CENTRE = {
+    "Bedrooms": (BEDS, ", three beds, two single beds, bunk beds"),
+    "Archive": ("a large wooden writing desk with an open ledger, quills, an ink pot and stacks of scrolls in the middle, "
+                "a wooden chair, chests of scrolls beside it", ", bed, beds, sofa, couch, mattress"),
+}
+
+
+def repaint_centre(img, steps=8, seed=7, room="Bedrooms"):
+    """The middle of a room painted again in place (inpainting): in the living quarters one double bed and a
+    cradle, in the archive a writing desk."""
     from diffusers import StableDiffusionXLInpaintPipeline
     from PIL import ImageDraw, ImageFilter
     w, h = img.size
@@ -126,7 +143,8 @@ def family_beds(img, steps=8, seed=7):
     mask = mask.filter(ImageFilter.GaussianBlur(h * 0.02))
     inpaint = StableDiffusionXLInpaintPipeline(**pipe().components)
     g = torch.Generator().manual_seed(seed)
-    out = inpaint(**embeds(BEDS + ", " + STYLE, NEGATIVE + ", three beds, two single beds, bunk beds"), image=img,
+    what, avoid = CENTRE[room]
+    out = inpaint(**embeds(what + ", " + STYLE, NEGATIVE + avoid), image=img,
                   mask_image=mask, strength=0.99, num_inference_steps=max(steps, 12), guidance_scale=2.5, generator=g,
                   width=w, height=h).images[0]
     return Image.composite(grade(out), img, mask)
@@ -148,9 +166,9 @@ def room(name, args):
     layout = Image.open(path)
     k = 1152 / layout.width if layout.width <= layout.height * 2.5 else 1536 / layout.width
     size = (round(layout.width * k), round(layout.height * k))
-    img = paint(layout, ROOM + aigen.ROOMS[name], size, args.strength, args.steps, args.seed)
-    if name == "Bedrooms":
-        img = family_beds(img, args.steps, args.seed)
+    img = paint(layout, ROOM + aigen.ROOMS[name], size, args.strength, args.steps, args.seed, negative=room_negative(name))
+    if name in CENTRE:
+        img = repaint_centre(img, args.steps, args.seed, name)
     out = os.path.join(args.out, "Rooms", name + ".png") if args.out else path
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
@@ -162,9 +180,10 @@ def _room_tier(name, tier, args):
     layout = Image.open(os.path.join(aigen.ART, "Rooms", name + ".png"))
     k = 1152 / layout.width if layout.width <= layout.height * 2.5 else 1536 / layout.width
     size = (round(layout.width * k), round(layout.height * k))
-    img = paint(layout, ROOM + aigen.ROOMS[name] + ", " + TIERS[tier], size, min(0.8, args.strength + 0.1), args.steps, args.seed)
-    if name == "Bedrooms":
-        img = family_beds(img, args.steps, args.seed)
+    img = paint(layout, ROOM + aigen.ROOMS[name] + ", " + TIERS[tier], size, min(0.8, args.strength + 0.1), args.steps,
+                args.seed, negative=room_negative(name))
+    if name in CENTRE:
+        img = repaint_centre(img, args.steps, args.seed, name)
     out = os.path.join(args.out or aigen.ART, "Rooms", "%s_%s.png" % (name, tier))
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
@@ -175,7 +194,8 @@ def world(name, args):
     path = os.path.join(aigen.ART, "Rooms" if name == "Rock" else "", name + ".png")
     layout = Image.open(path)
     size = (1280, 720) if name == "Map" else (1280, 640)
-    strength = min(args.strength, 0.55) if name == "Map" else args.strength
+    # the map keeps its islands in place, the mountain its snowy peaks: a lighter hand
+    strength = min(args.strength, 0.62) if name == "Map" else min(args.strength, 0.5) if name == "Mountain" else args.strength
     img = paint(layout, aigen.WORLD[name], size, strength, args.steps, args.seed)
     if name == "Map":
         img = img.resize((2400, 1350), Image.LANCZOS)  # the size the map's places were measured on
@@ -226,8 +246,9 @@ def ladder(args):
     """The ladder between floors: a wooden ladder, its background cut away."""
     img = draw("a single straight wooden ladder standing upright, front view, centered, isolated on a plain white background",
                (384, 1024), seed=args.seed)
-    out = _cutout(img)
-    bbox = out.getchannel("A").getbbox()
+    bg = _ground(img)
+    out = _unmix(grade(img), _matte(img, bg, holes=True), _ground(grade(img)))
+    bbox = out.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
     _save(out.crop(bbox) if bbox else out, "Rooms/Ladder.png", args)
 
 
@@ -281,8 +302,8 @@ OBSTACLES = {
 SCENE = {
     "Merchant": "a medieval merchant's market stall tent with a striped red and cream canvas roof, crates, sacks and "
                 "barrels of goods in front",
-    "Portal": "a round magic stone portal arch with carved runes, a swirling blue-violet magic surface inside, on a "
-              "small stone platform",
+    "Portal": "a tall upright stone portal gate standing vertically, an arch of carved rune stones, a swirling "
+              "blue-violet magic vortex filling the arch, two steps of a stone platform in front, front view",
     "Arena": "a small round wooden fighting arena with a palisade fence, colourful pennants and two crossed spears at the gate",
     "Board": "a wooden quest notice board on two posts with a small shingle roof, parchment notes pinned to it",
     "Pier": "a short wooden pier on posts with a small moored rowing boat with a furled sail",
