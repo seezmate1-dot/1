@@ -179,6 +179,50 @@ def render_mountain(out, res=(1536, 768)):
     t.render(out)
 
 
+def render_battlefield(out, res=(1536, 768)):
+    """Where the fights happen: a clearing at the edge of the forest at dusk, rocks and dead trees,
+    the Fog creeping in from the right. The heroes stand on the left, the creatures come from the right."""
+    t.reset(world=(0.05, 0.06, 0.12))
+    bpy.context.scene.cycles.samples = 96
+    rng = random.Random("battlefield")
+    sky(60, 20, 16, rng, stars=40)
+    peak(-10, 40, 12, 14, 7)
+    peak(8, 44, 13, 17, 8)
+    grass = t.mat((0.22, 0.38, 0.16), 0.9)
+    t.rbox((120, 90, 1.0), (0, 15, -0.5), grass, bevel=0)
+    path = t.mat((0.42, 0.33, 0.22), 0.95)
+    # the heroes and creatures stand on the path: 0.88 of the picture high (GameRunner.DrawBattleStage)
+    t.rbox((60, 3.6, 0.05), (0, -10.8, 0.01), path, bevel=0)
+    # forest behind, thinning to dead trees on the Fog's side
+    for _ in range(80):
+        x, y = rng.uniform(-30, 30), rng.uniform(10, 32)
+        kind = "DeadTree" if x > 6 and rng.random() < 0.8 else rng.choice(["Pine", "CommonTree", "CommonTree"])
+        q.put("%s_%d" % (kind, rng.randint(1, 5)), (x, y, 0), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.55, 0.85))
+    for _ in range(14):
+        x = rng.choice([rng.uniform(-18, -9), rng.uniform(9, 18)])
+        q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, rng.uniform(0.5, 3), 0), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.4, 0.8))
+    for _ in range(40):
+        q.put(rng.choice(["Grass_Common_Short", "Grass_Wispy_Short", "Clover_1", "Fern_1"]),
+              (rng.uniform(-14, 14), rng.uniform(-8, 3), 0), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.5, 0.9))
+    # the Fog on the right
+    fog = t.mat((0.2, 0.17, 0.27), 1.0)
+    for _ in range(30):
+        t.ball(rng.uniform(0.8, 1.6), (rng.uniform(12, 26), rng.uniform(6, 16), rng.uniform(-0.3, 1.2)), fog, scale=(1.8, 1, 0.4))
+    t.light("SUN", (0, 0, 20), 2.6, color=(1.0, 0.75, 0.55), rot=(math.radians(60), 0, math.radians(-50)))
+    t.light("SUN", (0, 0, 20), 0.9, color=(0.55, 0.65, 1.0), rot=(math.radians(-40), 0, math.radians(160)))
+    sc = bpy.context.scene
+    sc.render.resolution_x, sc.render.resolution_y = res
+    data = bpy.data.cameras.new("cam")
+    data.sensor_fit = "HORIZONTAL"
+    data.lens = 30
+    cam = bpy.data.objects.new("cam", data)
+    sc.collection.objects.link(cam)
+    cam.location = (0, -22, 4.2)
+    cam.rotation_euler = (math.radians(82), 0, 0)
+    sc.camera = cam
+    t.render(out)
+
+
 # ------------------------------------------------------------------ cells: rock and frost
 
 def render_rock(out):

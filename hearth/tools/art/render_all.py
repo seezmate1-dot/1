@@ -72,6 +72,7 @@ def fire(m):
 def world(m):
     import world as w
     w.render_mountain(os.path.join(OUT, "Mountain.png"))
+    w.render_battlefield(os.path.join(OUT, "Battlefield.png"))
     w.render_rock(os.path.join(OUT, "Rooms", "Rock.png"))
     w.render_frost(os.path.join(OUT, "Rooms", "Frost.png"))
     m["map"] = w.render_map(os.path.join(OUT, "Map.png"))

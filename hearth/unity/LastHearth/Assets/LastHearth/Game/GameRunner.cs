@@ -681,10 +681,8 @@ namespace LastHearth.Game
         {
             float w = viewWidth;
             var stage = GUILayoutUtility.GetRect(w, w * 0.34f);
-            var oldColor = GUI.color;
-            GUI.color = new Color(0.8f, 0.8f, 0.9f, 1);
-            ArtLibrary.Draw(new Rect(stage.x, stage.y - w * 0.12f, w, w * 0.5f), "Mountain");
-            GUI.color = oldColor;
+            // a clearing at the edge of the forest (hearth/tools/art/world.py); the path is 0.88 of it high
+            ArtLibrary.Draw(new Rect(stage.x, stage.y - w * 0.12f, w, w * 0.5f), ArtLibrary.Tex("Battlefield") != null ? "Battlefield" : "Mountain");
             float now = Time.time;
             float ground = stage.yMax - stage.height * 0.06f;
             float heroH = stage.height * 0.42f;
