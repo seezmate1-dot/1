@@ -297,6 +297,8 @@ namespace LastHearth.Game
         string PlateText(ResourceType type, Rect r, string text)
         {
             plateOnScreen[type] = ToScreen(r);
+            if (fxSession != session)
+                return text; // a new session: FxTick has not set the counts yet
             int i = (int)type;
             double wallet = session.State.Wallet[type];
             if (inFlight[i] == 0 && Math.Abs(plateShown[i] - wallet) < 0.5)
