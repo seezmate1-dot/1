@@ -24,24 +24,26 @@ ROCK_MUL = (0.8, 0.52, 0.32)   # ...warm brown earth, like Hustle Castle's mount
 # Every room has its own look, so one tells them apart at a glance: the colour of its walls
 # (multiplied into the kit's plaster and stone) and of its lamps.
 STYLE = {
-    "Bedrooms": dict(wall=(0.4, 0.58, 1.0), light=(1.0, 0.9, 0.75)),
-    "Kitchen": dict(wall=(1.0, 0.6, 0.42), light=(1.0, 0.8, 0.55)),
-    "CoalMine": dict(wall=(0.55, 0.55, 0.62), light=(1.0, 0.75, 0.5)),
-    "Barracks": dict(wall=(0.75, 0.78, 0.92), light=(1.0, 0.92, 0.8)),
-    "Warehouse": dict(wall=(1.0, 0.82, 0.55), light=(1.0, 0.9, 0.7)),
-    "Mine": dict(wall=(0.95, 0.72, 0.45), light=(1.0, 0.85, 0.65)),
-    "Tavern": dict(wall=(1.0, 0.75, 0.3), light=(1.0, 0.8, 0.5)),
-    "TradingPost": dict(wall=(1.0, 0.5, 0.38), light=(1.0, 0.88, 0.7)),
-    "Forge": dict(wall=(0.7, 0.62, 0.6), light=(1.0, 0.7, 0.45)),
-    "Infirmary": dict(wall=(0.6, 1.0, 0.75), light=(0.95, 1.0, 0.95)),
-    "Library": dict(wall=(0.45, 0.78, 0.45), light=(1.0, 0.9, 0.7)),
-    "TrainingHall": dict(wall=(1.0, 0.88, 0.62), light=(1.0, 0.95, 0.85)),
-    "Greenhouse": dict(wall=(0.75, 1.0, 0.45), light=(1.0, 1.0, 0.85)),
-    "Watchtower": dict(wall=(0.55, 0.68, 1.0), light=(0.9, 0.93, 1.0)),
-    "Chapel": dict(wall=(0.7, 0.55, 1.0), light=(1.0, 0.85, 0.75)),
-    "Archive": dict(wall=(0.8, 0.38, 0.35), light=(1.0, 0.88, 0.7)),
+    # natural walls: plaster, stone and brick in their own colours (a warm or a cool shade at most);
+    # the rooms differ by what stands in them and by their light, not by paint
+    "Bedrooms": dict(wall=(1.0, 0.94, 0.86), light=(1.0, 0.88, 0.72)),
+    "Kitchen": dict(wall=(1.0, 0.9, 0.8), light=(1.0, 0.82, 0.6)),
+    "CoalMine": dict(wall=(0.72, 0.7, 0.68), light=(1.0, 0.78, 0.55)),
+    "Barracks": dict(wall=(0.92, 0.91, 0.9), light=(1.0, 0.9, 0.78)),
+    "Warehouse": dict(wall=(1.0, 0.93, 0.82), light=(1.0, 0.88, 0.7)),
+    "Mine": dict(wall=(0.94, 0.86, 0.75), light=(1.0, 0.85, 0.65)),
+    "Tavern": dict(wall=(1.0, 0.9, 0.74), light=(1.0, 0.8, 0.55)),
+    "TradingPost": dict(wall=(1.0, 0.92, 0.84), light=(1.0, 0.88, 0.72)),
+    "Forge": dict(wall=(0.82, 0.76, 0.72), light=(1.0, 0.72, 0.48)),
+    "Infirmary": dict(wall=(0.97, 0.98, 0.95), light=(0.98, 0.97, 0.92)),
+    "Library": dict(wall=(0.94, 0.9, 0.82), light=(1.0, 0.88, 0.7)),
+    "TrainingHall": dict(wall=(1.0, 0.95, 0.86), light=(1.0, 0.93, 0.82)),
+    "Greenhouse": dict(wall=(0.96, 0.98, 0.9), light=(1.0, 0.98, 0.88)),
+    "Watchtower": dict(wall=(0.9, 0.92, 0.95), light=(0.94, 0.95, 1.0)),
+    "Chapel": dict(wall=(0.97, 0.94, 0.95), light=(1.0, 0.88, 0.78)),
+    "Archive": dict(wall=(0.96, 0.88, 0.82), light=(1.0, 0.88, 0.72)),
     "Empty": dict(wall=(0.85, 0.8, 0.75), light=(1.0, 0.92, 0.8)),
-    "Hearth": dict(wall=(1.0, 0.85, 0.7), light=(1.0, 0.85, 0.65)),
+    "Hearth": dict(wall=(1.0, 0.92, 0.82), light=(1.0, 0.85, 0.65)),
 }
 CURRENT = {"wall": None, "light": (1.0, 0.93, 0.82)}
 
@@ -79,13 +81,15 @@ def walls(back="Wall_UnevenBrick_Straight", width=W, extra=None, side="Wall_Unev
         x = -width / 2 + 0.3 + (width - 0.6) * k / (n // 2)
         t.rbox((0.32, D + 1.8, 0.3), (x, D / 2 - 0.7, H - 0.12), _wood(), bevel=0.04)
     t.rbox((width + 0.4, 0.4, 0.36), (0, -1.45, H - 0.15), _wood(), bevel=0.05)
-    t.rbox((width + 2, D + 3, 0.3), (0, D / 2 - 1, H + 0.15), t.mat((0.16, 0.1, 0.06), 0.9), bevel=0)
+    t.rbox((width + 2, D + 3, 0.3), (0, D / 2 - 1, H + 0.15), _wood(), bevel=0)
     if sky:
         night_sky(width)
 
 
 def _wood():
-    return t.mat((0.36, 0.2, 0.1), 0.75)
+    """Beams and posts: real oak planks (Poly Haven), projected in metres."""
+    import phkit as ph
+    return ph.material("brown_planks_05", size=1.5, res="1k", tint=(0.8, 0.7, 0.6))
 
 
 def night_sky(width):
@@ -99,22 +103,55 @@ def night_sky(width):
             t.ball(rng.uniform(0.12, 0.22), (cx + rng.uniform(-0.25, 0.25), D + 1.1, cz + rng.uniform(-0.06, 0.06)), white, scale=(1.4, 0.5, 0.8))
 
 
+ROCK_TEXTURE = "cliff_side"   # warm layered rock (Poly Haven): the cut through the mountain
+
+
+def rock_mass(x0, x1, z0, z1, rng, hole=None, y=-2.8, depth=0.45):
+    """A slab of the mountain's rock facing the camera from x0..x1, z0..z1: one smooth mesh, its
+    surface heaved by noise, covered with a photo rock texture; hole = (x0, x1, z0, z1) is cut out
+    (the room's opening) and the rock swells around its rim."""
+    import bmesh
+    from mathutils import noise
+    import phkit as ph
+    nx, nz = int((x1 - x0) * 14), int((z1 - z0) * 14)
+    bm = bmesh.new()
+    verts = {}
+    seed = Vector((rng.uniform(0, 50), rng.uniform(0, 50), 0))
+    for i in range(nx + 1):
+        for j in range(nz + 1):
+            x, z = x0 + (x1 - x0) * i / nx, z0 + (z1 - z0) * j / nz
+            if hole:
+                hx0, hx1, hz0, hz1 = hole
+                # a ragged rim: the edge wanders by noise
+                wob = 0.12 * noise.noise(Vector((x * 1.7, z * 1.7, 0)) + seed)
+                if hx0 - wob < x < hx1 + wob and hz0 - wob < z < hz1 + wob:
+                    continue
+                edge = min(abs(x - hx0), abs(x - hx1), abs(z - hz0), abs(z - hz1))
+            else:
+                edge = 9.0
+            p = Vector((x * 0.9, z * 0.9, 0)) + seed
+            bulge = noise.fractal(p, 0.6, 2.2, 5) * depth + 0.18 * math.exp(-edge * 2.5)
+            verts[i, j] = bm.verts.new((x, y - bulge, z))
+    for i in range(nx):
+        for j in range(nz):
+            q4 = [verts.get(k) for k in ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))]
+            if all(q4):
+                bm.faces.new(q4)
+    me = bpy.data.meshes.new("rock")
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new("rock", me)
+    bpy.context.scene.collection.objects.link(o)
+    for f in me.polygons:
+        f.use_smooth = True
+    me.materials.append(ph.material(ROCK_TEXTURE, size=3.2, res="2k", tint=(1.45, 1.22, 1.0), bump=0.8))
+    return o
+
+
 def rock_frame(width, rng):
-    """The cut through the mountain: big rocks of the nature kit around the opening."""
+    """The cut through the mountain: rock all around the room's opening."""
     hw = width / 2
-    def rock(x, z, s):
-        q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, -2.2 + rng.uniform(-0.2, 0.2), z), rot_z=rng.uniform(0, 360),
-              scale=(s * rng.uniform(0.9, 1.1), s, s * rng.uniform(0.85, 1.05)), tint=ROCK_TINT, mul=ROCK_MUL)
-    x = -hw - 1.2
-    while x < hw + 1.2:
-        rock(x, H + 0.2, 0.5)
-        rock(x + 0.5, -1.15, 0.5)
-        x += rng.uniform(0.9, 1.2)
-    z = -1.0
-    while z < H + 1.0:
-        for s in (-1, 1):
-            rock(s * (hw + 0.85), z, 0.5)
-        z += rng.uniform(0.8, 1.0)
+    rock_mass(-hw - 3, hw + 3, -3, H + 3, rng, hole=(-hw - 0.08, hw + 0.08, 0.18, H - 0.14))
 
 
 def camera(width=W):

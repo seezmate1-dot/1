@@ -20,7 +20,7 @@ def main(calls, out, scale=2):
     w, h = int(2400 / ui * scale), int(1080 / ui * scale)
     img = Image.new("RGBA", (w, h), (20, 18, 22, 255))
     try:
-        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 12 * scale)
+        font = ImageFont.truetype(os.path.join(ART, "Fonts", "Nunito-ExtraBold.ttf"), 12 * scale)
     except OSError:
         font = ImageFont.load_default()
     d = ImageDraw.Draw(img)

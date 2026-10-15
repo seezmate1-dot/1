@@ -1,4 +1,4 @@
-"""Blender helpers for the art of the game: scene reset (Cycles on the CPU, saturated colours),
+"""Blender helpers for the art of the game: scene reset (Cycles on the CPU, AgX colours),
 simple materials and shapes (bevelled boxes, cylinders, balls), lights, model import and rendering.
 The models themselves come from Quaternius' kits (qkit.py)."""
 import os
@@ -10,8 +10,7 @@ SAMPLES = int(os.environ.get("HEARTH_ART_SAMPLES", "64"))
 
 
 def reset(world=(0.05, 0.055, 0.08), soft=False):
-    """A clean scene. soft: Khronos PBR Neutral tone mapping, so bright walls and lamps roll off instead of burning
-    to white (rooms and the world); otherwise Standard, the most saturated (characters, icons)."""
+    """A clean scene, rendered with AgX colour management (natural colours, soft highlights)."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     import addon_utils
     addon_utils.enable("cycles", default_set=True)
@@ -25,15 +24,13 @@ def reset(world=(0.05, 0.055, 0.08), soft=False):
     sc.cycles.caustics_refractive = False
     sc.render.resolution_x, sc.render.resolution_y = 768, 384
     sc.render.resolution_percentage = 100
-    # Standard keeps toy colours saturated (AgX would wash them out)
-    if soft:
-        sc.view_settings.view_transform = "Khronos PBR Neutral"
-        sc.view_settings.look = "None"
-        sc.view_settings.exposure = 0.1
-    else:
-        sc.view_settings.view_transform = "Standard"
-        sc.view_settings.look = "Medium High Contrast"
-        sc.view_settings.exposure = -0.2
+    # AgX: natural colours, highlights roll off softly instead of burning to flat white or neon;
+    # its Punchy look keeps them lively (soft: a little brighter, for rooms and the world)
+    sc.view_settings.view_transform = "AgX"
+    sc.view_settings.look = "AgX - Punchy"
+    sc.view_settings.exposure = 0.15 if soft else 0.0
+    sc.cycles.use_denoising = True
+    sc.render.filter_size = 1.2
     w = bpy.data.worlds.new("World")
     sc.world = w
     w.use_nodes = True
@@ -48,7 +45,7 @@ _mats = {}
 
 
 def mat(color, rough=0.5, metal=0.0, emit=None, strength=0.0, name=None):
-    """Toy plastic-and-paint: a flat colour with a soft sheen."""
+    """A plain painted or natural surface: one colour, its roughness."""
     key = (tuple(round(c, 3) for c in color), rough, metal, emit, strength)
     if key in _mats:
         return _mats[key]
@@ -58,8 +55,6 @@ def mat(color, rough=0.5, metal=0.0, emit=None, strength=0.0, name=None):
     b.inputs["Base Color"].default_value = tuple(color) + (1,)
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
-    if "Coat Weight" in b.inputs:
-        b.inputs["Coat Weight"].default_value = 0.15
     if emit:
         b.inputs["Emission Color"].default_value = tuple(emit) + (1,)
         b.inputs["Emission Strength"].default_value = strength

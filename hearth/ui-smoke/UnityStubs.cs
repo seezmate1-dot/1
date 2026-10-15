@@ -90,6 +90,8 @@ namespace UnityEngine
 
     public class TextAsset : Object { public string text = ""; }
 
+    public class Font : Object { public string Name = ""; }
+
     public class Texture : Object { }
 
     public enum TextureWrapMode { Repeat, Clamp }
@@ -102,6 +104,7 @@ namespace UnityEngine
     {
         public string Name = "";
         public TextureWrapMode wrapMode;
+        public int width = 1, height = 1;
         public static Texture2D whiteTexture = new Texture2D { Name = "white" };
     }
 
@@ -127,7 +130,19 @@ namespace UnityEngine
                 if (!File.Exists(png))
                     throw new FileNotFoundException("missing art", png);
                 TexturesLoaded++;
-                asset = new Texture2D { Name = p };
+                // the size from the PNG header (IHDR: width and height, big-endian, at bytes 16..23)
+                var head = new byte[24];
+                using (var f = File.OpenRead(png))
+                    f.Read(head, 0, 24);
+                int Be(int i) => head[i] << 24 | head[i + 1] << 16 | head[i + 2] << 8 | head[i + 3];
+                asset = new Texture2D { Name = p, width = Be(16), height = Be(20) };
+            }
+            else if (typeof(T) == typeof(Font))
+            {
+                string ttf = Path.Combine(Folder, p + ".ttf");
+                if (!File.Exists(ttf))
+                    throw new FileNotFoundException("missing font", ttf);
+                asset = new Font { Name = p };
             }
             else
             {
@@ -192,6 +207,8 @@ namespace UnityEngine
         public static float Max(float a, float b) => Math.Max(a, b);
         public static int Clamp(int v, int a, int b) => Math.Max(a, Math.Min(b, v));
         public static float Sin(float f) => (float)Math.Sin(f);
+        public static float Cos(float f) => (float)Math.Cos(f);
+        public const float PI = (float)Math.PI;
         public static float Abs(float f) => Math.Abs(f);
         public static float Sign(float f) => f >= 0 ? 1 : -1;
         public static int Min(int a, int b) => Math.Min(a, b);
@@ -219,6 +236,7 @@ namespace UnityEngine
         public bool richText;
         public bool wordWrap;
         public int fontSize;
+        public Font font;
         public float fixedWidth;
         public RectOffset padding;
         public static implicit operator GUIStyle(string s) => new GUIStyle();
@@ -227,6 +245,7 @@ namespace UnityEngine
 
     public class GUISkin
     {
+        public Font font;
         public GUIStyle label = new GUIStyle();
         public GUIStyle button = new GUIStyle();
         public GUIStyle box = new GUIStyle();

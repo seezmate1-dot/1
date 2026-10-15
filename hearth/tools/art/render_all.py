@@ -70,12 +70,13 @@ def fire(m):
 
 
 def world(m):
+    import kingdom
     import world as w
     w.render_mountain(os.path.join(OUT, "Mountain.png"))
     w.render_battlefield(os.path.join(OUT, "Battlefield.png"))
     w.render_rock(os.path.join(OUT, "Rooms", "Rock.png"))
     w.render_frost(os.path.join(OUT, "Rooms", "Frost.png"))
-    m["map"] = w.render_worldmap(os.path.join(OUT, "Map.png"))
+    m["map"] = kingdom.render_worldmap(os.path.join(OUT, "Map.png"))
     save_manifest(m)
 
 
@@ -87,6 +88,8 @@ def icons(m):
 
 def ui(m):
     import ui as u
+    import uikit
+    uikit.render_all()
     u.render_all()
 
 
