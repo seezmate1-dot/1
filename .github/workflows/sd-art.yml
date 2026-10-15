@@ -1,0 +1,113 @@
+# Paints the game's art with a free image model (Stable Diffusion XL, DreamShaper XL Turbo) on GitHub's
+# runners, many pictures at once (hearth/tools/art/sdpaint.py), and commits them to hearth/tools/art/ai/sd.
+# No key needed. Runs by hand (Actions → SD art → Run workflow), or when hearth/tools/art/ai/sd-request.txt
+# changes: its first line names the pictures or groups (rooms, world), the second the strength (0.75).
+name: SD art
+
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        description: "Pictures or groups: rooms, world"
+        default: "rooms world"
+      strength:
+        default: "0.75"
+  push:
+    branches: [main, master, 'claude/**']
+    paths:
+      - 'hearth/tools/art/ai/sd-request.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sd-art-${{ github.ref }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      chunks: ${{ steps.split.outputs.chunks }}
+      strength: ${{ steps.split.outputs.strength }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: split
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_NAMES: ${{ inputs.names }}
+          IN_STRENGTH: ${{ inputs.strength }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then NAMES="$IN_NAMES"; STRENGTH="$IN_STRENGTH"; else
+            NAMES="$(sed -n 1p hearth/tools/art/ai/sd-request.txt)"; STRENGTH="$(sed -n 2p hearth/tools/art/ai/sd-request.txt)"; fi
+          python3 - "$NAMES" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          groups = {"rooms": ["Hearth", "Bedrooms", "Kitchen", "CoalMine", "Barracks", "Warehouse", "Mine", "Tavern", "TradingPost",
+                              "Forge", "Infirmary", "Library", "TrainingHall", "Greenhouse", "Watchtower", "Chapel", "Archive", "Empty"],
+                    "world": ["Map", "Mountain", "Battlefield", "Rock"]}
+          names = [n for a in sys.argv[1].replace(",", " ").split() for n in groups.get(a, [a])]
+          chunks = [" ".join(names[i:i + 2]) for i in range(0, len(names), 2)]
+          print("chunks=" + json.dumps(chunks))
+          PY
+          echo "strength=${STRENGTH:-0.75}" >> "$GITHUB_OUTPUT"
+
+  paint:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        names: ${{ fromJson(needs.plan.outputs.chunks) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          pip install -q --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -q diffusers transformers accelerate safetensors pillow huggingface_hub
+      - uses: actions/cache@v4
+        with:
+          path: ~/models
+          key: dreamshaper-xl-turbo-v2-1
+      - name: Model
+        run: |
+          mkdir -p ~/models
+          [ -s ~/models/DreamShaperXL_Turbo_v2_1.safetensors ] || curl -sSfL -o ~/models/DreamShaperXL_Turbo_v2_1.safetensors \
+            https://huggingface.co/Lykon/dreamshaper-xl-v2-turbo/resolve/main/DreamShaperXL_Turbo_v2_1.safetensors
+          lscpu | grep -E "Model name|bf16" || true
+      - name: Paint
+        env:
+          NAMES: ${{ matrix.names }}
+          STRENGTH: ${{ needs.plan.outputs.strength }}
+        run: python hearth/tools/art/sdpaint.py $NAMES --strength "$STRENGTH" --out painted
+      - uses: actions/upload-artifact@v4
+        with:
+          name: painted-${{ strategy.job-index }}
+          path: painted
+
+  commit:
+    needs: paint
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: painted
+          pattern: painted-*
+          merge-multiple: true
+      - name: Commit the pictures
+        run: |
+          [ -d painted ] || { echo "nothing painted"; exit 0; }
+          # into a staging folder: the pictures are looked over and fitted into the game by hand
+          mkdir -p hearth/tools/art/ai/sd
+          cp -r painted/. hearth/tools/art/ai/sd/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hearth/tools/art/ai/sd
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "SD art: $(sed -n 1p hearth/tools/art/ai/sd-request.txt 2>/dev/null || echo by hand)"
+          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
