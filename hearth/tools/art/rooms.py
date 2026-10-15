@@ -138,10 +138,10 @@ def light_room(key=1.0, warm=1.0, width=W, cold=False):
     also lights the rock around it, and the room's own lamp colour."""
     s = width / W
     lamp = CURRENT["light"]
-    t.light("AREA", (0, 0.2, H - 0.25), 950 * key * s, color=(0.68, 0.78, 1.0) if cold else lamp, size=7 * s,
+    t.light("AREA", (0, 0.2, H - 0.25), 700 * key * s, color=(0.68, 0.78, 1.0) if cold else lamp, size=7 * s,
             rot=(math.radians(-15), 0, 0))
-    t.light("AREA", (0, -11, H + 4), 420 * s, color=(1.0, 0.95, 0.9), size=14 * s, rot=(math.radians(62), 0, 0))
-    t.light("AREA", (0, D * 0.55, H - 0.5), 380 * warm * s, color=lamp, size=4 * s)
+    t.light("AREA", (0, -11, H + 4), 300 * s, color=(1.0, 0.95, 0.9), size=14 * s, rot=(math.radians(62), 0, 0))
+    t.light("AREA", (0, D * 0.55, H - 0.5), 300 * warm * s, color=lamp, size=4 * s)
 
 
 # ------------------------------------------------------------------ pieces
@@ -560,7 +560,7 @@ RECIPES = {
 def render_room(name, out, samples=64):
     FIRE["on"] = name != "Hearth"
     CURRENT.update(STYLE.get(name, {"wall": None, "light": (1.0, 0.93, 0.82)}))
-    t.reset(world=(0.16, 0.12, 0.1))
+    t.reset(world=(0.16, 0.12, 0.1), soft=True)
     bpy.context.scene.cycles.samples = samples
     rng = random.Random(name)
     width = 2 * W if name == "Hearth" else W
@@ -580,7 +580,7 @@ def render_fire(out_dir, frames=8, samples=48):
     CURRENT.update(STYLE["Hearth"])
     for i in range(frames):
         FIRE["on"], FIRE["seed"] = True, 1000 + i
-        t.reset(world=(0.16, 0.12, 0.1))
+        t.reset(world=(0.16, 0.12, 0.1), soft=True)
         bpy.context.scene.cycles.samples = samples
         rng = random.Random("Hearth")
         r_hearth(rng)

@@ -141,7 +141,7 @@ def peak(x, y, base, height, seed, snow_from=0.55):
 
 def render_mountain(out, res=(1536, 768)):
     """The peak above the cutaway: snowy mountains, pines and the Guardians' gatehouse."""
-    t.reset(world=(0.35, 0.45, 0.6))
+    t.reset(world=(0.35, 0.45, 0.6), soft=True)
     bpy.context.scene.cycles.samples = 96
     rng = random.Random("mountain")
     # the game hides the lowest fifth of the picture under the first floor of the cutaway: lift the gatehouse above it
@@ -185,7 +185,7 @@ def render_mountain(out, res=(1536, 768)):
 def render_battlefield(out, res=(1536, 768)):
     """Where the fights happen: a sunny clearing at the edge of the forest, rocks and dead trees,
     the Fog creeping in from the right. The heroes stand on the left, the creatures come from the right."""
-    t.reset(world=(0.35, 0.45, 0.6))
+    t.reset(world=(0.35, 0.45, 0.6), soft=True)
     bpy.context.scene.cycles.samples = 96
     rng = random.Random("battlefield")
     sky(60, 20, 16, rng, clouds=14)
@@ -229,7 +229,7 @@ def render_battlefield(out, res=(1536, 768)):
 
 def render_rock(out):
     """A cell not dug yet: the raw rock of the mountain, framed like a room so the cells tile."""
-    t.reset(world=(0.02, 0.02, 0.03))
+    t.reset(world=(0.02, 0.02, 0.03), soft=True)
     bpy.context.scene.cycles.samples = 48
     rng = random.Random("rock")
     t.rbox((14, 0.2, 9), (0, 0.5, rooms.H / 2), t.mat((0.05, 0.05, 0.06), 1.0), bevel=0)
@@ -422,7 +422,7 @@ def _ground_material():
 
 def render_map(out, res=(1600, 1000)):
     """The island of the campaign: beaches, meadows, forests and rocks, the Fog in the north, ten places."""
-    t.reset(world=(0.1, 0.2, 0.32))
+    t.reset(world=(0.1, 0.2, 0.32), soft=True)
     bpy.context.scene.cycles.samples = 64
     rng = random.Random("map")
     noise = (rng.uniform(0, 6), rng.uniform(0, 6), rng.uniform(0, 6))

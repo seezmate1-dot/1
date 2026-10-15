@@ -9,7 +9,9 @@ SAMPLES = int(os.environ.get("HEARTH_ART_SAMPLES", "64"))
 
 
 
-def reset(world=(0.05, 0.055, 0.08)):
+def reset(world=(0.05, 0.055, 0.08), soft=False):
+    """A clean scene. soft: Khronos PBR Neutral tone mapping, so bright walls and lamps roll off instead of burning
+    to white (rooms and the world); otherwise Standard, the most saturated (characters, icons)."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     import addon_utils
     addon_utils.enable("cycles", default_set=True)
@@ -24,9 +26,14 @@ def reset(world=(0.05, 0.055, 0.08)):
     sc.render.resolution_x, sc.render.resolution_y = 768, 384
     sc.render.resolution_percentage = 100
     # Standard keeps toy colours saturated (AgX would wash them out)
-    sc.view_settings.view_transform = "Standard"
-    sc.view_settings.look = "Medium High Contrast"
-    sc.view_settings.exposure = -0.2
+    if soft:
+        sc.view_settings.view_transform = "Khronos PBR Neutral"
+        sc.view_settings.look = "None"
+        sc.view_settings.exposure = 0.1
+    else:
+        sc.view_settings.view_transform = "Standard"
+        sc.view_settings.look = "Medium High Contrast"
+        sc.view_settings.exposure = -0.2
     w = bpy.data.worlds.new("World")
     sc.world = w
     w.use_nodes = True
