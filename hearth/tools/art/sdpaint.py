@@ -22,10 +22,12 @@ import aigen  # noqa: E402  (the prompts and the game's sizes)
 
 MODEL = os.environ.get("SD_MODEL", os.path.expanduser("~/models/DreamShaperXL_Turbo_v2_1.safetensors"))
 
-STYLE = ("masterpiece, best quality, hand-painted mobile game art, Hustle Castle style, stylized 2.5D cartoon, "
-         "highly detailed, polished, soft warm lighting, smooth shading, vibrant harmonious colors, cozy medieval fantasy")
-NEGATIVE = ("photo, photorealistic, realistic, 3d render, low poly, blurry, lowres, noisy, grainy, jpeg artifacts, "
-            "text, letters, watermark, signature, logo, ui, people, person, character, face, deformed, ugly, dark, gloomy")
+# an artist's look, not a generator's: painted by hand, clean readable shapes, a calm even light, no glow
+STYLE = ("hand-painted concept art for a mobile game, painterly brush strokes, clean simple shapes, Hustle Castle style, "
+         "stylized, soft even lighting, warm rich colors, crisp edges, illustration by a professional artist")
+NEGATIVE = ("photo, photorealistic, 3d render, cgi, octane, unreal engine, glow, glowing, bloom, lens flare, hdr, "
+            "oversaturated, neon, overexposed, cluttered, messy details, noise, blurry, lowres, distorted, warped, "
+            "text, watermark, signature, people, person, face")
 
 ROOM = "interior of a room in a medieval fortress, dollhouse cutaway view straight from the front, back wall and floor, "
 
@@ -46,7 +48,7 @@ def pipe():
     return _pipe
 
 
-def paint(layout, prompt, size, strength=0.75, steps=8, seed=7, guidance=2.0):
+def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0):
     """Repaints the layout picture (scaled to size, multiples of 8) after the prompt."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
     init = layout.convert("RGB").resize((w, h), Image.LANCZOS)
@@ -55,7 +57,21 @@ def paint(layout, prompt, size, strength=0.75, steps=8, seed=7, guidance=2.0):
     out = pipe()(prompt=prompt + ", " + STYLE, negative_prompt=NEGATIVE, image=init, strength=strength,
                  num_inference_steps=max(steps, int(round(2 / strength))), guidance_scale=guidance, generator=g,
                  width=w, height=h)
-    return out.images[0]
+    return grade(out.images[0])
+
+
+def grade(img):
+    """One finish for every picture, like one artist's palette: a touch more contrast and warmth,
+    tamed saturation, a light sharpening of the shapes."""
+    from PIL import ImageEnhance, ImageFilter
+    img = img.convert("RGB")
+    img = ImageEnhance.Color(img).enhance(0.92)
+    img = ImageEnhance.Contrast(img).enhance(1.06)
+    r, g, b = img.split()
+    r = r.point(lambda v: min(255, int(v * 1.03 + 2)))
+    b = b.point(lambda v: int(v * 0.96))
+    img = Image.merge("RGB", (r, g, b))
+    return img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=40, threshold=2))
 
 
 def draw(prompt, size, steps=8, seed=7, guidance=2.0):
@@ -82,30 +98,87 @@ def room(name, args):
 def world(name, args):
     path = os.path.join(aigen.ART, "Rooms" if name == "Rock" else "", name + ".png")
     layout = Image.open(path)
-    size = (1536, 864) if name == "Map" else (1280, 640)
+    size = (1280, 720) if name == "Map" else (1280, 640)
     strength = min(args.strength, 0.55) if name == "Map" else args.strength
     img = paint(layout, aigen.WORLD[name], size, strength, args.steps, args.seed)
     if name == "Map":
-        img = img.resize((2400, 1350), Image.LANCZOS)
+        img = img.resize((2400, 1350), Image.LANCZOS)  # the size the map's places were measured on
     out = os.path.join(args.out, os.path.relpath(path, aigen.ART)) if args.out else path
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
     print("world", name, img.size, flush=True)
 
 
+def _cutout(img, tolerance=38):
+    """The background (the colour at the corners, reached from the borders) made transparent."""
+    from PIL import ImageDraw
+    rgb = img.convert("RGB")
+    probe = rgb.copy()
+    key = (255, 0, 255)
+    for corner in ((0, 0), (rgb.width - 1, 0), (0, rgb.height - 1), (rgb.width - 1, rgb.height - 1)):
+        if probe.getpixel(corner) != key:
+            ImageDraw.floodfill(probe, corner, key, thresh=tolerance)
+    mask = Image.new("L", rgb.size, 255)
+    px, mp = probe.load(), mask.load()
+    for y in range(rgb.height):
+        for x in range(rgb.width):
+            if px[x, y] == key:
+                mp[x, y] = 0
+    out = rgb.convert("RGBA")
+    out.putalpha(mask)
+    return out
+
+
+def door(args):
+    """The door between two rooms: a wooden arched door in a stone arch, cut to its arch."""
+    from PIL import ImageDraw, ImageFilter
+    img = draw("front view of one sturdy wooden arched door with iron hinges set in a stone archway, centered, symmetric, "
+               "plain dark background", (512, 768), seed=args.seed)
+    w, h = img.size
+    mask = Image.new("L", img.size, 0)
+    d = ImageDraw.Draw(mask)
+    x0, x1, top, bottom = w * 0.08, w * 0.92, h * 0.04, h * 0.98
+    r = (x1 - x0) / 2
+    d.ellipse((x0, top, x1, top + 2 * r), fill=255)
+    d.rectangle((x0, top + r, x1, bottom), fill=255)
+    out = img.convert("RGBA")
+    out.putalpha(mask.filter(ImageFilter.GaussianBlur(1.5)))
+    _save(out.crop((int(x0) - 2, int(top) - 2, int(x1) + 2, int(bottom) + 2)), "Rooms/Door.png", args)
+
+
+def ladder(args):
+    """The ladder between floors: a wooden ladder, its background cut away."""
+    img = draw("a single straight wooden ladder standing upright, front view, centered, isolated on a plain white background",
+               (384, 1024), seed=args.seed)
+    out = _cutout(img)
+    bbox = out.getchannel("A").getbbox()
+    _save(out.crop(bbox) if bbox else out, "Rooms/Ladder.png", args)
+
+
+def _save(img, rel, args):
+    path = os.path.join(args.out or aigen.ART, rel)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    print("piece", rel, img.size, flush=True)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("names", nargs="*", default=["rooms"])
-    ap.add_argument("--strength", type=float, default=0.75)
+    ap.add_argument("--strength", type=float, default=0.65)
     ap.add_argument("--steps", type=int, default=8)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="")
     args = ap.parse_args()
-    groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"]}
+    groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder"]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
         if n in aigen.ROOMS:
             room(n, args)
         elif n in aigen.WORLD:
             world(n, args)
+        elif n == "Door":
+            door(args)
+        elif n == "Ladder":
+            ladder(args)
         else:
             print("unknown:", n)

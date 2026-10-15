@@ -1,2 +1,2 @@
-rooms world
-0.75
+rooms world extras
+0.65

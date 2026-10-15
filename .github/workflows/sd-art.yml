@@ -8,10 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       names:
-        description: "Pictures or groups: rooms, world"
-        default: "rooms world"
+        description: "Pictures or groups: rooms, world, extras"
+        default: "rooms world extras"
       strength:
-        default: "0.75"
+        default: "0.65"
   push:
     branches: [main, master, 'claude/**']
     paths:
@@ -43,12 +43,12 @@ jobs:
           import json, sys
           groups = {"rooms": ["Hearth", "Bedrooms", "Kitchen", "CoalMine", "Barracks", "Warehouse", "Mine", "Tavern", "TradingPost",
                               "Forge", "Infirmary", "Library", "TrainingHall", "Greenhouse", "Watchtower", "Chapel", "Archive", "Empty"],
-                    "world": ["Map", "Mountain", "Battlefield", "Rock"]}
+                    "world": ["Map", "Mountain", "Battlefield", "Rock"], "extras": ["Door", "Ladder"]}
           names = [n for a in sys.argv[1].replace(",", " ").split() for n in groups.get(a, [a])]
           chunks = [" ".join(names[i:i + 2]) for i in range(0, len(names), 2)]
           print("chunks=" + json.dumps(chunks))
           PY
-          echo "strength=${STRENGTH:-0.75}" >> "$GITHUB_OUTPUT"
+          echo "strength=${STRENGTH:-0.65}" >> "$GITHUB_OUTPUT"
 
   paint:
     needs: plan
