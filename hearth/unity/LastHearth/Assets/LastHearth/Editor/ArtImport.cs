@@ -3,8 +3,10 @@ using UnityEditor;
 namespace LastHearth.EditorTools
 {
     /// <summary>
-    /// Import settings of the rendered art (Resources/Art): no mip maps (frames of a sprite sheet would
-    /// bleed into each other), transparent edges kept clean, high quality compression, and sounds that
+    /// Import settings of the rendered art (Resources/Art): mip maps with trilinear filtering, so art
+    /// drawn smaller than it was rendered (icons, buttons, characters, rooms on a phone) stays smooth
+    /// instead of jagged (the frames of a sprite sheet have wide empty margins, so they do not bleed);
+    /// transparent edges kept clean, high quality compression, the map in full size; and sounds that
     /// stream the music instead of holding it in memory.
     /// </summary>
     public sealed class ArtImport : AssetPostprocessor
@@ -15,11 +17,13 @@ namespace LastHearth.EditorTools
                 return;
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Default;
-            importer.mipmapEnabled = false;
+            importer.mipmapEnabled = true;
+            importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
             importer.alphaIsTransparency = true;
             importer.wrapMode = UnityEngine.TextureWrapMode.Clamp;
-            importer.filterMode = UnityEngine.FilterMode.Bilinear;
-            importer.maxTextureSize = 2048;
+            importer.filterMode = UnityEngine.FilterMode.Trilinear;
+            importer.anisoLevel = 2;
+            importer.maxTextureSize = 4096;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             importer.npotScale = TextureImporterNPOTScale.None;
         }

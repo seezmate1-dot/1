@@ -83,23 +83,34 @@ namespace LastHearth.Game
                 GUI.DrawTexture(r, t);
         }
 
-        static readonly Dictionary<string, GUIStyle> sliced = new Dictionary<string, GUIStyle>();
-
-        /// <summary>Draws a frame picture as nine slices: the corners (border pixels) keep their size, the
-        /// middle stretches (windows, plates, the title plank).</summary>
-        public static void DrawSliced(Rect r, string path, int border)
+        /// <summary>Draws a frame picture as nine slices: the corners (border pixels of the picture) keep
+        /// their shape, the edges and the middle stretch (windows, plates, the title plank). The frames
+        /// are rendered at twice the interface's size, so a corner takes border / 2 points on screen and
+        /// stays sharp on a dense phone screen.</summary>
+        public static void DrawSliced(Rect r, string path, int border, float corner = -1)
         {
-            string key = path + "#" + border;
-            if (!sliced.TryGetValue(key, out var style))
+            var t = Tex(path);
+            if (t == null)
+                return;
+            // a border wider than half the picture would turn the middle inside out
+            border = Mathf.Min(border, Mathf.Min(t.width, t.height) / 2 - 1);
+            if (corner < 0)
+                corner = border / 2f;
+            corner = Mathf.Min(corner, Mathf.Min(r.width, r.height) / 2);
+            float bu = border / (float)t.width, bv = border / (float)t.height;
+            float[] xs = { r.x, r.x + corner, r.xMax - corner, r.xMax };
+            float[] ys = { r.y, r.y + corner, r.yMax - corner, r.yMax };
+            float[] us = { 0, bu, 1 - bu, 1 };
+            float[] vs = { 1, 1 - bv, bv, 0 }; // texture coordinates run upwards
+            for (int i = 0; i < 3; i++)
             {
-                var t = Tex(path);
-                if (t == null)
-                    return;
-                style = new GUIStyle { border = new RectOffset(border, border, border, border) };
-                style.normal.background = t;
-                sliced[key] = style;
+                for (int j = 0; j < 3; j++)
+                {
+                    float w = xs[i + 1] - xs[i], h = ys[j + 1] - ys[j];
+                    if (w > 0.01f && h > 0.01f)
+                        GUI.DrawTextureWithTexCoords(new Rect(xs[i], ys[j], w, h), t, new Rect(us[i], vs[j + 1], us[i + 1] - us[i], vs[j] - vs[j + 1]));
+                }
             }
-            GUI.Box(r, "", style);
         }
 
         public static SheetInfo Sheet(string name) => Data.Sheets.TryGetValue(name, out var s) ? s : null;

@@ -56,15 +56,15 @@ namespace LastHearth.Game
             float s = Mathf.Max(22, r.height * 0.24f);
             var b = new Rect(r.x + r.width * 0.035f, r.y + r.height * 0.06f, s, s);
             ArtLibrary.Draw(b, "UI/Badge");
-            GUI.Label(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), level.ToString(), BadgeStyle());
+            UiSkin.Outlined(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), level.ToString(), BadgeStyle());
         }
 
         /// <summary>A short text (a timer) on a dark plate along the bottom of a cell.</summary>
         void Pill(Rect r, string text)
         {
             var p = new Rect(r.center.x - r.width * 0.2f, r.y + r.height * 0.84f, r.width * 0.4f, Mathf.Max(18, r.height * 0.13f));
-            ArtLibrary.DrawSliced(p, "UI/Pill", 18);
-            GUI.Label(p, text, BadgeStyle());
+            ArtLibrary.DrawSliced(p, "UI/Pill", 30);
+            UiSkin.Outlined(p, text, BadgeStyle());
         }
 
         /// <summary>The cloud with the resource's icon floating over a room; true when it was tapped.</summary>

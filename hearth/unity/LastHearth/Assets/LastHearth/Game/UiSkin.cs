@@ -18,6 +18,10 @@ namespace LastHearth.Game
         /// <summary>Applies the look to GUI.skin; false when the art is missing (the plain look stays).</summary>
         public static bool Apply()
         {
+            // a rounded bold face with Cyrillic (Nunito, SIL Open Font License), like the casual games' titles
+            var font = UnityEngine.Resources.Load<Font>("Fonts/Nunito-ExtraBold");
+            if (font != null)
+                GUI.skin.font = font;
             var plank = ArtLibrary.Tex("UI/Button");
             if (plank == null)
                 return false;
@@ -59,6 +63,20 @@ namespace LastHearth.Game
             if (background != null)
                 background.wrapMode = TextureWrapMode.Repeat;
             return true;
+        }
+
+        /// <summary>Text with a dark outline, so it reads over any art (the plates, buttons and map).</summary>
+        public static void Outlined(Rect r, string text, GUIStyle style, float width = 1.5f)
+        {
+            var old = GUI.color;
+            GUI.color = new Color(0.12f, 0.07f, 0.03f, old.a * 0.9f);
+            for (int k = 0; k < 8; k++)
+            {
+                float a = k * Mathf.PI / 4;
+                GUI.Label(new Rect(r.x + Mathf.Cos(a) * width, r.y + Mathf.Sin(a) * width, r.width, r.height), text, style);
+            }
+            GUI.color = old;
+            GUI.Label(r, text, style);
         }
 
         static void Set(GUIStyleState s, Texture2D tex, Color text)

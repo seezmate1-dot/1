@@ -2,5 +2,8 @@ The art of this folder is rendered by hearth/tools/art (Blender, Cycles) for "П
 Models and textures: Quaternius (quaternius.com) - Medieval Village MegaKit, Fantasy Props MegaKit,
 Stylized Nature MegaKit, Universal Base Characters, Modular Character Outfits - Fantasy, Universal
 Animation Library 1 and 2, Bestiary - Dungeon Monsters Kit (Standard tiers) - CC0 / Quaternius Asset
-License: free to use in personal and commercial games, no credit required. Composition, lighting,
-colours, the interface pieces and the rendered pictures: made for this game.
+License: free to use in personal and commercial games, no credit required.
+Nature, rocks, ships, the pier, photo textures (rock, earth, sand, grass, snow, wood) and sky HDRIs:
+Poly Haven (polyhaven.com) - CC0, no credit required.
+Font: Nunito by The Nunito Project Authors - SIL Open Font License 1.1 (Fonts/Nunito-OFL.txt).
+Composition, lighting, colours, the interface pieces and the rendered pictures: made for this game.

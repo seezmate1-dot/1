@@ -107,7 +107,7 @@ namespace LastHearth.Game
             // the Hearth: its level on the big badge, a tap opens its window (upgrade, mode, builders)
             var badge = new Rect(x, bar.y + 2, 46, 46);
             ArtLibrary.Draw(badge, "UI/Badge");
-            GUI.Label(new Rect(badge.x, badge.y - 1, badge.width - 3, badge.height - 3), st.HearthLevel.ToString(), titleText);
+            UiSkin.Outlined(new Rect(badge.x, badge.y - 1, badge.width - 3, badge.height - 3), st.HearthLevel.ToString(), titleText);
             if (window == Win.None && GUI.Button(badge, "", GUIStyle.none))
                 Open(Win.Hearth);
             x += 52;
@@ -142,12 +142,12 @@ namespace LastHearth.Game
         /// <summary>One resource: a dark plate, its icon on the left, the amount, a thin bar of the storage.</summary>
         void Plate(Rect r, ResourceType type, string text, float fill, bool alarm)
         {
-            ArtLibrary.DrawSliced(r, "UI/Pill", 18);
+            ArtLibrary.DrawSliced(r, "UI/Pill", 30);
             ArtLibrary.Draw(new Rect(r.x - 4, r.y - 5, 38, 38), "Icons/" + type);
             var old = GUI.color;
             if (alarm)
                 GUI.color = new Color(1f, 0.45f, 0.4f, 1);
-            GUI.Label(new Rect(r.x + 34, r.y, r.width - 36, r.height), text, hudText);
+            UiSkin.Outlined(new Rect(r.x + 34, r.y, r.width - 36, r.height), text, hudText);
             GUI.color = old;
             if (fill >= 0)
             {
@@ -172,11 +172,7 @@ namespace LastHearth.Game
                 ArtLibrary.Draw(new Rect(b.xMax - b.width * 0.3f, b.y, b.width * 0.3f, b.width * 0.3f), "UI/Dot");
             if (label.Length > 0)
             {
-                var old = GUI.color;
-                GUI.color = Color.black;
-                GUI.Label(new Rect(r.x - 10 + 1, b.yMax - 6 + 1, r.width + 20, 16), label, buttonLabel);
-                GUI.color = old;
-                GUI.Label(new Rect(r.x - 10, b.yMax - 6, r.width + 20, 16), label, buttonLabel);
+                UiSkin.Outlined(new Rect(r.x - 10, b.yMax - 6, r.width + 20, 16), label, buttonLabel);
             }
             if (window != Win.None || !GUI.Button(b, "", GUIStyle.none))
                 return false;
@@ -262,8 +258,8 @@ namespace LastHearth.Game
             var old = GUI.color;
             GUI.color = new Color(1, 1, 1, Mathf.Clamp(4f - age, 0, 1));
             var r = new Rect(area.center.x - 230, area.y + 56, 460, 30);
-            ArtLibrary.DrawSliced(r, "UI/Pill", 18);
-            GUI.Label(r, StripColor(message), buttonLabel);
+            ArtLibrary.DrawSliced(r, "UI/Pill", 30);
+            UiSkin.Outlined(r, StripColor(message), buttonLabel);
             GUI.color = old;
         }
 
@@ -277,13 +273,13 @@ namespace LastHearth.Game
             GUI.DrawTexture(new Rect(0, 0, Screen.width / uiScale, Screen.height / uiScale), Texture2D.whiteTexture);
             GUI.color = old;
             var w = new Rect(area.x + area.width * 0.04f, area.y + 6, area.width * 0.92f, area.height - 10);
-            ArtLibrary.DrawSliced(w, "UI/Window", 40);
+            ArtLibrary.DrawSliced(w, "UI/Window", 60);
             string title = Titles.First(t => t.win == window).title;
             if (window == Win.Room && session.FindRoom(selectedRoom) is Room room)
                 title = session.Balance.Room(room.Type).Name;
             var plank = new Rect(w.center.x - 160, w.y - 2, 320, 40);
             ArtLibrary.DrawSliced(plank, "UI/ButtonOn", 16);
-            GUI.Label(plank, title, titleText);
+            UiSkin.Outlined(plank, title, titleText, 2f);
             var close = new Rect(w.xMax - 46, w.y - 8, 50, 50);
             ArtLibrary.Draw(close, "UI/Close");
             if (GUI.Button(close, "", GUIStyle.none))

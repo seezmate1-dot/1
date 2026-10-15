@@ -110,8 +110,8 @@ namespace LastHearth.Game
         bool MapMarker(Vector2 at, string name, float size, bool dot)
         {
             var plaque = new Rect(at.x - 56, at.y + size * 0.28f, 112, 28);
-            ArtLibrary.DrawSliced(plaque, "UI/Pill", 18);
-            GUI.Label(plaque, name, buttonLabel);
+            ArtLibrary.DrawSliced(plaque, "UI/Pill", 30);
+            UiSkin.Outlined(plaque, name, buttonLabel);
             if (dot)
                 ArtLibrary.Draw(new Rect(plaque.xMax - 12, plaque.y - 8, 20, 20), "UI/Dot");
             var hit = new Rect(at.x - size / 2, at.y - size * 0.6f, size, size * 0.6f + plaque.yMax - at.y);
@@ -141,12 +141,12 @@ namespace LastHearth.Game
                     GUI.color = new Color(0.45f, 0.45f, 0.55f, 0.85f);
                 ArtLibrary.Draw(b, "UI/Badge");
                 GUI.color = old;
-                GUI.Label(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), act.ToString(), current ? titleText : buttonLabel);
+                UiSkin.Outlined(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), act.ToString(), current ? titleText : buttonLabel);
                 if (current)
                 {
                     var plaque = new Rect(at.x - 80, b.yMax - 2, 160, 26);
-                    ArtLibrary.DrawSliced(plaque, "UI/Pill", 18);
-                    GUI.Label(plaque, c.Acts[i].Name, buttonLabel);
+                    ArtLibrary.DrawSliced(plaque, "UI/Pill", 30);
+                    UiSkin.Outlined(plaque, c.Acts[i].Name, buttonLabel);
                     if (MissionWaits())
                         ArtLibrary.Draw(new Rect(b.xMax - 14, b.y - 4, 18, 18), "UI/Dot");
                 }
