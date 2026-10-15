@@ -82,7 +82,14 @@ namespace LastHearth.Game
             session.State.UtcOffsetSeconds = (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds;
             session.JobCompleted += job =>
             {
-                message = "Готово: " + JobName(job) + " → ур. " + job.ToLevel;
+                message = job.IsClearing ? "Завал расчищен: здесь можно строить"
+                    : job.IsHearth && session.SectionOpensAt(job.ToLevel) ? "Очаг " + job.ToLevel + ": открылась новая часть горы"
+                    : "Готово: " + JobName(job) + " → ур. " + job.ToLevel;
+                sounds?.Play("Done");
+            };
+            session.ChildBorn += child =>
+            {
+                message = "В жилых покоях родился ребёнок: " + child.Name;
                 sounds?.Play("Done");
             };
             session.SurgeSettled += r => message = r.Live ? "" : string.Format("Наплыв отбит без вас: {0}, +{1} жара", StarText(r.Stars), r.Ember);
@@ -374,7 +381,8 @@ namespace LastHearth.Game
                 {
                     GUILayout.BeginHorizontal();
                     long left = job.Remaining(now);
-                    GUILayout.Label("   " + JobName(job) + " → " + job.ToLevel + (job.IsRunning(now) ? "   осталось " + Duration(left) : "   ждёт"));
+                    GUILayout.Label("   " + JobName(job) + (job.IsClearing ? "" : " → " + job.ToLevel) +
+                                    (job.IsRunning(now) ? "   осталось " + Duration(left) : "   ждёт"));
                     if (job.IsRunning(now))
                     {
                         if (left <= session.Balance.Build.FreeFinishSeconds && GUILayout.Button("Бесплатно", GUILayout.Width(110)))
@@ -400,12 +408,12 @@ namespace LastHearth.Game
                 string output = data.Produces == null ? "" :
                     string.Format(" · {0:0.0}/ч · запас {1:0}", session.RoomOutputPerHour(room), room.Stock);
                 string cold = session.IsRoomWarm(room) ? "" : " · <color=#6cf>промёрз</color>";
-                GUILayout.Label(string.Format("{0} ур.{1} (этаж {2}, работников {3}){4}{5}",
-                    data.Name, room.Level, room.Floor + 1, room.Workers.Count, output, cold), Rich());
+                GUILayout.Label(string.Format("{0} ур.{1}{2} (этаж {3}, работников {4}){5}{6}",
+                    data.Name, room.Level, room.Width > 1 ? " ×" + room.Width : "", room.Floor + 1, room.Workers.Count, output, cold), Rich());
                 if (data.Produces != null && GUILayout.Button("Собрать", GUILayout.Width(90)))
                     Collecting(() => session.Collect(room.Id));
                 if (room.Level < session.State.HearthLevel && !session.State.Queue.IsQueued(room.Id) &&
-                    GUILayout.Button("Улучшить: " + CostText(session.RoomJobCost(room.Level + 1)), GUILayout.Width(260)))
+                    GUILayout.Button("Улучшить: " + CostText(session.RoomUpgradeCost(room)), GUILayout.Width(260)))
                     Report(session.UpgradeRoom(room.Id, now));
                 GUILayout.EndHorizontal();
             }
@@ -424,7 +432,8 @@ namespace LastHearth.Game
                 string role = d.IsHero ? string.Format("{0}, уровень {1}, умение {2} из {3}", ClassName(d.HeroClass), d.HeroLevel, d.SkillLevel, session.SkillCap(d))
                     : where;
                 var stats = string.Join("  ", Enum.GetValues(typeof(Stat)).Cast<Stat>().Select(st => StatName(st) + " " + d.StatOf(st)));
-                GUILayout.Label(string.Format("<b>{0}</b> · {1}\n<size=12><color=#d8c8a8>{2}</color></size>", d.Name, role, stats), Rich());
+                GUILayout.Label(string.Format("<b>{0}</b> ({1}) · {2}\n<size=12><color=#d8c8a8>{3}</color></size>", d.Name,
+                    d.Sex == Sex.Female ? "жен." : "муж.", role, stats), Rich());
                 if (producers.Count > 0 && GUILayout.Button("Перевести", GUILayout.Width(110)))
                 {
                     int index = room == null ? 0 : (producers.IndexOf(room) + 1) % producers.Count;
@@ -713,6 +722,8 @@ namespace LastHearth.Game
         {
             if (job.IsHearth)
                 return "Очаг";
+            if (job.IsClearing)
+                return "Расчистка завала (этаж " + (job.Floor + 1) + ")";
             var room = session.FindRoom(job.Target);
             return room == null ? "?" : session.Balance.Room(room.Type).Name;
         }
@@ -749,6 +760,10 @@ namespace LastHearth.Game
                 case Fail.HuntInProgress: return "Сначала закончите начатый бой";
                 case Fail.NoHeroes: return "Нет героев: нужна казарма и герои";
                 case Fail.NotToday: return "Пока нельзя: подождите";
+                case Fail.CellTaken: return "Клетка занята или ещё завалена";
+                case Fail.AlreadyQueued: return "Уже в работе";
+                case Fail.NotMergeable: return "Объединяются только соседние залы одного типа и уровня";
+                case Fail.NotAPair: return "Нужны мужчина и женщина, не в походе";
                 default: return fail.ToString();
             }
         }

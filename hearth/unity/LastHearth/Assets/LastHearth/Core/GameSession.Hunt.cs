@@ -33,7 +33,7 @@ namespace LastHearth.Core
         {
             for (int i = 0; i < count; i++)
             {
-                if (State.Dwellers.Count >= Formulas.DwellerCap(Balance, State.HearthLevel))
+                if (PopulationFull())
                     return;
                 int n = State.NextDwellerId;
                 int lead = (n * 3) % 5;

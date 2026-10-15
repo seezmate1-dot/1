@@ -160,7 +160,7 @@ STARTER_ESSENCE = 9000      # tutorial and first-day quests (heroes grow fast at
 STARTER_DAYS = 2
 
 
-KEY_ROOMS_EARLY = ["Спальни", "Кухня", "Угольная шахта", "Казарма", "Рудник", "Кузня", "Лазарет", "Библиотека",
+KEY_ROOMS_EARLY = ["Жилые покои", "Кухня", "Угольная шахта", "Казарма", "Рудник", "Кузня", "Лазарет", "Библиотека",
                    "Тренировочный зал"]
 KEY_ROOMS_CYCLE = ["Казарма", "Кузня", "Лазарет", "Библиотека", "Тренировочный зал"]
 
@@ -593,6 +593,20 @@ def checks(result):
             problems.append("очаг %d: день %.1f вместо %.1f" % (lv, got, want))
     if 30 not in result["reached"] or result["reached"][30] > DAYS * 1.05:
         problems.append("очаг 30 не достигнут за год")
+    # 11. fortress sections: each one is warm enough for a room of the hearth level when it opens,
+    #     the starting rooms stand in the first one, the whole mountain is open by mid game
+    for lv, f0, f1, c0, c1 in SECTIONS:
+        far = max(abs(f0 - HEARTH_FLOOR), abs(f1 - HEARTH_FLOOR))
+        warmth = hearth_warmth(lv) * 0.8 ** far
+        need = 60 * 1.06 ** (lv - 1)
+        if warmth < need:
+            problems.append("секция очага %d: этаж %d холодный (тепло %.0f, нужно %.0f)" % (lv, f1 + 1, warmth, need))
+    for floor, cell in STARTING_ROOMS:
+        if section_opens(floor, cell) != 1:
+            problems.append("стартовый зал (этаж %d, клетка %d) не в первой секции" % (floor + 1, cell + 1))
+    closed = [(f, c) for f in range(GRID_FLOORS) for c in range(GRID_CELLS) if section_opens(f, c) is None]
+    if closed or max(lv for lv, *_ in SECTIONS) > 20:
+        problems.append("гора не открывается целиком к 20-му уровню очага")
     return problems
 
 
@@ -1035,7 +1049,53 @@ def report(result):
     w("Жар, Сердцевины и Чертежи не продаются за алмазы: их приносит только игра в своей активности. Легендарное "
       "снаряжение и ранги мастерства не заканчиваются за год — это цели второго года.")
     w("")
-    w("## 13. Проверки модели")
+    w("## 13. Крепость: секции, завалы, слияние, жилые покои")
+    w("")
+    w("Гора открывается секциями с уровнем очага (наш «тронный зал», GDD 6). Каждая неотстроенная клетка открытой "
+      "секции завалена: строитель из общей очереди расчищает завал за уголь и еду, и на клетке можно строить. "
+      "Секция открывается, когда её дальний этаж уже тёплый для зала уровня очага, так что тепло по-прежнему "
+      "решает, где зал работает в полную силу.")
+    w("")
+    w("| Очаг | Открывается | Клеток для залов всего |")
+    w("|---|---|---|")
+    for lv, f0, f1, c0, c1 in SECTIONS:
+        n = sum(1 for f in range(GRID_FLOORS) for c in range(GRID_CELLS)
+                if (section_opens(f, c) or 99) <= lv and not (f == HEARTH_FLOOR and c in HEARTH_CELLS))
+        floors = "этаж %d" % (f0 + 1) if f0 == f1 else "этажи %d–%d" % (f0 + 1, f1 + 1)
+        w("| %d | %s, клетки %d–%d | %d |" % (lv, floors, c0 + 1, c1 + 1, n))
+    w("")
+    far = max(cell_distance(f, c) for f in range(GRID_FLOORS) for c in range(GRID_CELLS))
+    w("Расчистка рядом с очагом стоит %s часа горения очага в угле и %s часа еды полной крепости, длится %d%% "
+      "работы над залом этого уровня (не меньше %d с); каждая клетка дальше от очага добавляет %d%% к цене и "
+      "времени (до ×%s на краю горы). Уголь и еда, а не материалы: завалы не мешают копить на очаг." % (
+          dec(CLEAR_COAL_HOURS), dec(CLEAR_FOOD_HOURS), CLEAR_TIME_SHARE * 100, CLEAR_MIN_SECONDS,
+          CLEAR_PER_DISTANCE * 100, dec(1 + CLEAR_PER_DISTANCE * (far - 1), 2)))
+    w("")
+    w("| Очаг | Время у очага | Уголь | Еда |")
+    w("|---|---|---|---|")
+    for lv in (1, 3, 5, 8, 10, 12, 16, 20, 25, 30):
+        sec, coal, food = clear_base(rows, lv)
+        t = "%d с" % sec if sec < 120 else "%d мин" % round(sec / 60) if sec < 7200 else "%s ч" % dec(sec / 3600)
+        w("| %d | %s | %d | %d |" % (lv, t, coal, food))
+    w("")
+    w("**Слияние.** Залы одного типа и уровня рядом на этаже объединяются в один зал до %d клеток: по %d места "
+      "работника на клетку и +%d%% выработки за каждую клетку сверх первой. Лимит залов считается в клетках, "
+      "так что слияние не даёт лишних залов. Улучшение большого зала стоит как улучшение каждой его клетки, "
+      "но занимает одного строителя и один таймер. Модель экономики бонус слияния не учитывает: это награда "
+      "за планировку (до +%d%% выработки зала)." % (MERGE_MAX_WIDTH, WORKERS_PER_ROOM, MERGE_BONUS_PER_CELL * 100,
+                                                       MERGE_BONUS_PER_CELL * 100 * (MERGE_MAX_WIDTH - 1)))
+    w("")
+    w("**Жилые покои.** Мужчина и женщина в жилых покоях ждут ребёнка: у ребёнка характеристики — среднее родителей "
+      "±%d, с шансом %d%% одна из них выше на %d. Рождения не превышают лимит жителей (`6 + 2 × (очаг − 1)`), "
+      "на каждую клетку покоев — одна пара. Беженцы, таверна и печати найма приводят жителей как прежде; дети "
+      "заполняют разрыв до лимита, который модель экономики и так считает занятым (еда — на полный лимит)." % (
+          BIRTH_STAT_SPREAD, BIRTH_GIFT_CHANCE * 100, BIRTH_GIFT_BONUS))
+    w("")
+    w("| Уровень покоев | 1 | 5 | 10 | 15 | 20 | 30 |")
+    w("|---|---|---|---|---|---|---|")
+    w("| Часов до рождения | " + " | ".join(dec(birth_hours(lv)) for lv in (1, 5, 10, 15, 20, 30)) + " |")
+    w("")
+    w("## 14. Проверки модели")
     w("")
     problems = checks(result)
     if problems:
@@ -1047,7 +1107,7 @@ def report(result):
           "сходятся; угля хватает на Наплыв; четвёртый строитель доступен за 2 месяца, алмазы не копятся; события дают "
           "заявленную долю материалов; кампания проходится за год; ускорения покрывают 10–25% стройки; "
           "Жар, Сердцевины и Чертежи расходуются по своим деревьям за год; "
-          "игрок попадает в целевые дни с точностью 15%.")
+          "игрок попадает в целевые дни с точностью 15%; секции горы открываются тёплыми, вся гора открыта к 20-му уровню очага.")
     return "\n".join(out) + "\n", problems
 
 
@@ -1055,10 +1115,10 @@ def report(result):
 BALANCE_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                            "unity", "LastHearth", "Assets", "LastHearth", "Resources", "balance.json")
 
-# GDD 6: room types. name: (enum, unlock hearth, produces, key stat, how many can be built)
+# GDD 6: room types. name: (enum, unlock hearth, produces, key stat, how many cells can be built)
 ROOM_TYPES = [
     ("Очаг", "Hearth", 1, None, None, 1),
-    ("Спальни", "Bedrooms", 1, None, None, 4),
+    ("Жилые покои", "Bedrooms", 1, None, None, 4),
     ("Кухня", "Kitchen", 1, "Food", "Agility", 2),
     ("Угольная шахта", "CoalMine", 1, "Coal", "Endurance", 2),
     ("Казарма", "Barracks", 2, None, "Strength", 1),
@@ -1077,7 +1137,67 @@ ROOM_TYPES = [
 ]
 ROOM_ENUM = {name: enum for name, enum, *_ in ROOM_TYPES}
 STAT_DIVISOR = 25          # GDD 6: output x (1 + stat / 25)
-WORKERS_PER_ROOM = 2       # one cell holds two workers (merged rooms come later)
+WORKERS_PER_ROOM = 2       # one cell holds two workers; a merged room holds two per cell
+
+# GDD 6: the mountain opens in sections with the hearth level (our throne hall). Each section:
+# (hearth level, floors from-to, cells from-to), floors counted from 0 at the bottom (the hearth is on 3).
+# A section opens when its far floor is warm enough for a room of that hearth level (checked below).
+GRID_FLOORS, GRID_CELLS, HEARTH_FLOOR, HEARTH_CELLS = 10, 6, 3, (2, 3)
+SECTIONS = [
+    (1, 2, 4, 1, 4),    # around the hearth: 10 cells, 3 of them the starting rooms
+    (3, 2, 4, 0, 5),    # the hearth floors to the walls
+    (5, 1, 5, 0, 5),
+    (8, 0, 6, 0, 5),
+    (12, 7, 7, 0, 5),
+    (16, 8, 8, 0, 5),
+    (20, 9, 9, 0, 5),   # the whole mountain
+]
+# Obstacles (rubble) cover every cell that is not built; a builder clears them for coal and food.
+CLEAR_TIME_SHARE = 0.25    # of a room job at this hearth level
+CLEAR_MIN_SECONDS = 10
+CLEAR_COAL_HOURS = 0.5     # hours of the steady hearth burn
+CLEAR_FOOD_HOURS = 1.0     # hours of food of a full fortress
+CLEAR_PER_DISTANCE = 0.25  # +25% cost and time per cell of distance from the hearth beyond the first
+
+# GDD 6: rooms of one type and level side by side merge into one hall of up to 3 cells.
+MERGE_MAX_WIDTH = 3
+MERGE_BONUS_PER_CELL = 0.10  # +10% output for every cell beyond the first
+MERGE_COST_PER_CELL = 1.0    # an upgrade costs the room job x width; it takes one builder and one timer
+
+# GDD 8: births in the living quarters (a man and a woman), up to the dweller cap.
+BIRTH_HOURS = 8.0            # living quarters of level 1
+BIRTH_LEVEL_FACTOR = 0.93    # each level of the living quarters: 7% faster
+BIRTH_MIN_HOURS = 1.0
+BIRTH_STAT_SPREAD = 1        # a child's stat: the parents' average +-1
+BIRTH_GIFT_CHANCE = 0.10     # chance of a gifted child: one stat higher
+BIRTH_GIFT_BONUS = 3
+
+
+STARTING_ROOMS = [(HEARTH_FLOOR, 1), (HEARTH_FLOOR, 4), (HEARTH_FLOOR - 1, 2)]  # Core/NewGame.cs
+
+
+def cell_distance(floor, cell):
+    """Steps from the hearth: floors plus cells beyond the hearth's two."""
+    dx = max(HEARTH_CELLS[0] - cell, cell - HEARTH_CELLS[-1], 0)
+    return abs(floor - HEARTH_FLOOR) + dx
+
+
+def section_opens(floor, cell):
+    levels = [lv for lv, f0, f1, c0, c1 in SECTIONS if f0 <= floor <= f1 and c0 <= cell <= c1]
+    return min(levels) if levels else None
+
+
+def clear_base(rows, level):
+    """(seconds, coal, food) to clear an obstacle next to the hearth at this hearth level."""
+    row = rows[min(level, len(rows)) - 1]
+    seconds = max(CLEAR_MIN_SECONDS, int(round(row["room_h"] * 3600 * CLEAR_TIME_SHARE)))
+    coal = max(1, int(round(coal_burn_per_hour(level) * CLEAR_COAL_HOURS)))
+    food = max(1, int(round(dweller_cap(level) * 1.0 * CLEAR_FOOD_HOURS)))
+    return seconds, coal, food
+
+
+def birth_hours(room_level):
+    return max(BIRTH_MIN_HOURS, BIRTH_HOURS * BIRTH_LEVEL_FACTOR ** (room_level - 1))
 
 
 def expected_stat(level):
@@ -1196,7 +1316,17 @@ def export_balance(result):
                                 for r in ("Coal", "Food", "Iron", "Silver")}},
         "rooms": [{"type": enum, "name": name, "unlock": unlock, "produces": produces, "stat": stat, "maxCount": count}
                   for name, enum, unlock, produces, stat, count in ROOM_TYPES],
-        "grid": {"floors": 10, "cells": 6, "hearthFloor": 3, "hearthCells": [2, 3]},
+        "grid": {"floors": GRID_FLOORS, "cells": GRID_CELLS, "hearthFloor": HEARTH_FLOOR,
+                 "hearthCells": list(HEARTH_CELLS),
+                 "sections": [{"hearth": lv, "floorFrom": f0, "floorTo": f1, "cellFrom": c0, "cellTo": c1}
+                              for lv, f0, f1, c0, c1 in SECTIONS]},
+        "obstacles": {"seconds": [clear_base(rows, lv)[0] for lv in range(1, 31)],
+                      "coal": [clear_base(rows, lv)[1] for lv in range(1, 31)],
+                      "food": [clear_base(rows, lv)[2] for lv in range(1, 31)],
+                      "perDistance": CLEAR_PER_DISTANCE},
+        "merge": {"maxWidth": MERGE_MAX_WIDTH, "bonusPerCell": MERGE_BONUS_PER_CELL, "costPerCell": MERGE_COST_PER_CELL},
+        "births": {"hours": BIRTH_HOURS, "levelFactor": BIRTH_LEVEL_FACTOR, "minHours": BIRTH_MIN_HOURS,
+                   "statSpread": BIRTH_STAT_SPREAD, "giftChance": BIRTH_GIFT_CHANCE, "giftBonus": BIRTH_GIFT_BONUS},
         "squadSlots": list(SQUAD_SLOTS),
         "campaign": {
             "acts": [{"name": n, "boss": bname, "families": fam} for n, bname, fam in ACT_CONTENT],

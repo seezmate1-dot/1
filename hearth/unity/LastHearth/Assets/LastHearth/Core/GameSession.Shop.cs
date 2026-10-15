@@ -104,7 +104,7 @@ namespace LastHearth.Core
                 return Fail.AlreadyQueued;
             if (State.Wallet[item.PayWith] < item.Price)
                 return Fail.NotEnough;
-            if (item.Goods == ShopGoods.RecruitSeal && State.Dwellers.Count >= Formulas.DwellerCap(Balance, State.HearthLevel))
+            if (item.Goods == ShopGoods.RecruitSeal && PopulationFull())
                 return Fail.LimitReached;
             State.Wallet[item.PayWith] -= item.Price;
             item.Sold = true;

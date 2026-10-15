@@ -154,7 +154,8 @@ namespace LastHearth.Core
     [Serializable]
     public sealed class GameState
     {
-        public int SaveVersion = 1;
+        /// <summary>2: obstacles, merged rooms and births. Older saves are upgraded on load (GameSession).</summary>
+        public int SaveVersion = 2;
 
         /// <summary>Seconds (Unix time) up to which the fortress has been simulated.</summary>
         public long Time;
@@ -186,6 +187,11 @@ namespace LastHearth.Core
         public BuildQueue Queue = new BuildQueue();
         public int NextRoomId = 1;
         public int NextDwellerId = 1;
+
+        /// <summary>Cells whose obstacle is cleared (GameSession.CellKey); built cells count as cleared anyway.</summary>
+        public List<int> Cleared = new List<int>();
+        /// <summary>Couples in the living quarters waiting for a child.</summary>
+        public List<Pairing> Pairings = new List<Pairing>();
 
         // Hunt (ACTIVITIES.md, 3)
         public int HuntTracks = 3;

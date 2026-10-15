@@ -439,7 +439,7 @@ namespace LastHearth.Core
                 return Fail.LimitReached;
             if (State.Wallet[ResourceType.Glory] < g.Price)
                 return Fail.NotEnough;
-            if (g.Goods == "Seal" && State.Dwellers.Count >= Formulas.DwellerCap(Balance, State.HearthLevel))
+            if (g.Goods == "Seal" && PopulationFull())
                 return Fail.LimitReached;
             State.Wallet[ResourceType.Glory] -= g.Price;
             State.GloryBought[goods]++;

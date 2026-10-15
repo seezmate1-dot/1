@@ -7,16 +7,22 @@ namespace LastHearth.Core
     public sealed class BuildJob
     {
         public const int HearthTarget = -1;
+        /// <summary>Clearing the obstacle of the cell Floor, Cell.</summary>
+        public const int ClearTarget = -2;
 
         public int Id;
-        /// <summary>Room id, or HearthTarget.</summary>
+        /// <summary>Room id, HearthTarget or ClearTarget.</summary>
         public int Target;
         public int ToLevel;
         public long Start;
         public long End;
+        /// <summary>The cell of a clearing job.</summary>
+        public int Floor = -1, Cell = -1;
 
         [Newtonsoft.Json.JsonIgnore]
         public bool IsHearth => Target == HearthTarget;
+        [Newtonsoft.Json.JsonIgnore]
+        public bool IsClearing => Target == ClearTarget;
         public bool IsRunning(long now) => Start <= now && now < End;
         public long Remaining(long now) => Math.Max(0, End - Math.Max(now, Start));
     }
@@ -86,6 +92,17 @@ namespace LastHearth.Core
             var job = new BuildJob { Id = NextJobId++, Target = target, ToLevel = toLevel, Start = start, End = start + seconds };
             b.Jobs.Add(job);
             return job;
+        }
+
+        /// <summary>The clearing job of this cell, or null.</summary>
+        public BuildJob Clearing(int floor, int cell)
+        {
+            foreach (var job in AllJobs())
+            {
+                if (job.IsClearing && job.Floor == floor && job.Cell == cell)
+                    return job;
+            }
+            return null;
         }
 
         public BuildJob Find(int jobId)

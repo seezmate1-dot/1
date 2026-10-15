@@ -229,11 +229,13 @@ namespace LastHearth.Core.Tests
 
             foreach (var type in BuildOrder)
             {
-                if (s.CountRooms(type) > 0 || s.State.HearthLevel < s.Balance.Room(type).Unlock)
+                if (s.CountCells(type) > 0 || s.State.HearthLevel < s.Balance.Room(type).Unlock)
                     continue;
-                var cell = FreeCell(s);
+                var cell = PlayerBot.FreeCell(s);
                 if (cell.HasValue)
                     s.BuildRoom(type, cell.Value.floor, cell.Value.cell, now, out _);
+                else
+                    PlayerBot.ClearNearest(s, now);
             }
 
             if (s.UpgradeHearth(now) == Fail.None)
@@ -243,24 +245,6 @@ namespace LastHearth.Core.Tests
                 if (s.UpgradeRoom(room.Id, now) == Fail.QueueFull)
                     break;
             }
-        }
-
-        static (int floor, int cell)? FreeCell(GameSession s)
-        {
-            var g = s.Balance.Grid;
-            for (int d = 0; d < g.Floors; d++)
-            {
-                foreach (int floor in new[] { g.HearthFloor + d, g.HearthFloor - d })
-                {
-                    for (int cell = 0; cell < g.Cells; cell++)
-                    {
-                        if (s.CellFree(floor, cell) &&
-                            Formulas.IsFloorHabitable(s.Balance, s.State.HearthLevel, s.State.Mode, floor, s.State.HearthLevel))
-                            return (floor, cell);
-                    }
-                }
-            }
-            return null;
         }
     }
 

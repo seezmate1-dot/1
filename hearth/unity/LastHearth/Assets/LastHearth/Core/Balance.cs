@@ -29,6 +29,9 @@ namespace LastHearth.Core
         public ProductionData Production = new ProductionData();
         public List<RoomData> Rooms = new List<RoomData>();
         public GridData Grid = new GridData();
+        public ObstacleData Obstacles = new ObstacleData();
+        public MergeData Merge = new MergeData();
+        public BirthData Births = new BirthData();
         /// <summary>GDD 10: hearth levels that open the 6th-9th squad slots.</summary>
         public int[] SquadSlots = new int[0];
         public ActivitiesData Activities = new ActivitiesData();
@@ -165,6 +168,7 @@ namespace LastHearth.Core
         public int Unlock;
         public ResourceType? Produces;
         public Stat? Stat;
+        /// <summary>How many cells of this type can be built (a merged room counts each of its cells).</summary>
         public int MaxCount;
     }
 
@@ -364,5 +368,53 @@ namespace LastHearth.Core
         public int Cells;
         public int HearthFloor;
         public int[] HearthCells = new int[0];
+        /// <summary>GDD 6: parts of the mountain that open with the hearth level.</summary>
+        public List<SectionData> Sections = new List<SectionData>();
+    }
+
+    /// <summary>A rectangle of cells that can be cleared from this hearth level on.</summary>
+    public sealed class SectionData
+    {
+        public int Hearth;
+        public int FloorFrom;
+        public int FloorTo;
+        public int CellFrom;
+        public int CellTo;
+
+        public bool Contains(int floor, int cell) => floor >= FloorFrom && floor <= FloorTo && cell >= CellFrom && cell <= CellTo;
+    }
+
+    /// <summary>Clearing an obstacle next to the hearth, by hearth level 1-30; further cells cost more.</summary>
+    public sealed class ObstacleData
+    {
+        public long[] Seconds = new long[0];
+        public long[] Coal = new long[0];
+        public long[] Food = new long[0];
+        /// <summary>Extra cost and time for every cell of distance from the hearth beyond the first.</summary>
+        public double PerDistance;
+    }
+
+    /// <summary>GDD 6: same-type rooms side by side merge into one hall.</summary>
+    public sealed class MergeData
+    {
+        public int MaxWidth = 1;
+        /// <summary>Output bonus for every cell beyond the first.</summary>
+        public double BonusPerCell;
+        /// <summary>Upgrade cost: room job x (1 + CostPerCell x (width - 1)).</summary>
+        public double CostPerCell;
+    }
+
+    /// <summary>GDD 8: a man and a woman in the living quarters have a child.</summary>
+    public sealed class BirthData
+    {
+        public double Hours;
+        /// <summary>Each level of the living quarters multiplies the time by this.</summary>
+        public double LevelFactor;
+        public double MinHours;
+        /// <summary>A child's stat is the parents' average, plus or minus this.</summary>
+        public int StatSpread;
+        /// <summary>Chance that one stat of the child is higher by GiftBonus.</summary>
+        public double GiftChance;
+        public int GiftBonus;
     }
 }

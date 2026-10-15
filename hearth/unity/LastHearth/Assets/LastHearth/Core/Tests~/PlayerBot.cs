@@ -79,6 +79,8 @@ namespace LastHearth.Core.Tests
                         break;
                 }
             }
+            Merge(now);
+            Breed(now);
             Staff();
             Heroes();
             Hunt(now);
@@ -329,30 +331,119 @@ namespace LastHearth.Core.Tests
             foreach (var type in BuildOrder)
             {
                 counts[type] = counts.TryGetValue(type, out int c) ? c + 1 : 1;
-                if (S.CountRooms(type) >= counts[type] || S.State.HearthLevel < S.Balance.Room(type).Unlock)
+                if (S.CountCells(type) >= counts[type] || S.State.HearthLevel < S.Balance.Room(type).Unlock)
                     continue;
-                var cell = FreeCell();
-                if (cell == null || S.BuildRoom(type, cell.Value.floor, cell.Value.cell, now, out _) == Fail.QueueFull)
+                var cell = NextTo(type) ?? FreeCell(S);
+                if (cell == null)
+                {
+                    ClearNearest(S, now);
+                    return;
+                }
+                if (S.BuildRoom(type, cell.Value.floor, cell.Value.cell, now, out _) == Fail.QueueFull)
                     return;
             }
         }
 
-        (int floor, int cell)? FreeCell()
+        /// <summary>A dug-out cell beside a room of this type, where the new one can merge with it later.</summary>
+        (int floor, int cell)? NextTo(RoomType type)
         {
-            var g = S.Balance.Grid;
+            foreach (var room in S.State.Rooms.Where(r => r.Type == type && r.Width < S.Balance.Merge.MaxWidth))
+            {
+                foreach (int cell in new[] { room.Cell - 1, room.Cell + room.Width })
+                {
+                    if (S.CellFree(room.Floor, cell) && Warm(S, room.Floor))
+                        return (room.Floor, cell);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Same rooms side by side become one hall as soon as their levels match.</summary>
+        void Merge(long now)
+        {
+            foreach (var room in S.State.Rooms.ToList())
+            {
+                var other = S.MergeCandidate(room);
+                if (other != null && S.State.Rooms.Contains(room))
+                    S.MergeRooms(room.Id, other.Id, now);
+            }
+        }
+
+        /// <summary>
+        /// Couples in the living quarters fill the fortress up to the dweller cap: idle people first,
+        /// then the weakest workers; after a birth the parents go back to work.
+        /// </summary>
+        void Breed(long now)
+        {
+            // a child that cannot be born (the fortress filled up) does not keep its parents from work
+            foreach (var p in S.State.Pairings.Where(p => p.End <= now).ToList())
+            {
+                S.Unassign(p.ManId);
+                S.Unassign(p.WomanId);
+            }
+            S.Advance(now);
+            foreach (var room in S.State.Rooms.Where(r => r.Type == RoomType.Bedrooms && r.Level > 0).ToList())
+            {
+                if (!S.PairingsIn(room.Id).Any())
+                {
+                    foreach (int id in room.Workers.ToList())
+                        S.Unassign(id);
+                }
+                while (S.PairingsIn(room.Id).Count() < room.Width &&
+                       S.State.Dwellers.Count + S.State.Pairings.Count < Formulas.DwellerCap(S.Balance, S.State.HearthLevel))
+                {
+                    var man = Parent(Sex.Male);
+                    var woman = Parent(Sex.Female);
+                    if (man == null || woman == null || S.StartPairing(room.Id, man.Id, woman.Id, now) != Fail.None)
+                        break;
+                }
+            }
+        }
+
+        Dweller Parent(Sex sex) => S.State.Dwellers
+            .Where(d => d.Sex == sex && !d.IsHero && d.RouteId == 0 && S.PairingOf(d.Id) == null)
+            .OrderBy(d => d.RoomId < 0 ? 0 : 1).ThenBy(d => d.Stats.Sum()).FirstOrDefault();
+
+        /// <summary>Floors in the order a player fills them: the hearth's own, then one up and one down, and so on.</summary>
+        static IEnumerable<(int floor, int cell)> CellsByFloor(GameSession s)
+        {
+            var g = s.Balance.Grid;
             for (int d = 0; d < g.Floors; d++)
             {
                 foreach (int floor in new[] { g.HearthFloor + d, g.HearthFloor - d })
                 {
                     for (int cell = 0; cell < g.Cells; cell++)
-                    {
-                        if (S.CellFree(floor, cell) &&
-                            Formulas.IsFloorHabitable(S.Balance, S.State.HearthLevel, S.State.Mode, floor, S.State.HearthLevel, S.WarmthMult()))
-                            return (floor, cell);
-                    }
+                        yield return (floor, cell);
                 }
             }
+        }
+
+        static bool Warm(GameSession s, int floor) =>
+            Formulas.IsFloorHabitable(s.Balance, s.State.HearthLevel, s.State.Mode, floor, s.State.HearthLevel, s.WarmthMult());
+
+        /// <summary>The first dug-out cell warm enough for a room of the hearth's level.</summary>
+        public static (int floor, int cell)? FreeCell(GameSession s)
+        {
+            foreach (var (floor, cell) in CellsByFloor(s))
+            {
+                if (s.CellFree(floor, cell) && Warm(s, floor))
+                    return (floor, cell);
+            }
             return null;
+        }
+
+        /// <summary>
+        /// Clears the next obstacle on a warm floor, the floors nearest to the hearth first (rooms close
+        /// together are easier to hold in the Surge), unless one is being cleared already.
+        /// </summary>
+        public static void ClearNearest(GameSession s, long now)
+        {
+            if (s.State.Queue.AllJobs().Any(j => j.IsClearing))
+                return;
+            var next = CellsByFloor(s).Where(c => s.CellStateAt(c.floor, c.cell) == CellState.Obstacle && Warm(s, c.floor))
+                .OrderBy(c => Math.Abs(c.floor - s.Balance.Grid.HearthFloor)).ThenBy(c => s.HearthDistance(c.floor, c.cell)).Select(c => ((int floor, int cell)?)c).FirstOrDefault();
+            if (next.HasValue)
+                s.ClearObstacle(next.Value.floor, next.Value.cell, now);
         }
 
         void Staff()

@@ -129,7 +129,7 @@ namespace LastHearth.Core
                 State.Wallet[ResourceType.Blueprints] += bp;
                 State.Wallet[ResourceType.Essence] += essence;
                 State.Rewards.Add(ResourceBag.Materials(mats, Balance.SilverShare));
-                if (rng.Next() < 0.15 && State.Dwellers.Count < Formulas.DwellerCap(Balance, State.HearthLevel))
+                if (rng.Next() < 0.15 && !PopulationFull())
                 {
                     RefugeesArrive(1);
                     lines.Add("привели беженца");

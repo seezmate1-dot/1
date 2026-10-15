@@ -28,6 +28,8 @@ namespace LastHearth.Core
         SkillCap,
         HuntInProgress,
         NoHunt,
+        NotMergeable,
+        NotAPair,
     }
 
     /// <summary>
@@ -45,6 +47,7 @@ namespace LastHearth.Core
         {
             Balance = balance;
             State = state;
+            UpgradeSave();
             State.Queue.EnsureBuilders(BuilderCount());
         }
 
@@ -128,18 +131,12 @@ namespace LastHearth.Core
                     total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value));
             }
             double warm = IsRoomWarm(room) ? 1.0 : Balance.Warmth.FrozenOutput;
-            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * (1 + SpecValue(room, SpecEffect.Output)) * SiegePenalty(State.Time);
+            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
+                   SiegePenalty(State.Time);
         }
 
-        public bool CellFree(int floor, int cell)
-        {
-            var g = Balance.Grid;
-            if (floor < 0 || floor >= g.Floors || cell < 0 || cell >= g.Cells)
-                return false;
-            if (floor == g.HearthFloor && Array.IndexOf(g.HearthCells, cell) >= 0)
-                return false;
-            return !State.Rooms.Exists(r => r.Floor == floor && r.Cell == cell);
-        }
+        /// <summary>A dug-out empty cell: its obstacle is cleared and nothing stands there.</summary>
+        public bool CellFree(int floor, int cell) => CellStateAt(floor, cell) == CellState.Free;
 
         // ------------------------------------------------------------------ time
 
@@ -174,6 +171,7 @@ namespace LastHearth.Core
             SettleMissedSurges(State.Time);
             CheckLogin(State.Time);
             SettlePvp(State.Time);
+            SettleBirths(State.Time);
         }
 
         void Produce(long seconds)
@@ -214,6 +212,10 @@ namespace LastHearth.Core
                 State.Queue.EnsureBuilders(BuilderCount());
                 RefugeesArrive();
                 CheckAchievements();
+            }
+            else if (job.IsClearing)
+            {
+                State.Cleared.Add(CellKey(job.Floor, job.Cell));
             }
             else
             {
@@ -277,7 +279,7 @@ namespace LastHearth.Core
             var data = Balance.Room(type);
             if (type == RoomType.Hearth || State.HearthLevel < data.Unlock)
                 return Fail.Locked;
-            if (CountRooms(type) >= data.MaxCount)
+            if (CountCells(type) >= data.MaxCount)
                 return Fail.LimitReached;
             if (!CellFree(floor, cell))
                 return Fail.CellTaken;
@@ -311,7 +313,7 @@ namespace LastHearth.Core
             int builder = State.Queue.PickBuilder(Balance.Build.QueuePerBuilder, now);
             if (builder < 0)
                 return Fail.QueueFull;
-            var cost = RoomJobCost(to);
+            var cost = RoomUpgradeCost(room);
             if (!State.Wallet.Covers(cost))
                 return Fail.NotEnough;
             State.Wallet.Subtract(cost);
@@ -388,9 +390,11 @@ namespace LastHearth.Core
 
         // ------------------------------------------------------------------ dwellers and heroes
 
-        public Dweller AddDweller(string name, int[] stats)
+        /// <summary>A new dweller; without a sex given, it follows the name.</summary>
+        public Dweller AddDweller(string name, int[] stats, Sex sex = Sex.Unknown)
         {
-            var d = new Dweller { Id = State.NextDwellerId++, Name = name, Stats = (int[])stats.Clone() };
+            int id = State.NextDwellerId++;
+            var d = new Dweller { Id = id, Name = name, Sex = sex == Sex.Unknown ? SexOfName(name, id) : sex, Stats = (int[])stats.Clone() };
             State.Dwellers.Add(d);
             return d;
         }
@@ -401,7 +405,7 @@ namespace LastHearth.Core
             var room = FindRoom(roomId);
             if (d == null || room == null)
                 return Fail.NotFound;
-            if (room.Workers.Count >= Balance.Production.WorkersPerRoom + (int)SpecValue(room, SpecEffect.WorkerSlot))
+            if (room.Workers.Count >= WorkerPlaces(room))
                 return Fail.RoomFull;
             Unassign(dwellerId);
             room.Workers.Add(dwellerId);

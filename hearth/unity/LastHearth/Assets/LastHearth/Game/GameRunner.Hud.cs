@@ -46,6 +46,7 @@ namespace LastHearth.Game
             window = w;
             windowScroll = Vector2.zero;
             decorPicker = false;
+            pairPicker = false;
         }
 
         void CloseWindow()
@@ -276,6 +277,8 @@ namespace LastHearth.Game
             string title = Titles.First(t => t.win == window).title;
             if (window == Win.Room && session.FindRoom(selectedRoom) is Room room)
                 title = session.Balance.Room(room.Type).Name;
+            if (window == Win.Build && selectedFloor >= 0 && session.CellStateAt(selectedFloor, selectedCell) == CellState.Obstacle)
+                title = "Завал";
             var plank = new Rect(w.center.x - 160, w.y - 2, 320, 40);
             ArtLibrary.DrawSliced(plank, "UI/ButtonOn", 16);
             UiSkin.Outlined(plank, title, titleText, 2f);
@@ -324,8 +327,11 @@ namespace LastHearth.Game
                         DrawRoomPanel(room, now);
                     break;
                 case Win.Build:
-                    if (selectedFloor >= 0 && session.CellFree(selectedFloor, selectedCell))
+                    var cell = selectedFloor < 0 ? CellState.Outside : session.CellStateAt(selectedFloor, selectedCell);
+                    if (cell == CellState.Free)
                         DrawBuildPanel(now);
+                    else if (cell == CellState.Obstacle)
+                        DrawClearPanel(now);
                     else
                         CloseWindow();
                     break;

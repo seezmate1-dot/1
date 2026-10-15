@@ -1,6 +1,9 @@
 namespace LastHearth.Core
 {
-    /// <summary>The fortress at the first minute of play (MODES.md, section 10).</summary>
+    /// <summary>
+    /// The fortress at the first minute of play (MODES.md, section 10): the hearth and three rooms
+    /// stand on dug-out cells; rubble covers the rest of the first section around them (GDD 6).
+    /// </summary>
     public static class NewGame
     {
         public static GameSession Create(Balance b, long now)
@@ -13,11 +16,11 @@ namespace LastHearth.Core
             var kitchen = AddRoom(s, RoomType.Kitchen, floor, 4);
             var mine = AddRoom(s, RoomType.CoalMine, floor - 1, 2);
 
-            var mara = s.AddDweller("Мара", new[] { 9, 8, 6, 12, 10 });
+            var mara = s.AddDweller("Мара", new[] { 9, 8, 6, 12, 10 }, Sex.Female);
             mara.HeroClass = HeroClass.Guardian;
             mara.HeroLevel = 1;
-            var tim = s.AddDweller("Тим", new[] { 7, 5, 4, 9, 5 });
-            var ina = s.AddDweller("Ина", new[] { 4, 9, 6, 5, 6 });
+            var tim = s.AddDweller("Тим", new[] { 7, 5, 4, 9, 5 }, Sex.Male);
+            var ina = s.AddDweller("Ина", new[] { 4, 9, 6, 5, 6 }, Sex.Female);
             s.Assign(tim.Id, mine.Id);
             s.Assign(ina.Id, kitchen.Id);
             _ = bedrooms;

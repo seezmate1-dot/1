@@ -56,6 +56,12 @@ namespace LastHearth.Game
             public bool Framed;
             /// <summary>The loading screen's painted key art is there (Splash).</summary>
             public bool Splash;
+            /// <summary>Every room has pictures of its richer looks, Rooms/Type_2 and Rooms/Type_3 (RoomArt).</summary>
+            public bool RoomTiers;
+            /// <summary>Rubble over the rock of an obstacle cell is painted (Rooms/Rubble, transparent).</summary>
+            public bool Rubble;
+            /// <summary>Scaffolding over a room that is being built or upgraded is painted (Rooms/Scaffold, transparent).</summary>
+            public bool Scaffold;
         }
 
         static Manifest manifest;
@@ -142,6 +148,16 @@ namespace LastHearth.Game
             float w = 1f / info.Frames, h = 1f / info.Rows.Length;
             float u = frame * w, v = 1f - (r + 1) * h;
             GUI.DrawTextureWithTexCoords(rect, tex, flip ? new Rect(u + w, v, -w, h) : new Rect(u, v, w, h));
+        }
+
+        /// <summary>The look of a room by its level: 1 plain, 2 furnished (from level 4), 3 rich (from level 8).</summary>
+        public static int RoomTier(int level) => level >= 8 ? 3 : level >= 4 ? 2 : 1;
+
+        /// <summary>The picture of a room at its level; the base picture until the tier pictures exist.</summary>
+        public static string RoomArt(LastHearth.Core.RoomType type, int level)
+        {
+            int tier = Data.RoomTiers ? RoomTier(level) : 1;
+            return "Rooms/" + type + (tier > 1 ? "_" + tier : "");
         }
 
         public static string HeroSheet(LastHearth.Core.HeroClass c) => "Hero" + c;

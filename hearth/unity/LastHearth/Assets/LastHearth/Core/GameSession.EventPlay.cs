@@ -435,7 +435,7 @@ namespace LastHearth.Core
                     ClaimRewards();
                     break;
                 case TreasureCell.Refugee:
-                    if (State.Dwellers.Count < Formulas.DwellerCap(Balance, State.HearthLevel))
+                    if (!PopulationFull())
                         RefugeesArrive(1);
                     break;
                 case TreasureCell.Piece:

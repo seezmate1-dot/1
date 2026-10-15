@@ -12,7 +12,8 @@ namespace LastHearth.Game
     /// The cutaway of the fortress (GDD: 2.5D like Hustle Castle): the snowy peak with the watchtowers
     /// above, floors cut into the rock, rendered rooms with their decorations, the hearth with its
     /// living fire, frost over frozen rooms, dwellers walking and working, the creatures of the Surge.
-    /// Tap a room for its actions, tap a dug empty cell to build. Art: hearth/tools/art.
+    /// Tap a room for its actions, tap a dug empty cell to build, tap rubble to clear it; the parts of
+    /// the mountain that open at a higher hearth level stand closed. Art: hearth/tools/art.
     /// </summary>
     public sealed partial class GameRunner
     {
@@ -20,6 +21,8 @@ namespace LastHearth.Game
         int selectedFloor = -1, selectedCell = -1;
         float viewWidth = 900;
         bool decorPicker;
+        bool pairPicker;
+        int pairMan = -1, pairWoman = -1;
         GUIStyle cellStyle;
 
         /// <summary>Where each dweller is in its room and what it is doing (screen only, not saved).</summary>
@@ -106,7 +109,7 @@ namespace LastHearth.Game
             return sb.ToString();
         }
 
-        /// <summary>Floors worth showing: the dug ones and one more above and below.</summary>
+        /// <summary>Floors worth showing: the built and the open ones, and one closed floor above and below.</summary>
         (int top, int bottom) ShownFloors()
         {
             var g = session.Balance.Grid;
@@ -115,6 +118,11 @@ namespace LastHearth.Game
             {
                 top = Math.Max(top, r.Floor);
                 bottom = Math.Min(bottom, r.Floor);
+            }
+            foreach (var s in g.Sections.Where(s => s.Hearth <= session.State.HearthLevel))
+            {
+                top = Math.Max(top, s.FloorTo);
+                bottom = Math.Min(bottom, s.FloorFrom);
             }
             return (Math.Min(g.Floors - 1, top + 1), Math.Max(0, bottom - 1));
         }
@@ -150,6 +158,8 @@ namespace LastHearth.Game
                 // what next: workers mostly work, the others idle and stroll
                 double roll = walkRng.NextDouble();
                 bool working = d.RoomId >= 0 && session.FindRoom(d.RoomId) is Room room && session.Balance.Room(room.Type).Produces != null;
+                if (session.PairingOf(d.Id) != null)
+                    working = false; // a couple waiting for a child stays together
                 if (roll < (working ? 0.45 : 0.15))
                 {
                     w.Mode = 2;
@@ -171,10 +181,18 @@ namespace LastHearth.Game
             }
         }
 
-        /// <summary>Dwellers in a cell: its workers; heroes off duty rest in the barracks (or by the hearth).</summary>
+        /// <summary>
+        /// Dwellers in a room: its workers (a couple in the living quarters); dwellers without work live in
+        /// the first living quarters (children appear there); heroes off duty rest in the barracks (or by the hearth).
+        /// </summary>
         IEnumerable<Dweller> PeopleIn(Room room, bool hearth)
         {
             var st = session.State;
+            if (room != null && room.Type == RoomType.Bedrooms && st.Rooms.FirstOrDefault(r => r.Type == RoomType.Bedrooms) == room)
+            {
+                foreach (var d in st.Dwellers.Where(x => !x.IsHero && x.RoomId < 0 && x.RouteId == 0).Take(3 * room.Width))
+                    yield return d;
+            }
             if (room != null)
             {
                 foreach (int id in room.Workers)
@@ -235,18 +253,26 @@ namespace LastHearth.Game
                 for (int c = 0; c < g.Cells; c++)
                 {
                     var r = new Rect(area.x + c * cellW, y, cellW, cellH);
-                    if (f == g.HearthFloor && Array.IndexOf(g.HearthCells, c) >= 0)
+                    if (session.IsHearthCell(f, c))
                     {
                         if (c == g.HearthCells[0])
                             DrawHearthCell(new Rect(r.x, r.y, cellW * g.HearthCells.Length, cellH), now);
                         continue;
                     }
-                    var room = st.Rooms.Find(x => x.Floor == f && x.Cell == c);
+                    var room = session.RoomAt(f, c);
                     if (room != null)
-                        DrawRoomCell(r, room, now);
+                    {
+                        // a merged room is one picture over all its cells
+                        if (c == room.Cell)
+                            DrawRoomCell(new Rect(r.x, r.y, cellW * room.Width, cellH), room, now);
+                    }
                     else
-                        DrawEmptyCell(r, f, c);
+                    {
+                        DrawEmptyCell(r, f, c, now);
+                    }
                 }
+                if (live == null)
+                    DrawLockedLabels(area.x, y, f, cellW, cellH);
                 if (live != null)
                     DrawCreatures(area, gridY, top, f, cellW, cellH, live);
             }
@@ -257,10 +283,17 @@ namespace LastHearth.Game
         /// <summary>A built room (or the Hearth) stands in this cell: doors and ladders join such cells.</summary>
         bool Built(int floor, int cell)
         {
-            var g = session.Balance.Grid;
-            if (floor == g.HearthFloor && Array.IndexOf(g.HearthCells, cell) >= 0)
+            var state = session.CellStateAt(floor, cell);
+            return state == CellState.Hearth || state == CellState.Room;
+        }
+
+        /// <summary>Two cells of one room (the hearth or a merged hall): no door between them.</summary>
+        bool SameRoom(int floor, int a, int b)
+        {
+            if (session.IsHearthCell(floor, a) && session.IsHearthCell(floor, b))
                 return true;
-            return session.State.Rooms.Any(x => x.Floor == floor && x.Cell == cell);
+            var room = session.RoomAt(floor, a);
+            return room != null && room.Covers(floor, b);
         }
 
         /// <summary>
@@ -275,8 +308,7 @@ namespace LastHearth.Game
                 float y = gridY + (top - f) * cellH;
                 for (int c = 0; c + 1 < g.Cells; c++)
                 {
-                    bool inHearth = f == g.HearthFloor && Array.IndexOf(g.HearthCells, c) >= 0 && Array.IndexOf(g.HearthCells, c + 1) >= 0;
-                    if (inHearth || !Built(f, c) || !Built(f, c + 1))
+                    if (SameRoom(f, c, c + 1) || !Built(f, c) || !Built(f, c + 1))
                         continue;
                     float w = cellH * 0.3f, h = cellH * 0.5f, bx = x0 + (c + 1) * cellW;
                     ArtLibrary.Draw(new Rect(bx - w / 2, y + cellH * 0.9f - h, w, h), "Rooms/Door");
@@ -332,8 +364,9 @@ namespace LastHearth.Game
                     fr = new Rect(fr.x + fr.width * 0.2f, fr.y + fr.height * 0.5f, fr.width * 0.6f, fr.height * 0.5f);
                 GUI.DrawTextureWithTexCoords(fr, tex, new Rect((float)frame / fire.Frames, 0, 1f / fire.Frames, 1));
             }
-            DrawPeople(r, PeopleIn(null, true));
             var job = session.State.Queue.AllJobs().FirstOrDefault(j => j.IsHearth);
+            DrawScaffold(inner, job, now);
+            DrawPeople(r, PeopleIn(null, true));
             Badge(r, session.State.HearthLevel);
             if (job != null)
                 Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "ждёт");
@@ -349,7 +382,9 @@ namespace LastHearth.Game
         void DrawRoomCell(Rect r, Room room, long now)
         {
             var data = session.Balance.Room(room.Type);
-            DrawInterior(r, "Rooms/" + room.Type);
+            var inner = DrawInterior(r, ArtLibrary.RoomArt(room.Type, room.Level));
+            var job = session.State.Queue.AllJobs().FirstOrDefault(j => j.Target == room.Id);
+            DrawScaffold(inner, job, now);
             string decor = session.RoomDecorId(room.Id);
             if (decor != null && ArtLibrary.Data.Decor.TryGetValue(decor, out var di))
             {
@@ -366,9 +401,11 @@ namespace LastHearth.Game
             // no text over the art, like in Hustle Castle: the level on a badge, a cloud with the resource
             // when there is something to collect, a timer while it is being built
             Badge(r, room.Level);
-            var job = session.State.Queue.AllJobs().FirstOrDefault(j => j.Target == room.Id);
+            var child = session.PairingsIn(room.Id).OrderBy(p => p.End).FirstOrDefault();
             if (job != null)
                 Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "в очереди");
+            else if (child != null)
+                Pill(r, child.End > now ? "дитя " + Duration(child.End - now) : "ждёт места");
             if (selectedRoom == room.Id)
                 Outline(r);
             RoomFx(r, room.Id); // the «Готово» glow, where the collected icons fly from
@@ -386,37 +423,115 @@ namespace LastHearth.Game
             }
         }
 
-        void DrawEmptyCell(Rect r, int floor, int cell)
+        /// <summary>Scaffolding over a room (or the hearth) while a builder works on it, when it is painted.</summary>
+        void DrawScaffold(Rect inner, BuildJob job, long now)
         {
-            var b = session.Balance;
-            bool warm = Formulas.IsFloorHabitable(b, session.State.HearthLevel, session.State.Mode, floor, 1, session.WarmthMult());
+            if (job != null && job.IsRunning(now) && ArtLibrary.Data.Scaffold)
+                ArtLibrary.Draw(inner, "Rooms/Scaffold");
+        }
+
+        /// <summary>The rock of the mountain with rubble on it (an obstacle), when the rubble is painted.</summary>
+        void DrawRubble(Rect r)
+        {
+            ArtLibrary.Draw(r, "Rooms/Rock");
+            if (ArtLibrary.Data.Rubble)
+                ArtLibrary.Draw(r, "Rooms/Rubble");
+        }
+
+        void DrawEmptyCell(Rect r, int floor, int cell, long now)
+        {
+            var state = session.CellStateAt(floor, cell);
+            bool selected = selectedFloor == floor && selectedCell == cell;
+            switch (state)
+            {
+                case CellState.Locked:
+                {
+                    // the closed part of the mountain: darker rock, its label is drawn over the whole run
+                    var old = GUI.color;
+                    GUI.color = new Color(0.62f, 0.62f, 0.7f, 1);
+                    ArtLibrary.Draw(r, "Rooms/Rock");
+                    GUI.color = old;
+                    if (Tap(r))
+                        message = LockedText(session.SectionLevel(floor, cell));
+                    return;
+                }
+                case CellState.Obstacle:
+                {
+                    DrawRubble(r);
+                    var b = new Rect(r.center.x - r.width * 0.3f, r.y + r.height * 0.4f, r.width * 0.6f, Mathf.Max(22, r.height * 0.2f));
+                    ArtLibrary.DrawSliced(b, "UI/Pill", 30);
+                    UiSkin.Outlined(b, "Расчистить", BadgeStyle());
+                    if (selected)
+                        Outline(r);
+                    if (Tap(r))
+                        SelectCell(floor, cell);
+                    return;
+                }
+                case CellState.Clearing:
+                {
+                    DrawRubble(r);
+                    var job = session.State.Queue.Clearing(floor, cell);
+                    Pill(r, job != null && job.IsRunning(now) ? Duration(job.Remaining(now)) : "в очереди");
+                    if (Tap(r))
+                        message = "Здесь расчищают завал";
+                    return;
+                }
+            }
+            // a dug-out empty cell: build here, if it is warm enough
+            var b2 = session.Balance;
+            bool warm = Formulas.IsFloorHabitable(b2, session.State.HearthLevel, session.State.Mode, floor, 1, session.WarmthMult());
+            DrawInterior(r, "Rooms/Empty");
             if (!warm)
             {
-                ArtLibrary.Draw(r, "Rooms/Rock");
+                ArtLibrary.Draw(r, "Rooms/Frost");
+                if (Tap(r))
+                    message = FailText(Fail.TooCold);
                 return;
             }
-            // only the cells next to built rooms are dug out; further on stands the rock
-            var g = b.Grid;
-            bool hearthNear = floor == g.HearthFloor && (Array.IndexOf(g.HearthCells, cell - 1) >= 0 || Array.IndexOf(g.HearthCells, cell + 1) >= 0);
-            bool near = hearthNear || session.State.Rooms.Any(x => x.Floor == floor && Math.Abs(x.Cell - cell) == 1)
-                        || session.State.Rooms.Any(x => x.Cell == cell && Math.Abs(x.Floor - floor) == 1);
-            if (near)
-                DrawInterior(r, "Rooms/Empty");
-            else
-                ArtLibrary.Draw(r, "Rooms/Rock");
-            if (near)
-            {
-                float s = r.height * 0.36f * (1 + 0.05f * Mathf.Sin(Time.time * 3 + cell));
-                ArtLibrary.Draw(new Rect(r.center.x - s / 2, r.y + r.height * 0.42f - s / 2, s, s), "UI/Plus");
-            }
-            if (selectedFloor == floor && selectedCell == cell)
+            float s = r.height * 0.36f * (1 + 0.05f * Mathf.Sin(Time.time * 3 + cell));
+            ArtLibrary.Draw(new Rect(r.center.x - s / 2, r.y + r.height * 0.42f - s / 2, s, s), "UI/Plus");
+            if (selected)
                 Outline(r);
-            if (near && Tap(r))
+            if (Tap(r))
+                SelectCell(floor, cell);
+        }
+
+        void SelectCell(int floor, int cell)
+        {
+            selectedFloor = floor;
+            selectedCell = cell;
+            selectedRoom = -1;
+            Open(Win.Build);
+        }
+
+        static string LockedText(int level) =>
+            level > 0 ? string.Format("Откроется на {0}-м уровне очага", level) : "Эта часть горы не открывается";
+
+        /// <summary>One label over each run of closed cells of a floor that open at the same hearth level.</summary>
+        void DrawLockedLabels(float x0, float y, int floor, float cellW, float cellH)
+        {
+            int cells = session.Balance.Grid.Cells;
+            for (int c = 0; c < cells;)
             {
-                selectedFloor = floor;
-                selectedCell = cell;
-                selectedRoom = -1;
-                Open(Win.Build);
+                if (session.CellStateAt(floor, c) != CellState.Locked)
+                {
+                    c++;
+                    continue;
+                }
+                int level = session.SectionLevel(floor, c);
+                int end = c + 1;
+                while (end < cells && session.CellStateAt(floor, end) == CellState.Locked && session.SectionLevel(floor, end) == level)
+                    end++;
+                float w = (end - c) * cellW;
+                string text = end - c >= 3 ? LockedText(level) : level > 0 ? "очаг " + level : "";
+                if (text.Length > 0)
+                {
+                    float pw = Mathf.Min(w - 8, Mathf.Max(70, text.Length * 8.5f));
+                    var p = new Rect(x0 + c * cellW + (w - pw) / 2, y + cellH * 0.42f, pw, Mathf.Max(20, cellH * 0.16f));
+                    ArtLibrary.DrawSliced(p, "UI/Pill", 30);
+                    UiSkin.Outlined(p, text, BadgeStyle());
+                }
+                c = end;
             }
         }
 
@@ -462,7 +577,8 @@ namespace LastHearth.Game
             var data = b.Room(room.Type);
             string output = data.Produces == null ? "" :
                 string.Format(" · выработка {0:0.0}/ч · запас {1:0}", session.RoomOutputPerHour(room), room.Stock);
-            GUILayout.Label(string.Format("<b>{0}</b>, уровень {1}, этаж {2}{3}{4}", data.Name, room.Level, room.Floor + 1, output,
+            string size = room.Width > 1 ? string.Format(" · зал на {0} клетки, +{1:0}% выработки", room.Width, (session.MergeBonus(room) - 1) * 100) : "";
+            GUILayout.Label(string.Format("<b>{0}</b>, уровень {1}, этаж {2}{3}{4}{5}", data.Name, room.Level, room.Floor + 1, size, output,
                 session.IsRoomWarm(room) ? "" : " · <color=#9cf>промёрз: поднимите очаг, включите «Пылающий» или изучите Тепло</color>"), Rich());
             GUILayout.BeginHorizontal();
             if (data.Produces != null && GUILayout.Button("Собрать"))
@@ -471,8 +587,20 @@ namespace LastHearth.Game
                 sounds?.Play("Coins");
             }
             if (room.Level < session.State.HearthLevel && !session.State.Queue.IsQueued(room.Id) &&
-                GUILayout.Button("Улучшить до " + (room.Level + 1) + ": " + CostText(session.RoomJobCost(room.Level + 1))))
+                GUILayout.Button("Улучшить до " + (room.Level + 1) + ": " + CostText(session.RoomUpgradeCost(room))))
                 Report(session.UpgradeRoom(room.Id, now), "Build");
+            var mate = session.MergeCandidate(room);
+            if (mate != null && GUILayout.Button("Объединить с соседним залом"))
+            {
+                int keep = room.Cell < mate.Cell ? room.Id : mate.Id;
+                var fail = session.MergeRooms(room.Id, mate.Id, now);
+                Report(fail, "Build");
+                if (fail == Fail.None)
+                {
+                    selectedRoom = keep;
+                    message = "Залы объединены: больше мест и выработки";
+                }
+            }
             if (data.Stat != null)
             {
                 var idle = session.State.Dwellers.Where(d => d.RoomId < 0 && d.RouteId == 0 && !d.IsHero)
@@ -485,6 +613,18 @@ namespace LastHearth.Game
             GUILayout.EndHorizontal();
             if (decorPicker)
                 DrawDecorPicker(room, now);
+            if (mate == null && room.Width < session.Balance.Merge.MaxWidth)
+            {
+                // a neighbour of the same type that is not ready yet: tell what merging needs
+                var near = new[] { session.RoomAt(room.Floor, room.Cell - 1), session.RoomAt(room.Floor, room.Cell + room.Width) }
+                    .FirstOrDefault(x => x != null && x.Type == room.Type);
+                if (near != null)
+                    GUILayout.Label(near.Level != room.Level ? "Рядом такой же зал: сравняйте уровни, и их можно будет объединить"
+                        : room.Width + near.Width > session.Balance.Merge.MaxWidth ? "Зал больше " + session.Balance.Merge.MaxWidth + " клеток не бывает"
+                        : "Объединить можно, когда закончится стройка");
+            }
+            if (room.Type == RoomType.Bedrooms)
+                DrawLivingQuarters(room, now);
             foreach (int id in room.Workers.ToList())
             {
                 var d = session.FindDweller(id);
@@ -497,6 +637,61 @@ namespace LastHearth.Game
                     session.Unassign(id);
                 GUILayout.EndHorizontal();
             }
+        }
+
+        /// <summary>GDD 8: couples in the living quarters and the choice of a new couple.</summary>
+        void DrawLivingQuarters(Room room, long now)
+        {
+            var st = session.State;
+            GUILayout.Label(string.Format("Жителей {0} из {1}. Мужчина и женщина в покоях ждут ребёнка {2}; на каждую клетку покоев одна пара. " +
+                "Ребёнок похож на родителей характеристиками.", st.Dwellers.Count, Formulas.DwellerCap(session.Balance, st.HearthLevel),
+                Duration(session.BirthSeconds(room))));
+            var pairs = session.PairingsIn(room.Id).ToList();
+            foreach (var p in pairs)
+            {
+                string man = session.FindDweller(p.ManId)?.Name ?? "?", woman = session.FindDweller(p.WomanId)?.Name ?? "?";
+                GUILayout.Label(p.End > now ? string.Format("{0} и {1}: ребёнок через {2}", man, woman, Duration(p.End - now))
+                    : string.Format("{0} и {1}: ребёнку нет места, поднимите очаг", man, woman));
+            }
+            if (pairs.Count >= room.Width)
+                return;
+            if (session.PopulationFull())
+            {
+                GUILayout.Label("В крепости нет места для ребёнка: лимит растёт с уровнем очага");
+                return;
+            }
+            if (GUILayout.Button(pairPicker ? "Отмена" : "Пара"))
+            {
+                pairPicker = !pairPicker;
+                pairMan = pairWoman = -1;
+            }
+            if (!pairPicker)
+                return;
+            PickParent("Он:", Sex.Male, ref pairMan);
+            PickParent("Она:", Sex.Female, ref pairWoman);
+            if (pairMan >= 0 && pairWoman >= 0 && GUILayout.Button("Начать: ребёнок через " + Duration(session.BirthSeconds(room))))
+            {
+                var fail = session.StartPairing(room.Id, pairMan, pairWoman, now);
+                Report(fail, "Done");
+                if (fail == Fail.None)
+                {
+                    pairPicker = false;
+                    message = "Пара в жилых покоях: ждите ребёнка";
+                }
+            }
+        }
+
+        void PickParent(string label, Sex sex, ref int chosen)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label, GUILayout.Width(50));
+            foreach (var d in session.State.Dwellers.Where(x => x.Sex == sex && x.RouteId == 0 && session.PairingOf(x.Id) == null)
+                         .OrderBy(x => x.IsHero).ThenByDescending(x => x.Stats.Sum()).Take(6))
+            {
+                if (GUILayout.Toggle(chosen == d.Id, d.Name + " (" + d.Stats.Sum() + ")", "Button") && chosen != d.Id)
+                    chosen = d.Id;
+            }
+            GUILayout.EndHorizontal();
         }
 
         /// <summary>Decorations for this room: owned ones go in at once, others are bought first.</summary>
@@ -549,7 +744,7 @@ namespace LastHearth.Game
             int shown = 0;
             foreach (var data in session.Balance.Rooms)
             {
-                if (data.Type == RoomType.Hearth || session.State.HearthLevel < data.Unlock || session.CountRooms(data.Type) >= data.MaxCount)
+                if (data.Type == RoomType.Hearth || session.State.HearthLevel < data.Unlock || session.CountCells(data.Type) >= data.MaxCount)
                     continue;
                 GUILayout.BeginVertical(GUILayout.Width(150));
                 var icon = GUILayoutUtility.GetRect(144, 90);
@@ -575,6 +770,28 @@ namespace LastHearth.Game
             if (shown == 0)
                 GUILayout.Label("Всё доступное уже построено: новые залы открываются с уровнем очага");
             GUILayout.EndHorizontal();
+            GUILayout.Label("Зал рядом с таким же залом того же уровня можно объединить: больше мест и выработки.");
+        }
+
+        /// <summary>The small window of an obstacle: its price, its time and the button to clear it.</summary>
+        void DrawClearPanel(long now)
+        {
+            int floor = selectedFloor, cell = selectedCell;
+            var cost = session.ClearCost(floor, cell);
+            long seconds = session.ClearSeconds(floor, cell);
+            GUILayout.Label(string.Format("Завал на этаже {0}. Строитель разберёт его за {1}, и здесь можно будет строить. " +
+                "Чем дальше от очага, тем дороже.", floor + 1, Duration(seconds)));
+            GUILayout.Label("Цена: " + CostText(cost));
+            if (GUILayout.Button("Расчистить: " + CostText(cost) + ", " + Duration(seconds)))
+            {
+                var fail = session.ClearObstacle(floor, cell, now);
+                Report(fail, "Build");
+                if (fail == Fail.None)
+                {
+                    message = "Расчистка началась";
+                    CloseWindow();
+                }
+            }
         }
     }
 }
