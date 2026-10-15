@@ -3061,6 +3061,283 @@
   "repeatMaterialHours": 0.5,
   "firstClearHours": 3
  },
+ "pets": {
+  "maxLevel": 10,
+  "levelCost": [
+   10,
+   20,
+   35,
+   55,
+   80,
+   110,
+   150,
+   200,
+   260
+  ],
+  "strikeEvery": 50,
+  "treatsPerHuntWin": 3,
+  "treatsDaily": 5,
+  "kinds": [
+   {
+    "id": "Wolf",
+    "name": "Волк",
+    "effect": "Attack",
+    "value": 0.03,
+    "perLevel": 0.01,
+    "text": "первая победа на Охоте",
+    "source": "HuntWins",
+    "condition": 1,
+    "silverHours": 0,
+    "sparks": 0
+   },
+   {
+    "id": "Owl",
+    "name": "Сова",
+    "effect": "Materials",
+    "value": 0.03,
+    "perLevel": 0.01,
+    "text": "7 дней в игре (календарь входа)",
+    "source": "LoginDays",
+    "condition": 7,
+    "silverHours": 0,
+    "sparks": 0
+   },
+   {
+    "id": "CoalCat",
+    "name": "Кот-углежог",
+    "effect": "CoalBurn",
+    "value": 0.05,
+    "perLevel": 0.01,
+    "text": "лавка торговца, 6 часов дохода серебром",
+    "source": "Shop",
+    "condition": 0,
+    "silverHours": 6,
+    "sparks": 0
+   },
+   {
+    "id": "Raven",
+    "name": "Ворон",
+    "effect": "Strike",
+    "value": 0.8,
+    "perLevel": 0.15,
+    "text": "15 побед на Охоте",
+    "source": "HuntWins",
+    "condition": 15,
+    "silverHours": 0,
+    "sparks": 0
+   },
+   {
+    "id": "BearCub",
+    "name": "Медвежонок",
+    "effect": "Health",
+    "value": 0.03,
+    "perLevel": 0.01,
+    "text": "3 акта кампании или 400 искр",
+    "source": "Missions",
+    "condition": 57,
+    "silverHours": 0,
+    "sparks": 400
+   },
+   {
+    "id": "MistFox",
+    "name": "Лиса тумана",
+    "effect": "Supply",
+    "value": 0.04,
+    "perLevel": 0.01,
+    "text": "5 порогов одного события или 400 искр",
+    "source": "EventThresholds",
+    "condition": 5,
+    "silverHours": 0,
+    "sparks": 400
+   }
+  ]
+ },
+ "companions": {
+  "maxLevel": 10,
+  "levelCost": [
+   10,
+   20,
+   35,
+   55,
+   80,
+   110,
+   150,
+   200,
+   260
+  ],
+  "heroLevelsPerLevel": 4,
+  "campaignHp": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1.048,
+   1.048,
+   1.048,
+   1.048,
+   1.09,
+   1.1,
+   1.111,
+   1.121,
+   1.126,
+   1.126,
+   1.137,
+   1.142,
+   1.153,
+   1.163,
+   1.179,
+   1.19,
+   1.195,
+   1.201,
+   1.206,
+   1.206,
+   1.211,
+   1.217,
+   1.222,
+   1.222,
+   1.222
+  ],
+  "campaignAttack": [
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.042,
+   1.047,
+   1.047,
+   1.047,
+   1.053,
+   1.053,
+   1.053,
+   1.058,
+   1.058,
+   1.064,
+   1.07,
+   1.075,
+   1.075,
+   1.081,
+   1.087,
+   1.093,
+   1.093,
+   1.093
+  ],
+  "kinds": [
+   {
+    "id": "Squire",
+    "name": "Оруженосец",
+    "skill": "Guard",
+    "every": 0,
+    "power": 0.08,
+    "perLevel": 0.01,
+    "text": "с первым героем",
+    "source": "Start",
+    "condition": 0,
+    "silverHours": 0,
+    "sparks": 0
+   },
+   {
+    "id": "Wolfhound",
+    "name": "Волкодав",
+    "skill": "Bite",
+    "every": 50,
+    "power": 0.4,
+    "perLevel": 0.04,
+    "text": "3 победы на Охоте",
+    "source": "HuntWins",
+    "condition": 3,
+    "silverHours": 0,
+    "sparks": 0
+   },
+   {
+    "id": "Falcon",
+    "name": "Сокол",
+    "skill": "Stagger",
+    "every": 50,
+    "power": 5,
+    "perLevel": 0.5,
+    "text": "лавка торговца, 8 часов дохода серебром",
+    "source": "Shop",
+    "condition": 0,
+    "silverHours": 8,
+    "sparks": 0
+   },
+   {
+    "id": "Firefly",
+    "name": "Угольный светлячок",
+    "skill": "Heal",
+    "every": 60,
+    "power": 0.03,
+    "perLevel": 0.003,
+    "text": "3 порога одного события или 300 искр",
+    "source": "EventThresholds",
+    "condition": 3,
+    "silverHours": 0,
+    "sparks": 300
+   }
+  ]
+ },
+ "market": {
+  "merchantTreats": 10,
+  "exchangeFee": 0.8,
+  "exchangeHours": 4,
+  "premiumTreats": [
+   30,
+   60,
+   2
+  ],
+  "premiumHourglass": [
+   60,
+   20,
+   5
+  ],
+  "premiumDweller": [
+   250,
+   1
+  ],
+  "premiumDwellerBonus": 4,
+  "deals": [
+   {
+    "id": "Treats",
+    "goods": "Treats",
+    "amount": 15,
+    "hours": 1.0
+   },
+   {
+    "id": "Coal",
+    "goods": "Coal",
+    "amount": 24,
+    "hours": 1.0
+   },
+   {
+    "id": "Food",
+    "goods": "Food",
+    "amount": 24,
+    "hours": 1.0
+   },
+   {
+    "id": "Hourglass",
+    "goods": "Hourglass",
+    "amount": 30,
+    "hours": 1.0
+   },
+   {
+    "id": "Essence",
+    "goods": "Essence",
+    "amount": 0.2,
+    "hours": 1.5
+   }
+  ],
+  "dealsShown": 3
+ },
  "activities": {
   "essenceByLevel": [
    170,

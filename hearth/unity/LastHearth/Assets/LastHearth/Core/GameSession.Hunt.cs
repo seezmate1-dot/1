@@ -132,6 +132,7 @@ namespace LastHearth.Core
             {
                 Count(DailyTask.Hunt);
                 State.HuntWins++;
+                GrantTreats(Balance.Pets.TreatsPerHuntWin); // pet treats (GDD 8.1)
                 CheckAchievements();
             }
             return Fail.None;

@@ -168,6 +168,7 @@ namespace LastHearth.Game
             {
                 tick = 0;
                 session.Advance(Now());
+                KennelNews();
             }
             saveTimer += Time.unscaledDeltaTime;
             if (saveTimer >= 30f)
@@ -441,6 +442,11 @@ namespace LastHearth.Game
                 }
                 if (!d.IsHero && GUILayout.Button(promoteFor == d.Id ? "Отмена" : "Сделать героем", GUILayout.Width(150)))
                     promoteFor = promoteFor == d.Id ? -1 : d.Id;
+                if (d.IsHero && GUILayout.Button("Карточка", GUILayout.Width(110)))
+                {
+                    heroCard = d.Id;
+                    Open(Win.Hero);
+                }
                 if (d.IsHero && GUILayout.Button("Ур.+1 (" + Formulas.HeroLevelCost(session.Balance, d.HeroLevel) + " эсс.)", GUILayout.Width(170)))
                     Report(session.LevelUpHero(d.Id));
                 if (d.IsHero && d.SkillLevel < session.Balance.Activities.Skills.Max &&

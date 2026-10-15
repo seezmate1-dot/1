@@ -1108,6 +1108,7 @@ def report(result):
           "заявленную долю материалов; кампания проходится за год; ускорения покрывают 10–25% стройки; "
           "Жар, Сердцевины и Чертежи расходуются по своим деревьям за год; "
           "игрок попадает в целевые дни с точностью 15%; секции горы открываются тёплыми, вся гора открыта к 20-му уровню очага.")
+    out += kennel_report(result)
     return "\n".join(out) + "\n", problems
 
 
@@ -1337,6 +1338,7 @@ def export_balance(result):
             "repeatMaterialHours": CAMPAIGN_REPEAT_MATERIAL_HOURS,
             "firstClearHours": CAMPAIGN_FIRST_CLEAR_HOURS,
         },
+        **kennel_export(result),  # pets, companions and shops (section "pets, companions and shops" below)
         "activities": {
             "essenceByLevel": [int(round(essence_income_per_day(lv))) for lv in range(1, 31)],
             "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE, "startHour": 19,
@@ -1379,6 +1381,252 @@ def export_balance(result):
     with open(BALANCE_OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
         f.write("\n")
+
+
+# ---------------------------------------------------------------- pets, companions and shops (GDD 8.1-8.3, 13.1)
+# Like Hustle Castle, but honest: everything is earned by play; Sparks only bring a few things sooner,
+# at a fixed price shown in advance (no lottery, no random boxes).
+#
+# Pets live in the fortress. The player owns several, ONE is active at a time and helps the whole
+# fortress and the squad (one rule, easy to read). Treats («Лакомства») raise pets and the bond of
+# companions; nothing else spends them, so they never compete with essence or materials.
+PET_MAX_LEVEL = 10
+TREAT_LEVEL_COST = [10, 20, 35, 55, 80, 110, 150, 200, 260]  # level L -> L+1; 920 treats from 1 to 10
+TREATS_PER_HUNT_WIN = 3        # every won hunt (3 a day from hearth 6)
+TREATS_DAILY = 5               # the reward of the daily tasks
+MERCHANT_TREATS = 10           # the merchant sells 10 treats for an hour of silver income, once a day
+PREMIUM_TREATS = (30, 60, 2)   # 30 treats for 60 Sparks, twice a week (a speed-up hour costs 20)
+PET_STRIKE_EVERY = 50          # the raven strikes every 5 s of battle
+# pet: (id, name, effect, value at level 1, + per level, how it is found, condition,
+#       price in hours of silver income (0: not sold), price in Sparks (0: not sold), text)
+# Effects: Attack/Health — squad attack/health x(1 + value); Strike — a strike every 5 s for value x
+# the squad's average attack; CoalBurn — coal burn x(1 - value); Materials — iron and silver output;
+# Supply — coal and food output. At level 10 the battle pets give +12% (a raven: ~+10% damage), the
+# fortress pets +12-14%: noticeable, smaller than one hearth level (+5% gear, +7% a hero level each).
+PETS = [
+    ("Wolf", "Волк", "Attack", 0.03, 0.01, "HuntWins", 1, 0, 0, "первая победа на Охоте"),
+    ("Owl", "Сова", "Materials", 0.03, 0.01, "LoginDays", 7, 0, 0, "7 дней в игре (календарь входа)"),
+    ("CoalCat", "Кот-углежог", "CoalBurn", 0.05, 0.01, "Shop", 0, 6, 0, "лавка торговца, 6 часов дохода серебром"),
+    ("Raven", "Ворон", "Strike", 0.8, 0.15, "HuntWins", 15, 0, 0, "15 побед на Охоте"),
+    ("BearCub", "Медвежонок", "Health", 0.03, 0.01, "Missions", 57, 0, 400, "3 акта кампании или 400 искр"),
+    ("MistFox", "Лиса тумана", "Supply", 0.04, 0.01, "EventThresholds", 5, 0, 400, "5 порогов одного события или 400 искр"),
+]
+# Companions: each hero takes one. Its bond level (1-10) belongs to the hero, the kind can be changed
+# freely; the bond is raised with treats up to 1 + hero level / 4 (like skills: 1 + level / 6).
+COMPANION_MAX_LEVEL = 10
+COMPANION_HERO_LEVELS_PER_LEVEL = 4
+# companion: (id, name, skill, every ticks (0.1 s), power at level 1, + per level, found, condition,
+#             silver hours, Sparks, text)
+# Guard — the hero takes x(1 - power) damage (8% -> 17%); Bite — every 5 s for power x the hero's
+# attack (about +10% of the hero's damage at level 1, +18% at 10); Stagger — every 5 s adds stagger to
+# the boss (a Cleaver's hit adds 3, a stun needs 100); Heal — every 6 s heals the hero by power x health.
+COMPANIONS = [
+    ("Squire", "Оруженосец", "Guard", 0, 0.08, 0.01, "Start", 0, 0, 0, "с первым героем"),
+    ("Wolfhound", "Волкодав", "Bite", 50, 0.4, 0.04, "HuntWins", 3, 0, 0, "3 победы на Охоте"),
+    ("Falcon", "Сокол", "Stagger", 50, 5, 0.5, "Shop", 0, 8, 0, "лавка торговца, 8 часов дохода серебром"),
+    ("Firefly", "Угольный светлячок", "Heal", 60, 0.03, 0.003, "EventThresholds", 3, 0, 300, "3 порога одного события или 300 искр"),
+]
+# Shops. The merchant's goods are priced in hours of the fortress income (silver), so they matter at
+# every level. The exchange at the trading post is worse than the Ash Fair (x0.92 at a fair rate).
+EXCHANGE_FEE = 0.8             # 100 of value -> 80 of another good
+EXCHANGE_HOURS_PER_DAY = 4     # the value exchanged per day, in hours of income
+# Sparks: an hourglass hour costs as much as a speed-up hour, so the shop is never a cheaper path.
+PREMIUM_HOURGLASS = (60, 20, 5)        # minutes, Sparks, per day
+PREMIUM_DWELLER = (250, 1)             # «Ветеран из тумана»: fixed stats shown in advance; Sparks, per week
+PREMIUM_DWELLER_BONUS = 4              # +4 to every stat over a refugee of the same hearth level
+# Deals of the day: three of these, a new set every local day, each once (cheaper than the shelf).
+# (id, goods, amount, price in hours of silver income); amounts: treats; hours of the coal burn;
+# hours of the dwellers' food; hourglass minutes; days of the free player's essence (Brik: 0.25 for 2-3 h).
+DAILY_DEALS = [
+    ("Treats", "Treats", 15, 1.0),
+    ("Coal", "Coal", 24, 1.0),
+    ("Food", "Food", 24, 1.0),
+    ("Hourglass", "Hourglass", 30, 1.0),
+    ("Essence", "Essence", 0.2, 1.5),
+]
+DAILY_DEALS_SHOWN = 3
+ROOM_UNLOCK = {enum: unlock for _, enum, unlock, *_ in ROOM_TYPES}
+
+
+def treats_per_day(level):
+    t = TREATS_DAILY
+    if level >= HUNT_UNLOCK:
+        t += HUNTS_PER_DAY * TREATS_PER_HUNT_WIN
+    if level >= ROOM_UNLOCK["TradingPost"]:
+        t += MERCHANT_TREATS
+    return t
+
+
+# The free player's pet and companions are part of the squad's power, so the campaign (whose recommended
+# strength is that player's squad x0.95, section 7) counts them: enemies get the expected bonus on top.
+# A player who ignores pets falls a little behind; one who raises them follows the model.
+KENNEL_DAMAGE_SHARE = 0.5      # half the damage dealers walk with a Wolfhound (bites)
+KENNEL_GUARD_SHARE = 0.5       # the boss hits the front line, where the Squire guards the Guardian
+
+
+def kennel_expected(reached):
+    """Expected active pet level and bond level of the five core heroes when each hearth level is reached:
+    treats go to the battle pet up to level 5, then to the bonds evenly (cap 1 + hero level / 4, hero level
+    about 2L), then to the pet."""
+    level_on = level_by_day(reached)
+    treats, pet, bond = 0, 0, 1
+    expected = {}
+    for day in range(0, DAYS + 1):
+        lv = level_on[day]
+        expected.setdefault(lv, (pet, bond))
+        treats += treats_per_day(lv)
+        if lv >= HUNT_UNLOCK:
+            pet = max(pet, 1)
+        cap = min(COMPANION_MAX_LEVEL, 1 + 2 * lv // COMPANION_HERO_LEVELS_PER_LEVEL)
+        while True:
+            if 0 < pet < 5 and treats >= TREAT_LEVEL_COST[pet - 1]:
+                treats -= TREAT_LEVEL_COST[pet - 1]
+                pet += 1
+            elif bond < cap and treats >= HERO_CORE * TREAT_LEVEL_COST[bond - 1]:
+                treats -= HERO_CORE * TREAT_LEVEL_COST[bond - 1]
+                bond += 1
+            elif 0 < pet < PET_MAX_LEVEL and treats >= TREAT_LEVEL_COST[pet - 1]:
+                treats -= TREAT_LEVEL_COST[pet - 1]
+                pet += 1
+            else:
+                break
+    for lv in range(2, pacing.MAX_LEVEL + 1):
+        expected.setdefault(lv, expected[lv - 1])
+    return expected
+
+
+def kennel_factors(reached):
+    """Enemy health and attack multipliers of the campaign by hearth level (the free player's kennel)."""
+    wolf = next(p for p in PETS if p[0] == "Wolf")
+    bite = next(c for c in COMPANIONS if c[0] == "Wolfhound")
+    guard = next(c for c in COMPANIONS if c[0] == "Squire")
+    hp, attack = [], []
+    exp = kennel_expected(reached)
+    for lv in range(1, pacing.MAX_LEVEL + 1):
+        pet, bond = exp[lv]
+        damage = 1 + (wolf[3] + wolf[4] * (pet - 1) if pet > 0 else 0)
+        if lv >= HUNT_UNLOCK:  # the Wolfhound comes after three won hunts
+            damage *= 1 + KENNEL_DAMAGE_SHARE * (bite[4] + bite[5] * (bond - 1)) * 12 / bite[3]  # hero interval ~1.2 s
+        tough = 1 / (1 - KENNEL_GUARD_SHARE * (guard[4] + guard[5] * (bond - 1)))
+        hp.append(round(damage, 3))
+        attack.append(round(tough, 3))
+    return hp, attack
+
+
+def kennel_export(result):
+    """balance.json: "pets", "companions" and "market"."""
+    hp, attack = kennel_factors(result["reached"])
+    def unlock(kind, cond, silver, sparks):
+        return {"source": kind, "condition": cond, "silverHours": silver, "sparks": sparks}
+    return {
+        "pets": {
+            "maxLevel": PET_MAX_LEVEL, "levelCost": TREAT_LEVEL_COST, "strikeEvery": PET_STRIKE_EVERY,
+            "treatsPerHuntWin": TREATS_PER_HUNT_WIN, "treatsDaily": TREATS_DAILY,
+            "kinds": [dict(id=i, name=n, effect=e, value=v, perLevel=p, text=t, **unlock(s, c, sh, sp))
+                      for i, n, e, v, p, s, c, sh, sp, t in PETS],
+        },
+        "companions": {
+            "maxLevel": COMPANION_MAX_LEVEL, "levelCost": TREAT_LEVEL_COST,
+            "heroLevelsPerLevel": COMPANION_HERO_LEVELS_PER_LEVEL,
+            "campaignHp": hp, "campaignAttack": attack,
+            "kinds": [dict(id=i, name=n, skill=k, every=ev, power=pw, perLevel=p, text=t, **unlock(s, c, sh, sp))
+                      for i, n, k, ev, pw, p, s, c, sh, sp, t in COMPANIONS],
+        },
+        "market": {
+            "merchantTreats": MERCHANT_TREATS, "exchangeFee": EXCHANGE_FEE, "exchangeHours": EXCHANGE_HOURS_PER_DAY,
+            "premiumTreats": list(PREMIUM_TREATS), "premiumHourglass": list(PREMIUM_HOURGLASS),
+            "premiumDweller": list(PREMIUM_DWELLER), "premiumDwellerBonus": PREMIUM_DWELLER_BONUS,
+            "deals": [{"id": i, "goods": g, "amount": a, "hours": h} for i, g, a, h in DAILY_DEALS],
+            "dealsShown": DAILY_DEALS_SHOWN,
+        },
+    }
+
+
+def kennel_report(result):
+    """ECONOMY.md, section 14: pets, companions and the shops."""
+    reached = result["reached"]
+    out = []
+    w = out.append
+    w("")
+    w("## 14. Питомцы, компаньоны и лавки")
+    w("")
+    w("Всё добывается игрой; искры только ускоряют пару вещей по цене, известной заранее (никаких лотерей). "
+      "Подробно — `docs/GDD.md`, разделы 8.1–8.3 и 13.1.")
+    w("")
+    w("**Лакомства** растят питомцев и узы компаньонов и больше ни на что не тратятся. Источники: поручения дня — %d, "
+      "победа на Охоте — %d (3 следа в день с очага %d), торговец — %d за час дохода серебром раз в день, предложение "
+      "дня, %d за %d искр дважды в неделю." % (TREATS_DAILY, TREATS_PER_HUNT_WIN, HUNT_UNLOCK, MERCHANT_TREATS,
+                                              PREMIUM_TREATS[0], PREMIUM_TREATS[1]))
+    w("")
+    total = sum(treats_per_day(level_at(reached, d)) for d in range(1, DAYS + 1))
+    one = sum(TREAT_LEVEL_COST)
+    w("| Уровень | %s |" % " | ".join(str(i + 2) for i in range(len(TREAT_LEVEL_COST))))
+    w("|---|%s" % ("---|" * len(TREAT_LEVEL_COST)))
+    w("| Лакомств | %s |" % " | ".join(str(c) for c in TREAT_LEVEL_COST))
+    w("")
+    w("Бесплатный игрок получает %s лакомств за год (%d в день на очаге 10). Один питомец или компаньон с 1-го до "
+      "%d-го уровня — %d: активный питомец доходит до предела примерно за %d дней, а все питомцы и компаньоны "
+      "пятёрки — %s лакомств, это цель и на второй год." % (
+          num(total), treats_per_day(10), PET_MAX_LEVEL, one, math.ceil(one / treats_per_day(10)),
+          num(one * (len(PETS) + HERO_CORE))))
+    w("")
+    w("**Питомцы** живут в крепости; активный — один, он помогает всей крепости и отряду.")
+    w("")
+    w("| Питомец | Бонус на 1-м / 10-м уровне | Как получить |")
+    w("|---|---|---|")
+    texts = {"Attack": "атака отряда +%d%% / +%d%%", "Health": "здоровье отряда +%d%% / +%d%%",
+             "CoalBurn": "расход угля −%d%% / −%d%%", "Materials": "выработка железа и серебра +%d%% / +%d%%",
+             "Supply": "выработка угля и еды +%d%% / +%d%%"}
+    for i, n, e, v, p, s, c, sh, sp, t in PETS:
+        top = v + p * (PET_MAX_LEVEL - 1)
+        if e == "Strike":
+            bonus = "удар раз в %d с: %s / %s средней атаки отряда" % (PET_STRIKE_EVERY // 10, dec(v, 2), dec(top, 2))
+        else:
+            bonus = texts[e] % (round(v * 100), round(top * 100))
+        w("| %s | %s | %s |" % (n, bonus, t))
+    w("")
+    w("**Компаньоны** идут в бой рядом с героем, у каждого героя один. Уровень уз (1–%d) принадлежит герою и не выше "
+      "`1 + уровень героя / %d`; вид компаньона меняется свободно." % (COMPANION_MAX_LEVEL, COMPANION_HERO_LEVELS_PER_LEVEL))
+    w("")
+    w("| Компаньон | Умение на 1-м / 10-м уровне | Как получить |")
+    w("|---|---|---|")
+    for i, n, k, ev, pw, p, s, c, sh, sp, t in COMPANIONS:
+        top = pw + p * (COMPANION_MAX_LEVEL - 1)
+        skill = {"Guard": "герой получает на %d%% / %d%% меньше урона" % (round(pw * 100), round(top * 100)),
+                 "Bite": "укус раз в %d с: %d%% / %d%% атаки героя" % (ev // 10, round(pw * 100), round(top * 100)),
+                 "Stagger": "раз в %d с +%s / +%s к шкале оглушения" % (ev // 10, dec(pw), dec(top)),
+                 "Heal": "раз в %d с лечит героя на %s%% / %s%% здоровья" % (ev // 10, dec(pw * 100), dec(top * 100))}[k]
+        w("| %s | %s | %s |" % (n, skill, t))
+    w("")
+    hp, attack = kennel_factors(reached)
+    w("Питомец и компаньоны бесплатного игрока входят в рекомендуемую силу боёв кампании (раздел 7): враги на "
+      "очаге 10 / 20 / 30 крепче на %d / %d / %d%% и бьют сильнее на %d / %d / %d%%. Кто растит питомцев и узы, идёт "
+      "по графику модели; кто забыл про них, немного отстаёт. Призраки арены и Набегов повторяют и питомца, и "
+      "компаньонов отряда игрока, так что PvP остаётся честным." % (
+          round((hp[9] - 1) * 100), round((hp[19] - 1) * 100), round((hp[29] - 1) * 100),
+          round((attack[9] - 1) * 100), round((attack[19] - 1) * 100), round((attack[29] - 1) * 100)))
+    w("")
+    w("**Лавки** (окно «Лавка», вкладки):")
+    w("")
+    w("| Лавка | Что | Цена | Лимит |")
+    w("|---|---|---|---|")
+    w("| Торговец (серебро) | 8 товаров Брика: эссенция, уголь, еда, часы, печать найма | 1–3 часа дохода | новый товар в 00:00 и 12:00 |")
+    w("| Торговец (серебро) | %d лакомств | 1 час дохода | раз в день |" % MERCHANT_TREATS)
+    w("| Торговец (серебро) | Кот-углежог, Сокол | 6 и 8 часов дохода | один раз |")
+    w("| Предложения дня | %d из %d: лакомства, уголь, еда, часы, эссенция | 1–1,5 часа дохода | каждое раз в день |" % (
+        DAILY_DEALS_SHOWN, len(DAILY_DEALS)))
+    w("| Обмен у торговой лавки | железо ↔ серебро, уголь ↔ еда | ×%s ценности (Ярмарка — до ×0,92) | %d часа дохода в день |" % (
+        dec(EXCHANGE_FEE), EXCHANGE_HOURS_PER_DAY))
+    w("| Искры | песочные часы %d мин | %d искр (как ускорение на час) | %d в день |" % PREMIUM_HOURGLASS)
+    w("| Искры | Ветеран из тумана: житель, характеристики видны до покупки (+%d к каждой) | %d искр | %d в неделю |" % (
+        PREMIUM_DWELLER_BONUS, PREMIUM_DWELLER[0], PREMIUM_DWELLER[1]))
+    w("| Искры | Медвежонок, Лиса тумана, Угольный светлячок (все есть и за игру) | 400, 400, 300 искр | один раз |")
+    w("| Искры | %d лакомств | %d искр | %d в неделю |" % PREMIUM_TREATS)
+    w("| Искры | четвёртый строитель, наборы ресурсов, украшения | как в разделе 8 | наборов %d в неделю |" % PACKS_PER_WEEK)
+    w("")
+    w("Модель года (разделы 1–13) не учитывает питомцев: бонус одного активного питомца (до +12% выработки) меньше "
+      "точности попадания в целевые дни (15%), а траты искр в лавке — по желанию, из того же бюджета, что ускорения.")
+    return out
 
 
 def main():

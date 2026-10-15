@@ -47,6 +47,7 @@ namespace LastHearth.Core
         public double CoalBurnPerHour()
         {
             double save = 1 - Balance.Activities.Heart.Coal * State.Heart[(int)HeartBranch.Economy];
+            save -= ActivePetValue(PetEffect.CoalBurn); // the Coal cat (GDD 8.1)
             return Formulas.CoalBurnPerHour(Balance, State.HearthLevel, State.Mode) * Math.Max(0.1, save);
         }
 

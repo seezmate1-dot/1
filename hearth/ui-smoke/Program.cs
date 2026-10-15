@@ -22,7 +22,7 @@ public static class UiSmoke
     {
         string resources = FindResources();
         UnityEngine.Resources.Folder = resources;
-        int frames = args.Length > 0 ? int.Parse(args[0]) : 6000;
+        int frames = args.Length > 0 ? int.Parse(args[0]) : 8100; // three rounds of the 18 windows, 150 frames each
         var clicks = new Dictionary<string, int>();
         try
         {
@@ -53,7 +53,8 @@ public static class UiSmoke
             Console.WriteLine("  " + kv.Value + " × " + kv.Key.Replace("\n", " / "));
         // every system must have been reached through its buttons
         string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "Другие соперники",
-                          "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:" };
+                          "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:",
+                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
         Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + ", нарисовано: " + GUI.Textures);
@@ -87,7 +88,7 @@ public static class UiSmoke
         for (int frame = 0; frame < frames; frame++)
         {
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % 16);
+            SetEnum(runner, "window", (frame / 150) % 18); // 18 windows: Win.None .. Win.Hero
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks

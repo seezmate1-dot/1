@@ -36,6 +36,10 @@ namespace LastHearth.Core
         public int[] SquadSlots = new int[0];
         public ActivitiesData Activities = new ActivitiesData();
         public CampaignData Campaign = new CampaignData();
+        /// <summary>GDD 8.1-8.3, 13.1: pets, companions of heroes and the shops (Kennel.cs).</summary>
+        public PetsData Pets = new PetsData();
+        public CompanionsData Companions = new CompanionsData();
+        public MarketData Market = new MarketData();
 
         public static Balance FromJson(string json)
         {

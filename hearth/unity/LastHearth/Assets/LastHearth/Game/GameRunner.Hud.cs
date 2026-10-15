@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero }
 
         Win window;
         Vector2 windowScroll;
@@ -26,7 +26,7 @@ namespace LastHearth.Game
             (Win.Hearth, "Очаг Стражей"), (Win.Room, ""), (Win.Build, "Стройка"), (Win.Campaign, "Поход"), (Win.Hunt, "Охота"), (Win.Arena, "Арена"),
             (Win.Raids, "Набеги"), (Win.Surge, "Наплыв"),
             (Win.Dwellers, "Жители"), (Win.Growth, "Развитие"), (Win.Routes, "Вылазки"), (Win.Quests, "Задания"),
-            (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"),
+            (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"),
         };
 
         GUIStyle hudText, buttonLabel, titleText;
@@ -67,7 +67,7 @@ namespace LastHearth.Game
             HudStyles();
             const float top = 50, bottom = 92, right = 74;
             // the HUD's places: taps there do not reach the rooms under it
-            float sideButtons = (session.State.Rewards.IsEmpty() ? 3 : 4) * 76;
+            float sideButtons = (session.State.Rewards.IsEmpty() ? 4 : 5) * 76;
             hudRects = new[]
             {
                 new Rect(area.x, area.y, area.width, top),
@@ -201,6 +201,7 @@ namespace LastHearth.Game
                 ("Portraits/CreatureFiend", "Наплыв", Win.Surge, session.SurgeOpen(now)),
                 ("Portraits/" + ArtLibrary.DwellerSheet(0), "Жители", Win.Dwellers,
                     st.Dwellers.Any(d => d.RoomId < 0 && d.RouteId == 0 && !d.IsHero)),
+                ("Portraits/" + ArtLibrary.HeroSheet(HeroClass.Guardian), "Герои", Win.Hero, false),
                 ("Buttons/Growth", "Развитие", Win.Growth, false),
                 ("Buttons/Routes", "Вылазки", Win.Routes, false),
             };
@@ -247,6 +248,9 @@ namespace LastHearth.Game
             y += size + 20;
             if (RoundButton(new Rect(x, y, size, size), "Buttons/Shop", "Лавка", false))
                 Open(Win.Shop);
+            y += size + 20;
+            if (RoundButton(new Rect(x, y, size, size), "Icons/Food", "Питомцы", KennelWaits()))
+                Open(Win.Pets);
             y += size + 20;
             if (RoundButton(new Rect(x, y, size, size), "Buttons/Events", "События", session.ActiveRuns(now).Any()))
                 Open(Win.Events);
@@ -376,6 +380,12 @@ namespace LastHearth.Game
                     break;
                 case Win.Settings:
                     DrawSettings(now);
+                    break;
+                case Win.Pets:
+                    DrawPets(now);
+                    break;
+                case Win.Hero:
+                    DrawHero(now);
                     break;
             }
         }

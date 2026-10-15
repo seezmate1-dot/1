@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace LastHearth.Game
 {
-    /// <summary>The "Развитие", "Вылазки" and "Задания и лавки" tabs.</summary>
+    /// <summary>The "Развитие", "Вылазки" and "Задания" tabs.</summary>
     public sealed partial class GameRunner
     {
         readonly List<int> routeTeam = new List<int>();
@@ -184,7 +184,7 @@ namespace LastHearth.Game
             }
         }
 
-        // ------------------------------------------------------------------ daily tasks and shops
+        // ------------------------------------------------------------------ daily tasks (the shops: GameRunner.Kennel.cs)
 
         void DrawDaily(long now)
         {
@@ -203,47 +203,6 @@ namespace LastHearth.Game
             GUI.enabled = true;
             if (st.Achievements.Count > 0)
                 GUILayout.Label("Достижений: " + st.Achievements.Count);
-        }
-
-        void DrawShops(long now)
-        {
-            var shop = session.Balance.Activities.Shop;
-            var st = session.State;
-            GUILayout.Label("<b>Лавка Искр</b>", Rich());
-            GUILayout.BeginHorizontal();
-            if (!st.FourthBuilder && GUILayout.Button(string.Format("Четвёртый строитель — {0} искр (с очага {1})", shop.FourthBuilder, shop.FourthBuilderFrom)))
-                Report(session.BuyFourthBuilder());
-            if (GUILayout.Button(string.Format("Набор материалов: {0} за {1} искр · осталось {2} на неделе",
-                    session.IncomePerHour(), shop.PackPrice, session.PacksLeft(now))))
-                Report(session.BuyPack(now));
-            GUILayout.EndHorizontal();
-
-            var items = session.BrikShop(now);
-            GUILayout.Label("<b>Лавка Брика</b> · новый товар в 00:00 и 12:00", Rich());
-            if (items.Count == 0)
-            {
-                GUILayout.Label("Откроется с Торговой лавкой");
-                return;
-            }
-            GUILayout.BeginHorizontal();
-            for (int i = 0; i < items.Count; i++)
-            {
-                var it = items[i];
-                GUI.enabled = !it.Sold;
-                string pay = it.PayWith == ResourceType.Sparks ? "искр" : "серебра";
-                if (GUILayout.Button(string.Format("{0}\n{1} {2}{3}", GoodsName(it), it.Price, pay, it.Sold ? " · продано" : "")))
-                    Report(session.BuyShopItem(i, now));
-                if (i % 4 == 3)
-                {
-                    GUILayout.EndHorizontal();
-                    GUILayout.BeginHorizontal();
-                }
-            }
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
-            long price = session.RefreshPrice(now);
-            if (price > 0 && GUILayout.Button("Обновить лавку за " + price + " искр"))
-                Report(session.RefreshShop(now));
         }
 
         static string GoodsName(ShopItem it)

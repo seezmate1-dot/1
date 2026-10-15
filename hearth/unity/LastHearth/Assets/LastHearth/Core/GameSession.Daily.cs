@@ -72,6 +72,7 @@ namespace LastHearth.Core
             State.DailyClaimed = true;
             State.Wallet[ResourceType.Sparks] += d.TaskSparks;
             State.HourglassSeconds += d.TaskHourglassMinutes * 60;
+            GrantTreats(Balance.Pets.TreatsDaily); // pet treats (GDD 8.1)
             FestivalTasksDone(now);
             return Fail.None;
         }
@@ -85,6 +86,7 @@ namespace LastHearth.Core
             State.LastLoginDay = day;
             State.Wallet[ResourceType.Sparks] += CalendarSparks[State.LoginCount % CalendarSparks.Length];
             State.LoginCount++;
+            CheckKennel(); // the Owl comes on the 7th day (GDD 8.1)
         }
 
         /// <summary>Achievements: hearth levels, act bosses and hunt wins; 3000 Sparks in all (ECONOMY.md, 8).</summary>
@@ -100,6 +102,7 @@ namespace LastHearth.Core
                 if (State.HuntWins >= wins)
                     Achieve("hunt" + wins, 60);
             }
+            CheckKennel(); // pets and companions found by play (GDD 8.1-8.2)
         }
 
         void Achieve(string key, long sparks)

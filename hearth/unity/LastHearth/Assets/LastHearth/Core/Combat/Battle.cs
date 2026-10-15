@@ -38,6 +38,29 @@ namespace LastHearth.Core.Combat
         /// <summary>Event blessings and modifiers.</summary>
         public double AttackMult = 1;
         public double HpMult = 1;
+        /// <summary>The companion who fights next to the hero (GDD 8.2); null = none.</summary>
+        public CompanionSetup Companion;
+    }
+
+    /// <summary>GDD 8.2: the simple skill of a hero's companion.</summary>
+    public enum CompanionSkill
+    {
+        /// <summary>Always on: the hero takes x(1 - Power) damage.</summary>
+        Guard,
+        /// <summary>Every Every ticks: a bite for Power x the hero's attack.</summary>
+        Bite,
+        /// <summary>Every Every ticks: Power stagger to the boss.</summary>
+        Stagger,
+        /// <summary>Every Every ticks: heals the hero by Power x health.</summary>
+        Heal,
+    }
+
+    public sealed class CompanionSetup
+    {
+        public string Name = "";
+        public CompanionSkill Skill;
+        public int Every;
+        public double Power;
     }
 
     /// <summary>One enemy of a battle. Campaign battles have several waves; a hunt has one boss.</summary>
@@ -66,6 +89,13 @@ namespace LastHearth.Core.Combat
         /// <summary>Tournament rules of the day: attack of a class, healing of the priest.</summary>
         public Dictionary<HeroClass, double> ClassAttack = new Dictionary<HeroClass, double>();
         public double HealMult = 1;
+        /// <summary>GDD 8.1: the active pet of the fortress. Attack and health of the whole squad, or a strike
+        /// every PetEvery ticks for PetStrike x the squad's average attack.</summary>
+        public string PetName = "";
+        public double PetAttack = 1;
+        public double PetHp = 1;
+        public double PetStrike;
+        public int PetEvery;
     }
 
     public sealed class Fighter
@@ -84,6 +114,8 @@ namespace LastHearth.Core.Combat
         public int Charge;
         public int ChargeMax;
         public double SkillMult;
+        public CompanionSetup Companion;
+        public int CompanionNext;
 
         public bool Alive => Hp > 0;
         public bool Ready => Alive && Charge >= ChargeMax;
@@ -154,6 +186,9 @@ namespace LastHearth.Core.Combat
         /// <summary>All damage the squad dealt (event scores).</summary>
         public double DamageDealt;
         double healMult = 1;
+        readonly double petStrike;
+        readonly int petEvery;
+        int petNext;
 
         /// <summary>Decides commands every tick; null for a battle driven only by Command().</summary>
         public Func<Battle, IEnumerable<BattleCommand>> Brain;
@@ -189,8 +224,16 @@ namespace LastHearth.Core.Combat
                 var f = MakeHero(h, setup.GearLevel);
                 if (setup.ClassAttack.TryGetValue(h.Class, out double mult))
                     f.Attack *= mult;
+                f.Attack *= setup.PetAttack;
+                f.MaxHp *= setup.PetHp;
+                f.Hp *= setup.PetHp;
+                f.Companion = h.Companion;
+                f.CompanionNext = h.Companion != null && h.Companion.Every > 0 ? h.Companion.Every : int.MaxValue;
                 Heroes.Add(f);
             }
+            petStrike = setup.PetStrike;
+            petEvery = setup.PetEvery;
+            petNext = petEvery > 0 && petStrike > 0 ? petEvery : int.MaxValue;
             StartWave(0);
         }
 
@@ -203,9 +246,10 @@ namespace LastHearth.Core.Combat
             telegraphs = w.Telegraphs;
             if (w.Mirror)
             {
-                // health: 100 ticks of the squad's damage; one hit: 5% of the squad's health (at x1)
-                BossMaxHp = BossHp = family.Hp * w.HpMult * 100 * Heroes.Sum(h => h.Attack / h.Interval);
-                BossAttack = family.Attack * w.AttackMult * Heroes.Sum(h => h.MaxHp) / 20;
+                // health: 100 ticks of the squad's damage; one hit: 5% of the squad's health (at x1).
+                // The ghost has pets and companions too: their strikes count in the squad's damage.
+                BossMaxHp = BossHp = family.Hp * w.HpMult * 100 * SquadDamagePerTick();
+                BossAttack = family.Attack * w.AttackMult * Heroes.Sum(h => h.MaxHp) / 20 * CompanionToughness();
             }
             else
             {
@@ -224,7 +268,52 @@ namespace LastHearth.Core.Combat
                 Log.Add(Tick + ": волна " + (index + 1) + " из " + waves.Count);
         }
 
-        Fighter MakeHero(HeroSetup h, int gearLevel)
+        /// <summary>Bites and the pet's strikes count at half in the ghost's health: the basis of the mirror leaves out
+        /// the skills, which they do not grow, and they land only while the hero stands (calibrated on the 30-day bot:
+        /// the same arena win rate as before the kennel).</summary>
+        const double KennelInMirror = 0.5;
+
+        /// <summary>The squad's damage per tick without skills: basic attacks, bites, the pet's strikes.</summary>
+        double SquadDamagePerTick()
+        {
+            double sum = 0;
+            foreach (var h in Heroes)
+            {
+                sum += h.Attack / h.Interval;
+                if (h.Companion != null && h.Companion.Skill == CompanionSkill.Bite && h.Companion.Every > 0)
+                    sum += KennelInMirror * h.Attack * h.Companion.Power / h.Companion.Every;
+            }
+            if (petNext != int.MaxValue && Heroes.Count > 0)
+                sum += KennelInMirror * petStrike * Heroes.Average(h => h.Attack) / petEvery;
+            return sum;
+        }
+
+        /// <summary>How much longer the squad stands thanks to companions (guards take less, healers mend):
+        /// a ghost of the same strength hits that much harder.</summary>
+        double CompanionToughness()
+        {
+            if (Heroes.Count == 0)
+                return 1;
+            double sum = 0;
+            foreach (var h in Heroes)
+            {
+                double t = 1;
+                var comp = h.Companion;
+                if (comp != null && comp.Skill == CompanionSkill.Guard)
+                    t /= 1 - Math.Min(0.5, comp.Power);
+                if (comp != null && comp.Skill == CompanionSkill.Heal && comp.Every > 0)
+                    t *= 1 + comp.Power * c.MaxTicks / 4.0 / comp.Every; // a quarter of a battle of healing
+                if (comp != null && comp.Skill == CompanionSkill.Stagger && comp.Every > 0)
+                    t *= 1 + comp.Power / comp.Every * c.MaxTicks / 1000.0; // the stuns it adds
+                sum += t;
+            }
+            return sum / Heroes.Count;
+        }
+
+        Fighter MakeHero(HeroSetup h, int gearLevel) => HeroFighter(c, h, gearLevel);
+
+        /// <summary>A hero as the battle makes them (the hero screen shows the same numbers).</summary>
+        public static Fighter HeroFighter(CombatBalance c, HeroSetup h, int gearLevel)
         {
             var cls = c.Class(h.Class);
             double growth = Math.Pow(c.LevelGrowth, h.Level - 1) * Math.Pow(c.GearGrowth, gearLevel - 1);
@@ -289,6 +378,18 @@ namespace LastHearth.Core.Combat
                     BasicAttack(h);
                     h.NextAttack = Tick + interval;
                 }
+                if (Tick >= h.CompanionNext)
+                {
+                    CompanionActs(h);
+                    h.CompanionNext = Tick + h.Companion.Every;
+                }
+            }
+            if (Tick >= petNext && BossHp > 0)
+            {
+                var alive = Heroes.FindAll(x => x.Alive);
+                if (alive.Count > 0)
+                    HitBoss(petStrike * alive.Average(x => x.Attack), null, false);
+                petNext = Tick + petEvery;
             }
 
             if (!BossStunned && BossHp > 0)
@@ -364,6 +465,26 @@ namespace LastHearth.Core.Combat
                     double fire = family.Weak == HeroClass.AshMage ? family.WeakMult : 1;
                     burnPerTick = h.Attack * s.BurnShare * h.SkillMult * fire;
                     BurnUntil = Tick + s.BurnTicks;
+                    break;
+            }
+        }
+
+        /// <summary>GDD 8.2: the companion acts while its hero stands (no luck involved: battles stay replayable).</summary>
+        void CompanionActs(Fighter h)
+        {
+            var comp = h.Companion;
+            switch (comp.Skill)
+            {
+                case CompanionSkill.Bite:
+                    if (BossHp > 0)
+                        HitBoss(h.Attack * comp.Power, null, false);
+                    break;
+                case CompanionSkill.Stagger:
+                    if (BossHp > 0)
+                        AddStagger(comp.Power);
+                    break;
+                case CompanionSkill.Heal:
+                    h.Hp = Math.Min(h.MaxHp, h.Hp + h.MaxHp * comp.Power * healMult);
                     break;
             }
         }
@@ -499,6 +620,8 @@ namespace LastHearth.Core.Combat
         {
             if (WallUp)
                 damage *= 1 - c.Skills.WallReduction;
+            if (h.Companion != null && h.Companion.Skill == CompanionSkill.Guard)
+                damage *= 1 - Math.Min(0.5, h.Companion.Power);
             h.Hp -= damage * 100 / (100 + h.Armor);
             if (!h.Alive)
                 Log.Add(Tick + ": пал " + h.Name);

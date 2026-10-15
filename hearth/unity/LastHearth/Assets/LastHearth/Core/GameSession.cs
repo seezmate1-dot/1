@@ -131,7 +131,7 @@ namespace LastHearth.Core
                     total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value));
             }
             double warm = IsRoomWarm(room) ? 1.0 : Balance.Warmth.FrozenOutput;
-            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
+            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * PetOutputMult(data.Produces.Value) * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
                    SiegePenalty(State.Time);
         }
 

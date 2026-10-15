@@ -92,6 +92,75 @@ namespace LastHearth.Core.Tests
             Events(now);
             Pvp(now);
             Shop(now);
+            Kennel(now);
+        }
+
+        // ------------------------------------------------------------------ pets and companions (GDD 8.1-8.2)
+
+        public int PetFeeds, BondRaises;
+
+        static string CompanionFor(HeroClass c)
+        {
+            switch (c)
+            {
+                case HeroClass.Guardian: return "Squire";
+                case HeroClass.Cleaver: return "Falcon";
+                case HeroClass.CoalPriest: return "Firefly";
+                default: return "Wolfhound";
+            }
+        }
+
+        void Kennel(long now)
+        {
+            S.CheckKennel();
+            // silver goods only from a surplus, like the essence of Brik's shop
+            foreach (var offer in S.MerchantOffers(now).Concat(S.DailyDeals(now)))
+            {
+                bool surplus = S.State.Wallet[ResourceType.Silver] >= S.Capacity(ResourceType.Silver) * 0.8;
+                if (surplus && offer.Left > 0 && offer.PayWith == ResourceType.Silver && !offer.Id.StartsWith("d:Essence"))
+                    S.BuyOffer(offer.Id, now);
+            }
+            // the battle pets first: the wolf, then the raven, then the bear cub
+            foreach (string pet in new[] { "Wolf", "Raven", "BearCub" })
+            {
+                if (S.HasPet(pet))
+                {
+                    S.SetActivePet(pet);
+                    break;
+                }
+            }
+            foreach (var hero in S.Squad())
+            {
+                var have = S.CompanionOf(hero.Id);
+                string want = CompanionFor(hero.HeroClass);
+                if (!S.CompanionUnlocked(want))
+                    want = "Squire";
+                if (have == null || have.Kind != want)
+                    S.SetCompanion(hero.Id, want);
+            }
+            // treats: the active pet to level 5, then the bonds of the squad, the weakest first
+            for (int guard = 0; guard < 20; guard++)
+            {
+                var pet = S.ActivePet();
+                if (pet != null && S.PetLevel(pet.Id) < 5 && S.FeedPet(pet.Id) == Fail.None)
+                {
+                    PetFeeds++;
+                    continue;
+                }
+                var weakest = S.Squad().Where(h => S.CompanionOf(h.Id) != null && S.BondLevel(h.Id) < S.BondCap(h))
+                    .OrderBy(h => S.BondLevel(h.Id)).FirstOrDefault();
+                if (weakest != null && S.RaiseBond(weakest.Id) == Fail.None)
+                {
+                    BondRaises++;
+                    continue;
+                }
+                if (pet != null && S.FeedPet(pet.Id) == Fail.None)
+                {
+                    PetFeeds++;
+                    continue;
+                }
+                break;
+            }
         }
 
         // ------------------------------------------------------------------ shops and Sparks

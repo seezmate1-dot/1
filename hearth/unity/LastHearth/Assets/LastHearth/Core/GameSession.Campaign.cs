@@ -45,8 +45,8 @@ namespace LastHearth.Core
                 {
                     Family = m.Family,
                     Rank = m.Rank,
-                    HpMult = kind.HpMult,
-                    AttackMult = kind.AttackMult,
+                    HpMult = kind.HpMult * KennelExpected(Balance.Companions.CampaignHp, m.Rank),
+                    AttackMult = kind.AttackMult * KennelExpected(Balance.Companions.CampaignAttack, m.Rank),
                     Telegraphs = kind.Telegraphs,
                 });
             }
@@ -169,6 +169,7 @@ namespace LastHearth.Core
                     Stats = (int[])d.Stats.Clone(),
                 });
             }
+            ApplyKennel(setup); // the active pet and the heroes' companions (GameSession.Companions.cs)
             return setup;
         }
     }
