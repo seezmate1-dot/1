@@ -229,7 +229,7 @@
  "sheets": {
   "CreatureFiend": {
    "frames": 8,
-   "height": 2.176,
+   "height": 1.418,
    "rows": [
     "walk",
     "attack",
@@ -240,7 +240,7 @@
   },
   "CreatureKnight": {
    "frames": 8,
-   "height": 2.648,
+   "height": 2.109,
    "rows": [
     "walk",
     "attack",
@@ -251,7 +251,7 @@
   },
   "CreaturePossessed": {
    "frames": 8,
-   "height": 2.64,
+   "height": 1.622,
    "rows": [
     "walk",
     "attack",
@@ -262,7 +262,7 @@
   },
   "CreatureRoot": {
    "frames": 8,
-   "height": 2.378,
+   "height": 1.375,
    "rows": [
     "walk",
     "attack",
@@ -383,7 +383,7 @@
   },
   "HeroArcher": {
    "frames": 8,
-   "height": 2.655,
+   "height": 1.822,
    "rows": [
     "idle",
     "walk",
@@ -396,7 +396,7 @@
   },
   "HeroAshMage": {
    "frames": 8,
-   "height": 2.703,
+   "height": 2.171,
    "rows": [
     "idle",
     "walk",
@@ -409,7 +409,7 @@
   },
   "HeroCleaver": {
    "frames": 8,
-   "height": 2.363,
+   "height": 1.743,
    "rows": [
     "idle",
     "walk",
@@ -422,7 +422,7 @@
   },
   "HeroCoalPriest": {
    "frames": 8,
-   "height": 2.703,
+   "height": 2.206,
    "rows": [
     "idle",
     "walk",
@@ -435,7 +435,7 @@
   },
   "HeroGuardian": {
    "frames": 8,
-   "height": 2.454,
+   "height": 1.843,
    "rows": [
     "idle",
     "walk",
@@ -448,7 +448,7 @@
   },
   "HeroSwordsman": {
    "frames": 8,
-   "height": 2.283,
+   "height": 1.65,
    "rows": [
     "idle",
     "walk",

@@ -230,6 +230,7 @@ def _hold(rig, name, bone="hand_r", scale=1.0):
     if name.startswith("staff"):
         # a staff stays upright in the hand whatever the arm does: it follows the hand, not its turn
         for o in roots:
+            o["held"] = True
             c = o.constraints.new("COPY_LOCATION")
             c.target = rig
             c.subtarget = bone
@@ -248,7 +249,10 @@ def _hold(rig, name, bone="hand_r", scale=1.0):
             o.rotation_euler = (math.radians(90), 0, math.radians(90 if not left else -90))
         o.scale = (scale, scale, scale)
     bpy.context.view_layer.update()
-    return [o for r in roots for o in [r] + list(r.children_recursive) if o.type == "MESH"]
+    held = [o for r in roots for o in [r] + list(r.children_recursive) if o.type == "MESH"]
+    for o in held:
+        o["held"] = True
+    return held
 
 
 def human(d):
@@ -370,7 +374,7 @@ def sheet(kind, key, anims, out, frames=FRAMES, samples=20):
     sc.collection.objects.link(pivot)
     rig.parent = pivot
     _play(rig, anims[0][1], 0.0)
-    lo, hi = _bounds(meshes)
+    lo, hi = _bounds([o for o in meshes if not o.get("held")])   # the body sets the size, not a tall staff
     height = hi.z - lo.z
     # the frame shows the character at 1/1.5 of its height, feet at 0.24 from the bottom (ArtLibrary.DrawCharacter)
     size = height * 1.5
@@ -411,7 +415,7 @@ def portrait(kind, key, out, size=256):
     rig, meshes = build(kind, key)
     anims = hero_anims(key) if kind == "hero" else (creature_anims(key) if kind == "creature" else dweller_anims(key))
     _play(rig, anims[0][1], 0.0)
-    lo, hi = _bounds(meshes)
+    lo, hi = _bounds([o for o in meshes if not o.get("held")])
     height = hi.z - lo.z
     cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
     sc.collection.objects.link(cam)

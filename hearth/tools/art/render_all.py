@@ -52,7 +52,10 @@ def characters(m):
 
 def rooms_(m):
     import rooms
+    only = os.environ.get("HEARTH_ONLY")
     for name in rooms.RECIPES:
+        if only and name not in only.split(","):
+            continue
         start = time.time()
         rooms.render_room(name, os.path.join(OUT, "Rooms", name + ".png"), samples=64)
         m["rooms"][name] = {"cells": 2 if name == "Hearth" else 1}
