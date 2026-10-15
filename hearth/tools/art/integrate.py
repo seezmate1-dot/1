@@ -17,12 +17,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ART = os.path.join(os.path.dirname(os.path.dirname(HERE)), "unity", "LastHearth", "Assets", "LastHearth", "Resources", "Art")
 STAGE = os.path.join(HERE, "ai", "sd")
 
-# the opening in a 768 x 384 cell (GameRunner.View.DrawInterior draws the interior at 0.055 h from the
-# sides, 0.08 h from the top, 0.85 h tall): the hole is 4 px smaller, so the rock overlaps the edges
-HOLE = (25, 35, 743, 353)
+# the opening in a 768 x 384 cell (GameRunner.View.DrawInterior draws the interior at 0.03 h from the
+# sides, 0.06 h from the top, 0.88 h tall): the hole is 4 px smaller, so the rock overlaps the edges
+HOLE = (16, 27, 752, 357)
 
 
-def frame(rock, size=(768, 384), radius=12):
+def frame(rock, size=(768, 384), radius=8):
     """The rock around a room's opening, transparent inside, shaded towards the hole."""
     W, H = size
     tex = rock.convert("RGB")
@@ -30,9 +30,9 @@ def frame(rock, size=(768, 384), radius=12):
     tex = tex.resize((round(tex.width * k), round(tex.height * k)), Image.LANCZOS)
     tex = tex.crop(((tex.width - W) // 2, (tex.height - H) // 2, (tex.width - W) // 2 + W, (tex.height - H) // 2 + H))
     hole = Image.new("L", size, 0)
-    ImageDraw.Draw(hole).rounded_rectangle(HOLE, radius=radius, fill=255)
+    ImageDraw.Draw(hole).rounded_rectangle((HOLE[0], HOLE[1], W - (768 - HOLE[2]), H - (384 - HOLE[3])), radius=radius, fill=255)
     # darker towards the opening: the rock's edge falls away into the room
-    shade = hole.filter(ImageFilter.MaxFilter(15)).filter(ImageFilter.GaussianBlur(9))
+    shade = hole.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(5))
     dark = Image.new("RGB", size, (24, 14, 8))
     tex = Image.composite(dark, tex, shade.point(lambda v: int(v * 0.7)))
     # a thin dark lip right at the edge, a soft light rim on the floor's edge below the opening
