@@ -42,8 +42,8 @@ ROOM = ("A cutaway view of one room inside a medieval fortress carved into a mou
 ROOMS = {
     "Hearth": "the great hall of the Guardians, two rooms wide: a huge carved stone fireplace in the middle with glowing coals "
               "but no flames, stone columns, banners, a long rug, warm amber light",
-    "Bedrooms": "a cozy dormitory: three wooden beds with white linen and quilts, a window with daylight, candles on a stand, "
-                "chests at the bed ends, a rug, plaster walls with timber beams",
+    "Bedrooms": "cozy living quarters of a family: one big double bed with a warm quilt and pillows, a wooden cradle beside it, "
+                "a wardrobe, a small table with a candle, a rug, a window with daylight, plaster walls with timber beams",
     "Kitchen": "a medieval kitchen: a stone hearth with a copper cauldron, a long table with bread, vegetables and pots, "
                "barrels, hanging herbs and sausages, a shelf with crockery",
     "CoalMine": "a coal mine chamber: dark rock walls with black coal seams, wooden supports, mine carts full of coal, "

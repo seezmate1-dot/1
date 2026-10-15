@@ -1,5 +1,5 @@
 # Paints the game's art with a free image model (Stable Diffusion XL, DreamShaper XL Turbo) on GitHub's
-# runners, many pictures at once (hearth/tools/art/sdpaint.py), and commits them to hearth/tools/art/ai/sd.
+# runners, one picture per runner, up to twenty at once (hearth/tools/art/sdpaint.py), and commits them to hearth/tools/art/ai/sd.
 # No key needed. Runs by hand (Actions → SD art → Run workflow), or when hearth/tools/art/ai/sd-request.txt
 # changes: its first line names the pictures or groups (rooms, world), the second the strength (0.75).
 name: SD art
@@ -44,8 +44,9 @@ jobs:
           groups = {"rooms": ["Hearth", "Bedrooms", "Kitchen", "CoalMine", "Barracks", "Warehouse", "Mine", "Tavern", "TradingPost",
                               "Forge", "Infirmary", "Library", "TrainingHall", "Greenhouse", "Watchtower", "Chapel", "Archive", "Empty"],
                     "world": ["Map", "Mountain", "Battlefield", "Rock"], "extras": ["Door", "Ladder"]}
+          groups["tiers"] = [r + "_" + t for r in groups["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")]
           names = [n for a in sys.argv[1].replace(",", " ").split() for n in groups.get(a, [a])]
-          chunks = [" ".join(names[i:i + 2]) for i in range(0, len(names), 2)]
+          chunks = names  # one picture per runner: the slow runners take up to 40 minutes a picture
           print("chunks=" + json.dumps(chunks))
           PY
           echo "strength=${STRENGTH:-0.65}" >> "$GITHUB_OUTPUT"
@@ -56,7 +57,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 12
+      max-parallel: 20
       matrix:
         names: ${{ fromJson(needs.plan.outputs.chunks) }}
     steps:

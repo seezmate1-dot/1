@@ -83,16 +83,41 @@ def draw(prompt, size, steps=8, seed=7, guidance=2.0):
                generator=g, width=w, height=h).images[0]
 
 
+# the look of a room by its level (GameRunner picks Rooms/<Type>_2 from level 4, _3 from level 8)
+TIERS = {
+    "1": "simple and modest, few furnishings, bare walls",
+    "2": "well furnished, tidy, decorated with rugs, shelves and lamps",
+    "3": "rich and luxurious, ornate carved furniture, gold trim, banners, many details",
+}
+
+
 def room(name, args):
+    base, _, tier = name.partition("_")
+    if tier:
+        return _room_tier(base, tier, args)
     path = os.path.join(aigen.ART, "Rooms", name + ".png")
     layout = Image.open(path)
     k = 1152 / layout.width if layout.width <= layout.height * 2.5 else 1536 / layout.width
     size = (round(layout.width * k), round(layout.height * k))
-    img = paint(layout, ROOM + aigen.ROOMS[name], size, args.strength, args.steps, args.seed)
+    # the living quarters change what stands in them (one double bed and a cradle instead of three beds): a freer hand
+    strength = max(args.strength, 0.82) if name == "Bedrooms" else args.strength
+    img = paint(layout, ROOM + aigen.ROOMS[name], size, strength, args.steps, args.seed)
     out = os.path.join(args.out, "Rooms", name + ".png") if args.out else path
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
     print("room", name, img.size, flush=True)
+
+
+def _room_tier(name, tier, args):
+    """A room at a higher level: the same layout, richer furnishings, a stronger touch."""
+    layout = Image.open(os.path.join(aigen.ART, "Rooms", name + ".png"))
+    k = 1152 / layout.width if layout.width <= layout.height * 2.5 else 1536 / layout.width
+    size = (round(layout.width * k), round(layout.height * k))
+    img = paint(layout, ROOM + aigen.ROOMS[name] + ", " + TIERS[tier], size, min(0.8, args.strength + 0.1), args.steps, args.seed)
+    out = os.path.join(args.out or aigen.ART, "Rooms", "%s_%s.png" % (name, tier))
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    img.save(out)
+    print("room", name, "tier", tier, img.size, flush=True)
 
 
 def world(name, args):
@@ -170,9 +195,10 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="")
     args = ap.parse_args()
-    groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder"]}
+    groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder"],
+              "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
-        if n in aigen.ROOMS:
+        if n.partition("_")[0] in aigen.ROOMS:
             room(n, args)
         elif n in aigen.WORLD:
             world(n, args)

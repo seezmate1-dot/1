@@ -1,2 +1,2 @@
-rooms world extras
+Bedrooms Mountain tiers
 0.65
