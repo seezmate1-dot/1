@@ -104,6 +104,11 @@ namespace LastHearth.Game
         void DrawTopBar(Rect bar)
         {
             var st = session.State;
+            // a dim band under the plates, so the rooms' badges don't show between them
+            var dim = GUI.color;
+            GUI.color = new Color(0.05f, 0.03f, 0.02f, 0.55f);
+            GUI.DrawTexture(new Rect(0, bar.y - 8, Screen.width / uiScale, bar.height + 8), Texture2D.whiteTexture);
+            GUI.color = dim;
             float x = bar.x;
             // the Hearth: its level on the big badge, a tap opens its window (upgrade, mode, builders)
             var badge = HearthBadgeFx(new Rect(x, bar.y + 2, 46, 46));

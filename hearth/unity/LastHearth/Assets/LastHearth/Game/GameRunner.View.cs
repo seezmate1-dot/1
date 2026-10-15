@@ -438,6 +438,21 @@ namespace LastHearth.Game
                 ArtLibrary.Draw(r, "Rooms/Rubble");
         }
 
+        /// <summary>An obstacle next to a room, the Hearth or a free cell: the one to clear next.</summary>
+        bool ReachableObstacle(int floor, int cell)
+        {
+            foreach (var (f, c) in new[] { (floor, cell - 1), (floor, cell + 1), (floor - 1, cell), (floor + 1, cell) })
+            {
+                var g = session.Balance.Grid;
+                if (f < 0 || f >= g.Floors || c < 0 || c >= g.Cells)
+                    continue;
+                var st = session.CellStateAt(f, c);
+                if (st != CellState.Locked && st != CellState.Obstacle)
+                    return true;
+            }
+            return false;
+        }
+
         void DrawEmptyCell(Rect r, int floor, int cell, long now)
         {
             var state = session.CellStateAt(floor, cell);
@@ -458,9 +473,13 @@ namespace LastHearth.Game
                 case CellState.Obstacle:
                 {
                     DrawRubble(r);
-                    var b = new Rect(r.center.x - r.width * 0.3f, r.y + r.height * 0.4f, r.width * 0.6f, Mathf.Max(22, r.height * 0.2f));
-                    ArtLibrary.DrawSliced(b, "UI/Pill", 30);
-                    UiSkin.Outlined(b, "Расчистить", BadgeStyle());
+                    // like Hustle Castle: only the obstacles next to the dug-out part carry a sign, the rest is plain rubble
+                    if (ReachableObstacle(floor, cell))
+                    {
+                        var b = new Rect(r.center.x - r.width * 0.3f, r.center.y - r.height * 0.1f, r.width * 0.6f, Mathf.Max(22, r.height * 0.2f));
+                        ArtLibrary.DrawSliced(b, "UI/Pill", 30);
+                        UiSkin.Outlined(b, "Расчистить", BadgeStyle());
+                    }
                     if (selected)
                         Outline(r);
                     if (Tap(r))

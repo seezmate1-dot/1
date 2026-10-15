@@ -327,7 +327,10 @@ namespace UnityEngine
         {
             if (t == null)
                 throw new InvalidOperationException("null text");
-            Record?.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "L|{0}|{1}|{2}|{3}", r.x, r.y, color.r, t.Replace("\n", "\\n")));
+            // where and how the text sits: the preview centres it like Unity does
+            Record?.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "W|{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}|{10}",
+                r.x, r.y, r.width, r.height, s?.alignment.ToString() ?? "UpperLeft", s != null && s.fontSize > 0 ? s.fontSize : 14,
+                color.r, color.g, color.b, color.a, t.Replace("\n", "\\n")));
         }
     }
 

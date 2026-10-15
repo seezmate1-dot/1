@@ -9,18 +9,22 @@ from PIL import Image, ImageDraw, ImageFont
 ART = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "unity", "LastHearth", "Assets", "LastHearth", "Resources")
 
 
+FONT = os.path.join(ART, "Fonts", "Nunito-ExtraBold.ttf")
+
+
 def main(calls, out, scale=2):
+    fonts = {}
     lines = []
     for l in open(calls, encoding="utf-8"):
         l = l.rstrip("\n")
         if l:
-            lines.append(l.split("|") if l.startswith(("T|", "S|")) else l.split("|", 4))
+            lines.append(l.split("|") if l.startswith(("T|", "S|")) else l.split("|", 11) if l.startswith("W|") else l.split("|", 4))
     # the phone of the stubs: 2400 x 1080 px at 420 dpi, the interface scaled by 420 / 190
     ui = 420 / 190
     w, h = int(2400 / ui * scale), int(1080 / ui * scale)
     img = Image.new("RGBA", (w, h), (20, 18, 22, 255))
     try:
-        font = ImageFont.truetype(os.path.join(ART, "Fonts", "Nunito-ExtraBold.ttf"), 12 * scale)
+        font = ImageFont.truetype(FONT, 12 * scale)
     except OSError:
         font = ImageFont.load_default()
     d = ImageDraw.Draw(img)
@@ -64,6 +68,22 @@ def main(calls, out, scale=2):
                     p = px[xx, yy]
                     px[xx, yy] = (int(p[0] * r), int(p[1] * g), int(p[2] * b), int(p[3] * a))
             img.alpha_composite(src, (int(x), int(y)))
+        elif l[0] == "W":
+            # a label in its rectangle, aligned and coloured as Unity draws it
+            x, y, rw, rh = (float(v) * scale for v in l[1:5])
+            align, size = l[5], int(float(l[6]) * scale)
+            r, g, b, a = (float(v) for v in l[7:11])
+            text = re.sub(r"<[^>]*>", "", l[11]).replace("\\n", "\n")
+            f = fonts.setdefault(size, ImageFont.truetype(FONT, size) if os.path.exists(FONT) else font)
+            box = d.multiline_textbbox((0, 0), text, font=f, spacing=2)
+            tw, th = box[2] - box[0], box[3] - box[1]
+            tx = x + (rw - tw) / 2 if "Center" in align else x + 2 * scale if "Left" in align else x + rw - tw
+            ty = y + (rh - th) / 2 - box[1] if align.startswith("Middle") else y + 2 * scale
+            layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+            ImageDraw.Draw(layer).multiline_text((tx, ty), text, spacing=2, font=f,
+                                                 fill=(int(255 * r), int(255 * g), int(255 * b), int(255 * a)))
+            img.alpha_composite(layer)
+            d = ImageDraw.Draw(img)
         else:
             x, y, shade, text = float(l[1]) * scale, float(l[2]) * scale, float(l[3]), l[4]
             text = re.sub(r"<[^>]*>", "", text).replace("\\n", "\n")
