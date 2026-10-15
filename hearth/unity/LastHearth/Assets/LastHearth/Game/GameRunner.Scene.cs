@@ -42,9 +42,6 @@ namespace LastHearth.Game
             return Mathf.Min(Mathf.Min(left, right) * 1.15f, mountainW * 0.5f * 0.3f);
         }
 
-        /// <summary>The top of the places under the top of the mountain's picture (the first frame shows them whole).</summary>
-        float SceneTop(float mountainW) => mountainW * 0.5f * SceneGround - SceneSize(mountainW);
-
         /// <summary>Whether the window a place opens has something waiting: the same red dot as its old button.</summary>
         bool SceneWaits(Win win, long now)
         {

@@ -93,9 +93,7 @@ namespace LastHearth.Game
                 float cellW = Math.Max(60, (viewWidth - 8) / g.Cells), cellH = cellW * 0.5f;
                 float hearthTop = (top - 6) + cellW * g.Cells * 0.5f * 0.8f + (ShownFloors().top - g.HearthFloor) * cellH;
                 scroll.y = Math.Max(0, hearthTop + cellH / 2 - (top + (area.height - top - bottom) / 2));
-                // with the places on the surface, like Hustle Castle: they stand whole under the plates, the rooms below them
-                if (scene)
-                    scroll.y = Math.Max(0, Math.Min(scroll.y, (top - 6) + SceneTop(cellW * g.Cells) - (top + 4)));
+                // the places on the surface are a scroll up (a young fortress has its Hearth right under them)
             }
             scroll = GUILayout.BeginScrollView(scroll, GUIStyle.none, GUIStyle.none);
             GUILayout.Space(top - 6);
