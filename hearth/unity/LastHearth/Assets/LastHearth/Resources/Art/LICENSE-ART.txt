@@ -1,4 +1,6 @@
 The art of this folder is rendered by hearth/tools/art (Blender, Cycles) for "Последний очаг".
-Models: KayKit by Kay Lousberg (www.kaylousberg.com) - Character Pack: Adventurers, Skeletons,
-Dungeon Remastered, Furniture Bits, Restaurant Bits, Halloween Bits, Medieval Hexagon Pack -
-Creative Commons Zero (CC0). Shapes, materials, lighting and composition: made for this game.
+Models and textures: Quaternius (quaternius.com) - Medieval Village MegaKit, Fantasy Props MegaKit,
+Stylized Nature MegaKit, Universal Base Characters, Modular Character Outfits - Fantasy, Universal
+Animation Library 1 and 2, Bestiary - Dungeon Monsters Kit (Standard tiers) - CC0 / Quaternius Asset
+License: free to use in personal and commercial games, no credit required. Composition, lighting,
+colours, the interface pieces and the rendered pictures: made for this game.

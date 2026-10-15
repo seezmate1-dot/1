@@ -161,8 +161,9 @@ namespace LastHearth.Game
 
         void DrawPeople(Rect cell, IEnumerable<Dweller> people)
         {
-            float h = cell.height * 0.36f;
-            float floorY = cell.y + cell.height * 0.88f;
+            // the room art (hearth/tools/art/rooms.py): a 1.8 m person stands 0.40 of the cell high, feet at 0.80
+            float h = cell.height * 0.40f;
+            float floorY = cell.y + cell.height * 0.80f;
             var list = people.ToList();
             for (int i = 0; i < list.Count; i++)
             {
@@ -188,7 +189,7 @@ namespace LastHearth.Game
             var st = session.State;
             var (top, bottom) = ShownFloors();
             float cellW = Math.Max(60, (viewWidth - 8) / g.Cells);
-            float cellH = cellW * 0.625f;
+            float cellH = cellW * 0.5f; // the room pictures are 2:1
             float mountainH = live == null ? cellW * g.Cells * 0.5f : 0;
             var area = GUILayoutUtility.GetRect(cellW * g.Cells, mountainH * 0.8f + cellH * (top - bottom + 1));
             if (mountainH > 0)
@@ -255,9 +256,10 @@ namespace LastHearth.Game
             if (decor != null && ArtLibrary.Data.Decor.TryGetValue(decor, out var di))
             {
                 // decorations stand in the right corner, scaled against the 7.7-unit tall room
-                float h = Mathf.Clamp(di.Height / 7.7f, 0.15f, 0.6f) * r.height;
+                // decorations are rendered in metres; by the back wall of a room a metre is 0.2 of the cell high
+                float h = Mathf.Clamp(di.Height * 0.2f, 0.12f, 0.6f) * r.height;
                 float w = h * Mathf.Max(0.4f, di.Width / Mathf.Max(0.1f, di.Height));
-                ArtLibrary.Draw(new Rect(r.xMax - r.width * 0.1f - w, r.y + r.height * 0.88f - h, w, h), "Decor/" + decor);
+                ArtLibrary.Draw(new Rect(r.xMax - r.width * 0.12f - w, r.y + r.height * 0.76f - h, w, h), "Decor/" + decor);
             }
             DrawPeople(r, PeopleIn(room, false));
             bool warm = session.IsRoomWarm(room);
@@ -325,7 +327,7 @@ namespace LastHearth.Game
         {
             float y = gridY + (top - floor) * cellH;
             var here = live.Creatures.Where(x => x.Floor == floor).ToList();
-            float h = cellH * 0.4f;
+            float h = cellH * 0.42f;
             bool towardsRight = floor != live.HearthFloor && live.HearthFloor > floor;
             for (int i = 0; i < here.Count; i++)
             {
@@ -336,7 +338,7 @@ namespace LastHearth.Game
                 var family = (MonsterFamily)(cr.Id % 4);
                 var old = GUI.color;
                 GUI.color = new Color(1, 1, 1, 0.45f + 0.55f * (float)(cr.Hp / cr.MaxHp));
-                ArtLibrary.DrawCharacter(ArtLibrary.CreatureSheet(family), "walk", Time.time + cr.Id, new Vector2(x, y + cellH * 0.88f), h, !towardsRight);
+                ArtLibrary.DrawCharacter(ArtLibrary.CreatureSheet(family), "walk", Time.time + cr.Id, new Vector2(x, y + cellH * 0.80f), h, !towardsRight);
                 GUI.color = old;
             }
             if (live.HatchClosed(floor))

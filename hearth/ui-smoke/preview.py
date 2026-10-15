@@ -32,6 +32,14 @@ def main(calls, out, scale=2):
             u, v, uw, vh, a = (float(q) for q in l[6:11])
             src = Image.open(os.path.join(ART, name + ".png")).convert("RGBA")
             W_, H_ = src.size
+            if abs(uw) > 1 or vh > 1:
+                # a tiled texture (the stone background): repeat it over the rectangle
+                tw, th = max(1, int(rw / abs(uw))), max(1, int(rh / vh))
+                tile = src.resize((tw, th))
+                for ty in range(int(y), int(y + rh), th):
+                    for tx in range(int(x), int(x + rw), tw):
+                        img.alpha_composite(tile, (tx, ty))
+                continue
             left, right = sorted((u * W_, (u + uw) * W_))
             top, bottom = (1 - v - vh) * H_, (1 - v) * H_
             frame = src.crop((int(left), int(top), int(right), int(bottom)))

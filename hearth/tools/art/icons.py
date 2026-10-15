@@ -1,11 +1,12 @@
-"""Toy icons of the ten resources for the top bar (Resources/Art/Icons/<Resource>.png, 128 x 128)."""
+"""Toy icons of the ten resources for the top bar (Resources/Art/Icons/<Resource>.png, 128 x 128), in
+the style of the rooms (some are the Fantasy Props kit's models)."""
 import math
 import os
 import random
 
 import bpy
 
-import kit
+import qkit as q
 import toy as t
 
 SIZE = 128
@@ -26,7 +27,8 @@ def coal(rng):
 
 
 def food(rng):
-    kit.put("food_ingredient_ham_cooked", (0, 0, 0), scale=4.0)
+    q.put("FarmCrate_Apple", (0, 0, 0), scale=1.0)
+    q.put("Carrot", (0.45, -0.45, 0.0), rot_z=30, scale=2.2)
 
 
 def ingot(color, metal=1.0):
@@ -55,11 +57,8 @@ def cores(rng):
 
 
 def blueprints(rng):
-    t.cyl(0.25, 1.4, (0, 0, 0.3), t.mat((0.35, 0.55, 0.85), 0.6), rot=(0, math.radians(90), math.radians(15)))
-    for dx in (-0.72, 0.72):
-        t.cyl(0.28, 0.12, (dx * math.cos(math.radians(15)), dx * math.sin(math.radians(15)), 0.3), t.mat((0.45, 0.28, 0.15), 0.6),
-              rot=(0, math.radians(90), math.radians(15)))
-    t.rbox((0.9, 0.04, 0.6), (0.1, -0.3, 0.5), t.mat((0.92, 0.94, 1.0), 0.7), bevel=0.02, rot=(math.radians(-20), 0, 0))
+    q.put("Scroll_1", (0, 0, 0), rot_z=15, scale=4.0)
+    q.put("Scroll_2", (0.1, -0.3, 0.2), rot_z=-25, scale=4.0, tint=(0.62, 0.8, 1.1))
 
 
 def glory(rng):
@@ -82,7 +81,6 @@ def render_all(out_dir):
         sc = bpy.context.scene
         sc.render.resolution_x = sc.render.resolution_y = SIZE * 2
         sc.cycles.samples = 48
-        kit.SCALE = 1.0
         build(random.Random(name))
         meshes = [o for o in bpy.data.objects if o.type == "MESH"]
         lo, hi = _bounds(meshes)

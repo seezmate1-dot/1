@@ -91,9 +91,14 @@ namespace UnityEngine
 
     public class Texture : Object { }
 
+    public enum TextureWrapMode { Repeat, Clamp }
+
+    public enum FontStyle { Normal, Bold }
+
     public class Texture2D : Texture
     {
         public string Name = "";
+        public TextureWrapMode wrapMode;
         public static Texture2D whiteTexture = new Texture2D { Name = "white" };
     }
 
@@ -189,10 +194,21 @@ namespace UnityEngine
         public static float Max(float a, float b, float c) => Math.Max(a, Math.Max(b, c));
     }
 
+    public class GUIStyleState
+    {
+        public Texture2D background;
+        public Color textColor;
+    }
+
     public class GUIStyle
     {
         public GUIStyle() { }
         public GUIStyle(GUIStyle o) { }
+        public GUIStyleState normal = new GUIStyleState(), hover = new GUIStyleState(), active = new GUIStyleState(),
+            focused = new GUIStyleState(), onNormal = new GUIStyleState(), onHover = new GUIStyleState(),
+            onActive = new GUIStyleState(), onFocused = new GUIStyleState();
+        public RectOffset border;
+        public FontStyle fontStyle;
         public bool richText;
         public bool wordWrap;
         public int fontSize;
@@ -206,6 +222,8 @@ namespace UnityEngine
     {
         public GUIStyle label = new GUIStyle();
         public GUIStyle button = new GUIStyle();
+        public GUIStyle box = new GUIStyle();
+        public GUIStyle textField = new GUIStyle();
         public GUIStyle verticalScrollbar = new GUIStyle();
         public GUIStyle verticalScrollbarThumb = new GUIStyle();
     }
@@ -249,7 +267,8 @@ namespace UnityEngine
         {
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
-            if (uv.width == 0 || uv.height <= 0 || uv.y < -0.001f || uv.y + uv.height > 1.001f)
+            bool tiled = ((Texture2D)t).wrapMode == TextureWrapMode.Repeat;
+            if (uv.width == 0 || uv.height <= 0 || (!tiled && (uv.y < -0.001f || uv.y + uv.height > 1.001f)))
                 throw new InvalidOperationException("bad texture coordinates " + uv.x + "," + uv.y + "," + uv.width + "," + uv.height);
             Record?.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "S|{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}",
                 ((Texture2D)t).Name, r.x, r.y, r.width, r.height, uv.x, uv.y, uv.width, uv.height, color.a));

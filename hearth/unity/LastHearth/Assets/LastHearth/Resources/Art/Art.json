@@ -273,7 +273,7 @@
   },
   "Dweller0": {
    "frames": 8,
-   "height": 2.162,
+   "height": 1.875,
    "rows": [
     "idle",
     "walk",
@@ -284,7 +284,7 @@
   },
   "Dweller1": {
    "frames": 8,
-   "height": 2.16,
+   "height": 1.821,
    "rows": [
     "idle",
     "walk",
@@ -295,7 +295,7 @@
   },
   "Dweller2": {
    "frames": 8,
-   "height": 2.176,
+   "height": 1.844,
    "rows": [
     "idle",
     "walk",
@@ -306,7 +306,7 @@
   },
   "Dweller3": {
    "frames": 8,
-   "height": 2.292,
+   "height": 1.83,
    "rows": [
     "idle",
     "walk",
@@ -317,7 +317,7 @@
   },
   "Dweller4": {
    "frames": 8,
-   "height": 2.241,
+   "height": 1.844,
    "rows": [
     "idle",
     "walk",
@@ -328,7 +328,7 @@
   },
   "Dweller5": {
    "frames": 8,
-   "height": 2.369,
+   "height": 1.817,
    "rows": [
     "idle",
     "walk",
@@ -339,7 +339,7 @@
   },
   "Dweller6": {
    "frames": 8,
-   "height": 2.16,
+   "height": 1.875,
    "rows": [
     "idle",
     "walk",
@@ -350,7 +350,7 @@
   },
   "Dweller7": {
    "frames": 8,
-   "height": 2.292,
+   "height": 1.808,
    "rows": [
     "idle",
     "walk",
@@ -361,7 +361,7 @@
   },
   "Dweller8": {
    "frames": 8,
-   "height": 2.162,
+   "height": 1.919,
    "rows": [
     "idle",
     "walk",
@@ -372,7 +372,7 @@
   },
   "Dweller9": {
    "frames": 8,
-   "height": 2.292,
+   "height": 1.817,
    "rows": [
     "idle",
     "walk",

@@ -260,6 +260,7 @@ namespace LastHearth.Game
             GUI.skin.button.padding = new RectOffset(10, 10, 9, 9);
             GUI.skin.verticalScrollbar.fixedWidth = 14;
             GUI.skin.verticalScrollbarThumb.fixedWidth = 14;
+            UiSkin.Apply();
         }
 
         void OnApplicationPause(bool paused)
@@ -293,6 +294,7 @@ namespace LastHearth.Game
             }
             uiScale = UiScale();
             GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1));
+            UiSkin.DrawBackground(new Rect(0, 0, Screen.width / uiScale, Screen.height / uiScale));
             // the safe area keeps buttons away from the camera cut-out and rounded corners
             var safe = Screen.safeArea;
             float top = Screen.height - safe.yMax;
