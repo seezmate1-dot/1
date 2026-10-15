@@ -62,14 +62,34 @@ def treasure(rng):
         q.put("Coin", (rng.uniform(-1, 1), rng.uniform(-1, -0.4), 0), rot_z=rng.uniform(0, 360), scale=1.3)
 
 
+def _gild(pivot, wood=None):
+    """Makes the metal of a model gold (and tints its wood, if asked)."""
+    meshes = [o for o in pivot.children_recursive if o.type == "MESH"]
+    for o in meshes:
+        for i, m in enumerate(o.data.materials):
+            if m and "Metal" in m.name:
+                o.data.materials[i] = _gold()
+    if wood:
+        q.retint(meshes, wood, only=("Furniture", "Props", "Cloth"))
+
+
 def shields(gold=False):
     def build(rng):
-        tint = (0.5, 1.6, 1.25) if gold else None
-        q.put("Shield_Wooden", (0, 0, 0.6), scale=1.6, tint=tint)
+        p = q.put("Shield_Wooden", (0, 0, 0.6), scale=1.6)
+        if gold:
+            _gild(p, wood=(0.48, 1.3, 0.75))
         for side in (-1, 1):
-            sw = q.put("Sword_Bronze", (side * 0.25, 0.1, 0.5), scale=1.1, tint=tint)
+            sw = q.put("Sword_Bronze", (side * 0.25, 0.1, 0.5), scale=1.1)
             sw.rotation_euler = (0, math.radians(side * 40), 0)
+            if gold:
+                _gild(sw)
     return build
+
+
+def master_chest(rng):
+    _gild(q.put("Chest_Wood", (0, 0, 0), scale=1.2), wood=(0.47, 1.2, 0.7))
+    for x in (-0.5, 0.0, 0.5):
+        q.put("Coin_Pile", (x, -0.75, 0), scale=1.0)
 
 
 def pumpkin(rng):
@@ -133,7 +153,7 @@ CATALOG = {
     "throne": ("Трон старейшины", True, throne),
     "pumpkin": ("Тыква-фонарь", True, pumpkin),
     "shrine": ("Святилище свечей", True, shrine),
-    "chest_gold": ("Сундук мастера", True, ("Chest_Wood", 1.2, (0.5, 1.5, 1.2))),
+    "chest_gold": ("Сундук мастера", True, master_chest),
 }
 
 

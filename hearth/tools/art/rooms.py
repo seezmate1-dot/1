@@ -156,7 +156,7 @@ def wagon(x, y, load=None, shiny=False, rot=0):
                                             s * 1.05 + rng.uniform(0, 0.12)), m, scale=(1, 1, 0.8))
 
 
-def fireplace(x, y, width=1.6, height=1.8, fire=True, rng=None):
+def fireplace(x, y, width=1.6, height=1.8, fire=True, rng=None, blaze=1.0):
     """A stone fireplace: an arch of cut stone around a dark mouth, stone columns at its sides, glowing
     coal and fire inside, a chimney going up into the ceiling."""
     sx, sz = width / 1.6, height / 2.9
@@ -170,7 +170,7 @@ def fireplace(x, y, width=1.6, height=1.8, fire=True, rng=None):
         c.rotation_euler = (0, math.pi, 0)
     coal_pile(x, y + 0.2, width * 0.3, random.Random(int(x * 7)), glow=True)
     if fire:
-        flame(x, y + 0.15, 0.05, height * 0.32, rng or random.Random(int(x * 7)))
+        flame(x, y + 0.15, 0.05, height * 0.32 * blaze, rng or random.Random(int(x * 7)))
     t.light("POINT", (x, y - 1.3, height * 0.3), 110 * width, color=(1.0, 0.45, 0.15), size=0.3 * width)
 
 
@@ -199,19 +199,19 @@ def rug(x, y, w, d, color=(0.5, 0.08, 0.08)):
 
 
 def flame(x, y, z, size, rng):
-    """Cartoon fire: a crown of pointed tongues, orange outside, yellow inside, a hot core."""
+    """Cartoon fire: a crown of tall pointed tongues, red-orange outside, yellow inside, a hot core."""
     tongues = []
-    for layer, (col, strength, shrink, dy) in enumerate((((1.0, 0.32, 0.04), 3.0, 1.0, 0.0), ((1.0, 0.58, 0.08), 4.0, 0.7, -0.12),
-                                                          ((1.0, 0.86, 0.35), 5.0, 0.42, -0.24))):
+    for layer, (col, strength, shrink, dy) in enumerate((((1.0, 0.25, 0.02), 1.6, 1.0, 0.0), ((1.0, 0.52, 0.04), 2.0, 0.72, -0.12),
+                                                          ((1.0, 0.82, 0.3), 2.6, 0.45, -0.24))):
         for k in range(5 - layer):
-            dx = (k - (4 - layer) / 2) * 0.38 * size * shrink
-            h = size * shrink * rng.uniform(0.75, 1.15) * (1.0 - abs(dx) / (1.6 * size))
-            r = size * 0.28 * shrink
+            dx = (k - (4 - layer) / 2) * 0.26 * size * shrink
+            h = size * shrink * rng.uniform(1.0, 1.45) * (1.0 - abs(dx) / (1.3 * size))
+            r = size * 0.17 * shrink
             bpy.ops.mesh.primitive_cone_add(vertices=16, radius1=r, radius2=0.0, depth=h, location=(x + dx, y + dy * size, z + h / 2))
             cone = bpy.context.active_object
-            cone.rotation_euler = (rng.uniform(-0.12, 0.12), rng.uniform(-0.2, 0.2) - dx / size * 0.15, 0)
+            cone.rotation_euler = (rng.uniform(-0.12, 0.12), rng.uniform(-0.2, 0.2) - dx / size * 0.2, 0)
             mod = cone.modifiers.new("smooth", "SUBSURF")
-            mod.levels = mod.render_levels = 2
+            mod.levels = mod.render_levels = 1
             cone.data.materials.append(t.mat(col, 0.4, emit=col, strength=strength))
             bpy.ops.object.shade_smooth()
             tongues.append(cone)
@@ -497,7 +497,7 @@ def r_hearth(rng):
     width = 2 * W
     walls(width=width, extra={0: "Wall_UnevenBrick_Window_Wide_Round", 7: "Wall_UnevenBrick_Window_Wide_Round"}, sky=True)
     fy = D - 0.7
-    fireplace(0, fy, width=3.0, height=2.5, fire=FIRE["on"], rng=random.Random(FIRE["seed"]))
+    fireplace(0, fy, width=3.0, height=2.5, fire=FIRE["on"], rng=random.Random(FIRE["seed"]), blaze=1.7)
     t.rbox((4.6, 0.9, 0.24), (0, fy - 0.2, 2.62), _wood(), bevel=0.05)
     q.put("Shield_Wooden", (0, fy - 0.25, 2.66), scale=0.9)
     for dx, rz in ((-0.5, 15), (0.5, -15), (0, 90)):

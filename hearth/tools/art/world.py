@@ -143,6 +143,8 @@ def render_mountain(out, res=(1536, 768)):
     t.reset(world=(0.04, 0.05, 0.1))
     bpy.context.scene.cycles.samples = 96
     rng = random.Random("mountain")
+    # the game hides the lowest fifth of the picture under the first floor of the cutaway: lift the gatehouse above it
+    LIFT = 3.6
     width, height = 36.0, 18.0
     sky(width, height, height / 2, rng)
     peak(0, 6, 11, 17, 1)
@@ -154,27 +156,27 @@ def render_mountain(out, res=(1536, 768)):
     x = -width / 2 - 1.5
     while x < width / 2 + 1.5:
         for z in (0.0, 1.2):
-            q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, -7.0 + rng.uniform(-0.3, 0.3), z - 0.4), rot_z=rng.uniform(0, 360),
+            q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, -7.0 + rng.uniform(-0.3, 0.3), z + LIFT - 0.4), rot_z=rng.uniform(0, 360),
                   scale=(0.75 * rng.uniform(0.9, 1.1), 0.75, 0.75), tint=rooms.ROCK_TINT)
         x += rng.uniform(1.6, 2.2)
     for _ in range(26):
         px = rng.uniform(-17, 17)
         if abs(px) < 4.5:
             continue
-        pine(px, -5.5 + rng.uniform(0, 2.0), 2.0 + rng.uniform(0, 1.2), 0.32, rng)
+        pine(px, -5.5 + rng.uniform(0, 2.0), LIFT + 2.0 + rng.uniform(0, 1.2), 0.32, rng)
     # the gatehouse of the Guardians on the shoulder of the mountain: a keep between two towers
     b = Building()
     house(b, 0, 0, width=2, roof_tint=(0.5, 1.2, 0.8))
     for x in (-3.0, 3.0):
         tower(b, x, 0.2, 2, roof_tint=(0.5, 1.2, 0.8), door=False)
-    b.place((0, -6.0, 1.9), 0.55)
+    b.place((0, -6.0, LIFT + 1.9), 0.55)
     for x in (-1.65, 1.65):
-        t.rbox((0.04, 0.04, 1.6), (x, -6.3, 6.1), t.mat((0.2, 0.2, 0.22), 0.4, 0.8), bevel=0)
-        t.rbox((0.7, 0.03, 0.45), (x + 0.36, -6.3, 6.65), t.mat((0.7, 0.1, 0.08), 0.8), bevel=0.02)
+        t.rbox((0.04, 0.04, 1.6), (x, -6.3, LIFT + 6.1), t.mat((0.2, 0.2, 0.22), 0.4, 0.8), bevel=0)
+        t.rbox((0.7, 0.03, 0.45), (x + 0.36, -6.3, LIFT + 6.65), t.mat((0.7, 0.1, 0.08), 0.8), bevel=0.02)
     for x in (-1.0, 1.0):
-        t.light("POINT", (x, -7.5, 3.0), 120, color=(1.0, 0.6, 0.3), size=0.3)
+        t.light("POINT", (x, -7.5, LIFT + 3.0), 120, color=(1.0, 0.6, 0.3), size=0.3)
     t.light("SUN", (0, -10, 20), 2.5, color=(0.75, 0.82, 1.0), rot=(math.radians(45), 0, math.radians(-30)))
-    t.light("POINT", (0, -11, 6), 900, color=(1.0, 0.6, 0.3), size=1.0)
+    t.light("POINT", (0, -11, LIFT + 6), 900, color=(1.0, 0.6, 0.3), size=1.0)
     _ortho_camera(width, height, (0, height / 2 + 0.6), res)
     t.render(out)
 
