@@ -367,18 +367,9 @@ ACTS = [
     ((-5.0, 5.2), _barrows, "Курганы"),
     ((1.0, 6.9), _fog_heart, "Сердце Тумана"),
 ]
-ISLAND = (13.0, 11.0)   # half-sizes of the island's ellipse
 
 
-def _height(x, y, rng_noise):
-    """The island's ground: a dome under the ellipse with gentle hills; below 0 is the sea."""
-    d = math.sqrt((x / ISLAND[0]) ** 2 + (y / ISLAND[1]) ** 2)
-    base = 1.0 - d ** 2.2
-    hills = 0.6 * math.sin(x * 0.55 + rng_noise[0]) * math.cos(y * 0.6 + rng_noise[1]) + 0.3 * math.sin(x * 1.3 + y * 0.9 + rng_noise[2])
-    return base * 1.4 + hills * max(0.0, base) ** 0.5 - 0.1
-
-
-def _ground_material():
+def _ground_material(lush=False):
     m = bpy.data.materials.new("ground")
     m.use_nodes = True
     nt = m.node_tree
@@ -398,7 +389,15 @@ def _ground_material():
     els = ramp.color_ramp.elements
     els[0].position, els[0].color = 0.0, (0.82, 0.72, 0.48, 1)
     els[1].position, els[1].color = 1.0, (0.5, 0.48, 0.46, 1)
-    for pos, col in ((0.07, (0.82, 0.72, 0.48, 1)), (0.11, (0.4, 0.62, 0.22, 1)), (0.5, (0.28, 0.5, 0.17, 1)), (0.85, (0.34, 0.4, 0.22, 1))):
+    stops = ((0.07, (0.82, 0.72, 0.48, 1)), (0.11, (0.4, 0.62, 0.22, 1)), (0.5, (0.28, 0.5, 0.17, 1)), (0.85, (0.34, 0.4, 0.22, 1)))
+    if lush:
+        # deeper, varied greens like a painted kingdom map: a thin beach, meadows, darker woods, stony tops
+        els[1].color = (0.42, 0.42, 0.4, 1)
+        stops = ((0.03, (0.86, 0.76, 0.5, 1)), (0.06, (0.36, 0.56, 0.16, 1)), (0.3, (0.27, 0.48, 0.13, 1)), (0.55, (0.2, 0.4, 0.12, 1)),
+                 (0.8, (0.3, 0.38, 0.18, 1)))
+        noise.inputs["Scale"].default_value = 0.6
+        madd.inputs[1].default_value = 0.9
+    for pos, col in stops:
         e = els.new(pos)
         e.color = col
     mr = nt.nodes.new("ShaderNodeMapRange")
@@ -420,73 +419,347 @@ def _ground_material():
     return m
 
 
-def render_map(out, res=(1600, 1000)):
-    """The island of the campaign: beaches, meadows, forests and rocks, the Fog in the north, ten places."""
-    t.reset(world=(0.1, 0.2, 0.32), soft=True)
+# ------------------------------------------------------------------ the world map (an archipelago, like Hustle Castle's)
+
+def _arena(b, rng):
+    """A round arena: a ring of stone walls facing out, banners over the gate."""
+    n = 12
+    for k in range(n):
+        a = k / n * math.tau
+        name = "Wall_UnevenBrick_Door_Round" if k == 9 else "Wall_UnevenBrick_Straight"
+        for turn in (0, 180):
+            b.put(name, (3.8 * math.sin(a), -3.8 * math.cos(a), 0), rot_z=-math.degrees(a) + turn)
+    for k in range(0, n, 3):
+        a = (k + 0.5) / n * math.tau
+        tower(b, 4.2 * math.sin(a), -4.2 * math.cos(a), 1, roof_tint=(0.02, 1.2, 0.9))
+    for k in (8, 10):
+        a = k / n * math.tau
+        b.put("Banner_1_Cloth", (4.0 * math.sin(a), -4.0 * math.cos(a), 1.6), rot_z=-math.degrees(a))
+    t.rbox((0.1, 0.1, 0.1), (0, 0, 0), t.mat((0.8, 0.7, 0.5), 0.9), bevel=0)
+
+
+def _lair(b, rng):
+    """The monsters' lair: a heap of big rocks around a dark cave mouth, dead trees and bones."""
+    for k in range(7):
+        a = k / 7 * math.pi + math.pi
+        b.put("Rock_Medium_%d" % (k % 3 + 1), (3.0 * math.cos(a), 1.5 + 1.6 * math.sin(a) + 1.8, 0), rot_z=rng.uniform(0, 360),
+              scale=rng.uniform(1.2, 1.7), tint=(0.5, 0.4, 0.8), mul=(0.7, 0.62, 0.6))
+    for _ in range(5):
+        b.put("DeadTree_%d" % rng.randint(1, 5), (rng.uniform(-5, 5), rng.uniform(1, 5), 0), rot_z=rng.uniform(0, 360), scale=0.7)
+    for _ in range(6):
+        b.put("Pebble_Round_%d" % rng.randint(1, 5), (rng.uniform(-2, 2), rng.uniform(-2.5, -0.5), 0), scale=2.0, mul=(1.0, 0.95, 0.85))
+
+
+def _camp(b, rng):
+    """The camp to raid: wagons, crates, barrels and a fence, red banners."""
+    b.put("Prop_Wagon", (-2.0, 0.5, 0), rot_z=30)
+    b.put("Stall_Cart_Empty", (2.0, 1.0, 0), rot_z=-20)
+    for k in range(4):
+        b.put("Crate_Wooden", (rng.uniform(-1, 1), rng.uniform(-1.5, 0), 0), rot_z=rng.uniform(0, 90))
+        b.put("Barrel", (rng.uniform(-3, 3), rng.uniform(-2.5, 2.5), 0))
+    for k in range(10):
+        a = k / 10 * math.tau
+        b.put("Prop_WoodenFence_Single", (4.5 * math.cos(a), 3.5 * math.sin(a), 0), rot_z=math.degrees(a) + 90)
+    for x in (-3.5, 3.5):
+        t_ = t.cyl(0.08, 4.0, (0, 0, 0), t.mat((0.3, 0.18, 0.08), 0.7))
+        t_.parent = b.root
+        t_.location = (x, 2.5, 2.0)
+        b.put("Banner_1_Cloth", (x, 2.4, 2.2))
+
+
+def _crossroads(b, rng):
+    """The crossroads the routes start from: a signpost, a loaded wagon, bags."""
+    wood = t.mat((0.4, 0.24, 0.12), 0.7)
+    post = t.cyl(0.12, 3.2, (0, 0, 0), wood)
+    post.parent = b.root
+    post.location = (0, 0, 1.6)
+    for k, (z, rot) in enumerate(((2.7, 20), (2.2, -35), (1.7, 60))):
+        arrow = t.rbox((1.6, 0.12, 0.38), (0, 0, 0), t.mat((0.62, 0.42, 0.22), 0.7), bevel=0.04)
+        arrow.parent = b.root
+        arrow.location = (0.7 * math.cos(math.radians(rot)), 0.7 * math.sin(math.radians(rot)), z)
+        arrow.rotation_euler = (0, 0, math.radians(rot))
+    b.put("Prop_Wagon", (2.6, -0.5, 0), rot_z=80)
+    for k in range(3):
+        b.put("Bag", (-1.5 + k * 0.8, -1.2, 0), rot_z=rng.uniform(0, 360), scale=1.3)
+
+
+def _portal(b, rng):
+    """The portal of the events: standing stones in a ring around a glowing violet gate."""
+    for k in range(8):
+        a = k / 8 * math.tau
+        b.put("Rock_Medium_%d" % (k % 3 + 1), (3.0 * math.cos(a), 3.0 * math.sin(a), 0), rot_z=rng.uniform(0, 360),
+              scale=(0.45, 0.45, 1.5), tint=(0.5, 0.3, 0.9), mul=(0.75, 0.75, 0.85))
+    glow = t.mat((0.6, 0.25, 1.0), 0.2, emit=(0.7, 0.3, 1.0), strength=6)
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.6, minor_radius=0.25, location=(0, 0, 2.0), rotation=(math.radians(90), 0, 0))
+    ring = bpy.context.active_object
+    ring.data.materials.append(glow)
+    ring.parent = b.root
+    disc = t.cyl(1.4, 0.05, (0, 0, 0), t.mat((0.5, 0.3, 1.0), 0.2, emit=(0.55, 0.35, 1.0), strength=2.5), rot=(math.radians(90), 0, 0))
+    disc.parent = b.root
+    disc.location = (0, 0, 2.0)
+
+
+def _home(b, rng):
+    """The player's fortress: the gatehouse on its rock, as above the cutaway."""
+    house(b, 0, 0, width=2, roof_tint=(0.5, 1.2, 0.8))
+    for x in (-3.0, 3.0):
+        tower(b, x, 0.2, 2, roof_tint=(0.5, 1.2, 0.8))
+    for x in (-1.65, 1.65):
+        t_ = t.cyl(0.05, 2.0, (0, 0, 0), t.mat((0.2, 0.2, 0.22), 0.4, 0.8))
+        t_.parent = b.root
+        t_.location = (x * 1.8, 0.2, 7.2)
+
+
+# the islands of the archipelago: centre, half-sizes, height, and what grows on them ("dark" for the
+# hunters' woods and the Fog's island)
+ISLANDS = {
+    "home": ((-11.0, -3.6), (5.4, 3.8), 1.4, "green"),
+    "act1": ((-2.0, 0.4), (4.6, 2.9), 1.2, "green"),
+    "act2": ((5.6, 3.6), (4.0, 2.5), 1.2, "green"),
+    "act3": ((-0.4, 7.6), (3.8, 2.0), 1.1, "dark"),
+    "arena": ((10.6, -4.6), (3.3, 2.3), 1.0, "green"),
+    "hunt": ((-12.6, 5.6), (3.6, 2.6), 1.2, "dark"),
+    "raids": ((13.6, 2.4), (2.9, 2.1), 1.0, "green"),
+    "portal": ((9.6, 8.6), (2.7, 1.7), 1.0, "dark"),
+}
+PLACES = {
+    "Fortress": ((-12.4, -3.4), _home, 0.55),
+    "Arena": ((10.6, -4.5), _arena, 0.42),
+    "Hunt": ((-12.6, 5.8), _lair, 0.42),
+    "Raids": ((13.6, 2.6), _camp, 0.4),
+    "Routes": ((-6.4, -6.2), _crossroads, 0.45),
+    "Events": ((9.6, 8.7), _portal, 0.42),
+}
+# the ten acts of the campaign across its three islands, from the bridge to the Heart of the Fog
+WORLD_ACTS = [(-5.0, -0.6), (-3.0, 1.6), (-0.6, -0.8), (1.2, 1.4), (3.6, 2.6), (6.0, 4.8), (8.0, 2.8), (-2.8, 7.2), (-0.4, 8.4), (1.8, 7.4)]
+SEA_ROUTES = [("home", "act1"), ("act1", "act2"), ("act1", "act3"), ("home", "arena"), ("act2", "raids"), ("home", "hunt"), ("act2", "portal"),
+              ("act2", "arena")]
+
+
+def _wheight(x, y, noise):
+    """The ground: every island a dome with gentle hills; below 0 is the sea."""
+    best = -1.0
+    for (cx, cy), (rx, ry), h, _ in ISLANDS.values():
+        d = math.sqrt(((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2)
+        wobble = 0.08 * math.sin(3 * math.atan2(y - cy, x - cx) + cx) + 0.05 * math.sin(7 * math.atan2(y - cy, x - cx) + cy)
+        base = 1.0 - (d * (1 - wobble)) ** 2.4
+        hills = 0.35 * math.sin(x * 0.7 + noise[0]) * math.cos(y * 0.8 + noise[1])
+        best = max(best, base * h + hills * max(0.0, base) ** 0.5 - 0.12)
+    return best
+
+
+def _island_of(x, y):
+    for key, ((cx, cy), (rx, ry), _, kind) in ISLANDS.items():
+        if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1.0:
+            return key, kind
+    return None, None
+
+
+def _boat(x, y, rot, sail=(0.95, 0.92, 0.85)):
+    """A little sailing boat: a wooden hull, a deck, a mast and a sail with a red pennant."""
+    wood = t.mat((0.45, 0.26, 0.12), 0.7)
+    root = bpy.data.objects.new("boat", None)
+    bpy.context.scene.collection.objects.link(root)
+    hull = t.ball(0.5, (0, 0, 0.05), wood, scale=(1.4, 0.55, 0.5))
+    t.rbox((1.45, 0.58, 0.05), (0, 0, 0.16), t.mat((0.75, 0.2, 0.12), 0.7), bevel=0.02).parent = root
+    deck = t.rbox((1.5, 0.5, 0.06), (0, 0, 0.22), t.mat((0.62, 0.42, 0.22), 0.7), bevel=0.02)
+    mast = t.cyl(0.04, 1.4, (0.05, 0, 0.9), wood)
+    cloth = t.rbox((0.04, 0.8, 0.85), (0.12, 0, 1.0), t.mat(sail, 0.8), bevel=0.02)
+    flag = t.rbox((0.02, 0.3, 0.14), (0.05, 0.15, 1.6), t.mat((0.8, 0.12, 0.1), 0.8), bevel=0)
+    for o in (hull, deck, mast, cloth, flag):
+        o.parent = root
+    root.location = (x, y, 0.1)
+    root.rotation_euler = (0, 0, math.radians(rot))
+    root.scale = (1.3, 1.3, 1.3)
+
+
+def _sea_route(a, b, rng):
+    """A dotted route across the sea between two islands, like the paths on a game map."""
+    (ax, ay), (bx, by) = ISLANDS[a][0], ISLANDS[b][0]
+    dot = t.mat((1.0, 0.97, 0.88), 0.6, emit=(1.0, 0.95, 0.85), strength=0.3)
+    n = int(math.hypot(bx - ax, by - ay) / 0.45)
+    bend = rng.uniform(-1.2, 1.2)
+    for k in range(1, n):
+        f = k / n
+        # a gentle curve: offset sideways along a sine
+        px = ax + (bx - ax) * f - (by - ay) / max(1e-6, math.hypot(bx - ax, by - ay)) * bend * math.sin(f * math.pi)
+        py = ay + (by - ay) * f + (bx - ax) / max(1e-6, math.hypot(bx - ax, by - ay)) * bend * math.sin(f * math.pi)
+        if _wheight(px, py, (0, 0, 0)) < -0.05 and k % 2 == 0:
+            t.cyl(0.09, 0.03, (px, py, 0.03), dot, verts=10)
+    return (ax + bx) / 2, (ay + by) / 2
+
+
+def _bridge(x0, y0, x1, y1):
+    """A wooden bridge over a narrow strait."""
+    wood = t.mat((0.5, 0.32, 0.16), 0.7)
+    n = int(math.hypot(x1 - x0, y1 - y0) / 0.32)
+    ang = math.atan2(y1 - y0, x1 - x0)
+    for k in range(n + 1):
+        f = k / n
+        x, y = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
+        z = 0.25 + 0.25 * math.sin(f * math.pi)
+        t.rbox((0.28, 0.9, 0.06), (x, y, z), wood, bevel=0.01, rot=(0, 0, ang))
+        if k % 3 == 0:
+            for side in (-1, 1):
+                t.cyl(0.04, 0.6, (x - side * 0.42 * math.sin(ang), y + side * 0.42 * math.cos(ang), z - 0.1), wood)
+
+
+def _road(points, noise, rng):
+    """A dirt road along a polyline on land: overlapping flat discs of earth, a few stones."""
+    dirt = t.mat((0.58, 0.44, 0.27), 0.95)
+    edge = t.mat((0.44, 0.33, 0.2), 0.95)
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        n = max(2, int(math.hypot(x1 - x0, y1 - y0) / 0.16))
+        for k in range(n):
+            f = k / n
+            x, y = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
+            z = _wheight(x, y, noise)
+            if z < 0.05:
+                continue
+            t.cyl(0.3, 0.06, (x, y, z), edge, verts=12)
+            t.cyl(0.23, 0.06, (x, y, z + 0.02), dirt, verts=12)
+            if rng.random() < 0.1:
+                q.put("Pebble_Round_%d" % rng.randint(1, 5), (x + rng.uniform(-0.35, 0.35), y + rng.uniform(-0.35, 0.35), z), scale=0.3)
+
+
+def _pier(x, y, rot):
+    """A wooden pier into the sea with a boat tied to it: the routes start here."""
+    wood = t.mat((0.5, 0.32, 0.16), 0.7)
+    root = bpy.data.objects.new("pier", None)
+    bpy.context.scene.collection.objects.link(root)
+    for k in range(7):
+        plank = t.rbox((0.3, 1.0, 0.06), (k * 0.3, 0, 0.3), wood, bevel=0.01)
+        plank.parent = root
+        if k % 2 == 0:
+            for side in (-1, 1):
+                post = t.cyl(0.05, 0.8, (k * 0.3, side * 0.45, 0.0), wood)
+                post.parent = root
+    root.location = (x, y, 0)
+    root.rotation_euler = (0, 0, math.radians(rot))
+
+
+def render_worldmap(out, res=(2400, 1350)):
+    """The kingdom around the fortress, like Hustle Castle's map: an archipelago in a blue sea. The
+    fortress has its own island with a village and a pier; the campaign crosses three islands from
+    a bridge to the Heart of the Fog; the arena, the camp to raid, the hunters' dark woods and the
+    portal of the events each stand on an island of their own. Dotted sea routes with sailing boats
+    join them; shallows and rocks ring the shores. Returns where each place and act is drawn (shares
+    of the picture)."""
+    t.reset(world=(0.32, 0.45, 0.62), soft=True)
     bpy.context.scene.cycles.samples = 64
-    rng = random.Random("map")
+    rng = random.Random("archipelago")
     noise = (rng.uniform(0, 6), rng.uniform(0, 6), rng.uniform(0, 6))
-    # the ground
-    bpy.ops.mesh.primitive_grid_add(x_subdivisions=120, y_subdivisions=100, size=1, location=(0, 0, 0))
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=220, y_subdivisions=140, size=1, location=(0, 0, 0))
     ground = bpy.context.active_object
-    ground.scale = (32, 28, 1)
+    ground.scale = (40, 26, 1)
     bpy.ops.object.transform_apply(scale=True)
     for v in ground.data.vertices:
-        v.co.z = _height(v.co.x, v.co.y, noise)
-    ground.data.materials.append(_ground_material())
+        z = _wheight(v.co.x, v.co.y, noise)
+        # the shores dive under the shallows (where two islands meet the ground would lie at the water's level)
+        v.co.z = z if z > 0.03 else min(z, -0.12)
+    ground.data.materials.append(_ground_material(lush=True))
     bpy.ops.object.shade_smooth()
-    sea = t.mat((0.12, 0.35, 0.55), 0.15)
-    t.rbox((80, 70, 0.1), (0, 0, -0.02), sea, bevel=0)
-    # the places of the acts
-    for (x, y), build, name in ACTS:
-        b = Building()
-        build(b, random.Random(name))
-        b.place((x, y, _height(x, y, noise)), 0.22, rot_z=rng.uniform(-15, 15))
-    # forests, groves and rocks between them
-    groves = [(rng.uniform(-11, 11), rng.uniform(-9, 9)) for _ in range(9)]
-    for k in range(420):
-        if k % 3:
-            gx, gy = rng.choice(groves)
-            x, y = gx + rng.gauss(0, 1.3), gy + rng.gauss(0, 1.0)
-        else:
-            x, y = rng.uniform(-12, 12), rng.uniform(-10, 10)
-        z = _height(x, y, noise)
-        if z < 0.25 or any((x - ax) ** 2 + (y - ay) ** 2 < 2.4 for (ax, ay), _, _ in ACTS):
+    # the sea: deep blue, lighter shallows around every island
+    t.rbox((120, 90, 0.1), (0, 0, -0.06), t.mat((0.06, 0.3, 0.55), 0.12), bevel=0)
+    shallow = t.mat((0.2, 0.62, 0.72), 0.15)
+    for k, ((cx, cy), (rx, ry), _, _) in enumerate(ISLANDS.values()):
+        t.cyl(1.0, 0.04, (cx, cy, -0.02 - 0.004 * k), shallow, verts=64).scale = (rx * 1.18, ry * 1.25, 1)
+    # little white waves on the open sea
+    foam = t.mat((0.92, 0.97, 1.0), 0.6)
+    wave_rng = random.Random("waves")
+    for _ in range(160):
+        x, y = wave_rng.uniform(-18, 18), wave_rng.uniform(-10, 11)
+        if _wheight(x, y, noise) < -0.6:
+            t.ball(0.3, (x, y, 0.0), foam, scale=(1.0, 0.16, 0.06)).rotation_euler = (0, 0, math.radians(wave_rng.uniform(-12, 12)))
+    # rocks along the shores
+    for (cx, cy), (rx, ry), _, _ in ISLANDS.values():
+        for k in range(int((rx + ry) * 2.2)):
+            a = rng.uniform(0, math.tau)
+            x, y = cx + rx * 0.98 * math.cos(a), cy + ry * 0.98 * math.sin(a)
+            q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, y, -0.15), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.14, 0.24),
+                  tint=rooms.ROCK_TINT, mul=rooms.ROCK_MUL, share=True)
+    # sea routes with boats, a bridge from home to the campaign, the pier of the routes
+    route_rng = random.Random("routes")
+    for k, (a, b) in enumerate(SEA_ROUTES):
+        mx, my = _sea_route(a, b, route_rng)
+        bx, by = mx + route_rng.uniform(-0.5, 0.5), my + route_rng.uniform(-0.4, 0.4)
+        # only in open water, clear of the shores
+        if all(_wheight(bx + dx, by + dy, noise) < -0.3 for dx, dy in ((0, 0), (1.2, 0), (-1.2, 0), (0, 1.0), (0, -1.0))):
+            _boat(bx, by, route_rng.uniform(0, 360))
+    _bridge(-6.0, -2.2, -6.4, -1.0)
+    _pier(-6.0, -6.6, -30)
+    _boat(-4.6, -7.5, 20, sail=(0.85, 0.2, 0.15))
+    _boat(15.5, -1.4, 110, sail=(0.85, 0.2, 0.15))
+    _boat(-15.6, 1.4, -70)
+    # roads on the islands: from the fortress to the pier and to the bridge, along the acts
+    road_rng = random.Random("roads")
+    _road([PLACES["Fortress"][0], (-9.0, -4.6), PLACES["Routes"][0]], noise, road_rng)
+    _road([PLACES["Fortress"][0], (-8.4, -2.8), (-6.2, -2.4)], noise, road_rng)
+    _road(WORLD_ACTS[:5], noise, road_rng)
+    _road(WORLD_ACTS[5:7], noise, road_rng)
+    _road(WORLD_ACTS[7:], noise, road_rng)
+    # the places and the acts
+    for key, ((x, y), build, scale) in PLACES.items():
+        bld = Building()
+        build(bld, random.Random(key))
+        bld.place((x, y, _wheight(x, y, noise) - 0.05), scale)
+    village = Building()
+    house(village, -3.0, 2.5, roof_tint=(0.5, 1.0, 1.0))
+    house(village, 3.0, 2.0, roof_tint=(0.53, 1.0, 0.9))
+    village.place((-9.2, -2.2, _wheight(-9.2, -2.2, noise) - 0.05), 0.3)
+    acts_builders = [a[1] for a in ACTS]
+    for (x, y), build in zip(WORLD_ACTS, acts_builders):
+        bld = Building()
+        build(bld, random.Random(str((x, y))))
+        bld.place((x, y, _wheight(x, y, noise) - 0.05), 0.24, rot_z=rng.uniform(-15, 15))
+    busy = [PLACES[k][0] for k in PLACES] + WORLD_ACTS + [(-9.2, -2.2)]
+    # woods, rocks and bushes on the islands; the dark ones are dead woods
+    for k in range(1500):
+        key, kind = None, None
+        while key is None:
+            x, y = rng.uniform(-17, 17), rng.uniform(-9.5, 10.5)
+            key, kind = _island_of(x, y)
+        z = _wheight(x, y, noise)
+        if z < 0.15 or any((x - px) ** 2 + (y - py) ** 2 < 2.4 for px, py in busy):
             continue
-        north = y > 3.5
         r = rng.random()
-        if r < 0.55:
-            kind = "DeadTree" if north and rng.random() < 0.7 else ("Pine" if z > 1.2 else "CommonTree")
-            q.put("%s_%d" % (kind, rng.randint(1, 5)), (x, y, z - 0.05), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.15, 0.2))
+        if r < 0.6:
+            name = ("DeadTree" if rng.random() < 0.6 else "Pine") if kind == "dark" else ("Pine" if z > 1.0 else "CommonTree")
+            q.put("%s_%d" % (name, rng.randint(1, 5)), (x, y, z - 0.05), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.13, 0.18), share=True)
         elif r < 0.7:
-            q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, y, z - 0.1), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.15, 0.25))
-        elif r < 0.8 and not north:
-            q.put(rng.choice(["Bush_Common", "Bush_Common_Flowers"]), (x, y, z), rot_z=rng.uniform(0, 360), scale=0.2)
-    # the Fog over the north: dark clouds
-    fogm = t.mat((0.3, 0.26, 0.36), 1.0)
-    for _ in range(12):
-        cx, cy = rng.uniform(-10, 10), rng.uniform(9.0, 11.5)
-        if abs(cx - 1.0) < 2.5:
-            continue
+            q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, y, z - 0.1), rot_z=rng.uniform(0, 360), scale=rng.uniform(0.12, 0.2), share=True)
+        elif kind != "dark":
+            q.put(rng.choice(["Bush_Common", "Bush_Common_Flowers", "Grass_Common_Tall"]), (x, y, z), rot_z=rng.uniform(0, 360), scale=0.2, share=True)
+    # the Fog over the northern islands, and clouds at the edges of the map
+    fogm = t.mat((0.36, 0.32, 0.44), 1.0)
+    for _ in range(22):
+        cx, cy = rng.uniform(-18, 18), rng.uniform(10.5, 13.0)
         for _ in range(3):
-            t.ball(rng.uniform(0.6, 1.1), (cx + rng.uniform(-1.0, 1.0), cy + rng.uniform(-0.5, 0.5), 2.0 + rng.uniform(0, 0.5)), fogm,
-                   scale=(1.3, 1, 0.6))
-    t.light("SUN", (0, 0, 20), 3.4, color=(1.0, 0.93, 0.82), rot=(math.radians(40), 0, math.radians(-35)))
-    t.light("SUN", (0, 0, 20), 0.8, color=(0.6, 0.7, 1.0), rot=(math.radians(-30), 0, math.radians(150)))
+            t.ball(rng.uniform(0.5, 1.0), (cx + rng.uniform(-1, 1), cy + rng.uniform(-0.4, 0.4), 1.8 + rng.uniform(0, 0.5)), fogm,
+                   scale=(1.3, 1, 0.5))
+    white = t.mat((1.0, 1.0, 1.0), 0.9)
+    for cx, cy in ((-17, 9), (17.5, -8.5), (-17.5, -9.5), (18, 6)):
+        for _ in range(6):
+            t.ball(rng.uniform(0.9, 1.6), (cx + rng.uniform(-1.5, 1.5), cy + rng.uniform(-1, 1), 3.0 + rng.uniform(0, 0.6)), white,
+                   scale=(1.4, 1, 0.6))
+    t.light("SUN", (0, 0, 20), 4.0, color=(1.0, 0.95, 0.86), rot=(math.radians(42), 0, math.radians(-35)))
+    t.light("SUN", (0, 0, 20), 1.0, color=(0.6, 0.7, 1.0), rot=(math.radians(-30), 0, math.radians(150)))
     sc = bpy.context.scene
     sc.render.resolution_x, sc.render.resolution_y = res
     cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
     sc.collection.objects.link(cam)
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = 27.0
-    tilt = math.radians(48)
-    cam.location = (0, -30 * math.cos(tilt) - 1.0, 30 * math.sin(tilt))
+    cam.data.ortho_scale = 34.0
+    tilt = math.radians(52)
+    cam.location = (0.3, -30 * math.cos(tilt) + 1.4, 30 * math.sin(tilt))
     cam.rotation_euler = (math.radians(90) - tilt, 0, 0)
     sc.camera = cam
     bpy.context.view_layer.update()
-    places = []
-    for (x, y), build, name in ACTS:
-        p = world_to_camera_view(sc, cam, Vector((x, y, _height(x, y, noise) + 0.6)))
-        places.append({"name": name, "x": round(p.x, 4), "y": round(1 - p.y, 4)})
+
+    def at(x, y, lift=0.8):
+        p = world_to_camera_view(sc, cam, Vector((x, y, max(0.0, _wheight(x, y, noise)) + lift)))
+        return {"x": round(p.x, 4), "y": round(1 - p.y, 4)}
+    places = {key: at(*PLACES[key][0], lift=1.6) for key in PLACES}
+    acts = [dict(at(x, y), name=a[2]) for (x, y), a in zip(WORLD_ACTS, ACTS)]
     t.render(out)
-    return {"acts": places}
+    return {"acts": acts, "places": places}

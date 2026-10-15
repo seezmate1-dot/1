@@ -175,6 +175,8 @@ namespace LastHearth.Game
                 return ref fightScroll;
             if (window != Win.None)
                 return ref windowScroll;
+            if (onMap)
+                return ref mapScroll;
             return ref scroll;
         }
 
@@ -235,6 +237,11 @@ namespace LastHearth.Game
             if (window != Win.None)
             {
                 CloseWindow();
+                return;
+            }
+            if (onMap)
+            {
+                onMap = false;
                 return;
             }
             Save();
@@ -312,7 +319,10 @@ namespace LastHearth.Game
                 return;
             }
             long now = Now();
-            DrawMainScreen(area, now);
+            if (onMap)
+                DrawWorldMap(area, now);
+            else
+                DrawMainScreen(area, now);
             if (window != Win.None)
                 DrawWindow(area, now);
         }

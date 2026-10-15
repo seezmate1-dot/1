@@ -33,6 +33,8 @@ namespace LastHearth.Game
         public sealed class MapInfo
         {
             public List<Place> Acts = new List<Place>();
+            /// <summary>Where the fortress, the arena, the hunt, the raids, the routes and the events stand (0..1 of the map).</summary>
+            public Dictionary<string, Place> Places = new Dictionary<string, Place>();
         }
 
         public sealed class DecorInfo

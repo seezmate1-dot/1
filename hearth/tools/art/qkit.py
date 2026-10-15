@@ -40,14 +40,40 @@ def path(name):
     return _index[name]
 
 
-def put(name, loc, rot_z=0.0, scale=1.0, tint=None, mul=None):
+_shared = {}
+
+
+def _copy(o, parent):
+    c = o.copy()  # the mesh and its materials stay shared
+    bpy.context.scene.collection.objects.link(c)
+    c.parent = parent
+    for child in o.children:
+        _copy(child, c)
+    return c
+
+
+def put(name, loc, rot_z=0.0, scale=1.0, tint=None, mul=None, share=False):
     """Places a model by name at loc, turned rot_z degrees; tint = (hue, saturation, value) shift,
-    mul = a colour its colours are multiplied by."""
-    new, roots = t._import(path(name))
+    mul = a colour its colours are multiplied by. share: copy an already placed one (same tint) instead
+    of loading it again: hundreds of trees and rocks load in seconds (static models only)."""
     pivot = bpy.data.objects.new("q_" + name, None)
     bpy.context.scene.collection.objects.link(pivot)
-    for r in roots:
-        r.parent = pivot
+    key = (name, tint, mul)
+    first = _shared.get(key)
+    if share and first is not None:
+        try:
+            for r in first.children:
+                _copy(r, pivot)
+        except ReferenceError:  # the scene was reset since
+            first = None
+    if not share or first is None:
+        new, roots = t._import(path(name))
+        for r in roots:
+            r.parent = pivot
+        if share:
+            _shared[key] = pivot
+    else:
+        new = []
     pivot.location = loc
     pivot.rotation_euler = (0, 0, math.radians(rot_z))
     s = scale if isinstance(scale, tuple) else (scale, scale, scale)

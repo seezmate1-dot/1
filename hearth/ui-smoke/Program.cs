@@ -87,7 +87,8 @@ public static class UiSmoke
         for (int frame = 0; frame < frames; frame++)
         {
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % 13);
+            SetEnum(runner, "window", (frame / 150) % 16);
+            Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
             Time.unscaledDeltaTime = 1.0f;
@@ -124,7 +125,9 @@ public static class UiSmoke
         Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         Call(runner, "StartSession", session);
         GUILayout.Click = _ => false;
-        SetEnum(runner, "window", window);
+        // window -1: the map of the islands
+        Set(runner, "onMap", window < 0);
+        SetEnum(runner, "window", Math.Max(0, window));
         if (window == 2)
             Set(runner, "selectedRoom", session.State.Rooms[0].Id);
         Time.unscaledDeltaTime = 0.5f;

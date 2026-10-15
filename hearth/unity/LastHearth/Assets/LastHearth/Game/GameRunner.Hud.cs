@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Fights, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings }
 
         Win window;
         Vector2 windowScroll;
@@ -23,7 +23,8 @@ namespace LastHearth.Game
 
         static readonly (Win win, string title)[] Titles =
         {
-            (Win.Hearth, "Очаг Стражей"), (Win.Room, ""), (Win.Build, "Стройка"), (Win.Fights, "Бои"), (Win.Surge, "Наплыв"),
+            (Win.Hearth, "Очаг Стражей"), (Win.Room, ""), (Win.Build, "Стройка"), (Win.Campaign, "Поход"), (Win.Hunt, "Охота"), (Win.Arena, "Арена"),
+            (Win.Raids, "Набеги"), (Win.Surge, "Наплыв"),
             (Win.Dwellers, "Жители"), (Win.Growth, "Развитие"), (Win.Routes, "Вылазки"), (Win.Quests, "Задания"),
             (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"),
         };
@@ -188,12 +189,11 @@ namespace LastHearth.Game
             // the buttons stand on their own wooden panel along the bottom, not on the rooms
             ArtLibrary.Draw(new Rect(bar.x - 8, bar.y + 22, Screen.width / uiScale + 16, bar.height), "UI/Bar");
             var st = session.State;
-            var b = session.Balance;
             float size = Mathf.Min(64, bar.height - 22);
             var buttons = new (string icon, string label, Win win, bool dot)[]
             {
-                ("Buttons/Fights", "Бои", Win.Fights, session.Squad().Count > 0 && st.PendingMission < 0 &&
-                    session.MissionsCleared < b.Campaign.Missions.Count && session.Mission(session.MissionsCleared).Rank <= st.HearthLevel),
+                // the map and the fortress take turns on the first button (Win.None: go there)
+                onMap ? ("Buttons/Fortress", "Крепость", Win.None, false) : ("Buttons/Map", "Карта", Win.None, MissionWaits()),
                 ("Portraits/CreatureFiend", "Наплыв", Win.Surge, session.SurgeOpen(now)),
                 ("Portraits/" + ArtLibrary.DwellerSheet(0), "Жители", Win.Dwellers,
                     st.Dwellers.Any(d => d.RoomId < 0 && d.RouteId == 0 && !d.IsHero)),
@@ -211,7 +211,12 @@ namespace LastHearth.Game
             foreach (var (icon, label, win, dot) in buttons)
             {
                 if (RoundButton(new Rect(x, bar.y + 4, size, size), icon, label, dot))
-                    Open(win);
+                {
+                    if (win == Win.None)
+                        OpenMap(!onMap);
+                    else
+                        Open(win);
+                }
                 x += size + 22;
             }
         }
@@ -329,10 +334,16 @@ namespace LastHearth.Game
                     else
                         CloseWindow();
                     break;
-                case Win.Fights:
+                case Win.Campaign:
                     DrawCampaign(now);
+                    break;
+                case Win.Hunt:
                     DrawHunt(now);
+                    break;
+                case Win.Arena:
                     DrawArena(now);
+                    break;
+                case Win.Raids:
                     DrawRaids(now);
                     break;
                 case Win.Surge:

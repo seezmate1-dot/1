@@ -75,7 +75,7 @@ def world(m):
     w.render_battlefield(os.path.join(OUT, "Battlefield.png"))
     w.render_rock(os.path.join(OUT, "Rooms", "Rock.png"))
     w.render_frost(os.path.join(OUT, "Rooms", "Frost.png"))
-    m["map"] = w.render_map(os.path.join(OUT, "Map.png"))
+    m["map"] = w.render_worldmap(os.path.join(OUT, "Map.png"))
     save_manifest(m)
 
 

@@ -273,6 +273,69 @@ def gear(size=128):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def map_icon(size=192):
+    """The "Карта" button: a folded parchment map, blue sea with green islands, a dotted red route
+    to a cross."""
+    import math
+    w, h = int(size * 0.86), int(size * 0.66)
+    paper = _tex(VILLAGE, "T_Plaster_BaseColor.png").crop((300, 300, 300 + w * 2, 300 + h * 2)).resize((w, h), Image.LANCZOS)
+    paper = ImageEnhance.Color(paper).enhance(1.3)
+    sea = Image.new("RGB", (w, h), (58, 128, 176))
+    land = Image.new("L", (w, h), 0)
+    d = ImageDraw.Draw(land)
+    for cx, cy, rx, ry in ((0.2, 0.64, 0.15, 0.24), (0.52, 0.26, 0.14, 0.16), (0.8, 0.7, 0.12, 0.18)):
+        d.polygon([((cx + rx * (1 + 0.22 * math.sin(3 * a + cx * 9) + 0.12 * math.sin(7 * a)) * math.cos(a)) * w,
+                    (cy + ry * (1 + 0.22 * math.sin(3 * a + cx * 9) + 0.12 * math.sin(7 * a)) * math.sin(a)) * h)
+                   for a in [i * math.pi / 24 for i in range(48)]], fill=255)
+    land = land.filter(ImageFilter.GaussianBlur(2)).point(lambda v: 255 if v > 128 else 0)
+    shore = land.filter(ImageFilter.MaxFilter(7))
+    m = Image.composite(paper, sea, shore)
+    m = Image.composite(Image.new("RGB", (w, h), (112, 168, 72)), m, land)
+    m = Image.blend(m, paper, 0.18)
+    d = ImageDraw.Draw(m)
+    pts = [(0.2 + 0.6 * k, 0.64 - 0.5 * math.sin(math.pi * k) + 0.06 * k) for k in [i / 13 for i in range(14)]]
+    for i, (x, y) in enumerate(pts[:-1]):
+        if i % 2 == 0:
+            d.ellipse((x * w - 3, y * h - 3, x * w + 3, y * h + 3), fill=(196, 40, 30))
+    x, y = pts[-1][0] * w, pts[-1][1] * h
+    for dx in (-1, 1):
+        d.line((x - 9, y - 9 * dx, x + 9, y + 9 * dx), fill=(196, 40, 30), width=5)
+    # three folds: the middle panel lighter, the sides darker
+    for i, k in enumerate((0.95, 1.08, 0.88)):
+        box = (i * w // 3, 0, (i + 1) * w // 3, h)
+        m.paste(ImageEnhance.Brightness(m.crop(box)).enhance(k), box[:2])
+    d = ImageDraw.Draw(m)
+    d.rectangle((0, 0, w - 1, h - 1), outline=DARK, width=3)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", (w, h), (0, 0, 0, 120))
+    out.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(3)), ((size - w) // 2 + 4, (size - h) // 2 + 6))
+    out.paste(m.rotate(8, expand=False, resample=Image.BICUBIC), ((size - w) // 2, (size - h) // 2))
+    return out
+
+
+def fortress_icon(map_png, at, size=192):
+    """The "Крепость" button: the fortress cut out of the rendered map, in a soft round frame."""
+    src = Image.open(map_png).convert("RGBA")
+    r = int(src.width * 0.1)
+    x, y = int((at[0] + 0.02) * src.width), int(at[1] * src.height - r * 0.2)
+    img = src.crop((x - r, y - r, x + r, y + r)).resize((size, size), Image.LANCZOS)
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).ellipse((8, 8, size - 8, size - 8), fill=255)
+    img.putalpha(mask.filter(ImageFilter.GaussianBlur(4)))
+    return img
+
+
+def map_buttons(out_dir):
+    """The map's two buttons, next to the rendered ones (icons.py): the map, and the way home."""
+    import json
+    art = os.path.dirname(out_dir)
+    map_icon().save(os.path.join(out_dir, "Map.png"))
+    places = json.load(open(os.path.join(art, "Art.json"), encoding="utf-8")).get("map", {}).get("places", {})
+    home = places.get("Fortress")
+    if home:
+        fortress_icon(os.path.join(art, "Map.png"), (home["x"], home["y"])).save(os.path.join(out_dir, "Fortress.png"))
+
+
 def render_all(out_dir=OUT):
     os.makedirs(out_dir, exist_ok=True)
     plank(brightness=1.0).save(os.path.join(out_dir, "Button.png"))
@@ -294,6 +357,7 @@ def render_all(out_dir=OUT):
     close_button().save(os.path.join(out_dir, "Close.png"))
     dot().save(os.path.join(out_dir, "Dot.png"))
     gear().save(os.path.join(out_dir, "Gear.png"))
+    map_buttons(os.path.join(os.path.dirname(out_dir), "Buttons"))
     print("ui written to", out_dir)
 
 
