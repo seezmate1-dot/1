@@ -79,14 +79,15 @@ def pine(x, y, z, scale, rng, kind="Pine"):
 
 # ------------------------------------------------------------------ the mountain above the fortress
 
-def sky(width, height, centre_y, rng, stars=60):
-    """Twilight sky behind everything: a gradient plane, the moon, a few stars."""
-    top = t.mat((0.06, 0.08, 0.2), 1.0, emit=(0.08, 0.1, 0.28), strength=1.0)
-    t.rbox((width * 3, 0.5, height * 3), (0, 30, centre_y), top, bevel=0)
-    t.ball(1.6, (width * 0.3, 25, centre_y + height * 0.32), t.mat((1, 0.97, 0.85), 0.5, emit=(1, 0.95, 0.8), strength=6))
-    for _ in range(stars):
-        t.ball(rng.uniform(0.05, 0.12), (rng.uniform(-width, width) * 0.6, 25, centre_y + rng.uniform(-0.1, 0.5) * height),
-               t.mat((1, 1, 1), 0.5, emit=(1, 0.95, 0.85), strength=rng.uniform(3, 8)))
+def sky(width, height, centre_y, rng, clouds=10):
+    """A bright day sky behind everything, like Hustle Castle's: soft blue and fluffy white clouds."""
+    blue = t.mat((0.42, 0.68, 1.0), 1.0, emit=(0.45, 0.72, 1.0), strength=1.2)
+    t.rbox((width * 3, 0.5, height * 3), (0, 30, centre_y), blue, bevel=0)
+    white = t.mat((1.0, 1.0, 1.0), 0.9, emit=(0.95, 0.97, 1.0), strength=0.9)
+    for _ in range(clouds):
+        cx, cz = rng.uniform(-width * 0.6, width * 0.6), centre_y + rng.uniform(0.05, 0.45) * height
+        for _ in range(5):
+            t.ball(rng.uniform(0.8, 1.6), (cx + rng.uniform(-2, 2), 26, cz + rng.uniform(-0.4, 0.5)), white, scale=(1.3, 0.6, 0.8))
 
 
 def peak(x, y, base, height, seed, snow_from=0.55):
@@ -140,7 +141,7 @@ def peak(x, y, base, height, seed, snow_from=0.55):
 
 def render_mountain(out, res=(1536, 768)):
     """The peak above the cutaway: snowy mountains, pines and the Guardians' gatehouse."""
-    t.reset(world=(0.04, 0.05, 0.1))
+    t.reset(world=(0.35, 0.45, 0.6))
     bpy.context.scene.cycles.samples = 96
     rng = random.Random("mountain")
     # the game hides the lowest fifth of the picture under the first floor of the cutaway: lift the gatehouse above it
@@ -157,7 +158,7 @@ def render_mountain(out, res=(1536, 768)):
     while x < width / 2 + 1.5:
         for z in (0.0, 1.2):
             q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, -7.0 + rng.uniform(-0.3, 0.3), z + LIFT - 0.4), rot_z=rng.uniform(0, 360),
-                  scale=(0.75 * rng.uniform(0.9, 1.1), 0.75, 0.75), tint=rooms.ROCK_TINT)
+                  scale=(0.75 * rng.uniform(0.9, 1.1), 0.75, 0.75), tint=rooms.ROCK_TINT, mul=rooms.ROCK_MUL)
         x += rng.uniform(1.6, 2.2)
     for _ in range(26):
         px = rng.uniform(-17, 17)
@@ -175,22 +176,22 @@ def render_mountain(out, res=(1536, 768)):
         t.rbox((0.7, 0.03, 0.45), (x + 0.36, -6.3, LIFT + 6.65), t.mat((0.7, 0.1, 0.08), 0.8), bevel=0.02)
     for x in (-1.0, 1.0):
         t.light("POINT", (x, -7.5, LIFT + 3.0), 120, color=(1.0, 0.6, 0.3), size=0.3)
-    t.light("SUN", (0, -10, 20), 2.5, color=(0.75, 0.82, 1.0), rot=(math.radians(45), 0, math.radians(-30)))
+    t.light("SUN", (0, -10, 20), 4.5, color=(1.0, 0.96, 0.88), rot=(math.radians(45), 0, math.radians(-30)))
     t.light("POINT", (0, -11, LIFT + 6), 900, color=(1.0, 0.6, 0.3), size=1.0)
     _ortho_camera(width, height, (0, height / 2 + 0.6), res)
     t.render(out)
 
 
 def render_battlefield(out, res=(1536, 768)):
-    """Where the fights happen: a clearing at the edge of the forest at dusk, rocks and dead trees,
+    """Where the fights happen: a sunny clearing at the edge of the forest, rocks and dead trees,
     the Fog creeping in from the right. The heroes stand on the left, the creatures come from the right."""
-    t.reset(world=(0.05, 0.06, 0.12))
+    t.reset(world=(0.35, 0.45, 0.6))
     bpy.context.scene.cycles.samples = 96
     rng = random.Random("battlefield")
-    sky(60, 20, 16, rng, stars=40)
+    sky(60, 20, 16, rng, clouds=14)
     peak(-10, 40, 12, 14, 7)
     peak(8, 44, 13, 17, 8)
-    grass = t.mat((0.22, 0.38, 0.16), 0.9)
+    grass = t.mat((0.3, 0.55, 0.18), 0.9)
     t.rbox((120, 90, 1.0), (0, 15, -0.5), grass, bevel=0)
     path = t.mat((0.42, 0.33, 0.22), 0.95)
     # the heroes and creatures stand on the path: 0.88 of the picture high (GameRunner.DrawBattleStage)
@@ -210,8 +211,7 @@ def render_battlefield(out, res=(1536, 768)):
     fog = t.mat((0.2, 0.17, 0.27), 1.0)
     for _ in range(30):
         t.ball(rng.uniform(0.8, 1.6), (rng.uniform(12, 26), rng.uniform(6, 16), rng.uniform(-0.3, 1.2)), fog, scale=(1.8, 1, 0.4))
-    t.light("SUN", (0, 0, 20), 2.6, color=(1.0, 0.75, 0.55), rot=(math.radians(60), 0, math.radians(-50)))
-    t.light("SUN", (0, 0, 20), 0.9, color=(0.55, 0.65, 1.0), rot=(math.radians(-40), 0, math.radians(160)))
+    t.light("SUN", (0, 0, 20), 4.2, color=(1.0, 0.95, 0.85), rot=(math.radians(55), 0, math.radians(-40)))
     sc = bpy.context.scene
     sc.render.resolution_x, sc.render.resolution_y = res
     data = bpy.data.cameras.new("cam")
@@ -238,7 +238,7 @@ def render_rock(out):
         x = -5.6 + rng.uniform(0, 0.6)
         while x < 5.8:
             q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, -1.4 + rng.uniform(-0.4, 0.4), z), rot_z=rng.uniform(0, 360),
-                  scale=(0.55 * rng.uniform(0.9, 1.15), 0.55, 0.55 * rng.uniform(0.85, 1.1)), tint=rooms.ROCK_TINT)
+                  scale=(0.55 * rng.uniform(0.9, 1.15), 0.55, 0.55 * rng.uniform(0.85, 1.1)), tint=rooms.ROCK_TINT, mul=rooms.ROCK_MUL)
             x += rng.uniform(1.0, 1.3)
         z += rng.uniform(0.7, 0.85)
     rooms.camera(rooms.W)
@@ -285,7 +285,7 @@ def _mines(b, rng):
         b.put("Prop_Support", (x, 0, 0), rot_z=90)
     for k in range(5):
         b.put("Rock_Medium_%d" % (k % 3 + 1), (rng.uniform(-3, 3), rng.uniform(0.5, 2.5), 0), rot_z=rng.uniform(0, 360), scale=0.9,
-              tint=rooms.ROCK_TINT)
+              tint=rooms.ROCK_TINT, mul=rooms.ROCK_MUL)
     b.put("Prop_Wagon", (0.5, -2.2, 0), rot_z=90)
 
 

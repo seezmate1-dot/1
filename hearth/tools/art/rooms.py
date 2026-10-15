@@ -18,7 +18,32 @@ import toy as t
 W, D, H = 8.0, 4.4, 3.12
 RES = (768, 384)
 FIRE = {"on": True, "seed": 0}   # the hearth's fire is animated in the game: rendered apart
-ROCK_TINT = (0.5, 0.55, 0.42)   # the mountain: the nature kit's rocks, darker and colder
+ROCK_TINT = (0.5, 0.15, 1.0)    # the mountain: the nature kit's rocks...
+ROCK_MUL = (0.8, 0.52, 0.32)   # ...warm brown earth, like Hustle Castle's mountain
+
+# Every room has its own look, so one tells them apart at a glance: the colour of its walls
+# (multiplied into the kit's plaster and stone) and of its lamps.
+STYLE = {
+    "Bedrooms": dict(wall=(0.4, 0.58, 1.0), light=(1.0, 0.9, 0.75)),
+    "Kitchen": dict(wall=(1.0, 0.6, 0.42), light=(1.0, 0.8, 0.55)),
+    "CoalMine": dict(wall=(0.55, 0.55, 0.62), light=(1.0, 0.75, 0.5)),
+    "Barracks": dict(wall=(0.75, 0.78, 0.92), light=(1.0, 0.92, 0.8)),
+    "Warehouse": dict(wall=(1.0, 0.82, 0.55), light=(1.0, 0.9, 0.7)),
+    "Mine": dict(wall=(0.95, 0.72, 0.45), light=(1.0, 0.85, 0.65)),
+    "Tavern": dict(wall=(1.0, 0.75, 0.3), light=(1.0, 0.8, 0.5)),
+    "TradingPost": dict(wall=(1.0, 0.5, 0.38), light=(1.0, 0.88, 0.7)),
+    "Forge": dict(wall=(0.7, 0.62, 0.6), light=(1.0, 0.7, 0.45)),
+    "Infirmary": dict(wall=(0.6, 1.0, 0.75), light=(0.95, 1.0, 0.95)),
+    "Library": dict(wall=(0.45, 0.78, 0.45), light=(1.0, 0.9, 0.7)),
+    "TrainingHall": dict(wall=(1.0, 0.88, 0.62), light=(1.0, 0.95, 0.85)),
+    "Greenhouse": dict(wall=(0.75, 1.0, 0.45), light=(1.0, 1.0, 0.85)),
+    "Watchtower": dict(wall=(0.55, 0.68, 1.0), light=(0.9, 0.93, 1.0)),
+    "Chapel": dict(wall=(0.7, 0.55, 1.0), light=(1.0, 0.85, 0.75)),
+    "Archive": dict(wall=(0.8, 0.38, 0.35), light=(1.0, 0.88, 0.7)),
+    "Empty": dict(wall=(0.85, 0.8, 0.75), light=(1.0, 0.92, 0.8)),
+    "Hearth": dict(wall=(1.0, 0.85, 0.7), light=(1.0, 0.85, 0.65)),
+}
+CURRENT = {"wall": None, "light": (1.0, 0.93, 0.82)}
 
 
 # ------------------------------------------------------------------ the shell
@@ -27,9 +52,10 @@ def walls(back="Wall_UnevenBrick_Straight", width=W, extra=None, side="Wall_Unev
           floor="Floor_WoodDark", sky=False):
     """Back wall of modules (extra: {index: other module}), side walls, floor, posts, beams, ceiling."""
     n = int(round(width / 2))
+    pieces = []
     for i in range(n):
         name = extra.get(i, back) if extra else back
-        q.put(name, (-width / 2 + 1 + 2 * i, D, 0))
+        pieces.append(q.put(name, (-width / 2 + 1 + 2 * i, D, 0)))
         if name == "Wall_Arch":
             t.rbox((1.9, 1.6, H), (-width / 2 + 1 + 2 * i, D + 0.85, H / 2), t.mat((0.03, 0.025, 0.02), 1.0), bevel=0)
         if "_Window_" in name:
@@ -40,7 +66,9 @@ def walls(back="Wall_UnevenBrick_Straight", width=W, extra=None, side="Wall_Unev
                 pass
     for s in (-1, 1):
         for j in range(3):
-            q.put(side, (s * width / 2, D - 1 - 2 * j, 0), rot_z=-90 * s)
+            pieces.append(q.put(side, (s * width / 2, D - 1 - 2 * j, 0), rot_z=-90 * s))
+    if CURRENT["wall"]:
+        q.multiply([o for p in pieces for o in p.children_recursive], CURRENT["wall"], only=("Plaster", "UnevenBrick"))
     for i in range(n):
         for j in range(3):
             q.put(floor, (-width / 2 + 1 + 2 * i, D - 1 - 2 * j, 0))
@@ -61,12 +89,14 @@ def _wood():
 
 
 def night_sky(width):
-    """The night behind the windows of the back wall: deep blue with a moon."""
-    t.rbox((width, 0.1, H + 1), (0, D + 1.2, H / 2), t.mat((0.04, 0.07, 0.18), 0.9, emit=(0.06, 0.1, 0.26), strength=0.8), bevel=0)
+    """The sky behind the windows of the back wall: bright day blue with a few clouds."""
+    t.rbox((width, 0.1, H + 1), (0, D + 1.2, H / 2), t.mat((0.42, 0.68, 1.0), 0.9, emit=(0.45, 0.72, 1.0), strength=1.3), bevel=0)
     rng = random.Random(7)
-    star = t.mat((1, 1, 0.9), 0.5, emit=(1, 0.95, 0.8), strength=6)
-    for _ in range(int(width * 6)):
-        t.ball(rng.uniform(0.015, 0.035), (rng.uniform(-width / 2, width / 2), D + 1.1, rng.uniform(0.8, H + 0.4)), star)
+    white = t.mat((1, 1, 1), 0.9, emit=(1, 1, 1), strength=1.0)
+    for _ in range(int(width / 2)):
+        cx, cz = rng.uniform(-width / 2, width / 2), rng.uniform(1.6, H)
+        for _ in range(3):
+            t.ball(rng.uniform(0.12, 0.22), (cx + rng.uniform(-0.25, 0.25), D + 1.1, cz + rng.uniform(-0.06, 0.06)), white, scale=(1.4, 0.5, 0.8))
 
 
 def rock_frame(width, rng):
@@ -74,7 +104,7 @@ def rock_frame(width, rng):
     hw = width / 2
     def rock(x, z, s):
         q.put("Rock_Medium_%d" % rng.randint(1, 3), (x, -2.2 + rng.uniform(-0.2, 0.2), z), rot_z=rng.uniform(0, 360),
-              scale=(s * rng.uniform(0.9, 1.1), s, s * rng.uniform(0.85, 1.05)), tint=ROCK_TINT)
+              scale=(s * rng.uniform(0.9, 1.1), s, s * rng.uniform(0.85, 1.05)), tint=ROCK_TINT, mul=ROCK_MUL)
     x = -hw - 1.2
     while x < hw + 1.2:
         rock(x, H + 0.2, 0.5)
@@ -104,11 +134,14 @@ def camera(width=W):
 
 
 def light_room(key=1.0, warm=1.0, width=W, cold=False):
+    """Bright and cheerful, like Hustle Castle: a big key light inside the room, a soft front fill that
+    also lights the rock around it, and the room's own lamp colour."""
     s = width / W
-    t.light("AREA", (0, 0.2, H - 0.25), 420 * key * s, color=(0.68, 0.78, 1.0) if cold else (1.0, 0.93, 0.82), size=7 * s,
+    lamp = CURRENT["light"]
+    t.light("AREA", (0, 0.2, H - 0.25), 950 * key * s, color=(0.68, 0.78, 1.0) if cold else lamp, size=7 * s,
             rot=(math.radians(-15), 0, 0))
-    t.light("AREA", (0, -11, H + 4), 110 * s, color=(0.58, 0.66, 0.9), size=14 * s, rot=(math.radians(62), 0, 0))
-    t.light("AREA", (0, D * 0.55, H - 0.5), 260 * warm * s, color=(1.0, 0.66, 0.36), size=4 * s)
+    t.light("AREA", (0, -11, H + 4), 420 * s, color=(1.0, 0.95, 0.9), size=14 * s, rot=(math.radians(62), 0, 0))
+    t.light("AREA", (0, D * 0.55, H - 0.5), 380 * warm * s, color=lamp, size=4 * s)
 
 
 # ------------------------------------------------------------------ pieces
@@ -225,7 +258,7 @@ def banner(x, cloth=1, z=0.9, tint=None):
 # ------------------------------------------------------------------ the rooms
 
 def r_bedrooms(rng):
-    walls(extra={1: "Wall_UnevenBrick_Window_Wide_Round"}, sky=True)
+    walls(back="Wall_Plaster_Straight", side="Wall_Plaster_Straight", extra={1: "Wall_Plaster_Window_Wide_Round"}, sky=True)
     for x in (-2.7, 0.0, 2.7):
         q.put("Bed_Twin%d" % (1 + int(x > 0)), (x, D - 1.3, 0))
     for x in (-3.5, 3.5):
@@ -287,7 +320,7 @@ def r_barracks(rng):
 
 
 def r_warehouse(rng):
-    walls(floor="Floor_WoodLight")
+    walls(back="Wall_Plaster_WoodGrid", side="Wall_Plaster_Straight", floor="Floor_WoodLight")
     for x, y, n in ((-3.0, D - 0.8, "Crate_Wooden"), (-2.0, D - 0.8, "Crate_Metal"), (-2.5, D - 0.8, None)):
         if n:
             q.put(n, (x, y, 0), rot_z=rng.uniform(-8, 8))
@@ -320,7 +353,7 @@ def r_mine(rng):
 
 
 def r_tavern(rng):
-    walls(extra={3: "Wall_UnevenBrick_Window_Wide_Round"}, sky=True)
+    walls(back="Wall_Plaster_WoodGrid", side="Wall_Plaster_Straight", extra={3: "Wall_Plaster_Window_Wide_Round"}, sky=True)
     q.put("Table_Large", (-1.8, 1.4, 0))
     q.put("Bench", (-1.8, 0.6, 0))
     q.put("Table_Large", (2.0, 1.8, 0), rot_z=8)
@@ -336,7 +369,7 @@ def r_tavern(rng):
 
 
 def r_trading_post(rng):
-    walls(floor="Floor_RedBrick")
+    walls(back="Wall_Plaster_Straight", side="Wall_Plaster_Straight", floor="Floor_RedBrick")
     q.put("Stall_Empty", (-1.2, 2.2, 0), scale=0.85)
     for x, n in ((-2.0, "Coin_Pile_2"), (-1.2, "Pouch_Large"), (-0.4, "Coin_Pile")):
         q.put(n, (x, 2.0, 0.95), scale=1.0)
@@ -382,7 +415,7 @@ def r_infirmary(rng):
 
 
 def r_library(rng):
-    walls()
+    walls(back="Wall_Plaster_Straight", side="Wall_Plaster_Straight")
     for x in (-2.9, -1.4, 1.4, 2.9):
         q.put("Bookcase_2", (x, D - 0.3, 0))
     q.put("Table_Large", (0, 1.4, 0), scale=(0.8, 1, 1))
@@ -463,7 +496,7 @@ def r_chapel(rng):
 
 
 def r_archive(rng):
-    walls()
+    walls(back="Wall_Plaster_Straight", side="Wall_Plaster_Straight")
     q.put("Bookcase_2", (-2.9, D - 0.3, 0))
     q.put("Cabinet", (-1.4, D - 0.35, 0))
     for x in (0.6, 1.8, 3.0):
@@ -526,7 +559,8 @@ RECIPES = {
 
 def render_room(name, out, samples=64):
     FIRE["on"] = name != "Hearth"
-    t.reset(world=(0.03, 0.03, 0.04))
+    CURRENT.update(STYLE.get(name, {"wall": None, "light": (1.0, 0.93, 0.82)}))
+    t.reset(world=(0.16, 0.12, 0.1))
     bpy.context.scene.cycles.samples = samples
     rng = random.Random(name)
     width = 2 * W if name == "Hearth" else W
@@ -543,9 +577,10 @@ def render_fire(out_dir, frames=8, samples=48):
     import os
     from PIL import Image
     paths = []
+    CURRENT.update(STYLE["Hearth"])
     for i in range(frames):
         FIRE["on"], FIRE["seed"] = True, 1000 + i
-        t.reset(world=(0.05, 0.055, 0.08))
+        t.reset(world=(0.16, 0.12, 0.1))
         bpy.context.scene.cycles.samples = samples
         rng = random.Random("Hearth")
         r_hearth(rng)

@@ -95,6 +95,8 @@ namespace UnityEngine
 
     public enum FontStyle { Normal, Bold }
 
+    public enum TextAnchor { UpperLeft, MiddleCenter }
+
     public class Texture2D : Texture
     {
         public string Name = "";
@@ -169,6 +171,7 @@ namespace UnityEngine
         public Rect(float x, float y, float w, float h) { this.x = x; this.y = y; width = w; height = h; }
         public float yMax => y + height;
         public float xMax => x + width;
+        public Vector2 center => new Vector2(x + width / 2, y + height / 2);
     }
 
     public class RectOffset { public RectOffset(int l, int r, int t, int b) { } }
@@ -209,6 +212,7 @@ namespace UnityEngine
             onActive = new GUIStyleState(), onFocused = new GUIStyleState();
         public RectOffset border;
         public FontStyle fontStyle;
+        public TextAnchor alignment;
         public bool richText;
         public bool wordWrap;
         public int fontSize;

@@ -106,11 +106,11 @@ def parchment(size=(256, 256), frame=14):
 
 
 def background(size=512):
-    """Dark stone wall behind the whole interface (tiles)."""
+    """Warm stone wall behind the whole interface (tiles)."""
     stone = _tex(VILLAGE, "T_UnevenBrick_BaseColor.png").resize((size, size), Image.LANCZOS)
-    stone = ImageEnhance.Brightness(stone).enhance(0.3)
-    tint = Image.new("RGB", stone.size, (60, 50, 70))
-    return ImageChops.multiply(stone, ImageEnhance.Brightness(tint).enhance(3.2)).convert("RGBA")
+    stone = ImageEnhance.Brightness(stone).enhance(0.62)
+    tint = Image.new("RGB", stone.size, (235, 190, 150))
+    return ImageChops.multiply(stone, tint).convert("RGBA")
 
 
 def scroll_track(size=(18, 96)):
@@ -129,6 +129,56 @@ def field(size=(128, 40)):
     return paper
 
 
+def badge(size=64):
+    """The level of a room: a gold ring around a deep blue disc (the number is drawn by the game)."""
+    img = Image.new("RGBA", (size * 4, size * 4), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    S = size * 4
+    d.ellipse((4, 8, S - 4, S), fill=(0, 0, 0, 110))
+    d.ellipse((0, 0, S - 8, S - 8), fill=(120, 76, 20, 255))
+    d.ellipse((10, 10, S - 18, S - 18), fill=GOLD + (255,))
+    d.ellipse((30, 30, S - 38, S - 38), fill=(36, 58, 120, 255))
+    d.ellipse((44, 38, S - 52, S * 0.5), fill=(70, 100, 170, 255))
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def bubble(size=96):
+    """The cloud over a room with something to collect: white, round, a little tail (the game puts
+    the resource's icon in it)."""
+    S = size * 4
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((14, 18, S - 6, S - 34), fill=(0, 0, 0, 90))
+    d.polygon([(S * 0.42, S * 0.78), (S * 0.58, S * 0.78), (S * 0.5, S * 0.97)], fill=(255, 255, 255, 255))
+    d.ellipse((6, 6, S - 14, S - 46), fill=(255, 255, 255, 255), outline=(90, 70, 50, 255), width=8)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def plus(size=96):
+    """Build here: a round wooden button with a gold rim and a fat green plus."""
+    S = size * 4
+    wood = plank((S, S), brightness=1.15, studs=False).convert("RGBA")
+    mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(mask).ellipse((6, 6, S - 6, S - 6), fill=255)
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    img.paste(wood, (0, 0), mask)
+    d = ImageDraw.Draw(img)
+    d.ellipse((6, 6, S - 6, S - 6), outline=GOLD + (255,), width=18)
+    d.ellipse((2, 2, S - 2, S - 2), outline=DARK + (255,), width=6)
+    w, l = S * 0.13, S * 0.28
+    for box in ((S / 2 - w, S / 2 - l, S / 2 + w, S / 2 + l), (S / 2 - l, S / 2 - w, S / 2 + l, S / 2 + w)):
+        d.rounded_rectangle(box, radius=int(w * 0.6), fill=(110, 200, 70, 255), outline=(30, 70, 20, 255), width=8)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def pill(size=(128, 40)):
+    """A dark rounded plate for a short text over the art (a timer)."""
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle((0, 0, size[0] - 1, size[1] - 1), radius=size[1] // 2, fill=(30, 20, 14, 210),
+                                         outline=GOLD + (255,), width=2)
+    return img
+
+
 def render_all(out_dir=OUT):
     os.makedirs(out_dir, exist_ok=True)
     plank(brightness=1.0).save(os.path.join(out_dir, "Button.png"))
@@ -140,6 +190,10 @@ def render_all(out_dir=OUT):
     scroll_track().save(os.path.join(out_dir, "ScrollTrack.png"))
     scroll_thumb().save(os.path.join(out_dir, "ScrollThumb.png"))
     field().save(os.path.join(out_dir, "Field.png"))
+    badge().save(os.path.join(out_dir, "Badge.png"))
+    bubble().save(os.path.join(out_dir, "Bubble.png"))
+    plus().save(os.path.join(out_dir, "Plus.png"))
+    pill().save(os.path.join(out_dir, "Pill.png"))
     print("ui written to", out_dir)
 
 

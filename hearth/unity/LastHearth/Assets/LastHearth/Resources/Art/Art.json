@@ -396,7 +396,7 @@
   },
   "HeroAshMage": {
    "frames": 8,
-   "height": 2.171,
+   "height": 1.836,
    "rows": [
     "idle",
     "walk",
@@ -409,7 +409,7 @@
   },
   "HeroCleaver": {
    "frames": 8,
-   "height": 1.743,
+   "height": 1.65,
    "rows": [
     "idle",
     "walk",
@@ -422,7 +422,7 @@
   },
   "HeroCoalPriest": {
    "frames": 8,
-   "height": 2.206,
+   "height": 1.922,
    "rows": [
     "idle",
     "walk",

@@ -46,6 +46,39 @@ namespace LastHearth.Game
             GUI.Label(new Rect(r.x + 6, r.y + 5, r.width - 8, r.height), text, cellStyle);
         }
 
+        GUIStyle badgeStyle;
+
+        GUIStyle BadgeStyle() => badgeStyle ?? (badgeStyle = new GUIStyle(GUI.skin.label)
+            { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = false });
+
+        /// <summary>The level of a room on a round gold badge in its top left corner.</summary>
+        void Badge(Rect r, int level)
+        {
+            float s = Mathf.Max(22, r.height * 0.24f);
+            var b = new Rect(r.x + r.width * 0.035f, r.y + r.height * 0.06f, s, s);
+            ArtLibrary.Draw(b, "UI/Badge");
+            GUI.Label(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), level.ToString(), BadgeStyle());
+        }
+
+        /// <summary>A short text (a timer) on a dark plate along the bottom of a cell.</summary>
+        void Pill(Rect r, string text)
+        {
+            var p = new Rect(r.center.x - r.width * 0.2f, r.y + r.height * 0.84f, r.width * 0.4f, Mathf.Max(18, r.height * 0.13f));
+            ArtLibrary.Draw(p, "UI/Pill");
+            GUI.Label(p, text, BadgeStyle());
+        }
+
+        /// <summary>The cloud with the resource's icon floating over a room; true when it was tapped.</summary>
+        bool Bubble(Rect r, ResourceType resource, int seed)
+        {
+            float s = Mathf.Max(28, r.height * 0.34f);
+            float bob = Mathf.Sin(Time.time * 2.5f + seed) * s * 0.06f;
+            var b = new Rect(r.center.x - s / 2, r.y + r.height * 0.1f + bob, s, s);
+            ArtLibrary.Draw(b, "UI/Bubble");
+            ArtLibrary.Draw(new Rect(b.x + s * 0.2f, b.y + s * 0.13f, s * 0.6f, s * 0.6f), "Icons/" + resource);
+            return GUI.Button(new Rect(b.x - s * 0.15f, b.y - s * 0.15f, s * 1.3f, s * 1.3f), "", GUIStyle.none);
+        }
+
         /// <summary>1 234 → 1,2 тыс.: numbers that fit a narrow cell.</summary>
         static string Short(double v)
         {
@@ -238,8 +271,9 @@ namespace LastHearth.Game
             }
             DrawPeople(r, PeopleIn(null, true));
             var job = session.State.Queue.AllJobs().FirstOrDefault(j => j.IsHearth);
-            string build = job == null ? "" : job.IsRunning(now) ? "\nстройка " + Duration(job.Remaining(now)) : "\nждёт строителя";
-            CellText(r, string.Format("<b>Очаг ур. {0}</b> · {1}{2}", session.State.HearthLevel, ModeName(session.State.Mode), build));
+            Badge(r, session.State.HearthLevel);
+            if (job != null)
+                Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "ждёт");
             if (GUI.Button(r, "", GUIStyle.none))
             {
                 selectedRoom = -1;
@@ -265,30 +299,23 @@ namespace LastHearth.Game
             bool warm = session.IsRoomWarm(room);
             if (!warm)
                 ArtLibrary.Draw(r, "Rooms/Frost");
-            // two short lines: a cell on a phone is narrow
-            string status = "";
-            if (data.Produces != null && room.Stock >= 1)
-                status += "<color=#fd5>+" + Short(room.Stock) + "</color> ";
-            if (!warm)
-                status += "<color=#9cf>промёрз</color> ";
+            // no text over the art, like in Hustle Castle: the level on a badge, a cloud with the resource
+            // when there is something to collect, a timer while it is being built
+            Badge(r, room.Level);
             var job = session.State.Queue.AllJobs().FirstOrDefault(j => j.Target == room.Id);
             if (job != null)
-                status += job.IsRunning(now) ? "стройка " + Duration(job.Remaining(now)) : "в очереди";
-            CellText(r, string.Format("<b>{0}</b> {1}\n{2}", data.Name, room.Level, status.Trim()));
+                Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "в очереди");
             if (selectedRoom == room.Id)
                 Outline(r);
+            if (data.Produces != null && room.Stock >= 1 && Bubble(r, data.Produces.Value, room.Id))
+            {
+                message = string.Format("Собрано {0}", session.Collect(room.Id));
+                sounds?.Play("Coins");
+                return;
+            }
             if (GUI.Button(r, "", GUIStyle.none))
             {
-                // a tap on a room with output ready collects it at once, like in the genre
-                if (data.Produces != null && room.Stock >= 1 && selectedRoom == room.Id)
-                {
-                    message = string.Format("Собрано {0}", session.Collect(room.Id));
-                    sounds?.Play("Coins");
-                }
-                else
-                {
-                    sounds?.Play("Click", 0.4f);
-                }
+                sounds?.Play("Click", 0.4f);
                 selectedRoom = room.Id;
                 selectedFloor = -1;
                 decorPicker = false;
@@ -302,7 +329,6 @@ namespace LastHearth.Game
             if (!warm)
             {
                 ArtLibrary.Draw(r, "Rooms/Rock");
-                CellText(r, "<color=#9cf>скала\nздесь холодно</color>");
                 return;
             }
             // only the cells next to built rooms are dug out; further on stands the rock
@@ -311,7 +337,11 @@ namespace LastHearth.Game
             bool near = hearthNear || session.State.Rooms.Any(x => x.Floor == floor && Math.Abs(x.Cell - cell) == 1)
                         || session.State.Rooms.Any(x => x.Cell == cell && Math.Abs(x.Floor - floor) == 1);
             ArtLibrary.Draw(r, near ? "Rooms/Empty" : "Rooms/Rock");
-            CellText(r, near ? "+ построить" : "<color=#aaa>+</color>");
+            if (near)
+            {
+                float s = r.height * 0.36f * (1 + 0.05f * Mathf.Sin(Time.time * 3 + cell));
+                ArtLibrary.Draw(new Rect(r.center.x - s / 2, r.y + r.height * 0.42f - s / 2, s, s), "UI/Plus");
+            }
             if (selectedFloor == floor && selectedCell == cell)
                 Outline(r);
             if (GUI.Button(r, "", GUIStyle.none))

@@ -40,8 +40,9 @@ def path(name):
     return _index[name]
 
 
-def put(name, loc, rot_z=0.0, scale=1.0, tint=None):
-    """Places a model by name at loc, turned rot_z degrees; tint = (hue, saturation, value) shift."""
+def put(name, loc, rot_z=0.0, scale=1.0, tint=None, mul=None):
+    """Places a model by name at loc, turned rot_z degrees; tint = (hue, saturation, value) shift,
+    mul = a colour its colours are multiplied by."""
     new, roots = t._import(path(name))
     pivot = bpy.data.objects.new("q_" + name, None)
     bpy.context.scene.collection.objects.link(pivot)
@@ -53,7 +54,35 @@ def put(name, loc, rot_z=0.0, scale=1.0, tint=None):
     pivot.scale = s
     if tint:
         retint(new, tint)
+    if mul:
+        multiply(new, mul)
     return pivot
+
+
+def multiply(objects, color, only=None):
+    """Multiplies the base colour of the materials (only those whose name has one of `only`)."""
+    for o in objects:
+        if o.type != "MESH":
+            continue
+        for i, m in enumerate(o.data.materials):
+            if m is None or (only and not any(k in m.name for k in only)):
+                continue
+            nm = m.copy()
+            nt = nm.node_tree
+            bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+            mix = nt.nodes.new("ShaderNodeMix")
+            mix.data_type = "RGBA"
+            mix.blend_type = "MULTIPLY"
+            mix.inputs["Factor"].default_value = 1.0
+            if bsdf.inputs["Base Color"].links:
+                nt.links.new(bsdf.inputs["Base Color"].links[0].from_socket, mix.inputs[6])
+            else:
+                mix.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
+            mix.inputs[7].default_value = tuple(color) + (1,)
+            nt.links.new(mix.outputs[2], bsdf.inputs["Base Color"])
+            o.data.materials[i] = nm
 
 
 def retint(objects, tint, only=None):
