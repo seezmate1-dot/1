@@ -6,10 +6,15 @@
   DrawInterior), with a dark inner shadow so the rooms look sunk into the mountain.
 - Map.png, Mountain.png, Battlefield.png: the painted world.
 - Splash.png: the loading screen (1920 x 1080), and "splash" in Art.json.
+- Rooms/<Room>_2, _3: the richer looks by level, toned to the colours of the room's first look, and
+  "roomTiers" in Art.json once every room has both.
+- Rooms/Rubble, Rooms/Scaffold: drawn over a cell (obstacle) and over a room being built; "rubble", "scaffold".
+- Icons/<Name>, Buttons/<Name> (256 x 256), Decor/<name> (320 high, its width in Art.json follows the picture).
 
     python hearth/tools/art/integrate.py [--from DIR]
 """
 import argparse
+import json
 import os
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
@@ -52,42 +57,121 @@ def fit(src, size):
     return img.crop((x, y, x + size[0], y + size[1]))
 
 
+def flag(name):
+    manifest = os.path.join(ART, "Art.json")
+    m = json.load(open(manifest, encoding="utf-8"))
+    m[name] = True
+    json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def tone(img, ref):
+    """The colours of img moved to those of ref (mean and spread of each channel in Lab), half way:
+    the richer looks keep their own light but share the palette of the room's first look."""
+    import numpy as np
+    a = np.asarray(img.convert("LAB"), dtype=np.float32)
+    b = np.asarray(ref.convert("LAB"), dtype=np.float32)
+    out = (a - a.mean((0, 1))) / (a.std((0, 1)) + 1e-3) * b.std((0, 1)) + b.mean((0, 1))
+    out = a + (out - a) * 0.6
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "LAB").convert("RGB")
+
+
+def trim(img, size, bottom=False, margin=6):
+    """A transparent piece cut to what it shows and fitted into size (centred, or standing on the bottom)."""
+    img = img.convert("RGBA")
+    box = img.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+    if box:
+        img = img.crop(box)
+    k = min((size[0] - 2 * margin) / img.width, (size[1] - 2 * margin) / img.height)
+    img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
+    out = Image.new("RGBA", size, (0, 0, 0, 0))
+    y = size[1] - margin - img.height if bottom else (size[1] - img.height) // 2
+    out.alpha_composite(img, ((size[0] - img.width) // 2, y))
+    return out
+
+
+def pieces(stage):
+    """Icons, button pictures and decorations (transparent), and the rubble and scaffolding over the cells."""
+    for group, size in (("Icons", (256, 256)), ("Buttons", (256, 256))):
+        d = os.path.join(stage, group)
+        for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+            if os.path.exists(os.path.join(ART, group, f)):
+                trim(Image.open(os.path.join(d, f)), size).save(os.path.join(ART, group, f))
+                print(group, f[:-4])
+    d = os.path.join(stage, "Decor")
+    manifest = os.path.join(ART, "Art.json")
+    m = json.load(open(manifest, encoding="utf-8"))
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        name = f[:-4]
+        if name not in m.get("decor", {}):
+            continue
+        img = Image.open(os.path.join(d, f)).convert("RGBA")
+        box = img.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+        img = img.crop(box) if box else img
+        k = 320 / max(img.width, img.height)
+        img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
+        img.save(os.path.join(ART, "Decor", f))
+        # the game draws a decoration as tall as it is in metres and as wide as the picture says
+        m["decor"][name]["width"] = round(m["decor"][name]["height"] * img.width / img.height, 3)
+        print("decor", name)
+    json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    for name, bottom in (("Rubble", True), ("Scaffold", False)):
+        p = os.path.join(stage, "Rooms", name + ".png")
+        if os.path.exists(p):
+            img = Image.open(p).convert("RGBA")
+            if bottom:
+                # a heap on the floor of the cell, two thirds of it wide
+                out = Image.new("RGBA", (768, 384), (0, 0, 0, 0))
+                out.alpha_composite(trim(img, (560, 300), bottom=True, margin=0), (104, 384 - 300 - 30))
+            else:
+                # scaffolding over the whole opening
+                box = img.getchannel("A").getbbox()
+                out = (img.crop(box) if box else img).resize((1024, 512), Image.LANCZOS)
+            out.save(os.path.join(ART, "Rooms", name + ".png"))
+            flag(name.lower())
+            print("room", name)
+
+
 def main(stage):
-    import json
     for piece in ("Door", "Ladder"):
         p = os.path.join(stage, "Rooms", piece + ".png")
         if os.path.exists(p):
             Image.open(p).save(os.path.join(ART, "Rooms", piece + ".png"))
     if all(os.path.exists(os.path.join(ART, "Rooms", n + ".png")) for n in ("Door", "Ladder")):
-        manifest = os.path.join(ART, "Art.json")
-        m = json.load(open(manifest, encoding="utf-8"))
-        m["passages"] = True
-        json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        flag("passages")
     rooms = os.path.join(stage, "Rooms")
     for f in sorted(os.listdir(rooms)) if os.path.isdir(rooms) else []:
         name = f[:-4]
-        if name in ("Door", "Ladder"):
+        if name in ("Door", "Ladder", "Rubble", "Scaffold") or "_" in name:
             continue
         img = Image.open(os.path.join(rooms, f)).convert("RGB")
         size = (2048, 512) if name == "Hearth" else (1024, 512)
         if name == "Rock":
             fit(img, (768, 384)).save(os.path.join(ART, "Rooms", "Rock.png"))
             frame(img).save(os.path.join(ART, "Rooms", "Frame.png"))
-            manifest = os.path.join(ART, "Art.json")
-            m = json.load(open(manifest, encoding="utf-8"))
-            m["framed"] = True
-            json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+            flag("framed")
         else:
             fit(img, size).save(os.path.join(ART, "Rooms", f))
         print("room", name)
+    tiers = sorted(f[:-4] for f in os.listdir(rooms) if "_" in f) if os.path.isdir(rooms) else []
+    for name in tiers:
+        base = name.partition("_")[0]
+        img = fit(Image.open(os.path.join(rooms, name + ".png")).convert("RGB"), (1024, 512))
+        ref = os.path.join(rooms, base + ".png")
+        if os.path.exists(ref):
+            img = tone(img, Image.open(ref).convert("RGB"))
+        img.save(os.path.join(ART, "Rooms", name + ".png"))
+        print("room", name)
+    have = set(f[:-4] for f in os.listdir(os.path.join(ART, "Rooms")))
+    types = [n for n in json.load(open(os.path.join(ART, "Art.json"), encoding="utf-8")).get("rooms", {})
+             if n not in ("Empty", "Hearth")]
+    if types and all(n + "_2" in have and n + "_3" in have for n in types):
+        flag("roomTiers")
+    pieces(stage)
     splash = os.path.join(stage, "Splash.png")
     if os.path.exists(splash):
         # the loading screen's key art (LoadingScreen.cs shows it when the manifest says so)
         fit(Image.open(splash).convert("RGB"), (1920, 1080)).save(os.path.join(ART, "Splash.png"))
-        manifest = os.path.join(ART, "Art.json")
-        m = json.load(open(manifest, encoding="utf-8"))
-        m["splash"] = True
-        json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        flag("splash")
         print("splash")
     for name, size in (("Map", (2400, 1350)), ("Mountain", (1536, 768)), ("Battlefield", (1536, 768))):
         p = os.path.join(stage, name + ".png")

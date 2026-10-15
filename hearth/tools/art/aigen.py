@@ -79,9 +79,10 @@ WORLD = {
            "composition of the reference: the same islands in the same places with the same buildings, ships and dotted sea "
            "routes. Repaint it as a beautiful hand-painted game map: turquoise shallows and deep blue sea with soft waves, "
            "sandy beaches, lush green forests, warm sunlight, the islands in the north darker and misty purple.",
-    "Mountain": "A majestic snowy mountain range under a blue sky with soft clouds, a small fortress gatehouse with two towers "
-                "and red flags on a ledge in the middle, fir trees on the slopes, warm brown rock at the bottom. Keep the "
-                "composition of the reference picture.",
+    "Mountain": "Towering jagged snowy mountain peaks with sharp ridges and deep blue shadows under a bright blue sky with "
+                "soft white clouds, a small stone fortress gatehouse with two towers and red flags at the foot in the middle, "
+                "green meadow and fir trees on the lower slopes, warm brown rock cliff at the bottom. Keep the composition "
+                "of the reference picture.",
     "Battlefield": "A battlefield for side-view fights: a sunny green meadow with a dirt path along the bottom, a forest "
                    "behind, boulders, the trees on the right dying into creeping purple fog. Keep the composition of the "
                    "reference picture, the path at the same height.",

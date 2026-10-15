@@ -38,12 +38,27 @@ ROOM = "interior of a room in a medieval fortress, dollhouse cutaway view straig
 _pipe = None
 
 
+def native_bf16():
+    """Whether the processor computes bfloat16 itself (AVX-512 BF16 or AMX); without it torch emulates
+    bfloat16 and a picture takes over an hour instead of a couple of minutes."""
+    try:
+        flags = open("/proc/cpuinfo").read()
+    except OSError:
+        return False
+    return "avx512_bf16" in flags or "amx_bf16" in flags
+
+
 def pipe():
     global _pipe
     if _pipe is None:
         torch.set_num_threads(os.cpu_count() or 4)
-        # bfloat16 halves the memory (SDXL in float32 needs more than 14 GB)
+        # loaded in bfloat16: SDXL in float32 needs more than 14 GB while loading
         p = StableDiffusionXLImg2ImgPipeline.from_single_file(MODEL, torch_dtype=torch.bfloat16)
+        if not native_bf16():
+            # the painting itself in float32 (about 11 GB), the text encoders stay in bfloat16: they run once
+            p.unet.to(torch.float32)
+            p.vae.to(torch.float32)
+            print("float32 painting (no native bfloat16 on this processor)", flush=True)
         # the scheduler DreamShaper Turbo is made for: DPM++ SDE Karras, few steps, low guidance
         p.scheduler = DPMSolverMultistepScheduler.from_config(p.scheduler.config, algorithm_type="sde-dpmsolver++",
                                                               use_karras_sigmas=True)
@@ -52,13 +67,22 @@ def pipe():
     return _pipe
 
 
+def embeds(prompt, negative):
+    """The prompt read by the text encoders, in the painting's precision."""
+    p = pipe()
+    e = p.encode_prompt(prompt=prompt, device="cpu", num_images_per_prompt=1, do_classifier_free_guidance=True,
+                        negative_prompt=negative)
+    names = ("prompt_embeds", "negative_prompt_embeds", "pooled_prompt_embeds", "negative_pooled_prompt_embeds")
+    return {n: t.to(p.unet.dtype) for n, t in zip(names, e)}
+
+
 def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0):
     """Repaints the layout picture (scaled to size, multiples of 8) after the prompt."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
     init = layout.convert("RGB").resize((w, h), Image.LANCZOS)
     g = torch.Generator().manual_seed(seed)
     # the subject first: the text encoders read only 77 tokens
-    out = pipe()(prompt=prompt + ", " + STYLE, negative_prompt=NEGATIVE, image=init, strength=strength,
+    out = pipe()(**embeds(prompt + ", " + STYLE, NEGATIVE), image=init, strength=strength,
                  num_inference_steps=max(steps, int(round(2 / strength))), guidance_scale=guidance, generator=g,
                  width=w, height=h)
     return grade(out.images[0])
@@ -83,8 +107,29 @@ def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
     t2i = StableDiffusionXLPipeline(**pipe().components)
     g = torch.Generator().manual_seed(seed)
-    return t2i(prompt=prompt + ", " + STYLE, negative_prompt=negative, num_inference_steps=steps, guidance_scale=guidance,
+    return t2i(**embeds(prompt + ", " + STYLE, negative), num_inference_steps=steps, guidance_scale=guidance,
                generator=g, width=w, height=h).images[0]
+
+
+# the living quarters of a family: the layout has three beds, the painting one double bed and a cradle
+BEDS = ("one big wooden double bed for two with a red quilt and two white pillows standing in the middle against the back "
+        "wall, a small wooden baby cradle on rockers next to the bed, a rug on the floor")
+
+
+def family_beds(img, steps=8, seed=7):
+    """The beds of the living quarters painted again in place (inpainting): one double bed and a cradle."""
+    from diffusers import StableDiffusionXLInpaintPipeline
+    from PIL import ImageDraw, ImageFilter
+    w, h = img.size
+    mask = Image.new("L", img.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((w * 0.1, h * 0.38, w * 0.9, h * 0.88), radius=h * 0.06, fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(h * 0.02))
+    inpaint = StableDiffusionXLInpaintPipeline(**pipe().components)
+    g = torch.Generator().manual_seed(seed)
+    out = inpaint(**embeds(BEDS + ", " + STYLE, NEGATIVE + ", three beds, two single beds, bunk beds"), image=img,
+                  mask_image=mask, strength=0.99, num_inference_steps=max(steps, 12), guidance_scale=2.5, generator=g,
+                  width=w, height=h).images[0]
+    return Image.composite(grade(out), img, mask)
 
 
 # the look of a room by its level (GameRunner picks Rooms/<Type>_2 from level 4, _3 from level 8)
@@ -103,9 +148,9 @@ def room(name, args):
     layout = Image.open(path)
     k = 1152 / layout.width if layout.width <= layout.height * 2.5 else 1536 / layout.width
     size = (round(layout.width * k), round(layout.height * k))
-    # the living quarters change what stands in them (one double bed and a cradle instead of three beds): a freer hand
-    strength = max(args.strength, 0.82) if name == "Bedrooms" else args.strength
-    img = paint(layout, ROOM + aigen.ROOMS[name], size, strength, args.steps, args.seed)
+    img = paint(layout, ROOM + aigen.ROOMS[name], size, args.strength, args.steps, args.seed)
+    if name == "Bedrooms":
+        img = family_beds(img, args.steps, args.seed)
     out = os.path.join(args.out, "Rooms", name + ".png") if args.out else path
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
@@ -118,6 +163,8 @@ def _room_tier(name, tier, args):
     k = 1152 / layout.width if layout.width <= layout.height * 2.5 else 1536 / layout.width
     size = (round(layout.width * k), round(layout.height * k))
     img = paint(layout, ROOM + aigen.ROOMS[name] + ", " + TIERS[tier], size, min(0.8, args.strength + 0.1), args.steps, args.seed)
+    if name == "Bedrooms":
+        img = family_beds(img, args.steps, args.seed)
     out = os.path.join(args.out or aigen.ART, "Rooms", "%s_%s.png" % (name, tier))
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
@@ -230,6 +277,17 @@ OBSTACLES = {
     "Scaffold": "wooden construction scaffolding, front view, a frame of wooden poles and planks tied with ropes, "
                 "a wooden ladder, a bucket hanging on a rope, sparse with empty gaps",
 }
+# the places around the fortress, like Hustle Castle's surface: tapping one opens its window (GameRunner.Scene)
+SCENE = {
+    "Merchant": "a medieval merchant's market stall tent with a striped red and cream canvas roof, crates, sacks and "
+                "barrels of goods in front",
+    "Portal": "a round magic stone portal arch with carved runes, a swirling blue-violet magic surface inside, on a "
+              "small stone platform",
+    "Arena": "a small round wooden fighting arena with a palisade fence, colourful pennants and two crossed spears at the gate",
+    "Board": "a wooden quest notice board on two posts with a small shingle roof, parchment notes pinned to it",
+    "Pier": "a short wooden pier on posts with a small moored rowing boat with a furled sail",
+    "Pen": "a small fenced wooden animal pen with a doghouse, a hay bale and a feeding trough",
+}
 
 
 def _piece_list():
@@ -244,6 +302,8 @@ def _piece_list():
                              Image.open(p).size if os.path.exists(p) else (320, 320))
     for n, what in OBSTACLES.items():
         out["Rooms/" + n] = (what, (768, 384))
+    for n, what in SCENE.items():
+        out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     return out
 
 
@@ -316,7 +376,7 @@ def piece(name, args):
     alpha = _matte(img, _ground(img), holes=name.startswith("Rooms/"))
     graded = grade(img)
     out = _unmix(graded, alpha, _ground(graded))
-    out = _place(out, size, pad=0.02 if wide else 0.05, bottom=wide)
+    out = _place(out, size, pad=0.02 if wide else 0.05, bottom=wide or name.startswith("Scene/"))
     _save(out, name + ".png", args)
 
 
@@ -337,7 +397,8 @@ if __name__ == "__main__":
     args = ap.parse_args()
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
-              "pieces": list(PIECES)}
+              "pieces": [n for n in PIECES if not n.startswith("Scene/")],
+              "scene": [n for n in PIECES if n.startswith("Scene/")]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
         if n in PIECES:
             piece(n, args)
