@@ -62,10 +62,13 @@ namespace LastHearth.Game
             UiSkin.Outlined(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), level.ToString(), BadgeStyle());
         }
 
-        /// <summary>A short text (a timer) on a dark plate along the bottom of a cell.</summary>
+        /// <summary>A short text (a timer) on a dark plate along the bottom of a cell: wide enough for
+        /// the text, and inside the cell (the floor below is drawn over anything under it).</summary>
         void Pill(Rect r, string text)
         {
-            var p = new Rect(r.center.x - r.width * 0.2f, r.y + r.height * 0.84f, r.width * 0.4f, Mathf.Max(18, r.height * 0.13f));
+            float h = Mathf.Max(18, r.height * 0.15f);
+            float w = Mathf.Clamp(text.Length * 8.5f + 24, r.width * 0.4f, r.width - 8);
+            var p = new Rect(r.center.x - w / 2, r.yMax - h - r.height * 0.04f, w, h);
             ArtLibrary.DrawSliced(p, "UI/Pill", 30);
             UiSkin.Outlined(p, text, BadgeStyle());
         }
@@ -476,7 +479,8 @@ namespace LastHearth.Game
                     // like Hustle Castle: only the obstacles next to the dug-out part carry a sign, the rest is plain rubble
                     if (ReachableObstacle(floor, cell))
                     {
-                        var b = new Rect(r.center.x - r.width * 0.3f, r.center.y - r.height * 0.1f, r.width * 0.6f, Mathf.Max(22, r.height * 0.2f));
+                        float bw = Mathf.Clamp(10 * 8.5f + 30, r.width * 0.6f, r.width - 8);
+                        var b = new Rect(r.center.x - bw / 2, r.center.y - r.height * 0.1f, bw, Mathf.Max(22, r.height * 0.2f));
                         ArtLibrary.DrawSliced(b, "UI/Pill", 30);
                         UiSkin.Outlined(b, "Расчистить", BadgeStyle());
                     }

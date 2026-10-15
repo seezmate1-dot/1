@@ -142,6 +142,11 @@ public static class UiSmoke
             Set(runner, "levelUpAt", Time.realtimeSinceStartup);
             Time.realtimeSinceStartup += 0.5f;
         }
+        else if (window > 0)
+        {
+            Call(runner, "OnGUI"); // the window starts popping open
+            Time.realtimeSinceStartup += 1f; // and is fully open
+        }
         GUI.Record = new List<string>();
         Call(runner, "OnGUI");
         File.WriteAllLines(path, GUI.Record);
