@@ -84,6 +84,16 @@ namespace LastHearth.Core
                 }
                 State.SaveVersion = 2;
             }
+            if (State.SaveVersion < 3)
+            {
+                // Before items, gear was a number that followed the hearth. Every slot without an item holds the
+                // forge's issued piece of the hearth level, so the heroes of an old save keep exactly that power.
+                if (State.Gear == null)
+                    State.Gear = new GearState();
+                State.SaveVersion = 3;
+            }
+            if (State.Gear == null)
+                State.Gear = new GearState();
             foreach (var room in State.Rooms)
                 room.Width = Math.Max(1, room.Width);
             foreach (var d in State.Dwellers)

@@ -42,6 +42,8 @@ namespace LastHearth.Core
         public MarketData Market = new MarketData();
         /// <summary>GDD 6: the work of the rooms that produce nothing (Halls.cs, GameSession.Rooms.cs).</summary>
         public HallsData Halls = new HallsData();
+        /// <summary>GDD 8: the heroes' equipment (Items.cs, GameSession.Gear.cs).</summary>
+        public ItemsData Items = new ItemsData();
 
         public static Balance FromJson(string json)
         {

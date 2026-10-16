@@ -135,7 +135,9 @@ namespace LastHearth.Game
             if (f != null)
                 GUILayout.Label(string.Format("В бою: атака {0:0}, здоровье {1:0}, броня {2:0}, крит {3:0}%, удар раз в {4:0.0} с",
                     f.Attack, f.MaxHp, f.Armor, f.Crit * 100, f.Interval * (session.Combat?.TickSeconds ?? 0.1)));
-            GUILayout.Label(string.Format("Снаряжение кузни: ступень {0} (растёт с очагом) — атака и здоровье ×{1:0.00}", session.State.HearthLevel, session.GearMult()));
+            var gear = session.HeroGear(hero);
+            GUILayout.Label(string.Format("Снаряжение: сила {0}, вещей {1} из 6 — атака +{2:0}%, здоровье +{3:0}% (пустые места — казённое кузни)",
+                session.HeroGearPower(hero), session.WornBy(hero.Id).Count, gear.Attack * 100, gear.Health * 100));
             var pet = session.ActivePet();
             GUILayout.Label(pet == null ? "Питомец: нет активного" : string.Format("Питомец: {0}, ур.{1} — {2}", pet.Name, session.PetLevel(pet.Id),
                 session.PetBonusText(pet, session.PetLevel(pet.Id))));
@@ -147,6 +149,8 @@ namespace LastHearth.Game
                 Report(session.LevelUpHero(hero.Id));
             if (hero.SkillLevel < session.Balance.Activities.Skills.Max && GUILayout.Button("Умение +1 (" + session.SkillCost(hero) + " серд.)"))
                 Report(session.UpgradeSkill(hero.Id));
+            if (GUILayout.Button("Снаряжение"))
+                Open(Win.Gear); // GameRunner.Gear.cs: the six slots, the bag
             GUILayout.EndHorizontal();
 
             GUILayout.Space(8);

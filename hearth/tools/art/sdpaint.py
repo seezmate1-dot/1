@@ -9,7 +9,8 @@ floor where the dwellers walk and the places on the map stay where the game expe
 
 Transparent pieces (group "pieces": Icons/<Name>, Buttons/<Name>, Decor/<name>, Rooms/Rubble, Rooms/Scaffold)
 are painted from text on a plain white ground and cut out with rembg (pip install "rembg[cpu]"; without
-it, a flood fill of the ground from the borders).
+it, a flood fill of the ground from the borders). Group "items": the icons of the heroes' equipment, Items/<Kind>
+(ITEMS; the game draws them once Art.json has "itemArt").
 
 MODEL: the checkpoint file (default: $SD_MODEL or ~/models/DreamShaperXL_Turbo_v2_1.safetensors).
 """
@@ -392,6 +393,28 @@ COMPANIONS = {
     "Firefly": "a big glowing coal firefly, an insect with a bright orange ember body and translucent wings",
 }
 
+# the heroes' equipment (GDD 8; Core/Items.cs ItemKind): one icon per kind, Items/<Kind>, drawn on a plate in
+# the colour of the item's rarity once Art.json has "itemArt"
+ITEMS = {
+    "Mace": "a heavy iron flanged mace with a leather-wrapped grip",
+    "Sword": "a straight steel longsword with a crossguard and a leather grip",
+    "Axe": "a big double-bladed battle axe on a long wooden haft",
+    "Bow": "a recurve wooden longbow with a taut string",
+    "Censer": "a bronze censer on a chain with glowing coals inside and a wisp of smoke",
+    "Staff": "a gnarled dark wooden mage staff topped with a smouldering ember crystal",
+    "Shield": "a round wooden shield with an iron rim and an iron boss",
+    "Bracers": "a pair of studded leather and iron bracers",
+    "Quiver": "a leather quiver full of feathered arrows",
+    "Tome": "a thick old leather-bound tome with brass corners and a clasp",
+    "Helmet": "an iron knight helmet with a nasal guard",
+    "Hood": "a dark grey cloth hood with a short cape",
+    "Armor": "a steel plate cuirass with shoulder pauldrons",
+    "Jerkin": "a brown leather jerkin with laces and a belt",
+    "Robe": "a long dark red mage robe with ember-coloured trim",
+    "Boots": "a pair of sturdy leather boots with iron toe caps",
+    "Amulet": "a silver amulet on a chain with a glowing amber stone",
+}
+
 
 def _piece_list():
     out = {}
@@ -414,6 +437,8 @@ def _piece_list():
                        "a fantasy game map piece", (192, 192))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
+    for kind, what in ITEMS.items():
+        out["Items/" + kind] = ("a game equipment icon: " + what + ", single item", (256, 256))
     return out
 
 
@@ -507,9 +532,10 @@ if __name__ == "__main__":
     args = ap.parse_args()
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder", "Stairs", "Rooms/Arch"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
-              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/"))],
+              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/", "Items/"))],
               "scene": [n for n in PIECES if n.startswith("Scene/")],
-              "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))]}
+              "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))],
+              "items": [n for n in PIECES if n.startswith("Items/")]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
         if n in PIECES:
             piece(n, args)

@@ -181,8 +181,9 @@ namespace LastHearth.Core
     [Serializable]
     public sealed class GameState
     {
-        /// <summary>2: obstacles, merged rooms and births. Older saves are upgraded on load (GameSession).</summary>
-        public int SaveVersion = 2;
+        /// <summary>2: obstacles, merged rooms and births; 3: the heroes' items (GearState). Older saves are
+        /// upgraded on load (GameSession).</summary>
+        public int SaveVersion = 3;
 
         /// <summary>Seconds (Unix time) up to which the fortress has been simulated.</summary>
         public long Time;
@@ -322,5 +323,8 @@ namespace LastHearth.Core
 
         // The work of the halls: tavern, infirmary, library, training hall, chapel, archive (GDD 6; Halls.cs)
         public HallsState Halls = new HallsState();
+
+        // The heroes' items, the bag, the forge's job (GDD 8; Items.cs, GameSession.Gear.cs)
+        public GearState Gear = new GearState();
     }
 }

@@ -777,6 +777,16 @@ namespace LastHearth.Core
                 return Fail.NotEnough;
             if (g.Goods == "Seal" && PopulationFull())
                 return Fail.LimitReached;
+            GearItem gear = null;
+            if (g.Goods == "Gear")
+            {
+                // MODES.md 4.2: an epic piece for the weakest slot of the squad, shown before buying
+                gear = GloryGearPreview(now);
+                if (gear == null)
+                    return Fail.NoHeroes;
+                if (BagFull())
+                    return Fail.InventoryFull;
+            }
             State.Wallet[ResourceType.Glory] -= g.Price;
             State.GloryBought[goods]++;
             switch (g.Goods)
@@ -786,6 +796,9 @@ namespace LastHearth.Core
                     break;
                 case "Hourglass":
                     State.HourglassSeconds += (long)Math.Round(g.Amount * 60);
+                    break;
+                case "Gear":
+                    Receive(gear, "Лавка славы");
                     break;
                 default:
                     RefugeesArrive(1);

@@ -13,10 +13,12 @@ namespace LastHearth.Core
 
         int EventDayIndex(EventRun run, long now) => (int)((now - run.Start) / Day);
 
+        /// <summary>A boss's health at a rank, the unit of the events' points. Like the event enemies, it counts the free
+        /// player's items over the forge's issued kit (GearEdge), so finds do not inflate the points.</summary>
         double BossUnitHp(MonsterFamily family, int rank)
         {
             var b = Combat.Boss;
-            return b.Hp * Combat.Family(family).Hp * Math.Pow(b.HpGrowth, rank - 1);
+            return b.Hp * Combat.Family(family).Hp * Math.Pow(b.HpGrowth, rank - 1) * GearEdge(rank);
         }
 
         MonsterFamily WeeklyFamily(long now) => (MonsterFamily)((LocalDay(now) / 7) % 4);
@@ -159,6 +161,12 @@ namespace LastHearth.Core
                     for (int w = 0; w < 2; w++)
                         setup.Waves.Add(new WaveSpec { Family = (MonsterFamily)(eb.Seed % 4), Rank = r, HpMult = normal.HpMult, AttackMult = normal.AttackMult, Telegraphs = false });
                     break;
+            }
+            foreach (var w in setup.Waves)
+            {
+                // the free player's finds are part of the strength the events expect, as in the campaign
+                w.HpMult *= GearEdge(w.Rank);
+                w.AttackMult *= GearEdge(w.Rank);
             }
             return setup;
         }
@@ -1030,7 +1038,7 @@ namespace LastHearth.Core
                     setup.Defenders.Add(new SurgeDefender { Id = d.Id, Name = d.Name, Floor = 1, Dps = c.DwellerDps * (d.StatOf(Stat.Strength) + d.StatOf(Stat.Endurance)) / 2.0 * gear * (1 + 0.15 * o.Traps) });
             }
             foreach (var d in Squad())
-                setup.Defenders.Add(new SurgeDefender { Id = d.Id, Name = d.Name, Hero = true, Floor = 0, Dps = c.HeroDps * Math.Pow(c.HeroLevelGrowth, d.HeroLevel - 1) * gear });
+                setup.Defenders.Add(new SurgeDefender { Id = d.Id, Name = d.Name, Hero = true, Floor = 0, Dps = c.HeroDps * Math.Pow(c.HeroLevelGrowth, d.HeroLevel - 1) * (1 + HeroGear(d).Attack) });
             defense = new SurgeDefense(c, setup);
             return Fail.None;
         }

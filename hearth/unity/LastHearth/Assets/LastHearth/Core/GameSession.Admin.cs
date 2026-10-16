@@ -130,7 +130,8 @@ namespace LastHearth.Core
             return count;
         }
 
-        /// <summary>Children are born, the teams come back from their routes and the injured heal; returns how many timers ended.</summary>
+        /// <summary>Children are born, the teams come back from their routes, the injured heal and the forge finishes its item;
+        /// returns how many timers ended.</summary>
         public int AdminFinishOtherTimers(long now)
         {
             Advance(now);
@@ -148,6 +149,11 @@ namespace LastHearth.Core
             foreach (var d in State.Dwellers.Where(d => d.InjuredUntil > State.Time))
             {
                 d.InjuredUntil = 0;
+                count++;
+            }
+            if (State.Gear?.Craft != null && State.Gear.Craft.End > State.Time)
+            {
+                State.Gear.Craft.End = State.Time; // the forge's item (GameSession.Gear.cs)
                 count++;
             }
             Advance(now);
