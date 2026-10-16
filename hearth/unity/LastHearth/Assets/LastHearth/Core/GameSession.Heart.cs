@@ -42,12 +42,13 @@ namespace LastHearth.Core
 
         public double OutputMult() => (1 + Balance.Activities.Heart.Output * State.Heart[(int)HeartBranch.Economy]) * WarmWeekMult();
 
-        public double DefenseMult() => 1 + Balance.Activities.Heart.Defense * State.Heart[(int)HeartBranch.Defense];
+        public double DefenseMult() => 1 + Balance.Activities.Heart.Defense * State.Heart[(int)HeartBranch.Defense] + HallsDefenseBonus();
 
         public double CoalBurnPerHour()
         {
             double save = 1 - Balance.Activities.Heart.Coal * State.Heart[(int)HeartBranch.Economy];
             save -= ActivePetValue(PetEffect.CoalBurn); // the Coal cat (GDD 8.1)
+            save -= ResearchValue(ResearchEffect.CoalBurn); // the library (GameSession.Rooms.cs)
             return Formulas.CoalBurnPerHour(Balance, State.HearthLevel, State.Mode) * Math.Max(0.1, save);
         }
 

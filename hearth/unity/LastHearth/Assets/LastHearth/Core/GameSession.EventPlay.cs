@@ -149,8 +149,9 @@ namespace LastHearth.Core
                     {
                         int i = run.HpIds.IndexOf(h.Id);
                         h.HpShare = i >= 0 ? run.HpShares[i] : 1;
-                        h.AttackMult = 1 + 0.10 * Blessed(run, 0) + 0.20 * Blessed(run, 3) * fallen + (boss ? 0.25 * Blessed(run, 5) : 0);
-                        h.HpMult = 1 + 0.15 * Blessed(run, 1);
+                        var (hallsAttack, hallsHp) = HallsHeroMult(h.Id); // research and ascension (GameSession.Rooms.cs)
+                        h.AttackMult = (1 + 0.10 * Blessed(run, 0) + 0.20 * Blessed(run, 3) * fallen + (boss ? 0.25 * Blessed(run, 5) : 0)) * hallsAttack;
+                        h.HpMult = (1 + 0.15 * Blessed(run, 1)) * hallsHp;
                     }
                     break;
                 }

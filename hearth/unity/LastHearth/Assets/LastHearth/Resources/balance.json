@@ -3338,6 +3338,1008 @@
   ],
   "dealsShown": 3
  },
+ "halls": {
+  "tavern": {
+   "board": 3,
+   "boardExtraAt": [
+    10,
+    20
+   ],
+   "boardHours": 6,
+   "rarities": [
+    {
+     "id": "Common",
+     "name": "обычный",
+     "statBonus": 0,
+     "capBonus": 0,
+     "weight": 70,
+     "hireHours": 0.25
+    },
+    {
+     "id": "Seasoned",
+     "name": "опытный",
+     "statBonus": 2,
+     "capBonus": 5,
+     "weight": 24,
+     "hireHours": 0.5
+    },
+    {
+     "id": "Rare",
+     "name": "редкий",
+     "statBonus": 4,
+     "capBonus": 10,
+     "weight": 5,
+     "hireHours": 1.0
+    },
+    {
+     "id": "Legendary",
+     "name": "легендарный",
+     "statBonus": 7,
+     "capBonus": 20,
+     "weight": 1,
+     "hireHours": 2.0
+    }
+   ],
+   "luckShift": [
+    0,
+    0.6,
+    0.3,
+    0.1
+   ],
+   "minCommon": 10,
+   "luckPerLevel": 1.0,
+   "luckPerSpirit": 0.1,
+   "foodHours": 6
+  },
+  "infirmary": {
+   "injuryHours": 6,
+   "illnessHours": 12,
+   "illnessChance": 0.12,
+   "sickOutput": 0.5,
+   "perLevel": 0.05,
+   "intellectDivisor": 50,
+   "blazing": 1.25
+  },
+  "library": {
+   "intellectDivisor": 100,
+   "branches": [
+    {
+     "id": "Crafts",
+     "name": "Ремёсла"
+    },
+    {
+     "id": "War",
+     "name": "Ратное дело"
+    },
+    {
+     "id": "Household",
+     "name": "Быт"
+    },
+    {
+     "id": "Lore",
+     "name": "Тайны тумана"
+    }
+   ],
+   "nodes": [
+    {
+     "id": "Crafts1",
+     "branch": "Crafts",
+     "tier": 1,
+     "name": "Крепкие кирки",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 1,
+     "seconds": 3600,
+     "cost": 700
+    },
+    {
+     "id": "Crafts2",
+     "branch": "Crafts",
+     "tier": 2,
+     "name": "Мерные весы",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 3,
+     "seconds": 4860,
+     "cost": 940
+    },
+    {
+     "id": "Crafts3",
+     "branch": "Crafts",
+     "tier": 3,
+     "name": "Подземные печи",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 5,
+     "seconds": 6561,
+     "cost": 1200
+    },
+    {
+     "id": "Crafts4",
+     "branch": "Crafts",
+     "tier": 4,
+     "name": "Плавильные горны",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 7,
+     "seconds": 8857,
+     "cost": 1700
+    },
+    {
+     "id": "Crafts5",
+     "branch": "Crafts",
+     "tier": 5,
+     "name": "Сушильни",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 9,
+     "seconds": 11957,
+     "cost": 2900
+    },
+    {
+     "id": "Crafts6",
+     "branch": "Crafts",
+     "tier": 6,
+     "name": "Счётные доски",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 11,
+     "seconds": 16143,
+     "cost": 4700
+    },
+    {
+     "id": "Crafts7",
+     "branch": "Crafts",
+     "tier": 7,
+     "name": "Вентиляция шахт",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 13,
+     "seconds": 21792,
+     "cost": 7600
+    },
+    {
+     "id": "Crafts8",
+     "branch": "Crafts",
+     "tier": 8,
+     "name": "Цеховые клейма",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 15,
+     "seconds": 29420,
+     "cost": 13000
+    },
+    {
+     "id": "Crafts9",
+     "branch": "Crafts",
+     "tier": 9,
+     "name": "Глубокие погреба",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 17,
+     "seconds": 39717,
+     "cost": 20000
+    },
+    {
+     "id": "Crafts10",
+     "branch": "Crafts",
+     "tier": 10,
+     "name": "Монетный двор",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 19,
+     "seconds": 53617,
+     "cost": 30000
+    },
+    {
+     "id": "Crafts11",
+     "branch": "Crafts",
+     "tier": 11,
+     "name": "Паровые насосы",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 21,
+     "seconds": 72384,
+     "cost": 47000
+    },
+    {
+     "id": "Crafts12",
+     "branch": "Crafts",
+     "tier": 12,
+     "name": "Торговые гильдии",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 23,
+     "seconds": 97718,
+     "cost": 73000
+    },
+    {
+     "id": "Crafts13",
+     "branch": "Crafts",
+     "tier": 13,
+     "name": "Глубинное бурение",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 25,
+     "seconds": 131919,
+     "cost": 120000
+    },
+    {
+     "id": "Crafts14",
+     "branch": "Crafts",
+     "tier": 14,
+     "name": "Векселя Стражей",
+     "effect": "Materials",
+     "value": 0.015,
+     "gate": 27,
+     "seconds": 178091,
+     "cost": 180000
+    },
+    {
+     "id": "Crafts15",
+     "branch": "Crafts",
+     "tier": 15,
+     "name": "Сердце горы",
+     "effect": "Supply",
+     "value": 0.015,
+     "gate": 29,
+     "seconds": 240423,
+     "cost": 270000
+    },
+    {
+     "id": "War1",
+     "branch": "War",
+     "tier": 1,
+     "name": "Заточка клинков",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 1,
+     "seconds": 3600,
+     "cost": 700
+    },
+    {
+     "id": "War2",
+     "branch": "War",
+     "tier": 2,
+     "name": "Стёганые куртки",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 3,
+     "seconds": 4860,
+     "cost": 940
+    },
+    {
+     "id": "War3",
+     "branch": "War",
+     "tier": 3,
+     "name": "Строй щитов",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 5,
+     "seconds": 6561,
+     "cost": 1200
+    },
+    {
+     "id": "War4",
+     "branch": "War",
+     "tier": 4,
+     "name": "Кольчужное плетение",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 7,
+     "seconds": 8857,
+     "cost": 1700
+    },
+    {
+     "id": "War5",
+     "branch": "War",
+     "tier": 5,
+     "name": "Закалка в углях",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 9,
+     "seconds": 11957,
+     "cost": 2900
+    },
+    {
+     "id": "War6",
+     "branch": "War",
+     "tier": 6,
+     "name": "Полевые лекари",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 11,
+     "seconds": 16143,
+     "cost": 4700
+    },
+    {
+     "id": "War7",
+     "branch": "War",
+     "tier": 7,
+     "name": "Гранёные стрелы",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 13,
+     "seconds": 21792,
+     "cost": 7600
+    },
+    {
+     "id": "War8",
+     "branch": "War",
+     "tier": 8,
+     "name": "Латы Стражей",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 15,
+     "seconds": 29420,
+     "cost": 13000
+    },
+    {
+     "id": "War9",
+     "branch": "War",
+     "tier": 9,
+     "name": "Боевые кличи",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 17,
+     "seconds": 39717,
+     "cost": 20000
+    },
+    {
+     "id": "War10",
+     "branch": "War",
+     "tier": 10,
+     "name": "Пепельная броня",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 19,
+     "seconds": 53617,
+     "cost": 30000
+    },
+    {
+     "id": "War11",
+     "branch": "War",
+     "tier": 11,
+     "name": "Клинки из звёздной руды",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 21,
+     "seconds": 72384,
+     "cost": 47000
+    },
+    {
+     "id": "War12",
+     "branch": "War",
+     "tier": 12,
+     "name": "Обет стойкости",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 23,
+     "seconds": 97718,
+     "cost": 73000
+    },
+    {
+     "id": "War13",
+     "branch": "War",
+     "tier": 13,
+     "name": "Тактика Двора",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 25,
+     "seconds": 131919,
+     "cost": 120000
+    },
+    {
+     "id": "War14",
+     "branch": "War",
+     "tier": 14,
+     "name": "Щит очага",
+     "effect": "Health",
+     "value": 0.015,
+     "gate": 27,
+     "seconds": 178091,
+     "cost": 180000
+    },
+    {
+     "id": "War15",
+     "branch": "War",
+     "tier": 15,
+     "name": "Наследие Стражей",
+     "effect": "Attack",
+     "value": 0.015,
+     "gate": 29,
+     "seconds": 240423,
+     "cost": 270000
+    },
+    {
+     "id": "Household1",
+     "branch": "Household",
+     "tier": 1,
+     "name": "Тяга дымоходов",
+     "effect": "CoalBurn",
+     "value": 0.015,
+     "gate": 1,
+     "seconds": 3600,
+     "cost": 700
+    },
+    {
+     "id": "Household2",
+     "branch": "Household",
+     "tier": 2,
+     "name": "Сытная похлёбка",
+     "effect": "Food",
+     "value": 0.02,
+     "gate": 3,
+     "seconds": 4860,
+     "cost": 940
+    },
+    {
+     "id": "Household3",
+     "branch": "Household",
+     "tier": 3,
+     "name": "Травяные сборы",
+     "effect": "Healing",
+     "value": 0.1,
+     "gate": 5,
+     "seconds": 6561,
+     "cost": 1200
+    },
+    {
+     "id": "Household4",
+     "branch": "Household",
+     "tier": 4,
+     "name": "Строевые упражнения",
+     "effect": "Training",
+     "value": 0.05,
+     "gate": 7,
+     "seconds": 8857,
+     "cost": 1700
+    },
+    {
+     "id": "Household5",
+     "branch": "Household",
+     "tier": 5,
+     "name": "Каменные экраны",
+     "effect": "CoalBurn",
+     "value": 0.015,
+     "gate": 9,
+     "seconds": 11957,
+     "cost": 2900
+    },
+    {
+     "id": "Household6",
+     "branch": "Household",
+     "tier": 6,
+     "name": "Соление и копчение",
+     "effect": "Food",
+     "value": 0.02,
+     "gate": 11,
+     "seconds": 16143,
+     "cost": 4700
+    },
+    {
+     "id": "Household7",
+     "branch": "Household",
+     "tier": 7,
+     "name": "Костоправы",
+     "effect": "Healing",
+     "value": 0.1,
+     "gate": 13,
+     "seconds": 21792,
+     "cost": 7600
+    },
+    {
+     "id": "Household8",
+     "branch": "Household",
+     "tier": 8,
+     "name": "Наставники",
+     "effect": "Training",
+     "value": 0.05,
+     "gate": 15,
+     "seconds": 29420,
+     "cost": 13000
+    },
+    {
+     "id": "Household9",
+     "branch": "Household",
+     "tier": 9,
+     "name": "Угольные брикеты",
+     "effect": "CoalBurn",
+     "value": 0.015,
+     "gate": 17,
+     "seconds": 39717,
+     "cost": 20000
+    },
+    {
+     "id": "Household10",
+     "branch": "Household",
+     "tier": 10,
+     "name": "Общие трапезы",
+     "effect": "Food",
+     "value": 0.02,
+     "gate": 19,
+     "seconds": 53617,
+     "cost": 30000
+    },
+    {
+     "id": "Household11",
+     "branch": "Household",
+     "tier": 11,
+     "name": "Отвары из тумана",
+     "effect": "Healing",
+     "value": 0.1,
+     "gate": 21,
+     "seconds": 72384,
+     "cost": 47000
+    },
+    {
+     "id": "Household12",
+     "branch": "Household",
+     "tier": 12,
+     "name": "Школа мечников",
+     "effect": "Training",
+     "value": 0.05,
+     "gate": 23,
+     "seconds": 97718,
+     "cost": 73000
+    },
+    {
+     "id": "Household13",
+     "branch": "Household",
+     "tier": 13,
+     "name": "Печи с поддувом",
+     "effect": "CoalBurn",
+     "value": 0.015,
+     "gate": 25,
+     "seconds": 131919,
+     "cost": 120000
+    },
+    {
+     "id": "Household14",
+     "branch": "Household",
+     "tier": 14,
+     "name": "Кладовые без порчи",
+     "effect": "Food",
+     "value": 0.02,
+     "gate": 27,
+     "seconds": 178091,
+     "cost": 180000
+    },
+    {
+     "id": "Household15",
+     "branch": "Household",
+     "tier": 15,
+     "name": "Тёплые палаты",
+     "effect": "Healing",
+     "value": 0.1,
+     "gate": 29,
+     "seconds": 240423,
+     "cost": 270000
+    },
+    {
+     "id": "Lore1",
+     "branch": "Lore",
+     "tier": 1,
+     "name": "Записи наставников",
+     "effect": "ResearchSpeed",
+     "value": 0.05,
+     "gate": 1,
+     "seconds": 3600,
+     "cost": 700
+    },
+    {
+     "id": "Lore2",
+     "branch": "Lore",
+     "tier": 2,
+     "name": "Слухи из таверн",
+     "effect": "RecruitLuck",
+     "value": 2,
+     "gate": 3,
+     "seconds": 4860,
+     "cost": 940
+    },
+    {
+     "id": "Lore3",
+     "branch": "Lore",
+     "tier": 3,
+     "name": "Сигнальные огни",
+     "effect": "SurgeDefense",
+     "value": 0.03,
+     "gate": 5,
+     "seconds": 6561,
+     "cost": 1200
+    },
+    {
+     "id": "Lore4",
+     "branch": "Lore",
+     "tier": 4,
+     "name": "Ключи к шифрам",
+     "effect": "Decipher",
+     "value": 0.1,
+     "gate": 7,
+     "seconds": 8857,
+     "cost": 1700
+    },
+    {
+     "id": "Lore5",
+     "branch": "Lore",
+     "tier": 5,
+     "name": "Читальня",
+     "effect": "ResearchSpeed",
+     "value": 0.05,
+     "gate": 9,
+     "seconds": 11957,
+     "cost": 2900
+    },
+    {
+     "id": "Lore6",
+     "branch": "Lore",
+     "tier": 6,
+     "name": "Вербовщики",
+     "effect": "RecruitLuck",
+     "value": 2,
+     "gate": 11,
+     "seconds": 16143,
+     "cost": 4700
+    },
+    {
+     "id": "Lore7",
+     "branch": "Lore",
+     "tier": 7,
+     "name": "Ловушки у люков",
+     "effect": "SurgeDefense",
+     "value": 0.03,
+     "gate": 13,
+     "seconds": 21792,
+     "cost": 7600
+    },
+    {
+     "id": "Lore8",
+     "branch": "Lore",
+     "tier": 8,
+     "name": "Язык Двора",
+     "effect": "Decipher",
+     "value": 0.1,
+     "gate": 15,
+     "seconds": 29420,
+     "cost": 13000
+    },
+    {
+     "id": "Lore9",
+     "branch": "Lore",
+     "tier": 9,
+     "name": "Переписчики",
+     "effect": "ResearchSpeed",
+     "value": 0.05,
+     "gate": 17,
+     "seconds": 39717,
+     "cost": 20000
+    },
+    {
+     "id": "Lore10",
+     "branch": "Lore",
+     "tier": 10,
+     "name": "Знаки беженцев",
+     "effect": "RecruitLuck",
+     "value": 2,
+     "gate": 19,
+     "seconds": 53617,
+     "cost": 30000
+    },
+    {
+     "id": "Lore11",
+     "branch": "Lore",
+     "tier": 11,
+     "name": "Обряд Вспышки",
+     "effect": "SurgeDefense",
+     "value": 0.03,
+     "gate": 21,
+     "seconds": 72384,
+     "cost": 47000
+    },
+    {
+     "id": "Lore12",
+     "branch": "Lore",
+     "tier": 12,
+     "name": "Карты тумана",
+     "effect": "Decipher",
+     "value": 0.1,
+     "gate": 23,
+     "seconds": 97718,
+     "cost": 73000
+    },
+    {
+     "id": "Lore13",
+     "branch": "Lore",
+     "tier": 13,
+     "name": "Хранилище свитков",
+     "effect": "ResearchSpeed",
+     "value": 0.05,
+     "gate": 25,
+     "seconds": 131919,
+     "cost": 120000
+    },
+    {
+     "id": "Lore14",
+     "branch": "Lore",
+     "tier": 14,
+     "name": "Голос Угля",
+     "effect": "RecruitLuck",
+     "value": 2,
+     "gate": 27,
+     "seconds": 178091,
+     "cost": 180000
+    },
+    {
+     "id": "Lore15",
+     "branch": "Lore",
+     "tier": 15,
+     "name": "Тайна Матери Чащи",
+     "effect": "SurgeDefense",
+     "value": 0.03,
+     "gate": 29,
+     "seconds": 240423,
+     "cost": 270000
+    }
+   ]
+  },
+  "training": {
+   "capBase": 10,
+   "capPerLevel": 3,
+   "hoursBase": 1.0,
+   "hoursPerPoint": 0.15,
+   "levelFactor": 0.98,
+   "silverHours": 0.025,
+   "silverStatDivisor": 50
+  },
+  "watchtower": {
+   "scout": [
+    {
+     "what": "Surge",
+     "level": 1
+    },
+    {
+     "what": "Dens",
+     "level": 3
+    },
+    {
+     "what": "Spawn",
+     "level": 5
+    },
+    {
+     "what": "Route",
+     "level": 8
+    },
+    {
+     "what": "Forecast",
+     "level": 10
+    }
+   ],
+   "defensePerLevel": 0.005,
+   "agilityDivisor": 400
+  },
+  "chapel": {
+   "ranks": [
+    {
+     "heroLevel": 20,
+     "chapel": 1,
+     "essenceDays": 0.5
+    },
+    {
+     "heroLevel": 30,
+     "chapel": 6,
+     "essenceDays": 1.0
+    },
+    {
+     "heroLevel": 40,
+     "chapel": 12,
+     "essenceDays": 1.5
+    },
+    {
+     "heroLevel": 50,
+     "chapel": 18,
+     "essenceDays": 2.0
+    },
+    {
+     "heroLevel": 60,
+     "chapel": 24,
+     "essenceDays": 3.0
+    }
+   ],
+   "bonus": 0.04,
+   "gifts": [
+    {
+     "goods": "Essence",
+     "amount": 0.08
+    },
+    {
+     "goods": "Treats",
+     "amount": 5
+    },
+    {
+     "goods": "Hourglass",
+     "amount": 15
+    }
+   ]
+  },
+  "archive": {
+   "hoursBase": 1.0,
+   "hoursPerRecord": 0.5,
+   "perLevel": 0.05,
+   "intellectDivisor": 100,
+   "essenceDays": 0.15,
+   "records": [
+    {
+     "id": "oath",
+     "title": "Клятва Стражей",
+     "kind": "Hearth",
+     "need": 3,
+     "text": "«Пока горит Уголь, мы стоим». Так начиналась присяга ордена. Её вырезали над очагом, и камень помнит её до сих пор."
+    },
+    {
+     "id": "convoy",
+     "title": "Последний обоз",
+     "kind": "Missions",
+     "need": 19,
+     "text": "Обоз дошёл до ворот на рассвете. Из сорока повозок уцелели девять, и в каждой ехали дети."
+    },
+    {
+     "id": "beast",
+     "title": "Вожак стаи",
+     "kind": "Hunts",
+     "need": 1,
+     "text": "Твари тумана ходят стаями и слушаются вожака. Убей его — и стая рассыплется, как зола."
+    },
+    {
+     "id": "route",
+     "title": "Карта первой тропы",
+     "kind": "Routes",
+     "need": 1,
+     "text": "На обороте карты чужой рукой: «Не ходите к мосту после заката. Мост помнит тех, кто упал»."
+    },
+    {
+     "id": "coal",
+     "title": "Откуда берётся Уголь",
+     "kind": "Hearth",
+     "need": 8,
+     "text": "Уголь Стражей — не простой камень. В каждом куске тлеет искра первого очага, зажжённого сто зим назад."
+    },
+    {
+     "id": "mine",
+     "title": "Копи под Сторожевой",
+     "kind": "Missions",
+     "need": 38,
+     "text": "Штейгер спустился в старый забой за жилой и вернулся другим. Глаза у него стали белыми, как туман."
+    },
+    {
+     "id": "ledger",
+     "title": "Книга учёта",
+     "kind": "Research",
+     "need": 5,
+     "text": "Первый хранитель вёл счёт всему: углю, хлебу, людям. На последней странице — только одно слово: «Мало»."
+    },
+    {
+     "id": "widow",
+     "title": "Ледяная вдова",
+     "kind": "Missions",
+     "need": 57,
+     "text": "Она звала мужа по имени три ночи подряд. На четвёртую ночь он ответил ей из тумана."
+    },
+    {
+     "id": "hunter",
+     "title": "Записки охотника",
+     "kind": "Hunts",
+     "need": 15,
+     "text": "Корневые чудовища медленны, но не спят. Они ждут, пока костёр погаснет."
+    },
+    {
+     "id": "bridge",
+     "title": "Мост Пепельных",
+     "kind": "Missions",
+     "need": 76,
+     "text": "Пепельные держали мост, пока последний беженец не перешёл. Потом мост сгорел вместе с ними."
+    },
+    {
+     "id": "wander",
+     "title": "Дневник следопыта",
+     "kind": "Routes",
+     "need": 10,
+     "text": "Туман не пуст. В нём есть дороги, деревни и люди, которые давно забыли, что такое тепло."
+    },
+    {
+     "id": "court",
+     "title": "Письмо Бледного Двора",
+     "kind": "Hearth",
+     "need": 15,
+     "text": "«Отдайте очаг, и туман пощадит ваших детей». Печать на письме холодная, как лёд, хоть его и держали у огня."
+    },
+    {
+     "id": "envoy",
+     "title": "Бледные послы",
+     "kind": "Missions",
+     "need": 95,
+     "text": "Послы не ели и не спали. Их кони стояли у ворот всю ночь, и иней не таял на их гривах."
+    },
+    {
+     "id": "ascend",
+     "title": "Обряд возвышения",
+     "kind": "Ascension",
+     "need": 1,
+     "text": "Жрецы Угля учили: сильнее не тот, кто не боится огня, а тот, кого огонь признаёт своим."
+    },
+    {
+     "id": "library",
+     "title": "Утерянный трактат",
+     "kind": "Research",
+     "need": 15,
+     "text": "Половина страниц сгорела. На уцелевших — чертёж очага, который греет без угля. Никто не знает, как его построить."
+    },
+    {
+     "id": "thicket",
+     "title": "Чаща просыпается",
+     "kind": "Missions",
+     "need": 114,
+     "text": "Деревья на опушке повернулись к крепости. Утром в снегу нашли следы корней, ведущие к стенам."
+    },
+    {
+     "id": "siege",
+     "title": "Осада Стражей",
+     "kind": "Missions",
+     "need": 133,
+     "text": "Командор Двора не штурмовал стены. Он ждал, пока холод сделает свою работу."
+    },
+    {
+     "id": "silas",
+     "title": "Архивариус Сайлас",
+     "kind": "Missions",
+     "need": 152,
+     "text": "Сайлас переписывал летописи ордена тридцать лет. Никто не заметил, когда он начал писать их по-своему."
+    },
+    {
+     "id": "deep",
+     "title": "Глубокие тропы",
+     "kind": "Routes",
+     "need": 50,
+     "text": "За седьмой развилкой тропы уходят под землю. Оттуда тянет теплом — чужим, неправильным теплом."
+    },
+    {
+     "id": "heart",
+     "title": "Сердце тумана",
+     "kind": "Missions",
+     "need": 171,
+     "text": "У тумана есть сердце. Оно бьётся медленно, раз в сто лет, и каждый удар гасит один очаг."
+    },
+    {
+     "id": "scholar",
+     "title": "Ключ к шифру",
+     "kind": "Research",
+     "need": 40,
+     "text": "Шифр Сайласа — не шифр. Это молитва Матери Чащи, записанная задом наперёд."
+    },
+    {
+     "id": "hearth25",
+     "title": "Свет на перевале",
+     "kind": "Hearth",
+     "need": 25,
+     "text": "С высокой башни видно далёкий огонь за перевалом. Значит, мы не последние."
+    },
+    {
+     "id": "mother",
+     "title": "Мать Чащи",
+     "kind": "Missions",
+     "need": 190,
+     "text": "Она не злая. Она просто очень замёрзла. И она идёт к нашему огню."
+    },
+    {
+     "id": "last",
+     "title": "Последний очаг",
+     "kind": "Hearth",
+     "need": 30,
+     "text": "Через сто лет в этих стенах найдут пепел и одну тлеющую искру. Этого хватит, чтобы начать снова."
+    }
+   ]
+  }
+ },
  "items": {
   "kit": [
    0.05,

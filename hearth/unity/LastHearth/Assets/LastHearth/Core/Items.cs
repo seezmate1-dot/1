@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace LastHearth.Core
 {
     // GDD 8 «Снаряжение», 8.3: the heroes' items. Numbers come from hearth/tools/economy.py (balance.json:
-    // "items", ECONOMY.md section 16); the saved part is GearState in GameState; the rules are in
+    // "items", ECONOMY.md section 17); the saved part is GearState in GameState; the rules are in
     // GameSession.Gear.cs.
 
     /// <summary>The six places of a hero's equipment.</summary>
@@ -175,7 +175,7 @@ namespace LastHearth.Core
         public double Health;
     }
 
-    public sealed class RarityData
+    public sealed class ItemRarityData
     {
         public ItemRarity Rarity;
         public string Name = "";
@@ -236,7 +236,7 @@ namespace LastHearth.Core
         /// <summary>Attack and health a full common kit of item level 1-30 adds (shares of the hero's base).</summary>
         public double[] Kit = new double[0];
         public List<ItemSlotData> Slots = new List<ItemSlotData>();
-        public List<RarityData> Rarities = new List<RarityData>();
+        public List<ItemRarityData> Rarities = new List<ItemRarityData>();
         public List<ItemStatData> Stats = new List<ItemStatData>();
         public List<ItemSetData> Sets = new List<ItemSetData>();
         public double EpicSetChance;
@@ -257,7 +257,7 @@ namespace LastHearth.Core
         /// health and attack (like the kennel, economy.py gear_edge).</summary>
         public double[] CampaignEdge = new double[0];
 
-        public RarityData Rarity(ItemRarity r) => Rarities[(int)r];
+        public ItemRarityData Rarity(ItemRarity r) => Rarities[(int)r];
 
         public ItemSlotData Slot(ItemSlot s) => Slots.Find(x => x.Slot == s);
 

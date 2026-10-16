@@ -190,6 +190,7 @@ namespace LastHearth.Core
                 });
             }
             ApplyKennel(setup); // the active pet and the heroes' companions (GameSession.Companions.cs)
+            ApplyHalls(setup); // research and ascension (GameSession.Rooms.cs)
             return setup;
         }
     }

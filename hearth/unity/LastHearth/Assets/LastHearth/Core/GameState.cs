@@ -321,6 +321,9 @@ namespace LastHearth.Core
         public CompanionState Companions = new CompanionState();
         public MarketState Market = new MarketState();
 
+        // The work of the halls: tavern, infirmary, library, training hall, chapel, archive (GDD 6; Halls.cs)
+        public HallsState Halls = new HallsState();
+
         // The heroes' items, the bag, the forge's job (GDD 8; Items.cs, GameSession.Gear.cs)
         public GearState Gear = new GearState();
     }

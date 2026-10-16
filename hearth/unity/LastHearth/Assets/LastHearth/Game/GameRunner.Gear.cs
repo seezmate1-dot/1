@@ -54,13 +54,13 @@ namespace LastHearth.Game
             GUI.color = old;
         }
 
-        string RarityColor(ItemRarity r) => session.RarityInfo(r).Color;
+        string RarityColor(ItemRarity r) => session.ItemRarityInfo(r).Color;
 
         /// <summary>"Лук · редкий · ур. 12" in the colour of the rarity.</summary>
         string ItemTitle(GearItem item) => item.Issued
             ? string.Format("<color=#bbb>{0} · казённое кузни · ур. {1}</color>", ItemKinds.Of(item.Kind).Name, item.Level)
             : string.Format("<color={0}><b>{1}</b> · {2} · ур. {3}</color>", RarityColor(item.Rarity), session.ItemName(item),
-                session.RarityInfo(item.Rarity).Name, item.Level);
+                session.ItemRarityInfo(item.Rarity).Name, item.Level);
 
         /// <summary>An item drawn as a frame in its rarity's colour: the picture or the short name, the level, the plus.</summary>
         void DrawItemPlate(Rect r, GearItem item, bool selected)
@@ -314,7 +314,7 @@ namespace LastHearth.Game
             var kind = ItemKinds.All[adminItemKind % ItemKinds.All.Length];
             string Given(GearItem item) => session.FindItem(item.Id) == null
                 ? "Сумка полна: " + session.ItemName(item) + " продано"
-                : string.Format("В сумке: {0} ({1}, ур. {2}{3})", session.ItemName(item), session.RarityInfo(item.Rarity).Name, item.Level,
+                : string.Format("В сумке: {0} ({1}, ур. {2}{3})", session.ItemName(item), session.ItemRarityInfo(item.Rarity).Name, item.Level,
                     string.IsNullOrEmpty(item.Set) ? "" : ", сет «" + session.Balance.Items.Set(item.Set)?.Name + "»");
 
             list.Row(string.Format("Выдать вещь уровня очага {0} · сумка {1}/{2}", session.State.HearthLevel, session.Bag().Count, session.BagSize()));
@@ -326,7 +326,7 @@ namespace LastHearth.Game
             foreach (ItemRarity r in Enum.GetValues(typeof(ItemRarity)))
             {
                 var rarity = r;
-                list.Add(session.RarityInfo(r).Name, _ => Given(session.AdminGiveItem(kind.Kind, rarity)));
+                list.Add(session.ItemRarityInfo(r).Name, _ => Given(session.AdminGiveItem(kind.Kind, rarity)));
             }
             list.Row("Легендарная вещь «" + kind.Name + "» с сетом");
             foreach (var set in session.Balance.Items.Sets)
@@ -373,7 +373,7 @@ namespace LastHearth.Game
                 long left = session.CraftRemaining(now);
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(string.Format("Куётся: <color={0}>{1}, {2}</color>, ур. {3} — {4}", RarityColor(job.Rarity), ItemKinds.Of(job.Kind).Name,
-                    session.RarityInfo(job.Rarity).Name, job.Level, left > 0 ? "осталось " + Duration(left) : "готово"), Rich());
+                    session.ItemRarityInfo(job.Rarity).Name, job.Level, left > 0 ? "осталось " + Duration(left) : "готово"), Rich());
                 long price = session.CraftSpeedupPrice(now);
                 if (GUILayout.Button(left <= 0 ? "Забрать" : price == 0 ? "Завершить бесплатно" : "Завершить: " + price + " искр", GUILayout.Width(240)))
                     Report(session.FinishCraftNow(now), "Done");
@@ -420,9 +420,9 @@ namespace LastHearth.Game
             {
                 bool open = session.CraftOpen(r) == Fail.None;
                 GUI.enabled = open;
-                string label = open ? session.RarityInfo(r).Name
+                string label = open ? session.ItemRarityInfo(r).Name
                     : r == ItemRarity.Legendary ? "легендарный (очаг " + b.Activities.Legendary.FromHearth + ")"
-                    : session.RarityInfo(r).Name + " (кузня " + session.RarityInfo(r).ForgeLevel + ")";
+                    : session.ItemRarityInfo(r).Name + " (кузня " + session.ItemRarityInfo(r).ForgeLevel + ")";
                 if (GUILayout.Toggle(forgeRarity == r, label, "Button") && forgeRarity != r)
                     forgeRarity = r;
                 GUI.enabled = true;
@@ -443,7 +443,7 @@ namespace LastHearth.Game
                 GUILayout.EndHorizontal();
                 set = b.Items.Sets[forgeSet].Id;
             }
-            var rarity = session.RarityInfo(forgeRarity);
+            var rarity = session.ItemRarityInfo(forgeRarity);
             var cost = session.CraftCost(forgeRarity);
             long scrap = session.CraftScrap(forgeRarity);
             GUILayout.Label(string.Format("<color={0}><b>{1}</b>, {2}</color>, ур. {3}: основные свойства ×{4:0.00}, доп. свойств {5} (случайные, от половины до " +

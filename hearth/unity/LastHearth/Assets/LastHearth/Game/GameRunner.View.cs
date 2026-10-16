@@ -743,6 +743,7 @@ namespace LastHearth.Game
             }
             if (room.Type == RoomType.Bedrooms)
                 DrawLivingQuarters(room, now);
+            DrawHallWork(room, now); // the tavern, infirmary, library, training hall, watchtower, chapel, archive (GameRunner.Rooms.cs)
             foreach (int id in room.Workers.ToList())
             {
                 var d = session.FindDweller(id);

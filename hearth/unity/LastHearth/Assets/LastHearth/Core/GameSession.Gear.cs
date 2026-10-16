@@ -13,7 +13,7 @@ namespace LastHearth.Core
     /// Glory shop, shown before buying — no lottery for money (GDD 13.1).
     /// An empty slot holds the forge's issued piece: common, of the hearth level, without extra stats. A full
     /// issued kit is the "gear of hearth L" the battles are calibrated on, so every item found is a step above it
-    /// and old saves load with the same power. Numbers: balance.json "items" (ECONOMY.md, section 16).
+    /// and old saves load with the same power. Numbers: balance.json "items" (ECONOMY.md, section 17).
     /// </summary>
     public sealed partial class GameSession
     {
@@ -92,7 +92,7 @@ namespace LastHearth.Core
             return main + (1 + ItemNumbers.KitAt(level)) * extra;
         }
 
-        public RarityData RarityInfo(ItemRarity r) => ItemNumbers.Rarity(r);
+        public ItemRarityData ItemRarityInfo(ItemRarity r) => ItemNumbers.Rarity(r);
 
         public string ItemName(GearItem item)
         {
@@ -255,7 +255,7 @@ namespace LastHearth.Core
         }
 
         public long SellPrice(GearItem item) =>
-            item == null || item.Issued ? 0 : Math.Max(1, (long)Math.Round(ModelIncome(item.Level) * RarityInfo(item.Rarity).SellHours * (1 + 0.1 * item.Plus)));
+            item == null || item.Issued ? 0 : Math.Max(1, (long)Math.Round(ModelIncome(item.Level) * ItemRarityInfo(item.Rarity).SellHours * (1 + 0.1 * item.Plus)));
 
         /// <summary>Sells an item of the bag for silver (it goes through the rewards inbox: the warehouse limit holds).</summary>
         public Fail SellItem(int itemId)
@@ -269,7 +269,7 @@ namespace LastHearth.Core
             return Fail.None;
         }
 
-        public long ScrapOf(GearItem item) => item == null || item.Issued ? 0 : RarityInfo(item.Rarity).Scrap + item.Plus / 2;
+        public long ScrapOf(GearItem item) => item == null || item.Issued ? 0 : ItemRarityInfo(item.Rarity).Scrap + item.Plus / 2;
 
         /// <summary>Dismantling is capped per local day (GDD 8: no farming).</summary>
         public int DismantlesLeft(long now)
@@ -341,7 +341,7 @@ namespace LastHearth.Core
         {
             if (ForgeLevel() < 1)
                 return Fail.Locked;
-            if (ForgeLevel() < RarityInfo(rarity).ForgeLevel)
+            if (ForgeLevel() < ItemRarityInfo(rarity).ForgeLevel)
                 return Fail.Locked;
             if (rarity == ItemRarity.Legendary && State.HearthLevel < Balance.Activities.Legendary.FromHearth)
                 return Fail.Locked;
@@ -351,16 +351,16 @@ namespace LastHearth.Core
         /// <summary>Materials of the model income at the forge's level; a legendary item costs Cores instead.</summary>
         public ResourceBag CraftCost(ItemRarity rarity)
         {
-            var r = RarityInfo(rarity);
+            var r = ItemRarityInfo(rarity);
             var cost = ResourceBag.Materials((long)Math.Round(ModelIncome(CraftLevel) * r.CraftHours), Balance.SilverShare);
             if (rarity == ItemRarity.Legendary)
                 cost[ResourceType.Cores] += Balance.Activities.Legendary.Cores;
             return cost;
         }
 
-        public long CraftScrap(ItemRarity rarity) => RarityInfo(rarity).CraftScrap;
+        public long CraftScrap(ItemRarity rarity) => ItemRarityInfo(rarity).CraftScrap;
 
-        public long CraftSeconds(ItemRarity rarity) => RarityInfo(rarity).CraftMinutes * 60;
+        public long CraftSeconds(ItemRarity rarity) => ItemRarityInfo(rarity).CraftMinutes * 60;
 
         /// <summary>
         /// Starts forging: the player picks the kind and the rarity (and the set of a legendary item); the extra
@@ -443,7 +443,7 @@ namespace LastHearth.Core
             var n = ItemNumbers;
             var item = new GearItem { Kind = kind, Rarity = rarity, Level = Math.Max(1, Math.Min(30, level)) };
             var pool = n.Stats.Select(s => s.Stat).ToList();
-            int count = Math.Min(pool.Count, RarityInfo(rarity).Secondaries);
+            int count = Math.Min(pool.Count, ItemRarityInfo(rarity).Secondaries);
             for (int i = 0; i < count; i++)
             {
                 int k = Math.Min(pool.Count - 1, (int)(rng.Next() * pool.Count));
@@ -513,7 +513,7 @@ namespace LastHearth.Core
         {
             item.Id = Gear.NextItemId++;
             item.Source = from;
-            string what = string.Format("{0} ({1}, ур. {2})", ItemName(item), RarityInfo(item.Rarity).Name, item.Level);
+            string what = string.Format("{0} ({1}, ур. {2})", ItemName(item), ItemRarityInfo(item.Rarity).Name, item.Level);
             if (BagFull())
             {
                 long price = SellPrice(item);
