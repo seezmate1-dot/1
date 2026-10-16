@@ -342,6 +342,7 @@ DECOR.update({
 OBSTACLES = {
     "Rubble": "a wide low heap of fallen grey-brown rocks, boulders and broken wooden planks, a collapsed rubble pile, "
               "side view",
+    "Cradle": "a small wooden baby cradle on curved rockers with a white blanket and a little pillow, side view",
     "Arch": "a thick medieval wall pillar of warm sandstone blocks with an open round-arched doorway through it, front "
             "view, symmetric, the doorway a dark passage, a stone threshold",
     "Scaffold": "wooden construction scaffolding, front view, a frame of wooden poles and planks tied with ropes, "
@@ -371,7 +372,7 @@ def _piece_list():
         out["Decor/" + n] = ("a room decoration: " + what + ", seen from the front",
                              Image.open(p).size if os.path.exists(p) else (320, 320))
     for n, what in OBSTACLES.items():
-        out["Rooms/" + n] = (what, (192, 512) if n == "Arch" else (768, 384))
+        out["Rooms/" + n] = (what, {"Arch": (192, 512), "Cradle": (384, 384)}.get(n, (768, 384)))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     return out
