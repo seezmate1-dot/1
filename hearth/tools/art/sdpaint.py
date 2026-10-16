@@ -360,6 +360,22 @@ SCENE = {
     "Pen": "a small fenced wooden animal pen with a doghouse, a hay bale and a feeding trough",
 }
 
+# the pets (Kennel, GDD 8.1) and the heroes' companions (GDD 8.2): portraits for their windows
+PETS = {
+    "Wolf": "a young grey wolf sitting, friendly, thick fur",
+    "Owl": "a brown owl with big amber eyes perched on a small branch",
+    "CoalCat": "a black cat with glowing orange ember eyes and sooty fur, sitting",
+    "Raven": "a black raven with glossy feathers standing",
+    "BearCub": "a small round brown bear cub sitting",
+    "MistFox": "a silver-white fox with a bushy tail wrapped in wisps of pale blue mist",
+}
+COMPANIONS = {
+    "Squire": "a young medieval squire boy with a wooden shield and a short sword, full figure",
+    "Wolfhound": "a big grey wolfhound dog with a leather collar, standing",
+    "Falcon": "a falcon with spread wings and a leather hood strap",
+    "Firefly": "a big glowing coal firefly, an insect with a bright orange ember body and translucent wings",
+}
+
 
 def _piece_list():
     out = {}
@@ -373,6 +389,10 @@ def _piece_list():
                              Image.open(p).size if os.path.exists(p) else (320, 320))
     for n, what in OBSTACLES.items():
         out["Rooms/" + n] = (what, {"Arch": (192, 512), "Cradle": (384, 384)}.get(n, (768, 384)))
+    for n, what in PETS.items():
+        out["Pets/" + n] = ("a cute pet for a fantasy game: " + what + ", full body, three-quarter view", (256, 256))
+    for n, what in COMPANIONS.items():
+        out["Companions/" + n] = ("a hero's companion for a fantasy game: " + what + ", three-quarter view", (256, 256))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     return out
@@ -468,8 +488,9 @@ if __name__ == "__main__":
     args = ap.parse_args()
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder", "Stairs", "Rooms/Arch"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
-              "pieces": [n for n in PIECES if not n.startswith("Scene/")],
-              "scene": [n for n in PIECES if n.startswith("Scene/")]}
+              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/"))],
+              "scene": [n for n in PIECES if n.startswith("Scene/")],
+              "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
         if n in PIECES:
             piece(n, args)
