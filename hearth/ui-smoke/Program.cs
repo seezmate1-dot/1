@@ -38,7 +38,8 @@ public static class UiSmoke
         // --scene: every run (and the preview) with the places on the surface, on placeholders until they are painted
         bool sceneMode = args.Contains("--scene");
         args = args.Where(a => a != "--scene").ToArray();
-        int frames = args.Length > 0 ? int.Parse(args[0]) : 8100; // three rounds of the 18 windows, 150 frames each
+        // three rounds of every window (the Win enum), 150 frames each
+        int frames = args.Length > 0 ? int.Parse(args[0]) : 3 * 150 * Enum.GetValues(typeof(GameRunner).GetField("window", Any).FieldType).Length;
         var clicks = new Dictionary<string, int>();
         try
         {
@@ -86,7 +87,8 @@ public static class UiSmoke
         // every system must have been reached through its buttons
         string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "Другие соперники",
                           "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:",
-                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶" };
+                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶",
+                          "Снаряжение", "Надеть", "Продать:", "Разобрать:", "Ковать в кузне" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
         Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + " (заглушек мест на поверхности: " +
@@ -118,10 +120,11 @@ public static class UiSmoke
             return true;
         };
         int battles = 0, surges = 0;
+        int windows = Enum.GetValues(runner.GetType().GetField("window", Any).FieldType).Length;
         for (int frame = 0; frame < frames; frame++)
         {
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % 18); // 18 windows: Win.None .. Win.Hero
+            SetEnum(runner, "window", (frame / 150) % windows); // every window: Win.None .. the last one
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks

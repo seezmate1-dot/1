@@ -307,7 +307,7 @@ namespace LastHearth.Core.Tests
             Assert.AreEqual(1, state.SaveVersion);
 
             var s = new GameSession(TestData.Balance(), state);
-            Assert.AreEqual(2, state.SaveVersion);
+            Assert.AreEqual(3, state.SaveVersion, "upgraded to the current version");
             Assert.IsTrue(state.Rooms.All(r => r.Width == 1));
             Assert.AreEqual(Sex.Female, state.Dwellers.First(d => d.Name == "Мара").Sex);
             Assert.AreEqual(Sex.Male, state.Dwellers.First(d => d.Name == "Тим").Sex);

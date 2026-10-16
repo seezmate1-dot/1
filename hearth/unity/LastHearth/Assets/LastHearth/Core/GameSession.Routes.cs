@@ -141,6 +141,9 @@ namespace LastHearth.Core
                         d.InjuredUntil = e.End + 6 * 3600;
                 }
                 e.Card = (int)(rng.Next() * RouteCards.Length);
+                var item = Drop("route", L, e.Seed, "Вылазка"); // its own generator: the route's numbers stay the same
+                if (item != null)
+                    lines.Add("нашли: " + ItemName(item) + " (" + RarityInfo(item.Rarity).Name + ")");
                 e.Report = string.Format("{0}; чертежей {1}, материалов {2}, эссенции {3}", string.Join(", ", lines), bp, mats, essence);
                 Count(DailyTask.Route);
             }

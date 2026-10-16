@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Gear }
 
         // the HUD's bands: the resource plates on top, the round buttons along the bottom and the right edge
         const float HudTop = 50, HudBottom = 92, HudRight = 74;
@@ -29,7 +29,7 @@ namespace LastHearth.Game
             (Win.Hearth, "Очаг Стражей"), (Win.Room, ""), (Win.Build, "Стройка"), (Win.Campaign, "Поход"), (Win.Hunt, "Охота"), (Win.Arena, "Арена"),
             (Win.Raids, "Набеги"), (Win.Surge, "Наплыв"),
             (Win.Dwellers, "Жители"), (Win.Growth, "Развитие"), (Win.Routes, "Вылазки"), (Win.Quests, "Задания"),
-            (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"),
+            (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"), (Win.Gear, "Снаряжение"),
         };
 
         GUIStyle hudText, buttonLabel, titleText;
@@ -407,6 +407,9 @@ namespace LastHearth.Game
                     break;
                 case Win.Hero:
                     DrawHero(now);
+                    break;
+                case Win.Gear:
+                    DrawGear(now); // GameRunner.Gear.cs
                     break;
             }
         }

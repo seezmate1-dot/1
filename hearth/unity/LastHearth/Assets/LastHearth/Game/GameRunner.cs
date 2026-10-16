@@ -763,6 +763,7 @@ namespace LastHearth.Game
                 case Fail.Locked: return "Ещё закрыто";
                 case Fail.NoTracks: return "Попытки на сегодня кончились";
                 case Fail.LimitReached: return "Лимит исчерпан";
+                case Fail.InventoryFull: return "Сумка полна: продайте или разберите вещь";
                 case Fail.HuntInProgress: return "Сначала закончите начатый бой";
                 case Fail.NoHeroes: return "Нет героев: нужна казарма и герои";
                 case Fail.NotToday: return "Пока нельзя: подождите";

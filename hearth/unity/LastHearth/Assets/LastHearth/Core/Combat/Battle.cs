@@ -40,6 +40,58 @@ namespace LastHearth.Core.Combat
         public double HpMult = 1;
         /// <summary>The companion who fights next to the hero (GDD 8.2); null = none.</summary>
         public CompanionSetup Companion;
+        /// <summary>What the hero's equipment adds (GameSession.HeroGear); null = nothing at all.</summary>
+        public GearBonus Gear;
+    }
+
+    /// <summary>
+    /// GDD 8: what a hero's equipment adds in battle — the items, their sets and the forge's issued pieces in
+    /// the empty slots. Attack and Health are shares of the hero's base (a kit of the hearth level adds about
+    /// 1.05^(L-1)); the rest are the extra stats.
+    /// </summary>
+    public sealed class GearBonus
+    {
+        public double Attack;
+        public double Health;
+        public double Crit;
+        public double Dodge;
+        public double Haste;
+        public double Armor;
+        public double Healing;
+        public double MonsterDamage;
+        public double SkillPower;
+
+        public void Add(ItemStat stat, double value)
+        {
+            switch (stat)
+            {
+                case ItemStat.Attack: Attack += value; break;
+                case ItemStat.Health: Health += value; break;
+                case ItemStat.Crit: Crit += value; break;
+                case ItemStat.Dodge: Dodge += value; break;
+                case ItemStat.Haste: Haste += value; break;
+                case ItemStat.Armor: Armor += value; break;
+                case ItemStat.Healing: Healing += value; break;
+                case ItemStat.MonsterDamage: MonsterDamage += value; break;
+                default: SkillPower += value; break;
+            }
+        }
+
+        public double Get(ItemStat stat)
+        {
+            switch (stat)
+            {
+                case ItemStat.Attack: return Attack;
+                case ItemStat.Health: return Health;
+                case ItemStat.Crit: return Crit;
+                case ItemStat.Dodge: return Dodge;
+                case ItemStat.Haste: return Haste;
+                case ItemStat.Armor: return Armor;
+                case ItemStat.Healing: return Healing;
+                case ItemStat.MonsterDamage: return MonsterDamage;
+                default: return SkillPower;
+            }
+        }
     }
 
     /// <summary>GDD 8.2: the simple skill of a hero's companion.</summary>
@@ -83,8 +135,6 @@ namespace LastHearth.Core.Combat
         public List<WaveSpec> Waves = new List<WaveSpec>();
         public MonsterFamily Family;
         public int Rank = 1;
-        /// <summary>Gear quality follows the hearth level (ECONOMY.md, section 6).</summary>
-        public int GearLevel = 1;
         public int Seed = 1;
         /// <summary>Tournament rules of the day: attack of a class, healing of the priest.</summary>
         public Dictionary<HeroClass, double> ClassAttack = new Dictionary<HeroClass, double>();
@@ -116,6 +166,15 @@ namespace LastHearth.Core.Combat
         public double SkillMult;
         public CompanionSetup Companion;
         public int CompanionNext;
+        /// <summary>Equipment: chance that a blow misses, healing done and received, damage against monsters,
+        /// and the crit and armor the items add (the ghosts of PvP copy them).</summary>
+        public double Dodge;
+        public double Healing;
+        public double MonsterDamage;
+        public double GearCrit;
+        public double GearArmor;
+        /// <summary>Blows that missed the hero (dodge).</summary>
+        public int Dodged;
 
         public bool Alive => Hp > 0;
         public bool Ready => Alive && Charge >= ChargeMax;
@@ -154,6 +213,7 @@ namespace LastHearth.Core.Combat
         FamilyData family;
         readonly List<WaveSpec> waves;
         bool telegraphs;
+        bool mirror;
         readonly Rng rng;
         readonly Queue<BattleCommand> commands = new Queue<BattleCommand>();
         int bossNext;
@@ -221,7 +281,7 @@ namespace LastHearth.Core.Combat
             healMult = setup.HealMult;
             foreach (var h in setup.Heroes)
             {
-                var f = MakeHero(h, setup.GearLevel);
+                var f = MakeHero(h);
                 if (setup.ClassAttack.TryGetValue(h.Class, out double mult))
                     f.Attack *= mult;
                 f.Attack *= setup.PetAttack;
@@ -244,6 +304,7 @@ namespace LastHearth.Core.Combat
             var boss = c.Boss;
             family = c.Family(w.Family);
             telegraphs = w.Telegraphs;
+            mirror = w.Mirror;
             if (w.Mirror)
             {
                 // health: 100 ticks of the squad's damage; one hit: 5% of the squad's health (at x1).
@@ -279,7 +340,7 @@ namespace LastHearth.Core.Combat
             double sum = 0;
             foreach (var h in Heroes)
             {
-                sum += h.Attack / h.Interval;
+                sum += h.Attack / h.Interval * (1 + h.GearCrit * (c.CritMult - 1)); // the crit of the items counts
                 if (h.Companion != null && h.Companion.Skill == CompanionSkill.Bite && h.Companion.Every > 0)
                     sum += KennelInMirror * h.Attack * h.Companion.Power / h.Companion.Every;
             }
@@ -305,36 +366,49 @@ namespace LastHearth.Core.Combat
                     t *= 1 + comp.Power * c.MaxTicks / 4.0 / comp.Every; // a quarter of a battle of healing
                 if (comp != null && comp.Skill == CompanionSkill.Stagger && comp.Every > 0)
                     t *= 1 + comp.Power / comp.Every * c.MaxTicks / 1000.0; // the stuns it adds
+                // the dodge and the armor of the items: the ghost wears the same gear
+                t *= (100 + h.Armor) / (100 + h.Armor - h.GearArmor) / (1 - h.Dodge);
                 sum += t;
             }
             return sum / Heroes.Count;
         }
 
-        Fighter MakeHero(HeroSetup h, int gearLevel) => HeroFighter(c, h, gearLevel);
+        Fighter MakeHero(HeroSetup h) => HeroFighter(c, h);
 
-        /// <summary>A hero as the battle makes them (the hero screen shows the same numbers).</summary>
-        public static Fighter HeroFighter(CombatBalance c, HeroSetup h, int gearLevel)
+        /// <summary>A hero as the battle makes them (the hero screen shows the same numbers): the level, the main
+        /// stat and the equipment (GDD 8: items, sets, the forge's issued pieces).</summary>
+        public static Fighter HeroFighter(CombatBalance c, HeroSetup h)
         {
             var cls = c.Class(h.Class);
-            double growth = Math.Pow(c.LevelGrowth, h.Level - 1) * Math.Pow(c.GearGrowth, gearLevel - 1);
+            var gear = h.Gear ?? new GearBonus();
+            double growth = Math.Pow(c.LevelGrowth, h.Level - 1);
+            double hp = cls.Hp * growth * (1 + gear.Health) * h.HpMult;
             double main = h.Stats[(int)cls.MainStat];
             double agility = h.Stats[(int)Stat.Agility];
+            int interval = Math.Max(1, (int)Math.Round(cls.Interval / (1 + Math.Max(0, gear.Haste))));
             return new Fighter
             {
                 Id = h.Id,
                 Name = h.Name,
                 Class = h.Class,
                 Line = cls.Line,
-                MaxHp = cls.Hp * growth * h.HpMult,
-                Hp = cls.Hp * growth * h.HpMult * Math.Max(0, Math.Min(1, h.HpShare)),
-                Attack = cls.Attack * growth * (1 + main * c.StatBonus) * h.AttackMult,
-                Armor = cls.Armor, // gear adds health and attack, not armor: strikes stay dangerous at every rank
-                Crit = c.CritBase + Math.Max(0, agility - 10) * c.CritPerAgility,
-                Interval = cls.Interval,
-                NextAttack = cls.Interval,
+                MaxHp = hp,
+                Hp = hp * Math.Max(0, Math.Min(1, h.HpShare)),
+                Attack = cls.Attack * growth * (1 + gear.Attack) * (1 + main * c.StatBonus) * h.AttackMult,
+                // the main stats of items add health and attack; armor comes only from extra stats and sets,
+                // so strikes stay dangerous at every rank
+                Armor = cls.Armor + gear.Armor,
+                Crit = c.CritBase + Math.Max(0, agility - 10) * c.CritPerAgility + gear.Crit,
+                Interval = interval,
+                NextAttack = interval,
                 ChargeMax = cls.SkillCharge,
                 Charge = cls.SkillCharge / 2, // battles start with half a charge, so the first strike can be answered
-                SkillMult = 1 + (h.SkillLevel - 1) * c.SkillPerLevel,
+                SkillMult = (1 + (h.SkillLevel - 1) * c.SkillPerLevel) * (1 + gear.SkillPower),
+                Dodge = Math.Min(0.5, Math.Max(0, gear.Dodge)),
+                Healing = gear.Healing,
+                MonsterDamage = gear.MonsterDamage,
+                GearCrit = gear.Crit,
+                GearArmor = gear.Armor,
             };
         }
 
@@ -455,7 +529,7 @@ namespace LastHearth.Core.Combat
                     foreach (var other in Heroes)
                     {
                         if (other.Alive)
-                            other.Hp = Math.Min(other.MaxHp, other.Hp + other.MaxHp * s.HealShare * h.SkillMult * healMult);
+                            Heal(h, other, other.MaxHp * s.HealShare * h.SkillMult * healMult);
                     }
                     HasteUntil = Tick + s.HasteTicks;
                     Log.Add(Tick + ": " + h.Name + " — Тёплые руки");
@@ -484,7 +558,7 @@ namespace LastHearth.Core.Combat
                         AddStagger(comp.Power);
                     break;
                 case CompanionSkill.Heal:
-                    h.Hp = Math.Min(h.MaxHp, h.Hp + h.MaxHp * comp.Power * healMult);
+                    Heal(null, h, h.MaxHp * comp.Power * healMult);
                     break;
             }
         }
@@ -500,7 +574,7 @@ namespace LastHearth.Core.Combat
                         low = other;
                 }
                 if (low != null)
-                    low.Hp = Math.Min(low.MaxHp, low.Hp + h.Attack * c.Skills.PriestBasicHeal * healMult);
+                    Heal(h, low, h.Attack * c.Skills.PriestBasicHeal * healMult);
                 return;
             }
             bool crit = rng.Next() < h.Crit;
@@ -509,10 +583,19 @@ namespace LastHearth.Core.Combat
                 AddStagger(c.Boss.StaggerPerHit);
         }
 
+        /// <summary>Healing from a hero (null: a companion) to a hero; the items' «лечение» of both counts.</summary>
+        static void Heal(Fighter from, Fighter to, double amount)
+        {
+            amount *= (1 + (from?.Healing ?? 0)) * (1 + to.Healing);
+            to.Hp = Math.Min(to.MaxHp, to.Hp + amount);
+        }
+
         void HitBoss(double damage, Fighter from, bool stunCrit)
         {
             if (from != null && from.Class == family.Weak)
                 damage *= family.WeakMult;
+            if (from != null && !mirror)
+                damage *= 1 + from.MonsterDamage; // «урон по чудовищам»: not against the ghosts of PvP
             if (stunCrit)
                 damage *= c.Skills.StunCritMult;
             if (BossStunned)
@@ -618,6 +701,12 @@ namespace LastHearth.Core.Combat
 
         void HitHero(Fighter h, double damage)
         {
+            // dodge: the generator is asked only when the hero has it, so battles without it stay the same
+            if (h.Dodge > 0 && rng.Next() < h.Dodge)
+            {
+                h.Dodged++;
+                return;
+            }
             if (WallUp)
                 damage *= 1 - c.Skills.WallReduction;
             if (h.Companion != null && h.Companion.Skill == CompanionSkill.Guard)

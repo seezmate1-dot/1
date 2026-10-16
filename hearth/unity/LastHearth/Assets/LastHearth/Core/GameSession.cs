@@ -30,6 +30,8 @@ namespace LastHearth.Core
         NoHunt,
         NotMergeable,
         NotAPair,
+        /// <summary>The bag of items is full: sell or dismantle something first.</summary>
+        InventoryFull,
     }
 
     /// <summary>
@@ -166,6 +168,7 @@ namespace LastHearth.Core
                 due = State.Queue.NextToFinish();
             }
             ReturnRoutes(State.Time);
+            SettleCraft(State.Time); // the forge (GameSession.Gear.cs)
             UpdateEvents(State.Time);
             SettleSiege(State.Time);
             SettleMissedSurges(State.Time);
@@ -433,6 +436,7 @@ namespace LastHearth.Core
             d.HeroClass = heroClass;
             if (d.HeroLevel < 1)
                 d.HeroLevel = 1;
+            FitGear(d); // a new class: the weapon of the old one goes to the bag (the forge's issued piece stands in)
             return Fail.None;
         }
 

@@ -22,7 +22,7 @@ namespace LastHearth.Core.Tests
 
         public static BattleSetup Squad(int rank, int heroLevel, MonsterFamily family, int seed)
         {
-            var setup = new BattleSetup { Family = family, Rank = rank, GearLevel = rank, Seed = seed };
+            var setup = new BattleSetup { Family = family, Rank = rank, Seed = seed };
             for (int i = 0; i < SquadSize(rank); i++)
             {
                 int level = i < 5 ? heroLevel : Math.Max(1, heroLevel - 3);
@@ -35,6 +35,7 @@ namespace LastHearth.Core.Tests
                     Level = level,
                     SkillLevel = Math.Min(10, 1 + level / 6),
                     Stats = new[] { main, main, main, main, main },
+                    Gear = GameSession.IssuedKit(TestData.Balance().Items, rank), // the forge's kit of hearth L
                 });
             }
             return setup;

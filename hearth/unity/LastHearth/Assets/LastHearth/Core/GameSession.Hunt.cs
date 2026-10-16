@@ -9,6 +9,8 @@ namespace LastHearth.Core
     {
         public int Stars;
         public long Cores;
+        /// <summary>An item found (GDD 8), or null.</summary>
+        public GearItem Item;
     }
 
     /// <summary>ACTIVITIES.md, 3: the Hunt — tactical boss fights for Cores, and hero skills.</summary>
@@ -133,6 +135,7 @@ namespace LastHearth.Core
                 Count(DailyTask.Hunt);
                 State.HuntWins++;
                 GrantTreats(Balance.Pets.TreatsPerHuntWin); // pet treats (GDD 8.1)
+                reward.Item = Drop("hunt", hunt.Rank, hunt.Seed, "Охота, ранг " + hunt.Rank); // an item of the rank
                 CheckAchievements();
             }
             return Fail.None;

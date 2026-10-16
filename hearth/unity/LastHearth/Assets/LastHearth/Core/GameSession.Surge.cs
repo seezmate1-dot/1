@@ -77,7 +77,7 @@ namespace LastHearth.Core
                     Name = d.Name,
                     Hero = true,
                     Floor = h,
-                    Dps = c.HeroDps * Math.Pow(c.HeroLevelGrowth, d.HeroLevel - 1) * gear,
+                    Dps = c.HeroDps * Math.Pow(c.HeroLevelGrowth, d.HeroLevel - 1) * (1 + HeroGear(d).Attack), // the hero's items
                 });
             }
             return setup;

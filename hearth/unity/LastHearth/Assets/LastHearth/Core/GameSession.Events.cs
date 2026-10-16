@@ -107,6 +107,7 @@ namespace LastHearth.Core
             {
                 run.Thresholds++;
                 PayBudget(run, 0.08);
+                EventItem(run, run.Thresholds); // thresholds 5 and 10 bring an item (GameSession.Gear.cs)
                 if (run.Id == "Fair" && run.Thresholds == 10 && !run.Wanderer)
                 {
                     run.Wanderer = true;
@@ -136,6 +137,7 @@ namespace LastHearth.Core
             double share = rank == 1 ? 0.20 : rank <= 5 ? 0.14 : rank <= 20 ? 0.08 : 0.04;
             if (run.Points > 0)
                 PayBudget(run, share);
+            EventRankItem(run, rank); // the top ranks: an epic item
             run.LastResult = string.Format("{0}: {1:0} очков, место {2} из 50", EventInfo(run.Id).Name, run.Points, rank);
             if (run.Id == "Siege")
                 EndSiege(run);

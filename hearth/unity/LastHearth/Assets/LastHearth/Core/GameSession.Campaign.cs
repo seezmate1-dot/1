@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using LastHearth.Core.Combat;
 
 namespace LastHearth.Core
@@ -9,6 +10,8 @@ namespace LastHearth.Core
         public bool FirstClear;
         public ResourceBag Got = new ResourceBag();
         public Dweller NewHero;
+        /// <summary>Items found (GDD 8): a first clear, the chest of three stars, a repeat.</summary>
+        public List<GearItem> Items = new List<GearItem>();
     }
 
     /// <summary>MODES.md, 1: the campaign on the battle engine of the Hunt.</summary>
@@ -45,8 +48,9 @@ namespace LastHearth.Core
                 {
                     Family = m.Family,
                     Rank = m.Rank,
-                    HpMult = kind.HpMult * KennelExpected(Balance.Companions.CampaignHp, m.Rank),
-                    AttackMult = kind.AttackMult * KennelExpected(Balance.Companions.CampaignAttack, m.Rank),
+                    // the free player's kennel and finds are part of the recommended strength
+                    HpMult = kind.HpMult * KennelExpected(Balance.Companions.CampaignHp, m.Rank) * KennelExpected(Balance.Items.CampaignEdge, m.Rank),
+                    AttackMult = kind.AttackMult * KennelExpected(Balance.Companions.CampaignAttack, m.Rank) * KennelExpected(Balance.Items.CampaignEdge, m.Rank),
                     Telegraphs = kind.Telegraphs,
                 });
             }
@@ -78,6 +82,7 @@ namespace LastHearth.Core
             if (!battle.Over)
                 battle.RunToEnd();
             int index = State.PendingMission;
+            int seed = State.PendingMissionSeed;
             State.PendingMission = -1;
             reward = new MissionReward { Stars = battle.Stars };
             if (!battle.Won)
@@ -92,12 +97,18 @@ namespace LastHearth.Core
                 reward.Got[ResourceType.Sparks] += m.Sparks;
                 if (m.Kind == MissionKind.Boss)
                     reward.NewHero = StoryHero(m.Act);
+                string kind = m.Kind == MissionKind.Boss ? "boss" : m.Kind == MissionKind.Elite ? "elite" : "mission";
+                AddFind(reward.Items, Drop(kind, m.Rank, seed, "Поход: бой " + (index + 1)));
             }
             Count(DailyTask.Campaign);
             if (reward.FirstClear && m.Kind == MissionKind.Boss)
                 CheckAchievements();
             if (battle.Stars == 3 && State.CampaignStars[index] < 3)
+            {
+                // MODES.md, 1: the chest of three stars — Sparks and a piece of gear
                 reward.Got[ResourceType.Sparks] += Balance.Campaign.ChestSparks;
+                AddFind(reward.Items, Drop("chest", m.Rank, seed * 3 + 1, "Сундук трёх звёзд"));
+            }
             State.CampaignStars[index] = Math.Max(State.CampaignStars[index], battle.Stars);
             Pay(reward.Got);
             return Fail.None;
@@ -113,7 +124,8 @@ namespace LastHearth.Core
             if (RepeatsLeft(now) <= 0)
                 return Fail.NoTracks;
             State.RepeatsUsed++;
-            var battle = new Battle(Combat, MissionSetup(index, State.NextBattleSeed++)) { Brain = Brains.AutoBattle() };
+            int seed = State.NextBattleSeed++;
+            var battle = new Battle(Combat, MissionSetup(index, seed)) { Brain = Brains.AutoBattle() };
             battle.RunToEnd();
             reward = new MissionReward { Stars = battle.Stars };
             if (!battle.Won)
@@ -123,7 +135,14 @@ namespace LastHearth.Core
             reward.Got[ResourceType.Essence] += (long)Math.Round(m.Essence * c.RepeatEssenceShare);
             reward.Got.Add(ResourceBag.Materials((long)Math.Round(m.Materials * c.RepeatMaterialHours / c.FirstClearHours), Balance.SilverShare));
             Pay(reward.Got);
+            AddFind(reward.Items, Drop("repeat", m.Rank, seed, "Повтор боя " + (index + 1))); // "for collecting gear" (MODES.md, 1)
             return Fail.None;
+        }
+
+        static void AddFind(List<GearItem> list, GearItem item)
+        {
+            if (item != null)
+                list.Add(item);
         }
 
         /// <summary>Materials go through the rewards inbox (they respect the warehouse), the rest straight in.</summary>
@@ -150,13 +169,13 @@ namespace LastHearth.Core
             var d = AddDweller(names[(act - 1) % names.Length], new[] { stat, stat, stat, stat, stat });
             d.HeroClass = classes[(act - 1) % classes.Length];
             d.HeroLevel = lvl;
-            return d;
+            return d; // the forge's issued kit of the hearth level fills the slots
         }
 
         /// <summary>The squad of the fortress as battle heroes.</summary>
         BattleSetup SquadSetup(int seed)
         {
-            var setup = new BattleSetup { GearLevel = State.HearthLevel, Seed = seed };
+            var setup = new BattleSetup { Seed = seed };
             foreach (var d in Squad())
             {
                 setup.Heroes.Add(new HeroSetup
@@ -167,6 +186,7 @@ namespace LastHearth.Core
                     Level = d.HeroLevel,
                     SkillLevel = d.SkillLevel,
                     Stats = (int[])d.Stats.Clone(),
+                    Gear = HeroGear(d), // the items, the sets and the forge's issued pieces (GameSession.Gear.cs)
                 });
             }
             ApplyKennel(setup); // the active pet and the heroes' companions (GameSession.Companions.cs)

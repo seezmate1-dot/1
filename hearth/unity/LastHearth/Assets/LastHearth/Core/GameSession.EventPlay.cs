@@ -650,7 +650,7 @@ namespace LastHearth.Core
                     setup.Defenders.Add(new SurgeDefender { Id = d.Id, Name = d.Name, Floor = 1, Dps = c.DwellerDps * (d.StatOf(Stat.Strength) + d.StatOf(Stat.Endurance)) / 2.0 * gear * (1 + 0.15 * o.Traps) });
             }
             foreach (var d in Squad())
-                setup.Defenders.Add(new SurgeDefender { Id = d.Id, Name = d.Name, Hero = true, Floor = 0, Dps = c.HeroDps * Math.Pow(c.HeroLevelGrowth, d.HeroLevel - 1) * gear });
+                setup.Defenders.Add(new SurgeDefender { Id = d.Id, Name = d.Name, Hero = true, Floor = 0, Dps = c.HeroDps * Math.Pow(c.HeroLevelGrowth, d.HeroLevel - 1) * (1 + HeroGear(d).Attack) });
             defense = new SurgeDefense(c, setup);
             return Fail.None;
         }
