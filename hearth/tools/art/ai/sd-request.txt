@@ -1,3 +1,3 @@
-Map Stairs Rooms/Arch
+Stairs Rooms/Arch Stairs Rooms/Arch Stairs Rooms/Arch
 0.5
-# the new kingdom map repainted lightly, the stair tower, the open arches
+# copies on more runners: the first finished one is taken

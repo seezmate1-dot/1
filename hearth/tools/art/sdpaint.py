@@ -48,6 +48,17 @@ def native_bf16():
     return "avx512_bf16" in flags or "amx_bf16" in flags
 
 
+def _trim():
+    """Hands the memory freed after loading back to the system (glibc keeps it otherwise)."""
+    import ctypes
+    import gc
+    gc.collect()
+    try:
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except OSError:
+        pass
+
+
 def memory_gb():
     """The memory this process may use: the machine's, or its control group's limit when lower."""
     total = 0.0
@@ -69,7 +80,10 @@ def pipe():
         torch.set_num_threads(os.cpu_count() or 4)
         # loaded in bfloat16: SDXL in float32 needs more than 14 GB while loading
         p = StableDiffusionXLImg2ImgPipeline.from_single_file(MODEL, torch_dtype=torch.bfloat16)
-        if not native_bf16() and memory_gb() >= 20:
+        _trim()
+        # SD_PRECISION=fp32 or bf16 overrides the choice
+        precision = os.environ.get("SD_PRECISION") or ("fp32" if not native_bf16() and memory_gb() >= 20 else "bf16")
+        if precision == "fp32" and not native_bf16():
             # the painting itself in float32 (about 14 GB at the peak with the text encoders in bfloat16: they
             # run once), one tensor at a time; on a smaller machine the slow emulated bfloat16 has to do
             import gc
@@ -78,6 +92,7 @@ def pipe():
                     if t.dtype == torch.bfloat16:
                         t.data = t.data.float()
                 gc.collect()
+                _trim()
             # the attention and the decoder in slices: a big picture's activations stay small
             p.enable_attention_slicing()
             p.vae.enable_tiling()
