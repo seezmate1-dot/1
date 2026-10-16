@@ -37,6 +37,8 @@ namespace LastHearth.Game
             public Dictionary<string, Place> Places = new Dictionary<string, Place>();
             /// <summary>Points on the painted water where the sun glints come and go (0..1 of the map; UI/Glint).</summary>
             public List<Place> Sea = new List<Place>();
+            /// <summary>The lanes on the open water the little ships sail, there and back (two points each; Map/Ship).</summary>
+            public List<List<Place>> Ships = new List<List<Place>>();
         }
 
         public sealed class DecorInfo
@@ -57,6 +59,8 @@ namespace LastHearth.Game
             /// <summary>A stair tower beside the cutaway joins the floors and open arches join the rooms (Rooms/Stairs,
             /// Rooms/Arch), instead of the doors and ladders.</summary>
             public bool Stairs;
+            /// <summary>A little ship is painted (Map/Ship): ships sail the map's lanes.</summary>
+            public bool MapShips;
             /// <summary>The rooms are painted interiors that sit in the rock's opening (Rooms/Frame).</summary>
             public bool Framed;
             /// <summary>The loading screen's painted key art is there (Splash).</summary>

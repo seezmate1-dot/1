@@ -85,6 +85,7 @@ namespace LastHearth.Game
             if (tex != null)
                 GUI.DrawTexture(r, tex);
             DrawSea(r, map);
+            DrawShips(r, map);
             DrawActs(r, map, now);
             foreach (var (key, name, win) in MapPlaces)
             {
@@ -133,6 +134,39 @@ namespace LastHearth.Game
                 GUI.DrawTexture(new Rect(r.x + p.X * r.width + drift - k, r.y + p.Y * r.height - k * 0.4f, 2 * k, k * 0.8f), glint);
             }
             GUI.color = keep;
+        }
+
+        /// <summary>Little ships sail the lanes between the islands, there and back, slowing where they turn and
+        /// bobbing on the waves (the lanes run over open water only: hearth/tools/art/integrate.py).</summary>
+        void DrawShips(Rect r, ArtLibrary.MapInfo map)
+        {
+            if (!ArtLibrary.Data.MapShips || map.Ships == null || map.Ships.Count == 0)
+                return;
+            var tex = ArtLibrary.Tex("Map/Ship");
+            if (tex == null)
+                return;
+            float t = Time.time, s = r.width * 0.035f;
+            for (int i = 0; i < map.Ships.Count; i++)
+            {
+                var lane = map.Ships[i];
+                if (lane == null || lane.Count < 2)
+                    continue;
+                var a = lane[0];
+                var b = lane[lane.Count - 1];
+                float period = 80f + i * 23f, u = t / period + i * 0.37f;
+                u -= (float)Math.Floor(u);
+                bool back = u > 0.5f;
+                float k = back ? (1f - u) * 2f : u * 2f;
+                k = k * k * (3f - 2f * k); // easing at the ends of the lane, where the ship turns
+                float x = r.x + (a.X + (b.X - a.X) * k) * r.width;
+                float y = r.y + (a.Y + (b.Y - a.Y) * k) * r.height + Mathf.Sin(t * 1.3f + i) * s * 0.04f;
+                var rect = new Rect(x - s / 2, y - s * 0.8f, s, s);
+                // the picture sails to the right; going left it is mirrored
+                if ((b.X - a.X) * (back ? -1 : 1) < 0)
+                    GUI.DrawTextureWithTexCoords(rect, tex, new Rect(1, 0, -1, 1));
+                else
+                    GUI.DrawTexture(rect, tex);
+            }
         }
 
         /// <summary>A place on the map: its name on a plaque under it (a red dot when something waits); the
