@@ -60,12 +60,13 @@ def _trim():
 
 
 def memory_gb():
-    """The memory this process may use: the machine's, or its control group's limit when lower."""
+    """The memory this process may use: the machine's with its swap, or its control group's limit when lower."""
     total = 0.0
     try:
+        # the swap counts: the float32 peak (about 14 GB) lasts only while the model is converted
         for line in open("/proc/meminfo"):
-            if line.startswith("MemTotal:"):
-                total = int(line.split()[1]) / 2 ** 20
+            if line.startswith(("MemTotal:", "SwapTotal:")):
+                total += int(line.split()[1]) / 2 ** 20
         limit = open("/sys/fs/cgroup/memory.max").read().strip()
         if limit.isdigit():
             total = min(total, int(limit) / 2 ** 30)
@@ -82,7 +83,7 @@ def pipe():
         p = StableDiffusionXLImg2ImgPipeline.from_single_file(MODEL, torch_dtype=torch.bfloat16)
         _trim()
         # SD_PRECISION=fp32 or bf16 overrides the choice
-        precision = os.environ.get("SD_PRECISION") or ("fp32" if not native_bf16() and memory_gb() >= 20 else "bf16")
+        precision = os.environ.get("SD_PRECISION") or ("fp32" if not native_bf16() and memory_gb() >= 18 else "bf16")
         if precision == "fp32" and not native_bf16():
             # the painting itself in float32 (about 14 GB at the peak with the text encoders in bfloat16: they
             # run once), one tensor at a time; on a smaller machine the slow emulated bfloat16 has to do
