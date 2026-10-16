@@ -235,6 +235,7 @@ namespace LastHearth.Core
         public ShopData Shop = new ShopData();
         public PvpData Pvp = new PvpData();
         public List<EventData> Events = new List<EventData>();
+        public EventCurrencyData EventCurrency = new EventCurrencyData();
     }
 
     /// <summary>EVENTS.md: schedule and reward budget of one live event (from the economy model).</summary>
@@ -251,6 +252,30 @@ namespace LastHearth.Core
         public double MaterialHours;
         public long HourglassMinutes;
         public int Unlock;
+        /// <summary>Players in the rating group (ghosts until the server exists).</summary>
+        public int Group = 50;
+        /// <summary>The event's own currency: thresholds and the rating bring it, the event shop takes it.</summary>
+        public string Currency = "";
+        public List<EventGoodsData> Shop = new List<EventGoodsData>();
+    }
+
+    /// <summary>One line of an event shop: "Cores", "Ember", "Blueprints", "Recruit" or "Decor:&lt;id&gt;".</summary>
+    public sealed class EventGoodsData
+    {
+        public string Goods = "";
+        public long Price;
+        public int Limit;
+        public long Amount;
+    }
+
+    /// <summary>EVENTS.md 1: currency per threshold and per place; the rest turns into silver after the end.</summary>
+    public sealed class EventCurrencyData
+    {
+        public long PerThreshold = 10;
+        /// <summary>1st place, 2-5, 6-20, the rest.</summary>
+        public long[] Rank = { 30, 20, 10, 5 };
+        public long Silver = 5;
+        public int BurnHours = 24;
     }
 
     public sealed class ShopData

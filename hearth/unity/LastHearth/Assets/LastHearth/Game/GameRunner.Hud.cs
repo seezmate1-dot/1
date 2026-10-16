@@ -279,7 +279,7 @@ namespace LastHearth.Game
             if (RoundButton(new Rect(x, y, size, size), "Icons/Food", "Питомцы", KennelWaits()))
                 Open(Win.Pets);
             y += size + 20;
-            if (RoundButton(new Rect(x, y, size, size), "Buttons/Events", "События", session.ActiveRuns(now).Any()))
+            if (RoundButton(new Rect(x, y, size, size), "Buttons/Events", "События", EventsWait(now)))
                 Open(Win.Events);
         }
 
