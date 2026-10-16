@@ -190,8 +190,9 @@ namespace LastHearth.Game
         {
             var d = session.Balance.Activities.Daily;
             var st = session.State;
-            GUILayout.Label(string.Format("<b>Поручения дня</b> · выполнено {0}/{1} нужных · вход в игру {2} дн. (календарь)",
-                session.TasksDone(now), d.TasksNeeded, st.LoginCount), Rich());
+            GUILayout.Label(string.Format("<b>Поручения дня</b> · выполнено {0}/{1} нужных · каждое +{2} очков сезона\n" +
+                "<size=12><color=#d8c8a8>Пропущенный день ничего не отнимает.</color></size>",
+                session.TasksDone(now), d.TasksNeeded, session.SeasonInfo.TaskXp), Rich());
             foreach (var t in session.TodayTasks(now))
             {
                 int have = st.DailyProgress[(int)t], need = session.TaskTimes(t);

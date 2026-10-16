@@ -20,6 +20,9 @@ public static class UiSmoke
 {
     static readonly BindingFlags Any = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
+    /// <summary>How many windows GameRunner has (its Win enum, Win.None included).</summary>
+    static readonly int WindowCount = Enum.GetValues(typeof(GameRunner).GetField("window", Any).FieldType).Length;
+
     /// <summary>The pictures of the places on the surface (GameRunner.Scene.cs), Resources/Art/Scene.</summary>
     static readonly string[] ScenePlaces = { "Pier", "Board", "Merchant", "Pen", "Arena", "Portal" };
 
@@ -38,8 +41,7 @@ public static class UiSmoke
         // --scene: every run (and the preview) with the places on the surface, on placeholders until they are painted
         bool sceneMode = args.Contains("--scene");
         args = args.Where(a => a != "--scene").ToArray();
-        // three rounds of every window (the Win enum), 150 frames each
-        int frames = args.Length > 0 ? int.Parse(args[0]) : 3 * 150 * Enum.GetValues(typeof(GameRunner).GetField("window", Any).FieldType).Length;
+        int frames = args.Length > 0 ? int.Parse(args[0]) : 3 * WindowCount * 150; // three rounds of every window, 150 frames each
         var clicks = new Dictionary<string, int>();
         try
         {
@@ -57,12 +59,13 @@ public static class UiSmoke
             new PlayerBot(played).PlayDays(TestData.Start, 20);
             Run("крепость бота, 20 дней", played, frames, 2, clicks);
             if (args.Length > 1)
-                Preview(played, args[1], args.Length > 2 ? int.Parse(args[2]) : 0);
+                Preview(played, args[1], args.Length > 2 ? int.Parse(args[2]) : 0, args.Skip(3).ToArray());
 
             var late = NewGame.Create(balance, TestData.Start);
             late.Combat = combat;
             new PlayerBot(late).PlayDays(TestData.Start, 35);
-            Run("крепость бота, 35 дней", late, frames, 3, clicks);
+            // back after five hours away: «Пока вас не было» opens first
+            Run("крепость бота, 35 дней, 5 часов без игрока", late, frames, 3, clicks, 5 * 3600);
 
             // the places on the surface instead of the side buttons (Art.json "scene"), on placeholders until painted
             var surface = NewGame.Create(balance, TestData.Start);
@@ -85,9 +88,9 @@ public static class UiSmoke
         foreach (var kv in clicks.OrderByDescending(kv => kv.Value).Take(25))
             Console.WriteLine("  " + kv.Value + " × " + kv.Key.Replace("\n", " / "));
         // every system must have been reached through its buttons
-        string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "Другие соперники",
+        string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "[ячейка]Обновить соперников",
                           "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:",
-                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶",
+                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶", "Календарь", "Сезон", "Продолжить",
                           "Снаряжение", "Надеть", "Продать:", "Разобрать:", "Ковать в кузне" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
@@ -99,7 +102,7 @@ public static class UiSmoke
         return 0;
     }
 
-    static void Run(string name, GameSession session, int frames, int seed, Dictionary<string, int> clicks)
+    static void Run(string name, GameSession session, int frames, int seed, Dictionary<string, int> clicks, long away = 0)
     {
         Application.persistentDataPath = Path.Combine(Path.GetTempPath(), "lasthearth-ui-smoke-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Application.persistentDataPath);
@@ -107,8 +110,10 @@ public static class UiSmoke
         Call(runner, "Awake");
         if (session != null)
         {
-            Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            Set(runner, "skip", session.State.Time + away - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             Call(runner, "StartSession", session);
+            if (away > 0 && Get(runner, "window").ToString() != "Away")
+                throw new InvalidOperationException(name + ": the summary «Пока вас не было» did not open");
         }
         var rng = new Random(seed);
         GUILayout.Click = label =>
@@ -120,11 +125,10 @@ public static class UiSmoke
             return true;
         };
         int battles = 0, surges = 0;
-        int windows = Enum.GetValues(runner.GetType().GetField("window", Any).FieldType).Length;
         for (int frame = 0; frame < frames; frame++)
         {
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % windows); // every window: Win.None .. the last one
+            SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. the last one
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
@@ -155,12 +159,15 @@ public static class UiSmoke
     }
 
     /// <summary>Writes what the main screen draws (the fortress and its HUD), for hearth/ui-smoke/preview.py.</summary>
-    static void Preview(GameSession session, string path, int window)
+    /// <summary>Extra arguments "field=number" set the runner's int fields first (a tab of the window: arenaTab=2).</summary>
+    static void Preview(GameSession session, string path, int window, string[] fields)
     {
         var runner = new GameRunner();
         Call(runner, "Awake");
         Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         Call(runner, "StartSession", session);
+        foreach (string f in fields.Where(f => f.Contains('=')))
+            Set(runner, f.Split('=')[0], int.Parse(f.Split('=')[1]));
         GUILayout.Click = _ => false;
         // window -1: the map of the islands; -2: the loading screen; -3: the effects (collect all, «Готово», a level up) in flight
         Set(runner, "onMap", window == -1);
@@ -188,6 +195,7 @@ public static class UiSmoke
         File.WriteAllLines(path, GUI.Record);
         GUI.Record = null;
     }
+
 
     static object Get(object o, string field) => o.GetType().GetField(field, Any).GetValue(o);
 

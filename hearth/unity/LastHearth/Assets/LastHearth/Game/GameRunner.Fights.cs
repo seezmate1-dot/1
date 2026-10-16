@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace LastHearth.Game
 {
-    /// <summary>The "Бои" and "Наплыв" tabs: campaign, arena, raids and the live evening defense.</summary>
+    /// <summary>The "Бои" and "Наплыв" tabs: the campaign and the live evening defense (the arena and raids: GameRunner.Arena.cs).</summary>
     public sealed partial class GameRunner
     {
         SurgeDefense surge;
@@ -78,119 +78,6 @@ namespace LastHearth.Game
                 case MissionKind.Boss: return "БОСС";
                 default: return "обычный";
             }
-        }
-
-        // ------------------------------------------------------------------ arena and raids
-
-        void DrawArena(long now)
-        {
-            var p = session.Balance.Activities.Pvp;
-            GUILayout.Label("<b>Арена очагов</b>", Rich());
-            if (!session.ArenaOpen)
-            {
-                GUILayout.Label("Откроется на " + p.ArenaUnlock + "-м уровне очага");
-                return;
-            }
-            var st = session.State;
-            string next = st.ArenaTicketAt > 0 ? " · следующий через " + Duration(st.ArenaTicketAt - now) : "";
-            GUILayout.Label(string.Format("Рейтинг {0} · лига «{1}» · билеты {2}/{3}{4} · побед за всё время {5} · неделя кончится в воскресенье в 22:00",
-                st.ArenaRating, session.League.Name, session.ArenaTickets(now), p.Tickets, next, st.ArenaWins));
-            GUILayout.BeginHorizontal();
-            var list = session.ArenaOpponents(now);
-            for (int i = 0; i < list.Count; i++)
-            {
-                var o = list[i];
-                if (GUILayout.Button(string.Format("{0}\nочаг {1} · рейтинг {2} · сила {3:0}%", o.Name, o.HearthLevel, o.Rating, o.Power * 100)))
-                {
-                    var fail = session.StartArena(i, now, out var started);
-                    Report(fail);
-                    if (fail == Fail.None)
-                    {
-                        BeginBattle(started, done =>
-                        {
-                            session.FinishPvp(done, Now(), out var r);
-                            return string.Format("{0} · рейтинг {1:+0;-0} · +{2} славы", done.Won ? "Победа" : "Поражение", r.RatingChange, r.Got[ResourceType.Glory]);
-                        }, "Арена против " + o.Name);
-                    }
-                }
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Другие соперники (раз в 10 минут)"))
-                Report(session.RerollArena(now));
-            long price = session.ArenaTicketPrice(now);
-            if (price > 0 && GUILayout.Button("Билет за " + price + " искр"))
-                Report(session.BuyArenaTicket(now));
-            if (GUILayout.Button(st.ArenaDefense.Count == 0 ? "Оборона: сильнейшие (поставить текущий отряд)" : "Оборона: " + st.ArenaDefense.Count + " героев"))
-                Report(session.SetArenaDefense(session.Squad().Take(5).Select(d => d.Id).ToList()));
-            GUILayout.EndHorizontal();
-
-            GUILayout.Label("Лавка славы:");
-            GUILayout.BeginHorizontal();
-            for (int g = 0; g < p.GloryShop.Count; g++)
-            {
-                var goods = p.GloryShop[g];
-                if (GUILayout.Button(string.Format("{0}\n{1} славы · осталось {2}", GloryName(goods.Goods), goods.Price, session.GloryLeft(g, now))))
-                    Report(session.BuyGlory(g, now));
-            }
-            GUILayout.EndHorizontal();
-            foreach (var line in st.PvpLog.Skip(Math.Max(0, st.PvpLog.Count - 5)))
-                GUILayout.Label("   " + line);
-        }
-
-        static string GloryName(string goods)
-        {
-            switch (goods)
-            {
-                case "Essence": return "Эссенция (¼ дня)";
-                case "Hourglass": return "Песочные часы, 1 ч";
-                default: return "Печать редкого жителя";
-            }
-        }
-
-        void DrawRaids(long now)
-        {
-            var p = session.Balance.Activities.Pvp;
-            GUILayout.Label("<b>Набеги</b> · никто ничего не теряет: добычу выдаёт игра", Rich());
-            if (!session.RaidsOpen)
-            {
-                GUILayout.Label("Откроются на " + p.RaidUnlock + "-м уровне очага");
-                return;
-            }
-            var st = session.State;
-            string next = st.RaidFlagAt > 0 ? " · следующий через " + Duration(st.RaidFlagAt - now) : "";
-            GUILayout.Label(string.Format("Флаги {0}/{1}{2} · звёзды: {3}", session.RaidFlags(now), p.Flags, next, string.Join(", ", GameSession.RaidStarNames)));
-            GUILayout.BeginHorizontal();
-            var list = session.RaidTargets(now);
-            for (int i = 0; i < list.Count; i++)
-                RaidButton(list[i], i, false, now);
-            GUILayout.EndHorizontal();
-            if (st.Revenge.Count > 0)
-            {
-                GUILayout.BeginHorizontal();
-                for (int i = 0; i < st.Revenge.Count; i++)
-                    RaidButton(st.Revenge[i], i, true, now);
-                GUILayout.EndHorizontal();
-            }
-        }
-
-        void RaidButton(PvpOpponent o, int index, bool revenge, long now)
-        {
-            string label = revenge
-                ? string.Format("МЕСТЬ: {0}\nбесплатно, добыча ×2 · ещё {1}", o.Name, Duration(o.Until - now))
-                : string.Format("Крепость {0}\nочаг {1} · сила {2:0}%", o.Name, o.HearthLevel, o.Power * 100);
-            if (!GUILayout.Button(label))
-                return;
-            var fail = session.StartRaid(index, revenge, now, out var started);
-            Report(fail);
-            if (fail != Fail.None)
-                return;
-            BeginBattle(started, done =>
-            {
-                session.FinishPvp(done, Now(), out var r);
-                return string.Format("{0} · добыча {1} материалов{2}", StarText(r.Stars), r.Materials,
-                    r.Got[ResourceType.Glory] > 0 ? " · трофеи +" + r.Got[ResourceType.Glory] + " славы" : "");
-            }, (revenge ? "Месть: " : "Набег: ") + o.Name);
         }
 
         // ------------------------------------------------------------------ the evening Surge

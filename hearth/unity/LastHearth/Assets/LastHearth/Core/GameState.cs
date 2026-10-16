@@ -11,6 +11,8 @@ namespace LastHearth.Core
         public Combat.MonsterFamily Family;
         public int Rank;
         public int Seed;
+        /// <summary>The monster of the week (Sunday): stronger, pays more Cores.</summary>
+        public bool Weekly;
     }
 
     public enum RoutePath
@@ -229,6 +231,8 @@ namespace LastHearth.Core
         public int LoginCount;
         public int HuntWins;
         public List<string> Achievements = new List<string>();
+        /// <summary>The calendar's claims, the season, the warm week, the monster of the week, notifications (Retention.cs).</summary>
+        public RetentionState Retention = new RetentionState();
 
         // Shops (MODES.md, 4)
         public long PacksWeek = -1;
@@ -265,6 +269,12 @@ namespace LastHearth.Core
         public List<string> PvpLog = new List<string>();
         public long GloryWeek = -1;
         public int[] GloryBought = new int[3];
+        /// <summary>The arena and raid journal: our fights and the attacks on us, the newest last (GameSession.Pvp.cs).</summary>
+        public List<PvpRecord> PvpJournal = new List<PvpRecord>();
+        /// <summary>The fortress's raid defense: three lines (upper halls, barracks, Hearth), filled lazily.</summary>
+        public List<RaidLine> RaidDefense = new List<RaidLine>();
+        /// <summary>Fortification levels: walls, watch fires (MODES.md, 5).</summary>
+        public int[] Fortifications = new int[2];
 
         // Live events (EVENTS.md)
         public List<EventRun> Events = new List<EventRun>();

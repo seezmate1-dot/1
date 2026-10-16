@@ -64,6 +64,10 @@ namespace LastHearth.Core.Tests
             S.ClaimRewards();
             S.CollectAll();
             S.ClaimDaily(now);
+            while (S.CalendarPending > 0 && S.ClaimCalendar(now) == Fail.None)
+            {
+            }
+            S.ClaimSeasonAll(now);
             foreach (var e in S.State.Expeditions.Where(x => x.Back).ToList())
                 S.ResolveRouteCard(e.Id, 2, now);
             foreach (var job in S.State.Queue.AllJobs().ToList())
@@ -133,7 +137,7 @@ namespace LastHearth.Core.Tests
             }
             bool surplus = S.State.Wallet[ResourceType.Silver] >= S.Capacity(ResourceType.Silver) * 0.6 &&
                            S.State.Wallet[ResourceType.Iron] >= S.Capacity(ResourceType.Iron) * 0.6;
-            if (S.Gear.Craft == null && S.ForgeLevel >= 1)
+            if (S.Gear.Craft == null && S.ForgeLevel() >= 1)
             {
                 Dweller weak = null;
                 var slotOf = ItemSlot.Weapon;

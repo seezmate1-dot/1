@@ -13,7 +13,7 @@ namespace LastHearth.Core
     /// Glory shop, shown before buying — no lottery for money (GDD 13.1).
     /// An empty slot holds the forge's issued piece: common, of the hearth level, without extra stats. A full
     /// issued kit is the "gear of hearth L" the battles are calibrated on, so every item found is a step above it
-    /// and old saves load with the same power. Numbers: balance.json "items" (ECONOMY.md, section 15).
+    /// and old saves load with the same power. Numbers: balance.json "items" (ECONOMY.md, section 16).
     /// </summary>
     public sealed partial class GameSession
     {
@@ -312,7 +312,7 @@ namespace LastHearth.Core
         /// <summary>GDD 8: an item worn or in the bag gets +1 (iron and essence, in the forge).</summary>
         public Fail UpgradeItem(int itemId)
         {
-            if (ForgeLevel < 1)
+            if (ForgeLevel() < 1)
                 return Fail.Locked;
             var item = FindItem(itemId);
             if (item == null)
@@ -327,19 +327,17 @@ namespace LastHearth.Core
             return Fail.None;
         }
 
-        // ------------------------------------------------------------------ the forge
-
-        public int ForgeLevel => MaxRoomLevel(RoomType.Forge);
+        // ------------------------------------------------------------------ the forge (ForgeLevel(): GameSession.Pvp.cs)
 
         /// <summary>The level of the items the forge makes: its own level, never above the hearth.</summary>
-        public int CraftLevel => Math.Max(1, Math.Min(ForgeLevel, State.HearthLevel));
+        public int CraftLevel => Math.Max(1, Math.Min(ForgeLevel(), State.HearthLevel));
 
         /// <summary>None when the forge makes this rarity; legendary items need the hearth of ACTIVITIES.md, 3.</summary>
         public Fail CraftOpen(ItemRarity rarity)
         {
-            if (ForgeLevel < 1)
+            if (ForgeLevel() < 1)
                 return Fail.Locked;
-            if (ForgeLevel < RarityInfo(rarity).ForgeLevel)
+            if (ForgeLevel() < RarityInfo(rarity).ForgeLevel)
                 return Fail.Locked;
             if (rarity == ItemRarity.Legendary && State.HearthLevel < Balance.Activities.Legendary.FromHearth)
                 return Fail.Locked;

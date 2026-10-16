@@ -11,6 +11,8 @@ namespace LastHearth.Core
         public long Cores;
         /// <summary>An item found (GDD 8), or null.</summary>
         public GearItem Item;
+        /// <summary>The monster of the week was beaten (double Cores).</summary>
+        public bool Weekly;
     }
 
     /// <summary>ACTIVITIES.md, 3: the Hunt — tactical boss fights for Cores, and hero skills.</summary>
@@ -83,7 +85,23 @@ namespace LastHearth.Core
                 .Take(SquadSize()).ToList();
         }
 
-        public Fail StartHunt(MonsterFamily family, int rank, long now, out Battle battle)
+        /// <summary>The week of the calendar (from the Monday epoch of the events) and its day, 0 = Monday.</summary>
+        public long WeekKey(long now) => (long)Math.Floor((LocalDay(now) - MondayEpochDay) / 7.0);
+
+        public int Weekday(long now) => (int)(((LocalDay(now) - MondayEpochDay) % 7 + 7) % 7);
+
+        /// <summary>ACTIVITIES.md, 3: on Sunday the monster of the week waits on the Hunt until it is beaten:
+        /// stronger, and its first win of the week pays double Cores. The family changes every week.</summary>
+        public MonsterFamily? WeeklyMonster(long now)
+        {
+            var w = Balance.Activities.Hunt.Weekly;
+            if (State.HearthLevel < Balance.Activities.Hunt.Unlock || Weekday(now) != w.Weekday || Retention.WeeklyWonWeek == WeekKey(now))
+                return null;
+            int families = Enum.GetValues(typeof(MonsterFamily)).Length;
+            return (MonsterFamily)(int)(((WeekKey(now) % families) + families) % families);
+        }
+
+        public Fail StartHunt(MonsterFamily family, int rank, long now, out Battle battle, bool weekly = false)
         {
             battle = null;
             Advance(now);
@@ -92,7 +110,7 @@ namespace LastHearth.Core
                 return Fail.Locked;
             if (State.Hunt != null || State.PendingMission >= 0)
                 return Fail.HuntInProgress;
-            if (!HuntDens(now).Contains(family))
+            if (weekly ? WeeklyMonster(now) != family : !HuntDens(now).Contains(family))
                 return Fail.NotToday;
             if (rank < 1 || rank > State.HearthLevel)
                 return Fail.RankTooHigh;
@@ -103,7 +121,7 @@ namespace LastHearth.Core
             if (State.HuntTracks == hunt.TracksPerDay)
                 State.HuntTrackAt = now + TrackSeconds;
             State.HuntTracks--;
-            State.Hunt = new PendingHunt { Family = family, Rank = rank, Seed = State.NextBattleSeed++ };
+            State.Hunt = new PendingHunt { Family = family, Rank = rank, Seed = State.NextBattleSeed++, Weekly = weekly };
             battle = MakeBattle(State.Hunt);
             return Fail.None;
         }
@@ -113,6 +131,11 @@ namespace LastHearth.Core
             var setup = SquadSetup(hunt.Seed);
             setup.Family = hunt.Family;
             setup.Rank = hunt.Rank;
+            if (hunt.Weekly)
+            {
+                var w = Balance.Activities.Hunt.Weekly;
+                setup.Waves.Add(new WaveSpec { Family = hunt.Family, Rank = hunt.Rank, HpMult = w.HpMult, AttackMult = w.AttackMult });
+            }
             return new Battle(Combat, setup);
         }
 
@@ -127,11 +150,16 @@ namespace LastHearth.Core
             var hunt = State.Hunt;
             State.Hunt = null;
             int stars = battle.Stars;
-            long cores = (long)Math.Round(Balance.Activities.Hunt.CoresByLevel[hunt.Rank - 1] * Combat.StarReward[stars]);
+            bool weekly = hunt.Weekly && battle.Won;
+            double mult = weekly ? Balance.Activities.Hunt.Weekly.CoreMult : 1;
+            long cores = (long)Math.Round(Balance.Activities.Hunt.CoresByLevel[hunt.Rank - 1] * Combat.StarReward[stars] * mult);
             State.Wallet[ResourceType.Cores] += cores;
-            reward = new HuntReward { Stars = stars, Cores = cores };
+            reward = new HuntReward { Stars = stars, Cores = cores, Weekly = weekly };
+            if (weekly)
+                Retention.WeeklyWonWeek = WeekKey(State.Time);
             if (battle.Won)
             {
+                AddSeasonXp(SeasonInfo.HuntXp);
                 Count(DailyTask.Hunt);
                 State.HuntWins++;
                 GrantTreats(Balance.Pets.TreatsPerHuntWin); // pet treats (GDD 8.1)

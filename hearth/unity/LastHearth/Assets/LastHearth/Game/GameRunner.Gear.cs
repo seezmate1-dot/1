@@ -297,7 +297,7 @@ namespace LastHearth.Game
         void DrawUpgradeButton(GearItem item)
         {
             var cost = session.UpgradeCost(item);
-            if (cost == null || session.ForgeLevel < 1)
+            if (cost == null || session.ForgeLevel() < 1)
                 return;
             if (GUILayout.Button(string.Format("Улучшить до +{0}: {1}", item.Plus + 1, CostText(cost))))
                 Report(session.UpgradeItem(item.Id), "Build");
@@ -321,7 +321,7 @@ namespace LastHearth.Game
         {
             var b = session.Balance;
             var gear = session.Gear;
-            GUILayout.Label(string.Format("<b>Кузня</b> ур. {0}: куёт вещи {1}-го уровня · обломки {2} · сумка {3}/{4}", session.ForgeLevel,
+            GUILayout.Label(string.Format("<b>Кузня</b> ур. {0}: куёт вещи {1}-го уровня · обломки {2} · сумка {3}/{4}", session.ForgeLevel(),
                 session.CraftLevel, gear.Scrap, session.Bag().Count, session.BagSize()), Rich());
             var job = gear.Craft;
             if (job != null)

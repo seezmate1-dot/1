@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace LastHearth.Core
 {
     // GDD 8 «Снаряжение», 8.3: the heroes' items. Numbers come from hearth/tools/economy.py (balance.json:
-    // "items", ECONOMY.md section 15); the saved part is GearState in GameState; the rules are in
+    // "items", ECONOMY.md section 16); the saved part is GearState in GameState; the rules are in
     // GameSession.Gear.cs.
 
     /// <summary>The six places of a hero's equipment.</summary>

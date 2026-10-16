@@ -173,6 +173,7 @@ namespace LastHearth.Core.Combat
         public double MonsterDamage;
         public double GearCrit;
         public double GearArmor;
+        public double GearSkill;
         /// <summary>Blows that missed the hero (dodge).</summary>
         public int Dodged;
 
@@ -334,13 +335,18 @@ namespace LastHearth.Core.Combat
         /// the same arena win rate as before the kennel).</summary>
         const double KennelInMirror = 0.5;
 
+        /// <summary>How much of the items' skill power and healing the ghost of PvP copies (the mirror leaves the
+        /// skills out, but the items that strengthen them must not buy the arena).</summary>
+        const double GhostSkillShare = 0.5;
+
         /// <summary>The squad's damage per tick without skills: basic attacks, bites, the pet's strikes.</summary>
         double SquadDamagePerTick()
         {
             double sum = 0;
             foreach (var h in Heroes)
             {
-                sum += h.Attack / h.Interval * (1 + h.GearCrit * (c.CritMult - 1)); // the crit of the items counts
+                // the crit and the skill power of the items count (skills deal about half of a hero's damage)
+                sum += h.Attack / h.Interval * (1 + h.GearCrit * (c.CritMult - 1)) * (1 + GhostSkillShare * h.GearSkill);
                 if (h.Companion != null && h.Companion.Skill == CompanionSkill.Bite && h.Companion.Every > 0)
                     sum += KennelInMirror * h.Attack * h.Companion.Power / h.Companion.Every;
             }
@@ -367,7 +373,7 @@ namespace LastHearth.Core.Combat
                 if (comp != null && comp.Skill == CompanionSkill.Stagger && comp.Every > 0)
                     t *= 1 + comp.Power / comp.Every * c.MaxTicks / 1000.0; // the stuns it adds
                 // the dodge and the armor of the items: the ghost wears the same gear
-                t *= (100 + h.Armor) / (100 + h.Armor - h.GearArmor) / (1 - h.Dodge);
+                t *= (100 + h.Armor) / (100 + h.Armor - h.GearArmor) / (1 - h.Dodge) * (1 + GhostSkillShare * h.Healing);
                 sum += t;
             }
             return sum / Heroes.Count;
@@ -409,6 +415,7 @@ namespace LastHearth.Core.Combat
                 MonsterDamage = gear.MonsterDamage,
                 GearCrit = gear.Crit,
                 GearArmor = gear.Armor,
+                GearSkill = gear.SkillPower,
             };
         }
 

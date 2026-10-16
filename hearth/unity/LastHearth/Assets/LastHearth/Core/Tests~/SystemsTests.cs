@@ -220,19 +220,15 @@ namespace LastHearth.Core.Tests
         }
 
         [Test]
-        public void TheCalendarPaysOncePerDayAndAchievementsOncePerGoal()
+        public void AchievementsPayOncePerGoal()
         {
             var s = Fortress(1);
             s.Advance(T0 + 1);
             long first = s.State.Wallet[ResourceType.Sparks];
-            s.Advance(T0 + 2 * Hour);
-            Assert.AreEqual(first, s.State.Wallet[ResourceType.Sparks], "same day");
-            s.Advance(T0 + 24 * Hour);
-            Assert.AreEqual(first + GameSession.CalendarSparks[1], s.State.Wallet[ResourceType.Sparks]);
             s.State.HearthLevel = 5;
             s.CheckAchievements();
             long after = s.State.Wallet[ResourceType.Sparks];
-            Assert.AreEqual(first + GameSession.CalendarSparks[1] + 4 * 60, after, "hearth 2-5: four achievements");
+            Assert.AreEqual(first + 4 * 60, after, "hearth 2-5: four achievements");
             s.CheckAchievements();
             Assert.AreEqual(after, s.State.Wallet[ResourceType.Sparks]);
         }
@@ -241,7 +237,9 @@ namespace LastHearth.Core.Tests
         public void TheCalendarAndAchievementsAddUpToTheEconomy()
         {
             var b = TestData.Balance();
-            Assert.AreEqual(b.Activities.Daily.CalendarSparks, GameSession.CalendarSparks.Sum() * 4, "140 Sparks per 28 days");
+            Assert.AreEqual(28, b.Activities.Daily.Calendar.Count, "28 gifts");
+            Assert.AreEqual(b.Activities.Daily.CalendarSparks,
+                b.Activities.Daily.Calendar.Where(g => g.Kind == GiftKind.Sparks).Sum(g => g.Amount), "140 Sparks per 28 days");
             long achievements = Enumerable.Range(2, 29).Sum(l => l <= 18 ? 60 : 90) + 10 * 60 + 5 * 60;
             Assert.AreEqual(b.Activities.Daily.AchievementSparks, achievements);
         }

@@ -1109,8 +1109,10 @@ def report(result):
           "Жар, Сердцевины и Чертежи расходуются по своим деревьям за год; "
           "игрок попадает в целевые дни с точностью 15%; секции горы открываются тёплыми, вся гора открыта к 20-му уровню очага.")
     out += kennel_report(result)
+    retention, retention_problems = retention_report(result)
+    out += retention
     out += items_report(result)
-    return "\n".join(out) + "\n", problems
+    return "\n".join(out) + "\n", problems + retention_problems
 
 
 # ---------------------------------------------------------------- export for the game (Unity)
@@ -1345,12 +1347,15 @@ def export_balance(result):
             "essenceByLevel": [int(round(essence_income_per_day(lv))) for lv in range(1, 31)],
             "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE, "startHour": 19,
                       "essenceShare": SURGE_ESSENCE_SHARE, "hourglassMinutes": HOURGLASS_SURGE_MINUTES,
-                      "emberByLevel": [ember_per_surge(lv) for lv in range(1, 31)]},
+                      "emberByLevel": [ember_per_surge(lv) for lv in range(1, 31)],
+                      "warmWeek": {"surges": WARM_WEEK[0], "output": WARM_WEEK[1], "hours": WARM_WEEK[2]}},
             "heart": {"nodeCost": [heart_node_cost(n) for n in range(1, HEART_NODES + 1)],
                       "nodeGate": [heart_node_gate(n) for n in range(1, HEART_NODES + 1)],
                       "perBranch": HEART_NODES // 3, "warmth": 0.03, "coal": 0.03, "output": 0.02, "defense": 0.05},
             "hunt": {"unlock": HUNT_UNLOCK, "tracksPerDay": HUNTS_PER_DAY, "trackHours": 8,
-                     "coresByLevel": [cores_per_hunt(lv) for lv in range(1, 31)]},
+                     "coresByLevel": [cores_per_hunt(lv) for lv in range(1, 31)],
+                     "weekly": {"weekday": WEEKLY_MONSTER[0], "hpMult": WEEKLY_MONSTER[1], "attackMult": WEEKLY_MONSTER[2],
+                                "coreMult": WEEKLY_MONSTER[3]}},
             "skills": {"max": SKILL_MAX, "heroLevelsPerSkill": 6,
                        "cost": [skill_cost(k) for k in range(1, SKILL_MAX)]},
             "legendary": {"fromHearth": LEGENDARY_FROM, "cores": LEGENDARY_COST},
@@ -1376,7 +1381,9 @@ def export_balance(result):
                         "hourglassMinutes": spec[7], "unlock": EVENT_UNLOCK_HEARTH[name]}
                        for name, spec in EVENTS.items()],
             "daily": {"tasksNeeded": 3, "taskSparks": DIAMONDS_DAILY_TASKS, "taskHourglassMinutes": HOURGLASS_DAILY_MINUTES,
-                      "calendarSparks": DIAMONDS_LOGIN_CALENDAR, "achievementSparks": ACHIEVEMENT_POOL},
+                      "calendarSparks": DIAMONDS_LOGIN_CALENDAR, "achievementSparks": ACHIEVEMENT_POOL,
+                      "calendar": [gift_export(g) for g in LOGIN_CALENDAR]},
+            "season": season_export(),
         },
     }
     os.makedirs(os.path.dirname(BALANCE_OUT), exist_ok=True)
@@ -1699,7 +1706,7 @@ CRAFT_PER_DAY = 1           # the model: the free player forges one item a day (
 # The free player's finds are a step above the issued kit: rarer items, extra stats (the bot measures about +5% of
 # main stats and 4-6% of crit and dodge at hearth 10-20). Like the kennel, the campaign's recommended strength
 # counts it: its enemies get +GEAR_EDGE_PER_LEVEL of health and attack per hearth level.
-GEAR_EDGE_PER_LEVEL = 0.005
+GEAR_EDGE_PER_LEVEL = 0.008
 
 
 def gear_kit(level):
@@ -1718,7 +1725,7 @@ def best_craft(level):
 
 
 def gear_material_share(level):
-    """Share of the day's materials the model's forging takes (one item a day, ECONOMY.md section 15)."""
+    """Share of the day's materials the model's forging takes (one item a day, ECONOMY.md section 16)."""
     return CRAFT_PER_DAY * best_craft(level)[7] / EFFECTIVE_HOURS_PER_DAY
 
 
@@ -1745,11 +1752,11 @@ def items_export():
 
 
 def items_report(result):
-    """ECONOMY.md, section 15: equipment."""
+    """ECONOMY.md, section 16: equipment."""
     out = []
     w = out.append
     w("")
-    w("## 15. Снаряжение")
+    w("## 16. Снаряжение")
     w("")
     w("Шесть мест: оружие, вторая рука (щит, наручи, колчан или фолиант — по классу), шлем, доспех, сапоги, амулет. "
       "Вещь имеет редкость и уровень — уровень очага места, где она найдена (ранг боя кампании или Охоты, вылазка, "
@@ -1859,6 +1866,111 @@ def items_checks():
     if gear_kit(1) <= 0 or any(gear_kit(lv) + 1 < GEAR_GROWTH ** (lv - 1) for lv in range(1, 31)):
         problems.append("казённый комплект слабее снаряжения модели силы")
     return problems
+
+
+# ---------------------------------------------------------------- calendar, season, warm week, monster of the week
+# GDD 12 and MODES.md 7: retention without pressure. A missed day takes nothing away. The Sparks of the
+# calendar are the 140 of section 8; the other gifts are small and stay outside the pacing model (checked below).
+# gift: (kind, amount, decoration); essence in days of the free player's essence, the hourglass in minutes.
+LOGIN_WEEK = [("Sparks", 5, ""), ("Treats", 5, ""), ("Sparks", 5, ""), ("Hourglass", 15, ""), ("Sparks", 5, ""),
+              ("Essence", 0.2, ""), ("Sparks", 20, "")]
+LOGIN_CALENDAR = LOGIN_WEEK * 4  # 28 days: a big gift every 7th
+SEASON_DAYS = 42                 # 6 weeks, then the next season starts at once
+SEASON_STEPS = 30
+SEASON_STEP_XP = 120             # a regular player (about 100 points a day) finishes in 5 weeks of 6
+# points of the season: a daily task done, the daily chest, a calendar day, a won Surge (live / automatic),
+# a won hunt, a threshold of an event
+SEASON_XP = {"task": 10, "daily": 20, "calendar": 5, "surge": 10, "surgeAuto": 5, "hunt": 5, "event": 5}
+SEASON_DECOR = ["banner_green", "candles", "rug", "plant", "crystal"]  # cosmetic only (the "Honesty" pillar)
+SEASON_TRACK = [g for k in range(5) for g in (("Treats", 10, ""), ("Essence", 0.2, ""), ("Hourglass", 15, ""),
+                                              ("Essence", 0.2, ""), ("Hourglass", 30, ""), ("Decor", 1, SEASON_DECOR[k]))]
+SEASON_PREMIUM = False           # GDD 13: the premium track is ready in the code and switched off
+WARM_WEEK = (7, 0.05, 24)        # «Тёплая неделя»: 7 Surges in a row without a defeat -> +5% output for 24 hours
+WEEKLY_MONSTER = (6, 1.6, 1.3, 2.0)  # Sunday (0 = Monday): health x1.6, attack x1.3, Cores x2 for the week's first win
+
+
+def gift_export(g):
+    kind, amount, decor = g
+    return {"kind": kind, "amount": amount, "decor": decor} if decor else {"kind": kind, "amount": amount}
+
+
+def season_export():
+    x = SEASON_XP
+    return {"days": SEASON_DAYS, "steps": SEASON_STEPS, "stepXp": SEASON_STEP_XP, "premium": SEASON_PREMIUM,
+            "track": [gift_export(g) for g in SEASON_TRACK], "premiumTrack": [],
+            "taskXp": x["task"], "dailyXp": x["daily"], "calendarXp": x["calendar"], "surgeXp": x["surge"],
+            "surgeAutoXp": x["surgeAuto"], "huntXp": x["hunt"], "eventXp": x["event"]}
+
+
+def gift_text(g):
+    kind, amount, _ = g
+    if kind == "Sparks":
+        return "%d искр" % amount
+    if kind == "Treats":
+        return "%d лакомств" % amount
+    if kind == "Hourglass":
+        return "часы %d мин" % amount
+    if kind == "Essence":
+        return "%s дня эссенции" % dec(amount)
+    return "украшение"
+
+
+def retention_report(result):
+    """ECONOMY.md, section 15: the login calendar, the season track and the small weekly bonuses."""
+    out, problems = [], []
+    w = out.append
+    cal = lambda kind: sum(a for k, a, _ in LOGIN_CALENDAR if k == kind)
+    track = lambda kind: sum(a for k, a, _ in SEASON_TRACK if k == kind)
+    if len(LOGIN_CALENDAR) != 28 or cal("Sparks") != DIAMONDS_LOGIN_CALENDAR:
+        problems.append("календарь входа: не 28 дней или не %d искр за круг" % DIAMONDS_LOGIN_CALENDAR)
+    if len(SEASON_TRACK) != SEASON_STEPS:
+        problems.append("сезон: на дорожке не %d шагов" % SEASON_STEPS)
+    per_year_cal, per_year_season = DAYS / 28.0, DAYS / float(SEASON_DAYS)
+    essence_days = cal("Essence") * per_year_cal + track("Essence") * per_year_season
+    hourglass_h = (cal("Hourglass") * per_year_cal + track("Hourglass") * per_year_season) / 60.0
+    essence_share = essence_days / DAYS
+    hourglass_share = hourglass_h * 60 / max(result["speed_minutes_total"], 1)
+    hunt_share = (WEEKLY_MONSTER[3] - 1) / (HUNTS_PER_DAY * 7.0)
+    if essence_share > 0.1 or hourglass_share > 0.1:
+        problems.append("календарь и сезон дают больше 10% эссенции или песочных часов модели")
+    regular = 4 * SEASON_XP["task"] + SEASON_XP["daily"] + SEASON_XP["calendar"] + SEASON_XP["surge"] + \
+        HUNTS_PER_DAY * SEASON_XP["hunt"] + 2 * SEASON_XP["event"]
+    finish_days = SEASON_STEPS * SEASON_STEP_XP / float(regular)
+    if finish_days > SEASON_DAYS - 3:
+        problems.append("сезон: обычный игрок не проходит дорожку до конца сезона")
+    w("")
+    w("## 15. Календарь входа, сезон и недельные бонусы")
+    w("")
+    w("Удержание без давления (`docs/GDD.md`, раздел 12; `docs/MODES.md`, раздел 7): пропуск дня ничего не отнимает.")
+    w("")
+    w("**Календарь входа:** 28 наград за дни, в которые игра открывалась; дни не обязаны идти подряд, награда дня "
+      "ждёт, пока её заберут. Неделя календаря: %s. За круг %d искр (раздел 8), %d лакомств, %d минут песочных часов "
+      "и %s дня эссенции." % (", ".join(gift_text(g) for g in LOGIN_WEEK), cal("Sparks"), cal("Treats"),
+                               cal("Hourglass"), dec(cal("Essence"))))
+    w("")
+    w("**Сезон, %d недель:** бесплатная дорожка из %d шагов по %d очков. Очки: выполненное поручение — %d, награда дня — %d, "
+      "день календаря — %d, победа в Наплыве — %d (без игрока — %d), победа на Охоте — %d, порог события — %d. "
+      "Обычный игрок набирает около %d очков в день и проходит дорожку за %s дня из %d. Награды за сезон: %d лакомств, "
+      "%s дня эссенции, %s часа песочных часов и %d украшений (только для красоты). Невзятые награды выдаются в конце "
+      "сезона, следующий начинается сразу. Премиум-дорожка подготовлена в коде, но выключена (`docs/GDD.md`, раздел 13)." % (
+          SEASON_DAYS // 7, SEASON_STEPS, SEASON_STEP_XP, SEASON_XP["task"], SEASON_XP["daily"], SEASON_XP["calendar"],
+          SEASON_XP["surge"], SEASON_XP["surgeAuto"], SEASON_XP["hunt"], SEASON_XP["event"], regular, dec(finish_days),
+          SEASON_DAYS, track("Treats"), dec(track("Essence")), dec(track("Hourglass") / 60.0), track("Decor")))
+    w("")
+    w("**Тёплая неделя:** %d Наплывов подряд без поражения дают +%d%% выработки на %d часа. **Чудовище недели** "
+      "на Охоте (воскресенье): здоровье ×%s, атака ×%s, первая победа за неделю даёт ×%s Сердцевин." % (
+          WARM_WEEK[0], round(WARM_WEEK[1] * 100), WARM_WEEK[2], dec(WEEKLY_MONSTER[1]), dec(WEEKLY_MONSTER[2]),
+          dec(WEEKLY_MONSTER[3])))
+    w("")
+    w("Модель года (разделы 1–13) этих подарков не учитывает, как и питомцев: за год календарь и сезон дают %s дней "
+      "эссенции (%d%% её дохода) и %s часов песочных часов (%d%% ускорений), Тёплая неделя — около %s%% выработки, "
+      "чудовище недели — %d%% Сердцевин Охоты. Это меньше точности попадания в целевые дни (15%%)." % (
+          num(essence_days), round(essence_share * 100), num(hourglass_h), round(hourglass_share * 100),
+          dec(WARM_WEEK[1] * WARM_WEEK[2] / 24.0 / WARM_WEEK[0] * 100), round(hunt_share * 100)))
+    for p in problems:
+        w("")
+        w("- **Проблема:** %s" % p)
+    return out, problems
 
 
 def main():
