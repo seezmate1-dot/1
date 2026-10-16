@@ -698,6 +698,30 @@ def blueprints_per_route(level):
 
 
 TREASURE_BLUEPRINTS = 10         # Кладоискатели add Чертежи per event
+
+# Event currencies and shops (docs/EVENTS.md, 1): every threshold brings currency, the place in the
+# rating adds some; it buys in the event's shop until 24 hours after the end, then the rest turns
+# into silver 1:5. The shops sell the activity resource the model counts per event (Сердцевины of the
+# Long Night, Жар of the Siege, Чертежи of the Treasure hunters) or a rare dweller, and a decoration:
+# no extra materials, essence or hourglasses, so the budget of the table stays the whole reward.
+EVENT_CURRENCY = {"Долгая ночь": "Осколки ночи", "Портал в Туман": "Пепел портала", "Турнир Стражей": "Знаки Стражей",
+                  "Кладоискатели": "Монеты казны", "Ярмарка Пепла": "Пепельные жетоны", "Осада застав": "Камень застав",
+                  "Праздник очага": "Огоньки"}
+EVENT_CURRENCY_PER_THRESHOLD = 10
+EVENT_CURRENCY_RANK = [30, 20, 10, 5]      # 1st place, 2-5, 6-20, the rest
+EVENT_CURRENCY_SILVER = 5                  # silver for one unit left 24 hours after the end
+EVENT_GROUP = {"Турнир Стражей": 30}       # rating group (ghosts until the server); the others 50
+# event: [(goods, price, limit per event, amount)]; "Decor:<id>" is a decoration of the catalog,
+# "Recruit" a rare dweller (stats 6 + 2 x hearth level) if the fortress has room
+EVENT_SHOPS = {
+    "Долгая ночь":    [("Cores", 50, 1, LONG_NIGHT_CORES), ("Decor:shrine", 60, 1, 1)],
+    "Портал в Туман": [("Recruit", 50, 1, 1), ("Decor:crystal", 60, 1, 1)],
+    "Турнир Стражей": [("Recruit", 50, 1, 1), ("Decor:armor", 60, 1, 1)],
+    "Кладоискатели":  [("Blueprints", 50, 1, TREASURE_BLUEPRINTS), ("Decor:treasure", 60, 1, 1)],
+    "Ярмарка Пепла":  [("Recruit", 50, 1, 1), ("Decor:keg", 60, 1, 1)],
+    "Осада застав":   [("Ember", 50, 1, SIEGE_EMBER), ("Decor:shield", 60, 1, 1)],
+    "Праздник очага": [("Recruit", 50, 1, 1), ("Decor:pumpkin", 60, 1, 1)],
+}
 SPEC_TIERS = [(5, 3), (10, 6), (15, 14), (20, 30), (25, 50)]  # room level -> blueprints, choice of 2
 SPEC_RANKS_FROM = 25
 SPEC_RANKS = 3                   # rank 2 costs x2 and rank 3 x3 of the tier: +50% and +100% of the bonus
@@ -875,6 +899,10 @@ def report(result):
     w("")
     w("События по своим наградам дают %d%% материалов (заявлено %d%%)." % (
         round(event_material_share() * 100), MATERIAL_SOURCES["События"] * 100))
+    w("Валюта события: %d за порог и %s за место (1-е, 2–5, 6–20, остальные); лавка открыта ещё 24 часа после "
+      "конца, остаток меняется на серебро 1 к %d. Лавки продают только ресурс занятия, который модель уже считает "
+      "(сердцевины Долгой ночи, жар Осады, чертежи Кладоискателей), редкого жителя и украшение." % (
+          EVENT_CURRENCY_PER_THRESHOLD, " / ".join(str(x) for x in EVENT_CURRENCY_RANK), EVENT_CURRENCY_SILVER))
     w("")
     w("Куда:")
     w("")
@@ -1376,8 +1404,12 @@ def export_balance(result):
                     "gloryShop": [{"goods": g, "price": p, "perWeek": w, "amount": a} for g, p, w, a in GLORY_SHOP]},
             "events": [{"id": EVENT_IDS[name], "name": name, "period": spec[0], "first": spec[1], "days": spec[2],
                         "sparks": spec[3], "spend": spec[4], "essenceDays": spec[5], "materialHours": spec[6],
-                        "hourglassMinutes": spec[7], "unlock": EVENT_UNLOCK_HEARTH[name]}
+                        "hourglassMinutes": spec[7], "unlock": EVENT_UNLOCK_HEARTH[name],
+                        "group": EVENT_GROUP.get(name, 50), "currency": EVENT_CURRENCY[name],
+                        "shop": [{"goods": g, "price": p, "limit": n, "amount": a} for g, p, n, a in EVENT_SHOPS[name]]}
                        for name, spec in EVENTS.items()],
+            "eventCurrency": {"perThreshold": EVENT_CURRENCY_PER_THRESHOLD, "rank": EVENT_CURRENCY_RANK,
+                              "silver": EVENT_CURRENCY_SILVER, "burnHours": 24},
             "daily": {"tasksNeeded": 3, "taskSparks": DIAMONDS_DAILY_TASKS, "taskHourglassMinutes": HOURGLASS_DAILY_MINUTES,
                       "calendarSparks": DIAMONDS_LOGIN_CALENDAR, "achievementSparks": ACHIEVEMENT_POOL,
                       "calendar": [gift_export(g) for g in LOGIN_CALENDAR]},

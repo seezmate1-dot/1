@@ -260,6 +260,14 @@ namespace LastHearth.Core.Tests
 
         void Events(long now)
         {
+            // ended events: take the reward of the place, spend the currency in the shop while it is open
+            foreach (var run in S.EndedRuns())
+                S.ClaimEventReward(run);
+            foreach (var run in S.State.Events.Where(r => S.ShopOpen(r, now)).ToList())
+            {
+                for (int i = 0; i < S.EventShop(run.Id).Count; i++)
+                    S.BuyEventGoods(run, i, now);
+            }
             foreach (var run in S.ActiveRuns(now))
             {
                 switch (run.Id)
@@ -277,13 +285,19 @@ namespace LastHearth.Core.Tests
                     case "Portal":
                         for (int i = 0; i < 4; i++)
                         {
-                            if (run.BlessingOffer.Count > 0)
-                                S.ChooseBlessing(0, now);
+                            if (run.BlessingOffer.Count > 0 && S.ChooseBlessing(0, now) != Fail.None)
+                                S.SkipBlessing(now);
                             if (!run.RunAlive && run.FreeRunDay == S.LocalDay(now) && run.Revives == 0 &&
                                 S.State.Wallet[ResourceType.Sparks] > Reserve + 50 && !SavingForBuilder)
                                 S.PortalRevive(now);
                             int floor = run.Floor;
-                            Fight("Portal", now);
+                            // a hurt squad rests when a door leads to a rest; otherwise it fights
+                            var doors = S.PortalDoors(run);
+                            int rest = doors.IndexOf(GameSession.PortalDoor.Rest);
+                            if (run.RunAlive && rest >= 0 && run.HpShares.Count > 0 && run.HpShares.Average() < 0.6)
+                                S.PortalEnter(rest, now, out _);
+                            else
+                                Fight("Portal", now);
                             if (run.Floor == floor)
                                 break;
                         }
@@ -317,7 +331,8 @@ namespace LastHearth.Core.Tests
                                 S.SetGarrison(o, g, now);
                             }
                         }
-                        for (int o = 0; o < 5; o++)
+                        // stones go to the traps, but the Жар of the shop (50 stones) comes first
+                        for (int o = 0; o < 5 && (run.Bought.ContainsKey("Ember") || run.Stone >= 50 + 4 * (run.Outposts[o].Traps + 1)); o++)
                             S.UpgradeTraps(o, now);
                         if (S.SiegeWindow(run, now) >= 0 && S.StartSiegeDefense(now, out var defense) == Fail.None)
                         {

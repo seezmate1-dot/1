@@ -38,7 +38,7 @@ namespace LastHearth.Core
 
         public int HeartTotal => State.Heart[0] + State.Heart[1] + State.Heart[2];
 
-        public double WarmthMult() => 1 + Balance.Activities.Heart.Warmth * State.Heart[(int)HeartBranch.Warmth];
+        public double WarmthMult() => (1 + Balance.Activities.Heart.Warmth * State.Heart[(int)HeartBranch.Warmth]) * NightWarmth();
 
         public double OutputMult() => (1 + Balance.Activities.Heart.Output * State.Heart[(int)HeartBranch.Economy]) * WarmWeekMult();
 
