@@ -40,7 +40,7 @@ namespace LastHearth.Core
 
         public double WarmthMult() => 1 + Balance.Activities.Heart.Warmth * State.Heart[(int)HeartBranch.Warmth];
 
-        public double OutputMult() => 1 + Balance.Activities.Heart.Output * State.Heart[(int)HeartBranch.Economy];
+        public double OutputMult() => (1 + Balance.Activities.Heart.Output * State.Heart[(int)HeartBranch.Economy]) * WarmWeekMult();
 
         public double DefenseMult() => 1 + Balance.Activities.Heart.Defense * State.Heart[(int)HeartBranch.Defense] + HallsDefenseBonus();
 

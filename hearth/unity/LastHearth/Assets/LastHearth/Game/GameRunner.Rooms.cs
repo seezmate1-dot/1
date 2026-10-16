@@ -242,7 +242,7 @@ namespace LastHearth.Game
         void DrawChapel(long now)
         {
             var gift = session.TodayGift(now);
-            long amount = session.GiftAmount(gift);
+            long amount = session.ChapelGiftAmount(gift);
             string what = gift == null ? "" : gift.Goods == GiftGoods.Essence ? amount + " эссенции" : gift.Goods == GiftGoods.Treats ? amount + " лакомств" : "песочные часы " + Duration(amount);
             GUILayout.Label("<b>Часовня Угля</b> · возвышение героев (+" + (session.Balance.Halls.Chapel.Bonus * 100).ToString("0") +
                 "% к атаке и здоровью за ранг) и дар дня.", Rich());

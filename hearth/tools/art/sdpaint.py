@@ -36,6 +36,7 @@ NEGATIVE = ("photo, photorealistic, 3d render, cgi, octane, unreal engine, glow,
 ROOM = "interior of a room in a medieval fortress, dollhouse cutaway view straight from the front, back wall and floor, "
 
 _pipe = None
+_dtype = torch.bfloat16  # the precision of the painting (the UNet's), what its inputs are cast to
 
 
 def native_bf16():
@@ -60,12 +61,13 @@ def _trim():
 
 
 def memory_gb():
-    """The memory this process may use: the machine's, or its control group's limit when lower."""
+    """The memory this process may use: the machine's with its swap, or its control group's limit when lower."""
     total = 0.0
     try:
+        # the swap counts: the float32 peak (about 14 GB) lasts only while the model is converted
         for line in open("/proc/meminfo"):
-            if line.startswith("MemTotal:"):
-                total = int(line.split()[1]) / 2 ** 20
+            if line.startswith(("MemTotal:", "SwapTotal:")):
+                total += int(line.split()[1]) / 2 ** 20
         limit = open("/sys/fs/cgroup/memory.max").read().strip()
         if limit.isdigit():
             total = min(total, int(limit) / 2 ** 30)
@@ -75,14 +77,14 @@ def memory_gb():
 
 
 def pipe():
-    global _pipe
+    global _pipe, _dtype
     if _pipe is None:
         torch.set_num_threads(os.cpu_count() or 4)
         # loaded in bfloat16: SDXL in float32 needs more than 14 GB while loading
         p = StableDiffusionXLImg2ImgPipeline.from_single_file(MODEL, torch_dtype=torch.bfloat16)
         _trim()
         # SD_PRECISION=fp32 or bf16 overrides the choice
-        precision = os.environ.get("SD_PRECISION") or ("fp32" if not native_bf16() and memory_gb() >= 20 else "bf16")
+        precision = os.environ.get("SD_PRECISION") or ("fp32" if not native_bf16() and memory_gb() >= 18 else "bf16")
         if precision == "fp32" and not native_bf16():
             # the painting itself in float32 (about 14 GB at the peak with the text encoders in bfloat16: they
             # run once), one tensor at a time; on a smaller machine the slow emulated bfloat16 has to do
@@ -96,6 +98,10 @@ def pipe():
             # the attention and the decoder in slices: a big picture's activations stay small
             p.enable_attention_slicing()
             p.vae.enable_tiling()
+            # diffusers may still report bfloat16 for a model converted tensor by tensor: say it outright
+            p.unet.to(torch.float32)
+            p.vae.to(torch.float32)
+            _dtype = torch.float32
             print("float32 painting (no native bfloat16 on this processor)", flush=True)
         # the scheduler DreamShaper Turbo is made for: DPM++ SDE Karras, few steps, low guidance
         p.scheduler = DPMSolverMultistepScheduler.from_config(p.scheduler.config, algorithm_type="sde-dpmsolver++",
@@ -111,7 +117,7 @@ def embeds(prompt, negative):
     e = p.encode_prompt(prompt=prompt, device="cpu", num_images_per_prompt=1, do_classifier_free_guidance=True,
                         negative_prompt=negative)
     names = ("prompt_embeds", "negative_prompt_embeds", "pooled_prompt_embeds", "negative_pooled_prompt_embeds")
-    return {n: t.to(p.unet.dtype) for n, t in zip(names, e)}
+    return {n: t.to(_dtype) for n, t in zip(names, e)}
 
 
 def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
@@ -372,7 +378,7 @@ PETS = {
 COMPANIONS = {
     "Squire": "a young medieval squire boy with a wooden shield and a short sword, full figure",
     "Wolfhound": "a big grey wolfhound dog with a leather collar, standing",
-    "Falcon": "a falcon with spread wings and a leather hood strap",
+    "Falcon": "a real falcon bird, an animal not a person, perched with folded wings, a leather jess on its leg",
     "Firefly": "a big glowing coal firefly, an insect with a bright orange ember body and translucent wings",
 }
 

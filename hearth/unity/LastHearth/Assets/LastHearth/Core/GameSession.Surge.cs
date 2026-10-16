@@ -142,8 +142,38 @@ namespace LastHearth.Core
                 State.FrostUntil = (day + 1) * 86400 + 8 * 3600 - State.UtcOffsetSeconds;
             }
             State.SurgeDay = Math.Max(State.SurgeDay, day);
+            CountWarmWeek(stars);
+            if (stars > 0)
+                AddSeasonXp(live ? SeasonInfo.SurgeXp : SeasonInfo.SurgeAutoXp);
             SurgeSettled?.Invoke(reward);
             return reward;
+        }
+
+        // ------------------------------------------------------------------ «Тёплая неделя» (EVENTS.md, 11)
+
+        /// <summary>Surges in a row without a defeat; a missed evening is not a defeat.</summary>
+        public int SurgeStreak => Retention.SurgeStreak;
+
+        public bool WarmWeekOn(long now) => now < Retention.WarmUntil;
+
+        public long WarmWeekUntil => Retention.WarmUntil;
+
+        /// <summary>+5% output while the warm week lasts (part of OutputMult).</summary>
+        public double WarmWeekMult() => State.Time < Retention.WarmUntil ? 1 + Balance.Activities.Surge.WarmWeek.Output : 1;
+
+        /// <summary>Every 7th Surge in a row without a defeat starts (or lengthens) a warm day of +5% output.</summary>
+        void CountWarmWeek(int stars)
+        {
+            var w = Balance.Activities.Surge.WarmWeek;
+            var r = Retention;
+            if (stars == 0)
+            {
+                r.SurgeStreak = 0;
+                return;
+            }
+            r.SurgeStreak++;
+            if (w.Surges > 0 && r.SurgeStreak % w.Surges == 0)
+                r.WarmUntil = Math.Max(r.WarmUntil, State.Time) + w.Hours * 3600L;
         }
 
         /// <summary>Evenings that passed without the player are defended automatically (70%, at most 3).</summary>

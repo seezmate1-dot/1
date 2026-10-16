@@ -12,7 +12,7 @@ namespace LastHearth.Game
     /// Starts the game in any scene. The fortress fills the screen and lives in real time, saves itself
     /// and catches up offline time on the next start; every part of the game opens in a window over it
     /// (GameRunner.Hud.cs): fights (campaign, Hunt, arena, raids), the Surge, dwellers, growth, routes,
-    /// tasks, the shop, live events, settings (with "+1 час" to test long timers).
+    /// tasks, the shop, live events, settings, and a hidden developer's menu to test it all (GameRunner.Admin.cs).
     /// </summary>
     public sealed partial class GameRunner : MonoBehaviour
     {
@@ -93,7 +93,8 @@ namespace LastHearth.Game
                 sounds?.Play("Done");
             };
             session.SurgeSettled += r => message = r.Live ? "" : string.Format("Наплыв отбит без вас: {0}, +{1} жара", StarText(r.Stars), r.Ember);
-            session.Advance(Now());
+            // the time away is caught up and written down for «Пока вас не было» (GameRunner.Retention.cs)
+            var summary = session.ReturnAfterAbsence(Now());
             // fights left open when the game closed are finished by the auto-battle
             var notes = new System.Collections.Generic.List<string>();
             var hunt = session.ResolvePendingHunt();
@@ -113,6 +114,7 @@ namespace LastHearth.Game
                 notes.Add(pvp);
             if (notes.Count > 0)
                 message = "Незаконченное: " + string.Join("; ", notes);
+            ShowAway(summary);
         }
 
         void BeginBattle(Battle started, Func<Battle, string> finish, string title = "")
@@ -279,10 +281,21 @@ namespace LastHearth.Game
         void OnApplicationPause(bool paused)
         {
             if (paused)
+            {
+                PlanNotifications(); // at most three a day (GameRunner.Retention.cs)
                 Save();
+            }
+            else
+            {
+                OnReturn(); // back after a while: «Пока вас не было»
+            }
         }
 
-        void OnApplicationQuit() => Save();
+        void OnApplicationQuit()
+        {
+            PlanNotifications();
+            Save();
+        }
 
         void Save()
         {
@@ -512,6 +525,26 @@ namespace LastHearth.Game
                 }
             }
             GUILayout.EndHorizontal();
+            // Sunday: the monster of the week (ACTIVITIES.md, 3)
+            if (session.WeeklyMonster(now) is MonsterFamily weekly)
+            {
+                var f = combat.Family(weekly);
+                var w = hunt.Weekly;
+                if (GUILayout.Button(string.Format("Чудовище недели: {0}\nсильнее, ×{1:0.#} сердцевин за первую победу", f.Name, w.CoreMult), GUILayout.Height(48)))
+                {
+                    var fail = session.StartHunt(weekly, huntRank, now, out var started, weekly: true);
+                    Report(fail);
+                    if (fail == Fail.None)
+                    {
+                        BeginBattle(started, done =>
+                        {
+                            session.FinishHunt(done, out var reward);
+                            return string.Format("{0} {1} · +{2} сердцевин{3}", done.Won ? "Победа" : "Поражение", StarText(reward.Stars), reward.Cores,
+                                reward.Weekly ? " (чудовище недели)" : "");
+                        }, "Чудовище недели");
+                    }
+                }
+            }
         }
 
         /// <summary>The fight on a stage: heroes on the left, the creature on the right, all animated.</summary>

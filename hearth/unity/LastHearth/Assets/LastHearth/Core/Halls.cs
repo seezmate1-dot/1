@@ -5,7 +5,7 @@ namespace LastHearth.Core
 {
     // GDD 6: the work of the rooms that produce nothing: the tavern, the infirmary, the library, the
     // training hall, the watchtower, the chapel and the archive (GameSession.Rooms.cs). Numbers come from
-    // hearth/tools/economy.py (balance.json: "halls"; docs/ECONOMY.md, section 15); the saved part is
+    // hearth/tools/economy.py (balance.json: "halls"; docs/ECONOMY.md, section 16); the saved part is
     // HallsState in GameState. The forge is the equipment's.
 
     /// <summary>GDD 8: how rare a dweller from the tavern is; it adds to the stats and to the training cap.</summary>
@@ -187,7 +187,7 @@ namespace LastHearth.Core
         public double EssenceDays;
     }
 
-    public sealed class GiftData
+    public sealed class ChapelGift
     {
         public GiftGoods Goods;
         public double Amount;
@@ -197,7 +197,7 @@ namespace LastHearth.Core
     {
         public List<AscensionData> Ranks = new List<AscensionData>();
         public double Bonus;
-        public List<GiftData> Gifts = new List<GiftData>();
+        public List<ChapelGift> Gifts = new List<ChapelGift>();
     }
 
     public sealed class RecordData

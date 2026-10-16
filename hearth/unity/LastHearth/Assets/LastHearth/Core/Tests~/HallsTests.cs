@@ -518,10 +518,10 @@ namespace LastHearth.Core.Tests
             }
             Assert.AreEqual(3, kinds.Count, "essence, treats and hourglass in turn");
             var g = s.Balance.Halls.Chapel.Gifts.First(x => x.Goods == GiftGoods.Treats);
-            long plain = s.GiftAmount(g);
+            long plain = s.ChapelGiftAmount(g);
             Assert.AreEqual((long)Math.Round(g.Amount * (1 + 15 / 30.0)), plain);
             Worker(s, chapel, Stat.Spirit, 50);
-            Assert.AreEqual((long)Math.Round(g.Amount * (1 + 15 / 30.0) * 1.5), s.GiftAmount(g), "Spirit of the priests");
+            Assert.AreEqual((long)Math.Round(g.Amount * (1 + 15 / 30.0) * 1.5), s.ChapelGiftAmount(g), "Spirit of the priests");
         }
 
         // ------------------------------------------------------------------ archive

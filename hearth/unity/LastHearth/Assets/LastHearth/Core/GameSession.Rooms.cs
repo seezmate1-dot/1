@@ -31,7 +31,7 @@ namespace LastHearth.Core
     /// tree of 60 steps whose bonuses reach production, battle, the hearth and the other halls, the training
     /// hall raises the stats a player picks, the watchtower scouts the evening Surge and the dens, the chapel
     /// ascends heroes and gives a gift of the day, the archive keeps the records of the story. Numbers:
-    /// balance.json "halls" (economy.py, ECONOMY.md section 15). The forge is the equipment's.
+    /// balance.json "halls" (economy.py, ECONOMY.md section 16). The forge is the equipment's.
     /// </summary>
     public sealed partial class GameSession
     {
@@ -698,14 +698,14 @@ namespace LastHearth.Core
         }
 
         /// <summary>The gift the chapel gives today (essence, treats and hourglass in turn).</summary>
-        public GiftData TodayGift(long now)
+        public ChapelGift TodayGift(long now)
         {
             var gifts = HallsNumbers.Chapel.Gifts;
             return gifts.Count == 0 ? null : gifts[(int)(LocalDay(now) % gifts.Count)];
         }
 
         /// <summary>The amount of a gift: essence, treats or hourglass seconds; ×(1 + level / 30) × (1 + Spirit / 100).</summary>
-        public long GiftAmount(GiftData gift)
+        public long ChapelGiftAmount(ChapelGift gift)
         {
             if (gift == null)
                 return 0;
@@ -722,7 +722,7 @@ namespace LastHearth.Core
         public bool GiftReady(long now) => ChapelOpen() && Halls.GiftDay != LocalDay(now);
 
         /// <summary>Takes the gift of the day (once per local day).</summary>
-        public Fail ClaimGift(long now, out GiftData gift, out long amount)
+        public Fail ClaimGift(long now, out ChapelGift gift, out long amount)
         {
             gift = null;
             amount = 0;
@@ -732,7 +732,7 @@ namespace LastHearth.Core
             if (!GiftReady(now))
                 return Fail.NotToday;
             gift = TodayGift(now);
-            amount = GiftAmount(gift);
+            amount = ChapelGiftAmount(gift);
             switch (gift.Goods)
             {
                 case GiftGoods.Essence:

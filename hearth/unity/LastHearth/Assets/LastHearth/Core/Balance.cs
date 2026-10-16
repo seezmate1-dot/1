@@ -230,6 +230,8 @@ namespace LastHearth.Core
         public RouteData Routes = new RouteData();
         public SpecializationData Specializations = new SpecializationData();
         public DailyData Daily = new DailyData();
+        /// <summary>MODES.md, 7: the 6-week season track (Retention.cs).</summary>
+        public SeasonData Season = new SeasonData();
         public ShopData Shop = new ShopData();
         public PvpData Pvp = new PvpData();
         public List<EventData> Events = new List<EventData>();
@@ -306,6 +308,8 @@ namespace LastHearth.Core
         public long TaskHourglassMinutes;
         public long CalendarSparks;
         public long AchievementSparks;
+        /// <summary>The 28 gifts of the login calendar (Retention.cs).</summary>
+        public List<GiftData> Calendar = new List<GiftData>();
     }
 
     public sealed class SurgeData
@@ -316,6 +320,7 @@ namespace LastHearth.Core
         public double EssenceShare;
         public long HourglassMinutes;
         public int[] EmberByLevel = new int[0];
+        public WarmWeekData WarmWeek = new WarmWeekData();
     }
 
     public sealed class HeartData
@@ -335,6 +340,7 @@ namespace LastHearth.Core
         public int TracksPerDay;
         public int TrackHours;
         public int[] CoresByLevel = new int[0];
+        public WeeklyMonsterData Weekly = new WeeklyMonsterData();
     }
 
     public sealed class SkillData
