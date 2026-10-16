@@ -99,6 +99,27 @@ def arch(rock, size=(192, 512)):
     return img
 
 
+# where the cradle stands in the living quarters (centre x, floor y, height; fractions of the picture)
+CRADLE = {"Bedrooms": (0.80, 0.74, 0.21), "Bedrooms_2": (0.64, 0.83, 0.23), "Bedrooms_3": (0.64, 0.83, 0.23)}
+
+
+def place(room, prop, cx, floor, height):
+    """A painted prop set on the floor of a room picture, with a soft shadow under it."""
+    W, H = room.size
+    prop = prop.convert("RGBA")
+    box = prop.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
+    prop = prop.crop(box) if box else prop
+    h = round(H * height)
+    prop = prop.resize((max(1, round(prop.width * h / prop.height)), h), Image.LANCZOS)
+    x, y = round(W * cx - prop.width / 2), round(H * floor - prop.height)
+    out = room.convert("RGBA")
+    shadow = Image.new("L", room.size, 0)
+    ImageDraw.Draw(shadow).ellipse((x + prop.width * 0.05, y + prop.height * 0.9, x + prop.width * 0.95, y + prop.height * 1.06), fill=110)
+    out = Image.composite(Image.new("RGBA", room.size, (20, 12, 6, 255)), out, shadow.filter(ImageFilter.GaussianBlur(H * 0.012)))
+    out.alpha_composite(prop, (x, y))
+    return out.convert("RGB")
+
+
 def flag(name):
     manifest = os.path.join(ART, "Art.json")
     m = json.load(open(manifest, encoding="utf-8"))
@@ -232,7 +253,7 @@ def main(stage):
     rooms = os.path.join(stage, "Rooms")
     for f in sorted(os.listdir(rooms)) if os.path.isdir(rooms) else []:
         name = f[:-4]
-        if name in ("Door", "Ladder", "Rubble", "Scaffold", "Stairs", "Arch") or "_" in name:
+        if name in ("Door", "Ladder", "Rubble", "Scaffold", "Stairs", "Arch", "Cradle") or "_" in name:
             continue
         img = Image.open(os.path.join(rooms, f)).convert("RGB")
         size = (2048, 512) if name == "Hearth" else (1024, 512)
@@ -252,6 +273,14 @@ def main(stage):
             img = tone(img, Image.open(ref).convert("RGB"))
         img.save(os.path.join(ART, "Rooms", name + ".png"))
         print("room", name)
+    cradle = os.path.join(rooms, "Cradle.png")
+    if os.path.exists(cradle):
+        # a family lives here: one double bed and a cradle beside it
+        for name, spot in CRADLE.items():
+            p = os.path.join(ART, "Rooms", name + ".png")
+            if os.path.exists(p):
+                place(Image.open(p), Image.open(cradle), *spot).save(p)
+                print("cradle", name)
     have = set(f[:-4] for f in os.listdir(os.path.join(ART, "Rooms")))
     types = [n for n in json.load(open(os.path.join(ART, "Art.json"), encoding="utf-8")).get("rooms", {})
              if n not in ("Empty", "Hearth")]
