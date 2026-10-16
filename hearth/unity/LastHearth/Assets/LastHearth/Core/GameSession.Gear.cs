@@ -178,6 +178,10 @@ namespace LastHearth.Core
 
         /// <summary>The forge's issued kit of a level for a hero who has no session (the calibration squads):
         /// common pieces in all six slots, attack and health + the kit of that level.</summary>
+        /// <summary>The free player's items over the issued kit at a rank (balance.json "campaignEdge"): the campaign's and
+        /// the events' enemies count it, as they count the kennel (1 without data).</summary>
+        public double GearEdge(int rank) => KennelExpected(ItemNumbers.CampaignEdge, rank);
+
         public static GearBonus IssuedKit(ItemsData items, int level)
         {
             var gear = new GearBonus();

@@ -113,6 +113,17 @@ namespace LastHearth.Core
         public int Seed;
         public string LastResult = "";
 
+        // the event currency, its shop and the end of the event
+        public long Currency;
+        public Dictionary<string, int> Bought = new Dictionary<string, int>();
+        /// <summary>Sparks this run has paid (thresholds, the place, chests).</summary>
+        public long SparksWon;
+        public int Rank;
+        /// <summary>The reward of the place is taken (by the player, or by itself a day after the end).</summary>
+        public bool Claimed;
+        /// <summary>A day after the end: the currency left turned into silver, the shop closed.</summary>
+        public bool Burned;
+
         // per local day
         public long Day = -1;
         public int Attempts;
@@ -130,6 +141,15 @@ namespace LastHearth.Core
         public List<double> HpShares = new List<double>();
         public List<int> Blessings = new List<int>();
         public List<int> BlessingOffer = new List<int>();
+        /// <summary>The door chosen on this floor (GameSession.PortalDoor), -1: none yet.</summary>
+        public int Door = -1;
+        /// <summary>Ash a blessing of the merchant's offer costs; 0: a free offer (every third floor).</summary>
+        public long OfferPrice;
+
+        // Long Night
+        /// <summary>When the group exhausted the Reaper's pool (the «Рассвет» chest), 0: not yet.</summary>
+        public long DawnAt;
+        public int DawnTier;
 
         // Treasure
         public List<int> Opened = new List<int>();
@@ -151,6 +171,11 @@ namespace LastHearth.Core
         public long Stone;
         public List<long> WindowsDone = new List<long>();
         public long LiveWindow = -1;
+        public int Repairs;
+        /// <summary>The final window: the outpost where the squad stands (-1: the weakest one).</summary>
+        public int Stand = -1;
+        /// <summary>Fair: the rates of the next 4 hours are revealed for this key.</summary>
+        public long HintKey = -1;
     }
 
     [Serializable]
@@ -279,6 +304,8 @@ namespace LastHearth.Core
         // Live events (EVENTS.md)
         public List<EventRun> Events = new List<EventRun>();
         public List<string> EventsSeen = new List<string>();
+        /// <summary>Titles and banners of first places in events (cosmetic).</summary>
+        public List<string> Trophies = new List<string>();
         public EventBattle EventBattle;
 
         // Campaign (MODES.md, 1)

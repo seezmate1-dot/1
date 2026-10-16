@@ -49,8 +49,8 @@ namespace LastHearth.Core
                     Family = m.Family,
                     Rank = m.Rank,
                     // the free player's kennel and finds are part of the recommended strength
-                    HpMult = kind.HpMult * KennelExpected(Balance.Companions.CampaignHp, m.Rank) * KennelExpected(Balance.Items.CampaignEdge, m.Rank),
-                    AttackMult = kind.AttackMult * KennelExpected(Balance.Companions.CampaignAttack, m.Rank) * KennelExpected(Balance.Items.CampaignEdge, m.Rank),
+                    HpMult = kind.HpMult * KennelExpected(Balance.Companions.CampaignHp, m.Rank) * GearEdge(m.Rank),
+                    AttackMult = kind.AttackMult * KennelExpected(Balance.Companions.CampaignAttack, m.Rank) * GearEdge(m.Rank),
                     Telegraphs = kind.Telegraphs,
                 });
             }

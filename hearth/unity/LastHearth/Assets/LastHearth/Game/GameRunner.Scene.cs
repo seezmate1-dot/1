@@ -55,7 +55,7 @@ namespace LastHearth.Game
                 case Win.Quests: return QuestsWait(now);
                 case Win.Pets: return KennelWaits();
                 case Win.Arena: return PlaceWaits("Arena", now);
-                case Win.Events: return session.ActiveRuns(now).Any();
+                case Win.Events: return EventsWait(now);
                 default: return false;
             }
         }

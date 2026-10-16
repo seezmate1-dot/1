@@ -264,7 +264,7 @@ namespace LastHearth.Core
             return Fail.None;
         }
 
-        /// <summary>Ends the event's run now: its rank reward is paid as at the usual end.</summary>
+        /// <summary>Ends the event's run now: its place reward waits for «Забрать награду», as at the usual end (paid by itself a day later).</summary>
         public Fail AdminEndEvent(string id, long now)
         {
             Advance(now);

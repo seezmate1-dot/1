@@ -530,6 +530,8 @@ namespace LastHearth.Core.Tests
             s.Advance(run.End + 1);
             Assert.IsTrue(run.Closed);
             Assert.AreEqual(1, s.EventRank(run));
+            Assert.IsFalse(s.Bag().Any(i => i.Source.Contains("место 1")), "the place pays when its reward is claimed");
+            Assert.AreEqual(Fail.None, s.ClaimEventReward(run));
             Assert.IsTrue(s.Bag().Any(i => i.Rarity == ItemRarity.Epic && i.Source.Contains("место 1")), "the first place: an epic item");
         }
 

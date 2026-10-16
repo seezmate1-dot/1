@@ -3730,35 +3730,35 @@
   "eventRankItem": 5,
   "campaignEdge": [
    1.0,
-   1.008,
-   1.016,
-   1.024,
-   1.032,
-   1.04,
-   1.048,
-   1.056,
-   1.064,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.009,
+   1.018,
+   1.027,
+   1.036,
+   1.045,
+   1.054,
+   1.063,
    1.072,
-   1.08,
-   1.088,
-   1.096,
-   1.104,
-   1.112,
-   1.12,
-   1.128,
-   1.136,
+   1.081,
+   1.09,
+   1.099,
+   1.108,
+   1.117,
+   1.126,
+   1.135,
    1.144,
-   1.152,
-   1.16,
-   1.168,
-   1.176,
-   1.184,
-   1.192,
-   1.2,
-   1.208,
-   1.216,
-   1.224,
-   1.232
+   1.153,
+   1.162,
+   1.171,
+   1.18,
+   1.189,
+   1.198
   ]
  },
  "activities": {
@@ -4212,7 +4212,23 @@
     "essenceDays": 1.0,
     "materialHours": 6,
     "hourglassMinutes": 90,
-    "unlock": 11
+    "unlock": 11,
+    "group": 50,
+    "currency": "Осколки ночи",
+    "shop": [
+     {
+      "goods": "Cores",
+      "price": 50,
+      "limit": 1,
+      "amount": 20
+     },
+     {
+      "goods": "Decor:shrine",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    },
    {
     "id": "Portal",
@@ -4225,7 +4241,23 @@
     "essenceDays": 1.5,
     "materialHours": 12,
     "hourglassMinutes": 180,
-    "unlock": 12
+    "unlock": 12,
+    "group": 50,
+    "currency": "Пепел портала",
+    "shop": [
+     {
+      "goods": "Recruit",
+      "price": 50,
+      "limit": 1,
+      "amount": 1
+     },
+     {
+      "goods": "Decor:crystal",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    },
    {
     "id": "Tournament",
@@ -4238,7 +4270,23 @@
     "essenceDays": 1.0,
     "materialHours": 8,
     "hourglassMinutes": 90,
-    "unlock": 13
+    "unlock": 13,
+    "group": 30,
+    "currency": "Знаки Стражей",
+    "shop": [
+     {
+      "goods": "Recruit",
+      "price": 50,
+      "limit": 1,
+      "amount": 1
+     },
+     {
+      "goods": "Decor:armor",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    },
    {
     "id": "Treasure",
@@ -4251,7 +4299,23 @@
     "essenceDays": 1.0,
     "materialHours": 20,
     "hourglassMinutes": 360,
-    "unlock": 10
+    "unlock": 10,
+    "group": 50,
+    "currency": "Монеты казны",
+    "shop": [
+     {
+      "goods": "Blueprints",
+      "price": 50,
+      "limit": 1,
+      "amount": 10
+     },
+     {
+      "goods": "Decor:treasure",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    },
    {
     "id": "Fair",
@@ -4264,7 +4328,23 @@
     "essenceDays": 0.5,
     "materialHours": 12,
     "hourglassMinutes": 90,
-    "unlock": 9
+    "unlock": 9,
+    "group": 50,
+    "currency": "Пепельные жетоны",
+    "shop": [
+     {
+      "goods": "Recruit",
+      "price": 50,
+      "limit": 1,
+      "amount": 1
+     },
+     {
+      "goods": "Decor:keg",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    },
    {
     "id": "Siege",
@@ -4277,7 +4357,23 @@
     "essenceDays": 1.5,
     "materialHours": 16,
     "hourglassMinutes": 180,
-    "unlock": 15
+    "unlock": 15,
+    "group": 50,
+    "currency": "Камень застав",
+    "shop": [
+     {
+      "goods": "Ember",
+      "price": 50,
+      "limit": 1,
+      "amount": 150
+     },
+     {
+      "goods": "Decor:shield",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    },
    {
     "id": "Festival",
@@ -4290,9 +4386,36 @@
     "essenceDays": 2.0,
     "materialHours": 24,
     "hourglassMinutes": 720,
-    "unlock": 9
+    "unlock": 9,
+    "group": 50,
+    "currency": "Огоньки",
+    "shop": [
+     {
+      "goods": "Recruit",
+      "price": 50,
+      "limit": 1,
+      "amount": 1
+     },
+     {
+      "goods": "Decor:pumpkin",
+      "price": 60,
+      "limit": 1,
+      "amount": 1
+     }
+    ]
    }
   ],
+  "eventCurrency": {
+   "perThreshold": 10,
+   "rank": [
+    30,
+    20,
+    10,
+    5
+   ],
+   "silver": 5,
+   "burnHours": 24
+  },
   "daily": {
    "tasksNeeded": 3,
    "taskSparks": 10,
