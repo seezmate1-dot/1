@@ -9,7 +9,8 @@
 - Splash.png: the loading screen (1920 x 1080), and "splash" in Art.json.
 - Rooms/<Room>_2, _3: the richer looks by level, toned to the colours of the room's first look, and
   "roomTiers" in Art.json once every room has both.
-- Rooms/Stairs, Rooms/Arch: the stair tower beside the cutaway and the open arches between rooms; "stairs".
+- Rooms/Stairs: the stair tower beside the cutaway; Rooms/Arch, the open arch between rooms, cut here
+  from the painted rock (the model kept painting a closed door into it); "stairs".
 - Rooms/Rubble, Rooms/Scaffold: drawn over a cell (obstacle) and over a room being built; "rubble", "scaffold".
 - Icons/<Name>, Buttons/<Name> (256 x 256), Decor/<name> (320 high, its width in Art.json follows the picture).
 - Scene/<Place>: the places around the fortress (512 x 512, standing on the bottom), and "scene" in Art.json.
@@ -58,6 +59,44 @@ def fit(src, size):
     img = src.resize((round(src.width * k), round(src.height * k)), Image.LANCZOS)
     x, y = (img.width - size[0]) // 2, (img.height - size[1]) // 2
     return img.crop((x, y, x + size[0], y + size[1]))
+
+
+def arch(rock, size=(192, 512)):
+    """The open arch between two rooms, cut from the painted rock: a stone pillar as high as the rooms'
+    openings with a round-topped passage through it, dark inside with warm light on its threshold, a ring
+    of lighter cut stones around the opening and soft shading at its sides."""
+    import numpy as np
+    W, H = size
+    tex = fit(rock.convert("RGB"), (W * 2, H)).crop((W // 2, 0, W // 2 + W, H))
+    t = np.asarray(tex, dtype=np.float32)
+    y, x = np.mgrid[0:H, 0:W].astype(np.float32)
+    cx, half, top = W / 2, W * 0.30, H * 0.30           # the passage: 0.6 of the width, its arch from 0.30 of the height
+    spring = top + half                                  # where the round top meets the straight sides
+    # signed distance outside the opening (negative inside)
+    d_side = np.abs(x - cx) - half
+    d_round = np.hypot(x - cx, y - spring) - half
+    d = np.where(y < spring, d_round, d_side)
+    ring = np.clip(1 - np.abs(d - W * 0.06) / (W * 0.06), 0, 1)  # the cut stones around the opening
+    stone = t * (1 + 0.22 * ring[..., None])
+    # the sides of the pillar turn away from the light
+    side = np.clip(np.minimum(x, W - 1 - x) / (W * 0.18), 0, 1)
+    stone *= (0.62 + 0.38 * side)[..., None]
+    # the passage: dark, a warm glow on its floor, darker towards the arch
+    depth = np.clip((y - top) / (H - top), 0, 1)
+    glow = np.clip((depth - 0.7) / 0.3, 0, 1) ** 1.5
+    passage = np.stack([22 + 120 * glow, 14 + 72 * glow, 9 + 30 * glow], -1)
+    inside = np.clip(-d / 3, 0, 1)[..., None]
+    out = stone * (1 - inside) + passage * inside
+    # a dark lip just inside the opening
+    lip = np.clip(1 - np.abs(d + 2.5) / 2.5, 0, 1)[..., None] * 0.6
+    out = out * (1 - lip)
+    rgba = np.dstack([np.clip(out, 0, 255), np.full((H, W), 255.0)]).astype(np.uint8)
+    img = Image.fromarray(rgba, "RGBA")
+    # the pillar's edges fade a little into the rock frame
+    a = Image.new("L", size, 0)
+    ImageDraw.Draw(a).rectangle((3, 0, W - 4, H), fill=255)
+    img.putalpha(a.filter(ImageFilter.GaussianBlur(2)))
+    return img
 
 
 def flag(name):
@@ -184,10 +223,10 @@ def main(stage):
     if all(os.path.exists(os.path.join(ART, "Rooms", n + ".png")) for n in ("Door", "Ladder")):
         flag("passages")
     # the stair tower beside the cutaway and the open arches between the rooms (GameRunner.View DrawStairTower)
-    stairs, arch = (os.path.join(stage, "Rooms", n + ".png") for n in ("Stairs", "Arch"))
-    if os.path.exists(stairs) and os.path.exists(arch):
+    stairs, rock = (os.path.join(stage, "Rooms", n + ".png") for n in ("Stairs", "Rock"))
+    if os.path.exists(stairs) and os.path.exists(rock):
         fit(Image.open(stairs).convert("RGB"), (512, 512)).save(os.path.join(ART, "Rooms", "Stairs.png"))
-        trim(Image.open(arch), (192, 512), bottom=True, margin=0).save(os.path.join(ART, "Rooms", "Arch.png"))
+        arch(Image.open(rock)).save(os.path.join(ART, "Rooms", "Arch.png"))
         flag("stairs")
         print("stairs and arches")
     rooms = os.path.join(stage, "Rooms")

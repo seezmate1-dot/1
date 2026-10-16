@@ -844,5 +844,6 @@
  "scene": true,
  "rubble": true,
  "scaffold": true,
- "splash": true
+ "splash": true,
+ "stairs": true
 }
