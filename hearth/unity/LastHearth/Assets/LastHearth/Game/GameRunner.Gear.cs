@@ -303,6 +303,50 @@ namespace LastHearth.Game
                 Report(session.UpgradeItem(item.Id), "Build");
         }
 
+        // ------------------------------------------------------------------ the developer's menu: «Предметы»
+
+        /// <summary>The kind the «Предметы» page gives (it cycles through ItemKinds.All).</summary>
+        int adminItemKind;
+
+        void AdminItems(AdminList list, long now)
+        {
+            var gear = session.Gear;
+            var kind = ItemKinds.All[adminItemKind % ItemKinds.All.Length];
+            string Given(GearItem item) => session.FindItem(item.Id) == null
+                ? "Сумка полна: " + session.ItemName(item) + " продано"
+                : string.Format("В сумке: {0} ({1}, ур. {2}{3})", session.ItemName(item), session.RarityInfo(item.Rarity).Name, item.Level,
+                    string.IsNullOrEmpty(item.Set) ? "" : ", сет «" + session.Balance.Items.Set(item.Set)?.Name + "»");
+
+            list.Row(string.Format("Выдать вещь уровня очага {0} · сумка {1}/{2}", session.State.HearthLevel, session.Bag().Count, session.BagSize()));
+            list.Add("Вид: " + kind.Name + " ▶", _ =>
+            {
+                adminItemKind = (adminItemKind + 1) % ItemKinds.All.Length;
+                return "Вид: " + ItemKinds.All[adminItemKind].Name + " (" + ItemKinds.SlotName(ItemKinds.All[adminItemKind].Slot) + ")";
+            });
+            foreach (ItemRarity r in Enum.GetValues(typeof(ItemRarity)))
+            {
+                var rarity = r;
+                list.Add(session.RarityInfo(r).Name, _ => Given(session.AdminGiveItem(kind.Kind, rarity)));
+            }
+            list.Row("Легендарная вещь «" + kind.Name + "» с сетом");
+            foreach (var set in session.Balance.Items.Sets)
+            {
+                string id = set.Id;
+                list.Add("Сет «" + set.Name + "»", _ => Given(session.AdminGiveItem(kind.Kind, ItemRarity.Legendary, id)));
+            }
+            list.Row(string.Format("Надетое и сумка · надето {0} · обломки {1} · разборка сегодня ещё {2}",
+                gear.Items.Count(i => i.HeroId != 0), gear.Scrap, session.DismantlesLeft(now)));
+            list.Add("Всё надетое до +" + session.Balance.Items.PlusMax, _ => "Улучшено вещей: " + session.AdminMaxWorn());
+            list.Add("Заполнить сумку", _ => "В сумку пришло вещей: " + session.AdminFillBag());
+            list.Add("Очистить сумку", _ => "Из сумки убрано вещей: " + session.AdminClearBag(), true);
+            list.Add("Сбросить лимит разборки", _ =>
+            {
+                session.AdminResetDismantles();
+                return "Разборка сегодня: ещё " + session.DismantlesLeft(now);
+            });
+            list.Add("+100 обломков", _ => "Обломки: " + session.AdminAddScrap(100));
+        }
+
         // ------------------------------------------------------------------ the forge (the Forge room's tab)
 
         /// <summary>The tabs of the Forge room; true when the forging tab is open (the hall's panel is skipped).</summary>

@@ -558,5 +558,83 @@ namespace LastHearth.Core.Tests
             Assert.IsNotNull(loaded);
             Assert.AreEqual(json, SaveSystem.ToJson(loaded));
         }
+
+        // ------------------------------------------------------------------ items (GameSession.Gear.cs, the page «Предметы»)
+
+        [Test]
+        public void AnyItemOfAnyRarityAtTheHearthLevel()
+        {
+            var s = Session(12);
+            foreach (var kind in ItemKinds.All)
+            {
+                foreach (ItemRarity r in Enum.GetValues(typeof(ItemRarity)))
+                {
+                    s.AdminClearBag();
+                    var item = s.AdminGiveItem(kind.Kind, r);
+                    Assert.AreSame(item, s.FindItem(item.Id), "into the bag");
+                    Assert.AreEqual(kind.Kind, item.Kind);
+                    Assert.AreEqual(r, item.Rarity);
+                    Assert.AreEqual(12, item.Level, "the hearth level");
+                    Assert.AreEqual(s.Balance.Items.Rarity(r).Secondaries, item.Rolls.Count);
+                }
+            }
+            var legendary = s.AdminGiveItem(ItemKind.Bow, ItemRarity.Legendary, "Mist");
+            Assert.AreEqual("Mist", legendary.Set, "a legendary item with the chosen set");
+        }
+
+        [Test]
+        public void WornItemsGoToPlusTen()
+        {
+            var s = Session(12);
+            var hero = s.AdminAddHero(HeroClass.Swordsman);
+            var sword = s.AdminGiveItem(ItemKind.Sword, ItemRarity.Rare);
+            var bag = s.AdminGiveItem(ItemKind.Boots, ItemRarity.Rare);
+            Assert.AreEqual(Fail.None, s.Equip(hero.Id, sword.Id));
+            double before = s.HeroGear(hero).Attack;
+            Assert.AreEqual(1, s.AdminMaxWorn());
+            Assert.AreEqual(s.Balance.Items.PlusMax, sword.Plus);
+            Assert.AreEqual(0, bag.Plus, "the bag stays as it is");
+            Assert.Greater(s.HeroGear(hero).Attack, before);
+            Assert.AreEqual(0, s.AdminMaxWorn(), "nothing left to raise");
+        }
+
+        [Test]
+        public void TheBagFillsAndEmptiesButTheWornItemsStay()
+        {
+            var s = Session(12);
+            var hero = s.AdminAddHero(HeroClass.Archer);
+            var bow = s.AdminGiveItem(ItemKind.Bow, ItemRarity.Epic);
+            s.Equip(hero.Id, bow.Id);
+            int added = s.AdminFillBag();
+            Assert.AreEqual(s.BagSize(), added);
+            Assert.IsTrue(s.BagFull());
+            Assert.AreEqual(5, s.Bag().Select(i => i.Rarity).Distinct().Count(), "every rarity");
+            Assert.AreEqual(0, s.AdminFillBag(), "already full");
+            Assert.AreEqual(added, s.AdminClearBag());
+            Assert.IsEmpty(s.Bag());
+            Assert.AreEqual(bow.Id, s.Worn(hero.Id, ItemSlot.Weapon).Id, "the worn bow stays");
+        }
+
+        [Test]
+        public void TheDismantleCapResetsAndTheForgeFinishesNow()
+        {
+            var s = Session(12);
+            int cap = s.Balance.Items.DismantlePerDay;
+            for (int i = 0; i < cap; i++)
+                Assert.AreEqual(Fail.None, s.Dismantle(s.AdminGiveItem(ItemKind.Amulet, ItemRarity.Common).Id, T0));
+            Assert.AreEqual(0, s.DismantlesLeft(T0));
+            s.AdminResetDismantles();
+            Assert.AreEqual(cap, s.DismantlesLeft(T0));
+            Assert.AreEqual(150, s.AdminAddScrap(150 - s.Gear.Scrap));
+
+            s.State.Rooms.Add(new Room { Id = s.State.NextRoomId++, Type = RoomType.Forge, Level = 10, Floor = 0, Cell = 0 });
+            s.AdminAddResource(ResourceType.Silver, 1000000);
+            s.AdminAddResource(ResourceType.Iron, 1000000);
+            Assert.AreEqual(Fail.None, s.StartCraft(ItemKind.Helmet, ItemRarity.Rare, T0));
+            int bag = s.Bag().Count;
+            Assert.GreaterOrEqual(s.AdminFinishOtherTimers(T0), 1);
+            Assert.IsNull(s.Gear.Craft, "the forge's item is done");
+            Assert.AreEqual(bag + 1, s.Bag().Count);
+        }
     }
 }

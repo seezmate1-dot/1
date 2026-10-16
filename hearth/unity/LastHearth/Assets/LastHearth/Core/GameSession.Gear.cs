@@ -579,13 +579,60 @@ namespace LastHearth.Core
             return item;
         }
 
+        // ------------------------------------------------------------------ the developer's menu (GameRunner.Admin.cs, «Предметы»)
+
+        /// <summary>An item of any kind and rarity at the hearth level into the bag (sold on the spot when it is full).</summary>
+        public GearItem AdminGiveItem(ItemKind kind, ItemRarity rarity, string set = "") =>
+            GiveItem(kind, rarity, State.HearthLevel, Gear.NextItemId * 7919 + (int)kind * 31 + (int)rarity, set, "Админ-меню");
+
+        /// <summary>Every item the heroes wear goes to +10; returns how many were raised.</summary>
+        public int AdminMaxWorn()
+        {
+            int count = 0;
+            foreach (var item in Gear.Items.Where(i => i.HeroId != 0 && i.Plus < ItemNumbers.PlusMax))
+            {
+                item.Plus = ItemNumbers.PlusMax;
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>Fills the bag up to its size with items of every kind and rarity in turn; returns how many came.</summary>
+        public int AdminFillBag()
+        {
+            int count = 0;
+            var kinds = ItemKinds.All;
+            while (!BagFull())
+            {
+                int n = Gear.NextItemId;
+                AdminGiveItem(kinds[n % kinds.Length].Kind, (ItemRarity)(n % 5));
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>Empties the bag (the worn items stay); returns how many items went.</summary>
+        public int AdminClearBag() => Gear.Items.RemoveAll(i => i.HeroId == 0);
+
+        /// <summary>Dismantling is open again today.</summary>
+        public void AdminResetDismantles()
+        {
+            Gear.Dismantled = 0;
+        }
+
+        public long AdminAddScrap(long amount)
+        {
+            Gear.Scrap = Math.Max(0, Gear.Scrap + amount);
+            return Gear.Scrap;
+        }
+
         /// <summary>The name of a good of the Glory shop for the screen.</summary>
         public static string GloryGoodsName(string goods)
         {
             switch (goods)
             {
-                case "Essence": return "Эссенция (¼ дня)";
-                case "Hourglass": return "Песочные часы, 1 ч";
+                case "Essence": return "Эссенция";
+                case "Hourglass": return "Песочные часы";
                 case "Gear": return "Эпическая часть снаряжения";
                 default: return "Печать редкого жителя";
             }
