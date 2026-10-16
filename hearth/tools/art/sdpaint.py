@@ -48,15 +48,30 @@ def native_bf16():
     return "avx512_bf16" in flags or "amx_bf16" in flags
 
 
+def memory_gb():
+    """The memory this process may use: the machine's, or its control group's limit when lower."""
+    total = 0.0
+    try:
+        for line in open("/proc/meminfo"):
+            if line.startswith("MemTotal:"):
+                total = int(line.split()[1]) / 2 ** 20
+        limit = open("/sys/fs/cgroup/memory.max").read().strip()
+        if limit.isdigit():
+            total = min(total, int(limit) / 2 ** 30)
+    except OSError:
+        pass
+    return total
+
+
 def pipe():
     global _pipe
     if _pipe is None:
         torch.set_num_threads(os.cpu_count() or 4)
         # loaded in bfloat16: SDXL in float32 needs more than 14 GB while loading
         p = StableDiffusionXLImg2ImgPipeline.from_single_file(MODEL, torch_dtype=torch.bfloat16)
-        if not native_bf16():
-            # the painting itself in float32 (about 11 GB), the text encoders stay in bfloat16: they run once;
-            # one tensor at a time, so the bfloat16 copy goes as the float32 one comes (16 GB machines)
+        if not native_bf16() and memory_gb() >= 20:
+            # the painting itself in float32 (about 14 GB at the peak with the text encoders in bfloat16: they
+            # run once), one tensor at a time; on a smaller machine the slow emulated bfloat16 has to do
             import gc
             for module in (p.unet, p.vae):
                 for t in list(module.parameters()) + list(module.buffers()):

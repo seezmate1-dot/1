@@ -4,7 +4,8 @@
 - Rooms/Rock.png: the painted rock of the mountain (an undug cell).
 - Rooms/Frame.png: the opening a room sits in, cut out of that rock (nine slices: GameRunner.View
   DrawInterior), with a dark inner shadow so the rooms look sunk into the mountain.
-- Map.png, Mountain.png, Battlefield.png: the painted world.
+- Map.png, Mountain.png, Battlefield.png: the painted world; on the map's water the points of the sun
+  glints (map.sea in Art.json) and their picture UI/Glint.png.
 - Splash.png: the loading screen (1920 x 1080), and "splash" in Art.json.
 - Rooms/<Room>_2, _3: the richer looks by level, toned to the colours of the room's first look, and
   "roomTiers" in Art.json once every room has both.
@@ -141,6 +142,39 @@ def pieces(stage):
             print("room", name)
 
 
+def glint(path):
+    """A soft four-pointed sun glint (white, transparent around), for the map's water."""
+    import numpy as np
+    n = 64
+    y, x = np.mgrid[0:n, 0:n] / (n - 1) * 2 - 1
+    star = np.exp(-(x * 6) ** 2 - (y * 1.2) ** 2 * 3) + np.exp(-(y * 6) ** 2 - (x * 1.2) ** 2 * 3)
+    a = np.clip(np.exp(-(x ** 2 + y ** 2) * 8) * 0.9 + star * 0.6, 0, 1)
+    img = Image.new("RGBA", (n, n), (255, 255, 255, 0))
+    img.putalpha(Image.fromarray((a * 255).astype("uint8"), "L"))
+    img.save(path)
+
+
+def sea_points(img, count=70, seed=3):
+    """Points on the open water of the map (blue, away from the shores and the ships), spread over it."""
+    import random
+    import numpy as np
+    a = np.asarray(img.convert("RGB").resize((240, 135)), dtype=np.float32)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    water = (b > r + 35) & (b > g + 5) & (b > 90)
+    # away from anything that is not water: eroded by a few cells
+    m = Image.fromarray((water * 255).astype("uint8"), "L").filter(ImageFilter.MinFilter(9))
+    ys, xs = np.nonzero(np.asarray(m) > 0)
+    rng = random.Random(seed)
+    picked = []
+    for i in rng.sample(range(len(xs)), min(len(xs), count * 20)):
+        x, y = (xs[i] + 0.5) / 240, (ys[i] + 0.5) / 135
+        if all((x - px) ** 2 + ((y - py) * 9 / 16) ** 2 > 0.0016 for px, py in picked):
+            picked.append((x, y))
+        if len(picked) == count:
+            break
+    return [{"name": "", "x": round(x, 4), "y": round(y, 4)} for x, y in picked]
+
+
 def main(stage):
     for piece in ("Door", "Ladder"):
         p = os.path.join(stage, "Rooms", piece + ".png")
@@ -186,8 +220,17 @@ def main(stage):
     for name, size in (("Map", (2400, 1350)), ("Mountain", (1536, 768)), ("Battlefield", (1536, 768))):
         p = os.path.join(stage, name + ".png")
         if os.path.exists(p):
-            fit(Image.open(p).convert("RGB"), size).save(os.path.join(ART, name + ".png"))
+            img = fit(Image.open(p).convert("RGB"), size)
+            img.save(os.path.join(ART, name + ".png"))
             print("world", name)
+            if name == "Map":
+                # the sun glints on the water (GameRunner.Map DrawSea)
+                glint(os.path.join(ART, "UI", "Glint.png"))
+                manifest = os.path.join(ART, "Art.json")
+                m = json.load(open(manifest, encoding="utf-8"))
+                m.setdefault("map", {})["sea"] = sea_points(img)
+                json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                print("sea", len(m["map"]["sea"]))
 
 
 if __name__ == "__main__":

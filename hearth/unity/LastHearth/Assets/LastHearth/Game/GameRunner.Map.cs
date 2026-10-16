@@ -84,6 +84,7 @@ namespace LastHearth.Game
             var r = GUILayoutUtility.GetRect(w, h, GUILayout.Width(w), GUILayout.Height(h));
             if (tex != null)
                 GUI.DrawTexture(r, tex);
+            DrawSea(r, map);
             DrawActs(r, map, now);
             foreach (var (key, name, win) in MapPlaces)
             {
@@ -105,6 +106,33 @@ namespace LastHearth.Game
             DrawSideButtons(new Rect(area.xMax - right, area.y + top + 4, right, area.height - top - bottom - 8), now, false);
             DrawBottomButtons(new Rect(area.x, area.yMax - bottom, area.width - right, bottom), now);
             DrawToast(area);
+        }
+
+        /// <summary>The sea lives: sun glints come and go on the water, each in its own rhythm, drifting a little
+        /// with the waves (the points are picked on the painted water by hearth/tools/art/integrate.py).</summary>
+        void DrawSea(Rect r, ArtLibrary.MapInfo map)
+        {
+            if (map.Sea == null || map.Sea.Count == 0)
+                return;
+            var glint = ArtLibrary.Tex("UI/Glint");
+            if (glint == null)
+                return;
+            float t = Time.time, s = r.width * 0.008f;
+            var keep = GUI.color;
+            for (int i = 0; i < map.Sea.Count; i++)
+            {
+                var p = map.Sea[i];
+                float phase = i * 2.39996f; // the golden angle: no two glints in step
+                float a = Mathf.Sin(t * (0.7f + i % 5 * 0.15f) + phase);
+                if (a <= 0)
+                    continue;
+                a *= a * a;
+                float drift = Mathf.Sin(t * 0.35f + phase) * s;
+                float k = s * (0.7f + 0.8f * a);
+                GUI.color = new Color(1, 1, 1, a * 0.8f);
+                GUI.DrawTexture(new Rect(r.x + p.X * r.width + drift - k, r.y + p.Y * r.height - k * 0.4f, 2 * k, k * 0.8f), glint);
+            }
+            GUI.color = keep;
         }
 
         /// <summary>A place on the map: its name on a plaque under it (a red dot when something waits); the
