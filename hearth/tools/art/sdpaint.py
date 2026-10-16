@@ -55,9 +55,17 @@ def pipe():
         # loaded in bfloat16: SDXL in float32 needs more than 14 GB while loading
         p = StableDiffusionXLImg2ImgPipeline.from_single_file(MODEL, torch_dtype=torch.bfloat16)
         if not native_bf16():
-            # the painting itself in float32 (about 11 GB), the text encoders stay in bfloat16: they run once
-            p.unet.to(torch.float32)
-            p.vae.to(torch.float32)
+            # the painting itself in float32 (about 11 GB), the text encoders stay in bfloat16: they run once;
+            # one tensor at a time, so the bfloat16 copy goes as the float32 one comes (16 GB machines)
+            import gc
+            for module in (p.unet, p.vae):
+                for t in list(module.parameters()) + list(module.buffers()):
+                    if t.dtype == torch.bfloat16:
+                        t.data = t.data.float()
+                gc.collect()
+            # the attention and the decoder in slices: a big picture's activations stay small
+            p.enable_attention_slicing()
+            p.vae.enable_tiling()
             print("float32 painting (no native bfloat16 on this processor)", flush=True)
         # the scheduler DreamShaper Turbo is made for: DPM++ SDE Karras, few steps, low guidance
         p.scheduler = DPMSolverMultistepScheduler.from_config(p.scheduler.config, algorithm_type="sde-dpmsolver++",
@@ -225,6 +233,15 @@ def _cutout(img, tolerance=38):
     return out
 
 
+def stairs(args):
+    """One floor of the stair tower beside the cutaway (GameRunner.View DrawStairTower): a wooden staircase
+    climbing inside a stone tower; the floors repeat it, so its top meets its bottom."""
+    img = draw("cutaway view straight from the front into a narrow medieval stone stair tower, one sturdy wooden "
+               "staircase with a wooden railing climbing diagonally from the bottom left corner to the top right corner, "
+               "stone block walls, a burning wall torch, warm light, a wooden floor at the bottom", (768, 768), seed=args.seed)
+    _save(grade(img).resize((512, 512), Image.LANCZOS), "Rooms/Stairs.png", args)
+
+
 def door(args):
     """The door between two rooms: a wooden arched door in a stone arch, cut to its arch."""
     from PIL import ImageDraw, ImageFilter
@@ -295,6 +312,8 @@ DECOR.update({
 OBSTACLES = {
     "Rubble": "a wide low heap of fallen grey-brown rocks, boulders and broken wooden planks, a collapsed rubble pile, "
               "side view",
+    "Arch": "a thick medieval wall pillar of warm sandstone blocks with an open round-arched doorway through it, front "
+            "view, symmetric, the doorway a dark passage, a stone threshold",
     "Scaffold": "wooden construction scaffolding, front view, a frame of wooden poles and planks tied with ropes, "
                 "a wooden ladder, a bucket hanging on a rope, sparse with empty gaps",
 }
@@ -322,7 +341,7 @@ def _piece_list():
         out["Decor/" + n] = ("a room decoration: " + what + ", seen from the front",
                              Image.open(p).size if os.path.exists(p) else (320, 320))
     for n, what in OBSTACLES.items():
-        out["Rooms/" + n] = (what, (768, 384))
+        out["Rooms/" + n] = (what, (192, 512) if n == "Arch" else (768, 384))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     return out
@@ -416,7 +435,7 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="")
     args = ap.parse_args()
-    groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder"],
+    groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder", "Stairs", "Rooms/Arch"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
               "pieces": [n for n in PIECES if not n.startswith("Scene/")],
               "scene": [n for n in PIECES if n.startswith("Scene/")]}
@@ -431,6 +450,8 @@ if __name__ == "__main__":
             door(args)
         elif n == "Ladder":
             ladder(args)
+        elif n == "Stairs":
+            stairs(args)
         elif n == "Splash":
             splash(args)
         else:

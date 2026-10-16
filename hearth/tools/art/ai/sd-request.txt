@@ -1,3 +1,3 @@
-rooms world extras tiers pieces Splash
+Stairs Rooms/Arch
 0.65
-# full set, public runners
+# the stair tower beside the cutaway and the open arches between rooms
