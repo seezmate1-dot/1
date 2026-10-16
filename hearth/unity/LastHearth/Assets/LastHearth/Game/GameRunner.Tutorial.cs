@@ -337,7 +337,7 @@ namespace LastHearth.Game
             ArtLibrary.Draw(face, "UI/Round");
             float pad = face.width * 0.14f;
             ArtLibrary.Draw(new Rect(face.x + pad, face.y + pad * 0.8f, face.width - 2 * pad, face.width - 2 * pad),
-                "Portraits/" + ArtLibrary.HeroSheet(HeroClass.Guardian));
+                "Portraits/Dweller1"); // Mara: the red-haired dweller
             var plate = new Rect(face.x + 12, face.yMax - 14, 92, 24);
             ArtLibrary.DrawSliced(plate, "UI/Pill", 30);
             UiSkin.Outlined(plate, "Мара", tutorName);
