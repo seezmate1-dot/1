@@ -399,6 +399,14 @@ namespace UnityEngine
         public static bool Button(string t, params GUILayoutOption[] o) { Check(t); return GUI.enabled && Click(t); }
         public static bool Toggle(bool v, string t, GUIStyle s, params GUILayoutOption[] o) { Check(t); return GUI.enabled && Click(t) ? !v : v; }
         public static string TextArea(string t, params GUILayoutOption[] o) { Check(t); return t; }
+        /// <summary>The finger types now and then: a name of the fortress, sometimes too short.</summary>
+        public static string TextField(string t, int max, params GUILayoutOption[] o)
+        {
+            Check(t);
+            if (Click("[поле]"))
+                return t.Length > 3 ? "Я" : "Северный очаг";
+            return t.Length > max ? t.Substring(0, max) : t;
+        }
         public static void BeginHorizontal(params GUILayoutOption[] o) => Depth++;
         public static void EndHorizontal() => Depth--;
         public static void BeginVertical(params GUILayoutOption[] o) => Depth++;

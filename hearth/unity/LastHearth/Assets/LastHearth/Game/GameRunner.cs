@@ -246,6 +246,11 @@ namespace LastHearth.Game
             }
             if (lanternSeed != 0)
                 return;
+            if (movingRoom >= 0)
+            {
+                CancelMove();
+                return;
+            }
             if (window != Win.None)
             {
                 CloseWindow();
@@ -326,6 +331,7 @@ namespace LastHearth.Game
             if (DrawLoading())
                 return;
             TutorInput(); // taps on the tutorial's bubble are its own (GameRunner.Tutorial.cs)
+            MoveInput(); // and the «Отмена» of a room being moved (GameRunner.Comfort.cs)
             UiSkin.DrawBackground(new Rect(0, 0, Screen.width / uiScale, Screen.height / uiScale));
             // the safe area keeps buttons away from the camera cut-out and rounded corners
             var safe = Screen.safeArea;
@@ -351,6 +357,7 @@ namespace LastHearth.Game
                 DrawWorldMap(area, now);
             else
                 DrawMainScreen(area, now);
+            DrawMoveBar(area);
             AnimWindow(area, now); // DrawWindow with its pop (GameRunner.Anim.cs)
             DrawTutorial(area); // Mara, the dimming and the arrow of the tutorial (GameRunner.Tutorial.cs)
             DrawFx();

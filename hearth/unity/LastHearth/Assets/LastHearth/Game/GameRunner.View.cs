@@ -607,9 +607,10 @@ namespace LastHearth.Game
             float s = r.height * 0.36f * (1 + 0.05f * Mathf.Sin(Time.time * 3 + cell));
             ArtLibrary.Draw(new Rect(r.center.x - s / 2, r.y + r.height * 0.42f - s / 2, s, s), "UI/Plus");
             TutorTarget("free", r);
+            MoveMark(r, floor, cell); // a room being moved can go here (GameRunner.Comfort.cs)
             if (selected)
                 Outline(r);
-            if (Tap(r))
+            if (Tap(r) && !MoveTap(floor, cell))
                 SelectCell(floor, cell);
         }
 
@@ -727,6 +728,7 @@ namespace LastHearth.Game
             }
             if (GUILayout.Button(decorPicker ? "Скрыть украшения" : "Украсить"))
                 decorPicker = !decorPicker;
+            DrawMoveButton(room); // to another free cell for sparks (GameRunner.Comfort.cs)
             GUILayout.EndHorizontal();
             if (decorPicker)
                 DrawDecorPicker(room, now);

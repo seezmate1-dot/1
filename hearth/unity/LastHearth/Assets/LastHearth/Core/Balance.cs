@@ -287,6 +287,8 @@ namespace LastHearth.Core
         public long[] Refresh = new long[0];
         public int Slots;
         public long[] ArenaTicket = new long[0];
+        /// <summary>Sparks for a new name of the fortress or a room moved (MODES.md 4.4).</summary>
+        public long Convenience = 50;
     }
 
     /// <summary>MODES.md, 2-3: the arena and raids (against ghosts until the server exists).</summary>

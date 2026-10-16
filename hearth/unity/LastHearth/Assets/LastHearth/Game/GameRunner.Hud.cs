@@ -147,6 +147,7 @@ namespace LastHearth.Game
                 Plate(new Rect(x, bar.y + 9, w, 30), type, text, fill, type == ResourceType.Coal && st.OutOfCoal);
                 x += w + 4;
             }
+            DrawFortressName(new Rect(x + 4, bar.y + 9, bar.xMax - 46 - 104 - 12 - x, 30)); // GameRunner.Comfort.cs
             // Sparks (the premium currency) on the right, before the settings
             Plate(new Rect(bar.xMax - 46 - 104, bar.y + 9, 100, 30), ResourceType.Sparks, ShortNum(st.Wallet[ResourceType.Sparks]), -1, false);
             var gear = new Rect(bar.xMax - 44, bar.y + 3, 42, 42);
