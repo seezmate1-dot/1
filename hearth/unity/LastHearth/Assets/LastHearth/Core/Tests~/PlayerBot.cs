@@ -179,10 +179,13 @@ namespace LastHearth.Core.Tests
 
         /// <summary>
         /// Silver to spare for the halls: the hearth is being built (its price is paid) and the store is this full,
-        /// or the store is nearly full anyway. Saving for the hearth comes first (MODES.md, 5).
+        /// or the store is nearly full anyway. Saving for the hearth comes first (MODES.md, 5), and the first
+        /// two days (the hook, up to hearth 12) everything goes to building.
         /// </summary>
         bool SilverSurplus(double share)
         {
+            if (S.State.HearthLevel < 12)
+                return false;
             double fill = (double)S.State.Wallet[ResourceType.Silver] / Math.Max(1, S.Capacity(ResourceType.Silver));
             return fill >= 0.95 || fill >= share && S.State.Queue.AllJobs().Any(j => j.IsHearth);
         }

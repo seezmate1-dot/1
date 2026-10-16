@@ -154,12 +154,15 @@ namespace LastHearth.Core
 
         /// <summary>
         /// With a tavern the refugees a new hearth level brings (two) do not come in by themselves: they wait on the
-        /// board, to be hired or left (GDD 8: people come through the tavern).
+        /// board, free to take in or to leave for better ones (GDD 8: people come through the tavern).
         /// </summary>
         void RefugeesToTavern(int count = 2)
         {
             var board = TavernBoard(State.Time);
-            board.AddRange(NewBoard(Halls.Seed++, count));
+            var refugees = NewBoard(Halls.Seed++, count);
+            foreach (var r in refugees)
+                r.Free = true;
+            board.AddRange(refugees);
         }
 
         List<Recruit> NewBoard(int seed, int size = -1)
@@ -193,10 +196,12 @@ namespace LastHearth.Core
             return board;
         }
 
-        /// <summary>Silver (hours of income by rarity) and food (a day of the recruit's food × (1 + rarity)).</summary>
+        /// <summary>Silver (hours of income by rarity) and food (hours of the recruit's food × (1 + rarity)); nothing for a free refugee.</summary>
         public ResourceBag HireCost(Recruit recruit)
         {
             var bag = new ResourceBag();
+            if (recruit.Free)
+                return bag; // the refugees of a new hearth level ask only for a roof
             bag[ResourceType.Silver] = (long)Math.Ceiling(RarityInfo(recruit.Rarity).HireHours * HourOfIncome());
             bag[ResourceType.Food] = (long)Math.Ceiling(HallsNumbers.Tavern.FoodHours * Balance.FoodPerDwellerHour * (1 + (int)recruit.Rarity));
             return bag;

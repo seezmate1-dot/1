@@ -230,6 +230,8 @@ namespace LastHearth.Core
         public int[] Stats = new int[5];
         public Rarity Rarity;
         public bool Hired;
+        /// <summary>A refugee a new hearth level brought: free to take in, like before the tavern.</summary>
+        public bool Free;
     }
 
     [Serializable]

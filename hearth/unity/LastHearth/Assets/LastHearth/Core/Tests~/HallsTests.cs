@@ -88,7 +88,13 @@ namespace LastHearth.Core.Tests
             s.State.Queue.Enqueue(0, BuildJob.HearthTarget, 3, 10, T0 + 10);
             s.Advance(T0 + 20);
             Assert.AreEqual(before + 2, s.State.Dwellers.Count, "with a tavern nobody comes in for free");
-            Assert.AreEqual(board + 2, s.TavernBoard(T0 + 20).Count, "the two refugees wait on the board to be hired");
+            var waiting = s.TavernBoard(T0 + 20);
+            Assert.AreEqual(board + 2, waiting.Count, "the two refugees wait on the board to be hired");
+            Assert.IsTrue(waiting.Skip(board).All(r => r.Free && s.HireCost(r)[ResourceType.Silver] == 0 && s.HireCost(r)[ResourceType.Food] == 0),
+                "they are taken in for free, like before the tavern");
+            Assert.IsTrue(waiting.Take(board).All(r => !r.Free));
+            Assert.AreEqual(Fail.None, s.Hire(board, T0 + 20, out _));
+            Assert.AreEqual(before + 3, s.State.Dwellers.Count);
         }
 
         [Test]
