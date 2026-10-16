@@ -142,6 +142,7 @@ namespace LastHearth.Core
                 State.FrostUntil = (day + 1) * 86400 + 8 * 3600 - State.UtcOffsetSeconds;
             }
             State.SurgeDay = Math.Max(State.SurgeDay, day);
+            AddNews(stars > 0 ? MoraleNews.SurgeWon : MoraleNews.SurgeLost); // the spirit of the fortress (GameSession.People.cs)
             CountWarmWeek(stars);
             if (stars > 0)
                 AddSeasonXp(live ? SeasonInfo.SurgeXp : SeasonInfo.SurgeAutoXp);

@@ -322,5 +322,8 @@ namespace LastHearth.Core
 
         // The work of the halls: tavern, infirmary, library, training hall, chapel, archive (GDD 6; Halls.cs)
         public HallsState Halls = new HallsState();
+
+        // The spirit of the fortress and the deserters (GDD 7; People.cs)
+        public PeopleState People = new PeopleState();
     }
 }

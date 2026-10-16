@@ -228,7 +228,10 @@ namespace LastHearth.Core
             State.Wallet.Subtract(cost);
             hired = AddDweller(r.Name, r.Stats, r.Sex);
             if (r.Rarity != Rarity.Common)
+            {
                 Halls.Rarity[hired.Id] = r.Rarity;
+                GiveTrait(hired); // the rarity decides how likely the trait is a good one (GameSession.People.cs)
+            }
             r.Hired = true;
             Halls.Tavern.Hired++;
             return Fail.None;
@@ -308,7 +311,7 @@ namespace LastHearth.Core
                 var rng = new Rng(e.Seed * 31 + 17);
                 foreach (int id in e.Team)
                 {
-                    if (rng.Next() >= m.IllnessChance || FindDweller(id) == null)
+                    if (rng.Next() >= m.IllnessChance * IllnessMult(id) || FindDweller(id) == null)
                         continue;
                     long until = e.End + (long)Math.Round(m.IllnessHours * 3600);
                     if (until > SickUntil(id))
@@ -766,11 +769,13 @@ namespace LastHearth.Core
                 h.AttackMult *= attack * rank;
                 h.HpMult *= hp * rank;
             }
+            ApplyTraits(setup); // brave and cowardly heroes (GameSession.People.cs)
         }
 
         /// <summary>Attack and health of a hero ×these from the halls (for the hero screen).</summary>
         public (double attack, double hp) HallsHeroMult(int heroId) =>
-            ((1 + ResearchValue(ResearchEffect.Attack)) * AscensionMult(heroId), (1 + ResearchValue(ResearchEffect.Health)) * AscensionMult(heroId));
+            ((1 + ResearchValue(ResearchEffect.Attack)) * AscensionMult(heroId) * TraitBattleMult(FindDweller(heroId)),
+             (1 + ResearchValue(ResearchEffect.Health)) * AscensionMult(heroId) * TraitBattleMult(FindDweller(heroId)));
 
         // ------------------------------------------------------------------ archive
 

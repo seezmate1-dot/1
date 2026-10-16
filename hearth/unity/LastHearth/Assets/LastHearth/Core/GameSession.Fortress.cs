@@ -91,6 +91,7 @@ namespace LastHearth.Core
                 if (d.Sex == Sex.Unknown)
                     d.Sex = SexOfName(d.Name, d.Id);
             }
+            UpgradePeople(); // levels and traits of the dwellers (GameSession.People.cs)
         }
 
         void MarkCleared(int floor, int cell)
@@ -356,6 +357,7 @@ namespace LastHearth.Core
                     continue; // not yet, or the fortress is full: the child waits for room
                 State.Pairings.Remove(p);
                 var child = Born(p, man, woman);
+                AddNews(MoraleNews.Birth);
                 ChildBorn?.Invoke(child);
             }
         }

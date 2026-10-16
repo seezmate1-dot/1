@@ -172,6 +172,7 @@ namespace LastHearth.Core
             if (!battle.Over)
                 battle.RunToEnd();
             State.EventBattle = null;
+            FightXp(battle); // the heroes learn (GameSession.People.cs)
             var run = State.Events.FirstOrDefault(r => r.Id == eb.EventId && !r.Closed);
             if (run == null)
                 return Fail.None;

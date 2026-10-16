@@ -247,6 +247,7 @@ namespace LastHearth.Core.Tests
             var s = Rich(10);
             var mine = s.State.Rooms.First(r => r.Type == RoomType.CoalMine);
             var miner = s.FindDweller(mine.Workers[0]);
+            miner.Level = s.MaxDwellerLevel; // a veteran: the hours of work raise no stat meanwhile (GameSession.People.cs)
             Unassign(s, miner);
             double healthy = WithWorker(s, mine, miner);
             s.Advance(T0);
