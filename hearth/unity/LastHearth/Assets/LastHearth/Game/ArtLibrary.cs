@@ -61,6 +61,10 @@ namespace LastHearth.Game
             public bool Stairs;
             /// <summary>A little ship is painted (Map/Ship): ships sail the map's lanes.</summary>
             public bool MapShips;
+            /// <summary>The pets' portraits are painted (Pets/&lt;Id&gt;).</summary>
+            public bool PetArt;
+            /// <summary>The companions' portraits are painted (Companions/&lt;Id&gt;).</summary>
+            public bool CompanionArt;
             /// <summary>The rooms are painted interiors that sit in the rock's opening (Rooms/Frame).</summary>
             public bool Framed;
             /// <summary>The loading screen's painted key art is there (Splash).</summary>
