@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin }
 
         // the HUD's bands: the resource plates on top, the round buttons along the bottom and the right edge
         const float HudTop = 50, HudBottom = 92, HudRight = 74;
@@ -30,6 +30,7 @@ namespace LastHearth.Game
             (Win.Raids, "Набеги"), (Win.Surge, "Наплыв"),
             (Win.Dwellers, "Жители"), (Win.Growth, "Развитие"), (Win.Routes, "Вылазки"), (Win.Quests, "Задания"),
             (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"),
+            (Win.Admin, "Админ-меню"),
         };
 
         GUIStyle hudText, buttonLabel, titleText;
@@ -116,6 +117,8 @@ namespace LastHearth.Game
         void DrawTopBar(Rect bar)
         {
             var st = session.State;
+            // the hidden way into the developer's menu (GameRunner.Admin.cs), before the buttons take the touch
+            AdminGestures(new Rect(bar.x, bar.y + 2, 46, 46), new Rect(bar.xMax - 44, bar.y + 3, 42, 42));
             // a dim band under the plates, so the rooms' badges don't show between them
             var dim = GUI.color;
             GUI.color = new Color(0.05f, 0.03f, 0.02f, 0.55f);
@@ -174,7 +177,8 @@ namespace LastHearth.Game
                 GUI.color = new Color(0, 0, 0, 0.5f);
                 GUI.DrawTexture(track, Texture2D.whiteTexture);
                 GUI.color = fill >= 1 ? new Color(1f, 0.5f, 0.3f, 1) : new Color(0.55f, 0.9f, 0.45f, 1);
-                GUI.DrawTexture(new Rect(track.x, track.y, track.width * fill, track.height), Texture2D.whiteTexture);
+                if (fill > 0) // an empty warehouse has no bar
+                    GUI.DrawTexture(new Rect(track.x, track.y, track.width * fill, track.height), Texture2D.whiteTexture);
                 GUI.color = old;
             }
         }
@@ -408,6 +412,9 @@ namespace LastHearth.Game
                 case Win.Hero:
                     DrawHero(now);
                     break;
+                case Win.Admin:
+                    DrawAdmin(now);
+                    break;
             }
         }
 
@@ -419,27 +426,7 @@ namespace LastHearth.Game
             if (sounds != null && GUILayout.Button(sounds.SoundOn ? "Звуки: вкл" : "Звуки: выкл"))
                 sounds.ToggleSound();
             GUILayout.EndHorizontal();
-            GUILayout.Space(10);
-            GUILayout.Label("<b>Для проверки</b> (тестовая сборка)", Rich());
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("+1 час"))
-            {
-                skip += 3600;
-                session.Advance(Now());
-            }
-            if (GUILayout.Button("+8 часов"))
-            {
-                skip += 8 * 3600;
-                session.Advance(Now());
-            }
-            if (GUILayout.Button("Новая игра"))
-            {
-                skip = 0;
-                StartSession(NewGame.Create(session.Balance, Now()));
-                message = "";
-                CloseWindow();
-            }
-            GUILayout.EndHorizontal();
+            DrawDevSettings(); // the time skips and the new game live in the developer's menu now
             GUILayout.Space(10);
             DrawRooms(now);
         }

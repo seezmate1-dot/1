@@ -12,7 +12,7 @@ namespace LastHearth.Game
     /// Starts the game in any scene. The fortress fills the screen and lives in real time, saves itself
     /// and catches up offline time on the next start; every part of the game opens in a window over it
     /// (GameRunner.Hud.cs): fights (campaign, Hunt, arena, raids), the Surge, dwellers, growth, routes,
-    /// tasks, the shop, live events, settings (with "+1 час" to test long timers).
+    /// tasks, the shop, live events, settings, and a hidden developer's menu to test it all (GameRunner.Admin.cs).
     /// </summary>
     public sealed partial class GameRunner : MonoBehaviour
     {

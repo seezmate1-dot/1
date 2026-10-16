@@ -279,6 +279,7 @@ namespace UnityEngine
     public static class GUIUtility
     {
         public static int hotControl;
+        public static string systemCopyBuffer = "";
         // the stub's rectangles are already on the screen (no clipping groups): the points stay
         public static Vector2 GUIToScreenPoint(Vector2 p) => p;
         public static Vector2 ScreenToGUIPoint(Vector2 p) => p;
@@ -394,6 +395,7 @@ namespace UnityEngine
         public static void Label(string t, GUIStyle s, params GUILayoutOption[] o) => Check(t);
         public static bool Button(string t, params GUILayoutOption[] o) { Check(t); return GUI.enabled && Click(t); }
         public static bool Toggle(bool v, string t, GUIStyle s, params GUILayoutOption[] o) { Check(t); return GUI.enabled && Click(t) ? !v : v; }
+        public static string TextArea(string t, params GUILayoutOption[] o) { Check(t); return t; }
         public static void BeginHorizontal(params GUILayoutOption[] o) => Depth++;
         public static void EndHorizontal() => Depth--;
         public static void BeginVertical(params GUILayoutOption[] o) => Depth++;

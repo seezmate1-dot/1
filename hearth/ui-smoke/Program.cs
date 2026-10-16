@@ -20,6 +20,9 @@ public static class UiSmoke
 {
     static readonly BindingFlags Any = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
+    /// <summary>How many windows GameRunner has (its Win enum, Win.None included).</summary>
+    static readonly int WindowCount = Enum.GetValues(typeof(GameRunner).GetField("window", Any).FieldType).Length;
+
     /// <summary>The pictures of the places on the surface (GameRunner.Scene.cs), Resources/Art/Scene.</summary>
     static readonly string[] ScenePlaces = { "Pier", "Board", "Merchant", "Pen", "Arena", "Portal" };
 
@@ -38,7 +41,7 @@ public static class UiSmoke
         // --scene: every run (and the preview) with the places on the surface, on placeholders until they are painted
         bool sceneMode = args.Contains("--scene");
         args = args.Where(a => a != "--scene").ToArray();
-        int frames = args.Length > 0 ? int.Parse(args[0]) : 8100; // three rounds of the 18 windows, 150 frames each
+        int frames = args.Length > 0 ? int.Parse(args[0]) : 3 * WindowCount * 150; // three rounds of every window, 150 frames each
         var clicks = new Dictionary<string, int>();
         try
         {
@@ -121,7 +124,7 @@ public static class UiSmoke
         for (int frame = 0; frame < frames; frame++)
         {
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % 18); // 18 windows: Win.None .. Win.Hero
+            SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. Win.Admin (the developer's menu)
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
