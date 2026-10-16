@@ -251,7 +251,6 @@ namespace LastHearth.Game
 
         static string AdminResName(ResourceType t) => AdminResourceNames[(int)t];
 
-        static string Signed(long v) => (v >= 0 ? "+" : "") + v;
 
         string LocalClock(long now) => DateTimeOffset.FromUnixTimeSeconds(now + session.State.UtcOffsetSeconds).ToString("dd.MM HH:mm");
 
