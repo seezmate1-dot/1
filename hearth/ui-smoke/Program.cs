@@ -64,7 +64,8 @@ public static class UiSmoke
             var late = NewGame.Create(balance, TestData.Start);
             late.Combat = combat;
             new PlayerBot(late).PlayDays(TestData.Start, 35);
-            Run("крепость бота, 35 дней", late, frames, 3, clicks);
+            // back after five hours away: «Пока вас не было» opens first
+            Run("крепость бота, 35 дней, 5 часов без игрока", late, frames, 3, clicks, 5 * 3600);
 
             // the places on the surface instead of the side buttons (Art.json "scene"), on placeholders until painted
             var surface = NewGame.Create(balance, TestData.Start);
@@ -89,7 +90,7 @@ public static class UiSmoke
         // every system must have been reached through its buttons
         string[] must = { "[ячейка]", "Бой", "Атаковать", "Бой турнира", "Войти в Портал", "Сделка", "Гарнизон", "Играть", "[ячейка]Обновить соперников",
                           "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "ФОНАРЬ!", "Тепло:",
-                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶" };
+                          "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶", "Календарь", "Сезон", "Продолжить" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
         Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + " (заглушек мест на поверхности: " +
@@ -100,7 +101,7 @@ public static class UiSmoke
         return 0;
     }
 
-    static void Run(string name, GameSession session, int frames, int seed, Dictionary<string, int> clicks)
+    static void Run(string name, GameSession session, int frames, int seed, Dictionary<string, int> clicks, long away = 0)
     {
         Application.persistentDataPath = Path.Combine(Path.GetTempPath(), "lasthearth-ui-smoke-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Application.persistentDataPath);
@@ -108,8 +109,10 @@ public static class UiSmoke
         Call(runner, "Awake");
         if (session != null)
         {
-            Set(runner, "skip", session.State.Time - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            Set(runner, "skip", session.State.Time + away - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             Call(runner, "StartSession", session);
+            if (away > 0 && (int)Get(runner, "window") != WindowCount - 1)
+                throw new InvalidOperationException(name + ": the summary «Пока вас не было» did not open");
         }
         var rng = new Random(seed);
         GUILayout.Click = label =>
@@ -124,7 +127,7 @@ public static class UiSmoke
         for (int frame = 0; frame < frames; frame++)
         {
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. Win.Admin (the developer's menu)
+            SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. Win.Away
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks
@@ -191,6 +194,7 @@ public static class UiSmoke
         File.WriteAllLines(path, GUI.Record);
         GUI.Record = null;
     }
+
 
     static object Get(object o, string field) => o.GetType().GetField(field, Any).GetValue(o);
 

@@ -11,6 +11,8 @@ namespace LastHearth.Core
         public Combat.MonsterFamily Family;
         public int Rank;
         public int Seed;
+        /// <summary>The monster of the week (Sunday): stronger, pays more Cores.</summary>
+        public bool Weekly;
     }
 
     public enum RoutePath
@@ -228,6 +230,8 @@ namespace LastHearth.Core
         public int LoginCount;
         public int HuntWins;
         public List<string> Achievements = new List<string>();
+        /// <summary>The calendar's claims, the season, the warm week, the monster of the week, notifications (Retention.cs).</summary>
+        public RetentionState Retention = new RetentionState();
 
         // Shops (MODES.md, 4)
         public long PacksWeek = -1;

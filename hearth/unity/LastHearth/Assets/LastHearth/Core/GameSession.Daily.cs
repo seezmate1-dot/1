@@ -30,9 +30,6 @@ namespace LastHearth.Core
             (DailyTask.Route, 1, 9, "Вернуть отряд из вылазки"),
         };
 
-        /// <summary>The 28 days of the calendar: a small gift every login day, a big one every 7th.</summary>
-        public static readonly long[] CalendarSparks = { 3, 3, 3, 3, 3, 3, 17 };
-
         public string TaskText(DailyTask t) => TaskList.First(x => x.task == t).text;
 
         public int TaskTimes(DailyTask t) => TaskList.First(x => x.task == t).times;
@@ -58,8 +55,10 @@ namespace LastHearth.Core
 
         void Count(DailyTask task)
         {
-            TodayTasks(State.Time);
+            var today = TodayTasks(State.Time);
             State.DailyProgress[(int)task]++;
+            if (today.Contains(task) && State.DailyProgress[(int)task] == TaskTimes(task))
+                AddSeasonXp(SeasonInfo.TaskXp); // a task done is season points (MODES.md, 7)
         }
 
         public Fail ClaimDaily(long now)
@@ -73,18 +72,21 @@ namespace LastHearth.Core
             State.Wallet[ResourceType.Sparks] += d.TaskSparks;
             State.HourglassSeconds += d.TaskHourglassMinutes * 60;
             GrantTreats(Balance.Pets.TreatsDaily); // pet treats (GDD 8.1)
+            AddSeasonXp(SeasonInfo.DailyXp);
             FestivalTasksDone(now);
             return Fail.None;
         }
 
-        /// <summary>A new local day with the game open is a calendar day (days need not follow each other).</summary>
+        /// <summary>A new local day with the game open is a calendar day (days need not follow each other);
+        /// its gift waits until it is taken (ClaimCalendar, GameSession.Season.cs).</summary>
         void CheckLogin(long now)
         {
+            SyncSeason(now);
             long day = LocalDay(now);
             if (State.LastLoginDay == day)
                 return;
+            _ = Retention; // an old save counts its paid days before the new one
             State.LastLoginDay = day;
-            State.Wallet[ResourceType.Sparks] += CalendarSparks[State.LoginCount % CalendarSparks.Length];
             State.LoginCount++;
             CheckKennel(); // the Owl comes on the 7th day (GDD 8.1)
         }

@@ -64,6 +64,10 @@ namespace LastHearth.Core.Tests
             S.ClaimRewards();
             S.CollectAll();
             S.ClaimDaily(now);
+            while (S.CalendarPending > 0 && S.ClaimCalendar(now) == Fail.None)
+            {
+            }
+            S.ClaimSeasonAll(now);
             foreach (var e in S.State.Expeditions.Where(x => x.Back).ToList())
                 S.ResolveRouteCard(e.Id, 2, now);
             foreach (var job in S.State.Queue.AllJobs().ToList())

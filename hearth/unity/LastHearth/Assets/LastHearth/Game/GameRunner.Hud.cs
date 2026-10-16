@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin, Away }
 
         // the HUD's bands: the resource plates on top, the round buttons along the bottom and the right edge
         const float HudTop = 50, HudBottom = 92, HudRight = 74;
@@ -31,6 +31,7 @@ namespace LastHearth.Game
             (Win.Dwellers, "Жители"), (Win.Growth, "Развитие"), (Win.Routes, "Вылазки"), (Win.Quests, "Задания"),
             (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"),
             (Win.Admin, "Админ-меню"),
+            (Win.Away, "Пока вас не было"),
         };
 
         GUIStyle hudText, buttonLabel, titleText;
@@ -177,7 +178,7 @@ namespace LastHearth.Game
                 GUI.color = new Color(0, 0, 0, 0.5f);
                 GUI.DrawTexture(track, Texture2D.whiteTexture);
                 GUI.color = fill >= 1 ? new Color(1f, 0.5f, 0.3f, 1) : new Color(0.55f, 0.9f, 0.45f, 1);
-                if (fill > 0) // an empty warehouse has no bar
+                if (track.width * fill >= 0.5f) // an empty warehouse draws no bar
                     GUI.DrawTexture(new Rect(track.x, track.y, track.width * fill, track.height), Texture2D.whiteTexture);
                 GUI.color = old;
             }
@@ -248,7 +249,8 @@ namespace LastHearth.Game
 
         /// <summary>The daily tasks are done and their chest waits: «Задания» (the button or the board) wears a red dot.</summary>
         bool QuestsWait(long now) =>
-            session.TasksDone(now) >= session.Balance.Activities.Daily.TasksNeeded && !session.State.DailyClaimed;
+            (session.TasksDone(now) >= session.Balance.Activities.Daily.TasksNeeded && !session.State.DailyClaimed) ||
+            session.CalendarPending > 0 || session.SeasonGiftsReady > 0; // and the calendar's or the season's gifts (GameRunner.Retention.cs)
 
         void DrawSideButtons(Rect col, long now, bool scene)
         {
@@ -395,7 +397,7 @@ namespace LastHearth.Game
                     DrawRoutes(now);
                     break;
                 case Win.Quests:
-                    DrawDaily(now);
+                    DrawQuests(now); // tasks, the login calendar, the season (GameRunner.Retention.cs)
                     break;
                 case Win.Shop:
                     DrawShops(now);
@@ -414,6 +416,9 @@ namespace LastHearth.Game
                     break;
                 case Win.Admin:
                     DrawAdmin(now);
+                    break;
+                case Win.Away:
+                    DrawAway(now);
                     break;
             }
         }
