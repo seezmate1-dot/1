@@ -434,6 +434,7 @@ namespace LastHearth.Game
             if (sounds != null && GUILayout.Button(sounds.SoundOn ? "Звуки: вкл" : "Звуки: выкл"))
                 sounds.ToggleSound();
             GUILayout.EndHorizontal();
+            DrawComfortSettings(now); // the battery saver, the fortress's name (GameRunner.Comfort.cs)
             DrawDevSettings(); // the time skips and the new game live in the developer's menu now
             GUILayout.Space(10);
             DrawRooms(now);

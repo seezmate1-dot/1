@@ -66,7 +66,7 @@ namespace LastHearth.Game
         void Awake()
         {
             DontDestroyOnLoad(gameObject);
-            Application.targetFrameRate = 60;
+            ApplyFrameRate(); // 60 FPS, 30 with «Экономия батареи» (GameRunner.Comfort.cs)
             sounds = new AudioDirector(gameObject);
             skip = long.Parse(PlayerPrefs.GetString(SkipKey, "0"));
             var balance = Core.Balance.FromJson(UnityEngine.Resources.Load<TextAsset>("balance").text);
