@@ -31,6 +31,9 @@ namespace LastHearth.Core
             state.Rewards.Add(ResourceBag.Materials(b.Starter.Materials, b.SilverShare));
             state.Rewards[ResourceType.Essence] = b.Starter.Essence;
             s.ClaimRewards();
+            // the first thing to do within ten seconds: the mine has dug some coal (MODES.md, 10)
+            mine.Stock = b.Starter.Coal / 10.0;
+            Tutorial.Start(state.Tutorial, now);
             return s;
         }
 

@@ -322,5 +322,12 @@ namespace LastHearth.Core
 
         // The work of the halls: tavern, infirmary, library, training hall, chapel, archive (GDD 6; Halls.cs)
         public HallsState Halls = new HallsState();
+
+        // The first session (MODES.md, 10; Tutorial.cs): a save without it loads with the tutorial done
+        public TutorialState Tutorial = new TutorialState();
+
+        /// <summary>The name the player gave the fortress ("" until then: «Последний очаг»), and how many times it was renamed.</summary>
+        public string FortressName = "";
+        public int Renames;
     }
 }
