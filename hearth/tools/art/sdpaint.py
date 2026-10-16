@@ -36,6 +36,7 @@ NEGATIVE = ("photo, photorealistic, 3d render, cgi, octane, unreal engine, glow,
 ROOM = "interior of a room in a medieval fortress, dollhouse cutaway view straight from the front, back wall and floor, "
 
 _pipe = None
+_dtype = torch.bfloat16  # the precision of the painting (the UNet's), what its inputs are cast to
 
 
 def native_bf16():
@@ -76,7 +77,7 @@ def memory_gb():
 
 
 def pipe():
-    global _pipe
+    global _pipe, _dtype
     if _pipe is None:
         torch.set_num_threads(os.cpu_count() or 4)
         # loaded in bfloat16: SDXL in float32 needs more than 14 GB while loading
@@ -97,6 +98,10 @@ def pipe():
             # the attention and the decoder in slices: a big picture's activations stay small
             p.enable_attention_slicing()
             p.vae.enable_tiling()
+            # diffusers may still report bfloat16 for a model converted tensor by tensor: say it outright
+            p.unet.to(torch.float32)
+            p.vae.to(torch.float32)
+            _dtype = torch.float32
             print("float32 painting (no native bfloat16 on this processor)", flush=True)
         # the scheduler DreamShaper Turbo is made for: DPM++ SDE Karras, few steps, low guidance
         p.scheduler = DPMSolverMultistepScheduler.from_config(p.scheduler.config, algorithm_type="sde-dpmsolver++",
@@ -112,7 +117,7 @@ def embeds(prompt, negative):
     e = p.encode_prompt(prompt=prompt, device="cpu", num_images_per_prompt=1, do_classifier_free_guidance=True,
                         negative_prompt=negative)
     names = ("prompt_embeds", "negative_prompt_embeds", "pooled_prompt_embeds", "negative_pooled_prompt_embeds")
-    return {n: t.to(p.unet.dtype) for n, t in zip(names, e)}
+    return {n: t.to(_dtype) for n, t in zip(names, e)}
 
 
 def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):

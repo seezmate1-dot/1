@@ -1,3 +1,3 @@
 Pets/Raven Pets/CoalCat Pets/MistFox Companions/Squire Companions/Firefly Rooms/Cradle Rooms/Cradle
 0.5
-# the portraits that timed out and the cradle; float32 with the swap on the runners
+# the portraits and the cradle again: the float32 inputs fixed
