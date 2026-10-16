@@ -13,6 +13,7 @@
   from the painted rock (the model kept painting a closed door into it); "stairs".
 - Rooms/Rubble, Rooms/Scaffold: drawn over a cell (obstacle) and over a room being built; "rubble", "scaffold".
 - Icons/<Name>, Buttons/<Name> (256 x 256), Decor/<name> (320 high, its width in Art.json follows the picture).
+- Items/<Kind>: the equipment icons (256 x 256), "itemArt" once every kind of sdpaint.ITEMS is painted.
 - Pets/<Id>, Companions/<Id>: portraits (256 x 256, standing on the bottom); "petArt", "companionArt".
 - Scene/<Place>: the places around the fortress (512 x 512, standing on the bottom), and "scene" in Art.json.
 
@@ -188,6 +189,18 @@ def pieces(stage):
                 trim(Image.open(os.path.join(d, n + ".png")), (256, 256), bottom=True, margin=4).save(os.path.join(ART, group, n + ".png"))
             flag(key)
             print(group, " ".join(names))
+    # the icons of the equipment (GameRunner.Gear): all kinds the painter knows, or plates with names stay
+    import re
+    src = open(os.path.join(HERE, "sdpaint.py"), encoding="utf-8").read()
+    block = src[src.index("ITEMS = {"):src.index("}", src.index("ITEMS = {"))]
+    kinds = re.findall(r'"(\w+)":', block)
+    d = os.path.join(stage, "Items")
+    if kinds and all(os.path.exists(os.path.join(d, k + ".png")) for k in kinds):
+        os.makedirs(os.path.join(ART, "Items"), exist_ok=True)
+        for k in kinds:
+            trim(Image.open(os.path.join(d, k + ".png")), (256, 256)).save(os.path.join(ART, "Items", k + ".png"))
+        flag("itemArt")
+        print("Items", " ".join(kinds))
     # the places around the fortress (GameRunner.Scene): all six, or the side buttons stay
     d = os.path.join(stage, "Scene")
     places = ("Merchant", "Portal", "Arena", "Board", "Pier", "Pen")
