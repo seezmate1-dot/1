@@ -318,13 +318,16 @@ namespace LastHearth.Game
             var old = GUI.color;
             float w = Mathf.Min(720, area.width - 40), h = 112;
             float x = area.center.x - w / 2;
-            // under the place to tap, or over it: never on it
+            // low over the bottom buttons, or high under the top bar: wherever it hides less of the place and its arrow
             float low = area.yMax - HudBottom - h - 8, high = area.y + HudTop + 30;
             float y = low;
-            if (focus is Rect f && (f.yMax > low - 40 && f.y < low + h + 40))
-                y = high;
-            if (window != Win.None && focus is Rect g && g.center.y > area.center.y)
-                y = high;
+            if (focus is Rect f)
+            {
+                bool arrowBelow = f.y < 110; // as DrawArrow decides (the screen starts at 0)
+                float top = arrowBelow ? f.y - 8 : f.y - 70, bottom = arrowBelow ? f.yMax + 70 : f.yMax + 8;
+                float Overlap(float at) => Mathf.Max(0, Mathf.Min(bottom, at + h) - Mathf.Max(top, at));
+                y = Overlap(low) <= Overlap(high) ? low : high;
+            }
             y += (1 - appear) * 30;
             GUI.color = new Color(old.r, old.g, old.b, old.a * appear);
             var bubble = new Rect(x, y, w, h);
