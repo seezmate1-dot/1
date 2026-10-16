@@ -19,6 +19,10 @@ namespace LastHearth.Game
         // Mountain.png: the surface ground runs at 0.755 of its height, the gate stands on 0.40..0.60 of its width
         const float SceneGround = 0.755f, SceneGateLeft = 0.40f, SceneGateRight = 0.60f;
 
+        // the top of the mountain's sky lies above the view (under the resource bar), so on a phone the places
+        // and their names fit between the bars at the top of the scroll; the cutaway starts at 0.8 of the picture
+        const float MountainSky = 0.12f, MountainShown = 0.8f - MountainSky;
+
         /// <summary>The places from the left edge of the mountain to the gate, then from the gate to the right edge.</summary>
         static readonly (string art, string name, Win win)[] ScenePlaces =
         {

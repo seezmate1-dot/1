@@ -248,12 +248,12 @@ namespace LastHearth.Game
             float cellW = Math.Max(60, (viewWidth - 8) / g.Cells);
             float cellH = cellW * 0.5f; // the room pictures are 2:1
             float mountainH = live == null ? cellW * g.Cells * 0.5f : 0;
-            var area = GUILayoutUtility.GetRect(cellW * g.Cells, mountainH * 0.8f + cellH * (top - bottom + 1));
+            var area = GUILayoutUtility.GetRect(cellW * g.Cells, mountainH * MountainShown + cellH * (top - bottom + 1));
             if (mountainH > 0)
-                ArtLibrary.Draw(new Rect(area.x, area.y, cellW * g.Cells, mountainH), "Mountain");
-            float gridY = area.y + mountainH * 0.8f;
+                ArtLibrary.Draw(new Rect(area.x, area.y - mountainH * MountainSky, cellW * g.Cells, mountainH), "Mountain");
+            float gridY = area.y + mountainH * MountainShown;
             if (mountainH > 0 && cutawayScene)
-                DrawScene(new Rect(area.x, area.y, cellW * g.Cells, mountainH), gridY, now);
+                DrawScene(new Rect(area.x, area.y - mountainH * MountainSky, cellW * g.Cells, mountainH), gridY, now);
             for (int f = top; f >= bottom; f--)
             {
                 float y = gridY + (top - f) * cellH;

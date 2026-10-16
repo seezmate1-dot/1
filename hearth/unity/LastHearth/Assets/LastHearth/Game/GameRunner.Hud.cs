@@ -91,7 +91,7 @@ namespace LastHearth.Game
                 framed = true;
                 var g = session.Balance.Grid;
                 float cellW = Math.Max(60, (viewWidth - 8) / g.Cells), cellH = cellW * 0.5f;
-                float hearthTop = (top - 6) + cellW * g.Cells * 0.5f * 0.8f + (ShownFloors().top - g.HearthFloor) * cellH;
+                float hearthTop = (top - 6) + cellW * g.Cells * 0.5f * MountainShown + (ShownFloors().top - g.HearthFloor) * cellH;
                 scroll.y = Math.Max(0, hearthTop + cellH / 2 - (top + (area.height - top - bottom) / 2));
                 // the places on the surface are a scroll up (a young fortress has its Hearth right under them)
             }
