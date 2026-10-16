@@ -13,6 +13,7 @@
   from the painted rock (the model kept painting a closed door into it); "stairs".
 - Rooms/Rubble, Rooms/Scaffold: drawn over a cell (obstacle) and over a room being built; "rubble", "scaffold".
 - Icons/<Name>, Buttons/<Name> (256 x 256), Decor/<name> (320 high, its width in Art.json follows the picture).
+- Pets/<Id>, Companions/<Id>: portraits (256 x 256, standing on the bottom); "petArt", "companionArt".
 - Scene/<Place>: the places around the fortress (512 x 512, standing on the bottom), and "scene" in Art.json.
 
     python hearth/tools/art/integrate.py [--from DIR]
@@ -177,6 +178,16 @@ def pieces(stage):
         m["decor"][name]["width"] = round(m["decor"][name]["height"] * img.width / img.height, 3)
         print("decor", name)
     json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    # the portraits of the pets and of the companions: all of a kind, or the windows keep their text
+    for group, names, key in (("Pets", ("Wolf", "Owl", "CoalCat", "Raven", "BearCub", "MistFox"), "petArt"),
+                              ("Companions", ("Squire", "Wolfhound", "Falcon", "Firefly"), "companionArt")):
+        d = os.path.join(stage, group)
+        if all(os.path.exists(os.path.join(d, n + ".png")) for n in names):
+            os.makedirs(os.path.join(ART, group), exist_ok=True)
+            for n in names:
+                trim(Image.open(os.path.join(d, n + ".png")), (256, 256), bottom=True, margin=4).save(os.path.join(ART, group, n + ".png"))
+            flag(key)
+            print(group, " ".join(names))
     # the places around the fortress (GameRunner.Scene): all six, or the side buttons stay
     d = os.path.join(stage, "Scene")
     places = ("Merchant", "Portal", "Arena", "Board", "Pier", "Pen")
