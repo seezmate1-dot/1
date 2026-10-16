@@ -224,6 +224,7 @@ namespace LastHearth.Game
             };
             // "collect all" first, the windows after it, all centred on the panel
             float x = bar.x + Math.Max(6, (bar.width - (buttons.Length + 1) * (size + 22) - 4) / 2);
+            TutorTarget("collect", new Rect(x, bar.y + 4, size, size));
             if (RoundButton(new Rect(x, bar.y + 4, size, size), "Buttons/Collect", "Собрать", st.Rooms.Any(r => r.Stock >= 1)))
             {
                 CollectingAll(session.CollectAll, new Rect(x, bar.y + 4, size, size));
@@ -232,6 +233,8 @@ namespace LastHearth.Game
             x += size + 22;
             foreach (var (icon, label, win, dot) in buttons)
             {
+                if (TutorOn)
+                    TutorTarget(win == Win.None ? (onMap ? "fortress" : "map") : win.ToString(), new Rect(x, bar.y + 4, size, size));
                 if (RoundButton(new Rect(x, bar.y + 4, size, size), icon, label, dot))
                 {
                     if (win == Win.None)

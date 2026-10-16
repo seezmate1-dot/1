@@ -68,6 +68,7 @@ namespace LastHearth.Game
             ("Залы", AdminHalls), // GameRunner.Rooms.cs
             ("Сохранение", AdminSave),
             ("Арт", AdminArt),
+            ("Обучение", AdminTutorial), // GameRunner.Tutorial.cs
         };
 
         static readonly string[] AdminResourceNames = { "Уголь", "Еда", "Железо", "Серебро", "Эссенция", "Искры", "Жар", "Сердцевины", "Чертежи", "Слава" };

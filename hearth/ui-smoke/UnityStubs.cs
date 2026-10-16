@@ -355,6 +355,9 @@ namespace UnityEngine
             GUILayout.Y += h;
             return r;
         }
+
+        /// <summary>The stub does not lay out buttons: a button-sized place under what came before.</summary>
+        public static Rect GetLastRect() => new Rect(GUILayout.X, GUILayout.Y - GUILayout.ScrollY, 220, 34);
     }
 
     public class GUILayoutOption { }
