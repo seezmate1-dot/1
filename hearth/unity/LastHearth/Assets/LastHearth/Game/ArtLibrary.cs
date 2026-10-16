@@ -54,6 +54,9 @@ namespace LastHearth.Game
             public Dictionary<string, DecorInfo> Decor = new Dictionary<string, DecorInfo>();
             /// <summary>Doors between the rooms and ladders between the floors are painted (Rooms/Door, Rooms/Ladder).</summary>
             public bool Passages;
+            /// <summary>A stair tower beside the cutaway joins the floors and open arches join the rooms (Rooms/Stairs,
+            /// Rooms/Arch), instead of the doors and ladders.</summary>
+            public bool Stairs;
             /// <summary>The rooms are painted interiors that sit in the rock's opening (Rooms/Frame).</summary>
             public bool Framed;
             /// <summary>The loading screen's painted key art is there (Splash).</summary>

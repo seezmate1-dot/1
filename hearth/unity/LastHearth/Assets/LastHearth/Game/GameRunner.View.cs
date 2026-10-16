@@ -245,21 +245,27 @@ namespace LastHearth.Game
             var g = b.Grid;
             var st = session.State;
             var (top, bottom) = ShownFloors();
-            float cellW = Math.Max(60, (viewWidth - 8) / g.Cells);
+            bool tower = live == null && ArtLibrary.Data.Stairs;
+            float cellW = CellWidth(tower);
             float cellH = cellW * 0.5f; // the room pictures are 2:1
-            float mountainH = live == null ? cellW * g.Cells * 0.5f : 0;
-            var area = GUILayoutUtility.GetRect(cellW * g.Cells, mountainH * MountainShown + cellH * (top - bottom + 1));
+            float towerW = tower ? cellW * TowerCells : 0, fullW = cellW * g.Cells + towerW;
+            float mountainH = live == null ? fullW * 0.5f : 0;
+            var area = GUILayoutUtility.GetRect(fullW, mountainH * MountainShown + cellH * (top - bottom + 1));
             if (mountainH > 0)
-                ArtLibrary.Draw(new Rect(area.x, area.y - mountainH * MountainSky, cellW * g.Cells, mountainH), "Mountain");
+                ArtLibrary.Draw(new Rect(area.x, area.y - mountainH * MountainSky, fullW, mountainH), "Mountain");
             float gridY = area.y + mountainH * MountainShown;
             if (mountainH > 0 && cutawayScene)
-                DrawScene(new Rect(area.x, area.y - mountainH * MountainSky, cellW * g.Cells, mountainH), gridY, now);
+                DrawScene(new Rect(area.x, area.y - mountainH * MountainSky, fullW, mountainH), gridY, now);
+            // the rooms start right of the stair tower
+            float gx = area.x + towerW;
+            if (tower)
+                DrawStairTower(area.x, towerW, gridY, top, bottom, cellH);
             for (int f = top; f >= bottom; f--)
             {
                 float y = gridY + (top - f) * cellH;
                 for (int c = 0; c < g.Cells; c++)
                 {
-                    var r = new Rect(area.x + c * cellW, y, cellW, cellH);
+                    var r = new Rect(gx + c * cellW, y, cellW, cellH);
                     if (session.IsHearthCell(f, c))
                     {
                         if (c == g.HearthCells[0])
@@ -279,12 +285,60 @@ namespace LastHearth.Game
                     }
                 }
                 if (live == null)
-                    DrawLockedLabels(area.x, y, f, cellW, cellH);
+                    DrawLockedLabels(gx, y, f, cellW, cellH);
                 if (live != null)
                     DrawCreatures(area, gridY, top, f, cellW, cellH, live);
             }
-            if (live == null && ArtLibrary.Data.Passages)
-                DrawPassages(area.x, gridY, top, bottom, cellW, cellH);
+            if (live == null && (ArtLibrary.Data.Passages || tower))
+                DrawPassages(gx, gridY, top, bottom, cellW, cellH, tower);
+        }
+
+        /// <summary>The stair tower beside the cutaway is half a cell wide (Art.json "stairs").</summary>
+        const float TowerCells = 0.5f;
+
+        /// <summary>The width of a cell of the cutaway: the cells (and the stair tower) fill the view.</summary>
+        float CellWidth(bool tower) => Math.Max(60, (viewWidth - 8) / (session.Balance.Grid.Cells + (tower ? TowerCells : 0)));
+
+        /// <summary>A floor the stair tower reaches: some of it is dug or being dug (not a closed section).</summary>
+        bool TowerFloor(int floor)
+        {
+            for (int c = 0; c < session.Balance.Grid.Cells; c++)
+            {
+                var state = session.CellStateAt(floor, c);
+                if (state != CellState.Locked && state != CellState.Outside)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The stair tower left of the rooms: one shaft cut into the rock through every floor it reaches, a
+        /// flight of wooden stairs on each floor (Rooms/Stairs), the rock of the mountain beside closed floors.
+        /// </summary>
+        void DrawStairTower(float x, float w, float gridY, int top, int bottom, float cellH)
+        {
+            int f = top;
+            while (f >= bottom)
+            {
+                float y = gridY + (top - f) * cellH;
+                if (!TowerFloor(f))
+                {
+                    ArtLibrary.Draw(new Rect(x, y, w, cellH), "Rooms/Rock");
+                    f--;
+                    continue;
+                }
+                // a run of floors the tower reaches: one opening in the rock, a flight on each floor
+                int end = f;
+                while (end - 1 >= bottom && TowerFloor(end - 1))
+                    end--;
+                var run = new Rect(x, y, w, (f - end + 1) * cellH);
+                var inner = new Rect(run.x + cellH * 0.03f, run.y + cellH * 0.06f, run.width - cellH * 0.06f, run.height - cellH * 0.12f);
+                float step = inner.height / (f - end + 1);
+                for (int k = 0; k <= f - end; k++)
+                    ArtLibrary.Draw(new Rect(inner.x, inner.y + k * step, inner.width, step), "Rooms/Stairs");
+                ArtLibrary.DrawSliced(run, "Rooms/Frame", 48, cellH * 0.125f);
+                f = end - 1;
+            }
         }
 
         /// <summary>A built room (or the Hearth) stands in this cell: doors and ladders join such cells.</summary>
@@ -304,23 +358,35 @@ namespace LastHearth.Game
         }
 
         /// <summary>
-        /// The rooms join like Hustle Castle's: a wooden door in the rock between two built
-        /// neighbours on a floor, a ladder through the floor between a built room and the one under it.
+        /// The rooms join like Hustle Castle's. With the stair tower: an open arch through the rock between
+        /// two built neighbours on a floor, and between the tower and the first room; the tower joins the
+        /// floors. Without it: a wooden door between neighbours, a ladder through the floor.
         /// </summary>
-        void DrawPassages(float x0, float gridY, int top, int bottom, float cellW, float cellH)
+        void DrawPassages(float x0, float gridY, int top, int bottom, float cellW, float cellH, bool tower)
         {
             var g = session.Balance.Grid;
             for (int f = top; f >= bottom; f--)
             {
                 float y = gridY + (top - f) * cellH;
-                for (int c = 0; c + 1 < g.Cells; c++)
+                for (int c = tower ? -1 : 0; c + 1 < g.Cells; c++)
                 {
-                    if (SameRoom(f, c, c + 1) || !Built(f, c) || !Built(f, c + 1))
+                    bool joined = c < 0 ? Built(f, 0) : !SameRoom(f, c, c + 1) && Built(f, c) && Built(f, c + 1);
+                    if (!joined)
                         continue;
-                    float w = cellH * 0.3f, h = cellH * 0.5f, bx = x0 + (c + 1) * cellW;
-                    ArtLibrary.Draw(new Rect(bx - w / 2, y + cellH * 0.9f - h, w, h), "Rooms/Door");
+                    float bx = x0 + (c + 1) * cellW;
+                    if (tower)
+                    {
+                        // the arch stands on the floor of the rooms, as high as their openings
+                        float aw = cellH * 0.3f, ah = cellH * 0.8f;
+                        ArtLibrary.Draw(new Rect(bx - aw / 2, y + cellH * 0.94f - ah, aw, ah), "Rooms/Arch");
+                    }
+                    else
+                    {
+                        float w = cellH * 0.3f, h = cellH * 0.5f;
+                        ArtLibrary.Draw(new Rect(bx - w / 2, y + cellH * 0.9f - h, w, h), "Rooms/Door");
+                    }
                 }
-                if (f == bottom)
+                if (f == bottom || tower)
                     continue;
                 for (int c = 0; c < g.Cells; c++)
                 {

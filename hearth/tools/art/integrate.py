@@ -9,6 +9,7 @@
 - Splash.png: the loading screen (1920 x 1080), and "splash" in Art.json.
 - Rooms/<Room>_2, _3: the richer looks by level, toned to the colours of the room's first look, and
   "roomTiers" in Art.json once every room has both.
+- Rooms/Stairs, Rooms/Arch: the stair tower beside the cutaway and the open arches between rooms; "stairs".
 - Rooms/Rubble, Rooms/Scaffold: drawn over a cell (obstacle) and over a room being built; "rubble", "scaffold".
 - Icons/<Name>, Buttons/<Name> (256 x 256), Decor/<name> (320 high, its width in Art.json follows the picture).
 - Scene/<Place>: the places around the fortress (512 x 512, standing on the bottom), and "scene" in Art.json.
@@ -182,10 +183,17 @@ def main(stage):
             Image.open(p).save(os.path.join(ART, "Rooms", piece + ".png"))
     if all(os.path.exists(os.path.join(ART, "Rooms", n + ".png")) for n in ("Door", "Ladder")):
         flag("passages")
+    # the stair tower beside the cutaway and the open arches between the rooms (GameRunner.View DrawStairTower)
+    stairs, arch = (os.path.join(stage, "Rooms", n + ".png") for n in ("Stairs", "Arch"))
+    if os.path.exists(stairs) and os.path.exists(arch):
+        fit(Image.open(stairs).convert("RGB"), (512, 512)).save(os.path.join(ART, "Rooms", "Stairs.png"))
+        trim(Image.open(arch), (192, 512), bottom=True, margin=0).save(os.path.join(ART, "Rooms", "Arch.png"))
+        flag("stairs")
+        print("stairs and arches")
     rooms = os.path.join(stage, "Rooms")
     for f in sorted(os.listdir(rooms)) if os.path.isdir(rooms) else []:
         name = f[:-4]
-        if name in ("Door", "Ladder", "Rubble", "Scaffold") or "_" in name:
+        if name in ("Door", "Ladder", "Rubble", "Scaffold", "Stairs", "Arch") or "_" in name:
             continue
         img = Image.open(os.path.join(rooms, f)).convert("RGB")
         size = (2048, 512) if name == "Hearth" else (1024, 512)

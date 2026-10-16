@@ -90,8 +90,10 @@ namespace LastHearth.Game
                 // open on the Hearth's floor, in the middle of what the HUD leaves visible
                 framed = true;
                 var g = session.Balance.Grid;
-                float cellW = Math.Max(60, (viewWidth - 8) / g.Cells), cellH = cellW * 0.5f;
-                float hearthTop = (top - 6) + cellW * g.Cells * 0.5f * MountainShown + (ShownFloors().top - g.HearthFloor) * cellH;
+                bool tower = ArtLibrary.Data.Stairs;
+                float cellW = CellWidth(tower), cellH = cellW * 0.5f;
+                float fullW = cellW * (g.Cells + (tower ? TowerCells : 0));
+                float hearthTop = (top - 6) + fullW * 0.5f * MountainShown + (ShownFloors().top - g.HearthFloor) * cellH;
                 scroll.y = Math.Max(0, hearthTop + cellH / 2 - (top + (area.height - top - bottom) / 2));
                 // the places on the surface are a scroll up (a young fortress has its Hearth right under them)
             }

@@ -283,6 +283,8 @@ namespace LastHearth.Game
                 list.Add("Rooms/Frame");
             if (ArtLibrary.Data.Passages)
                 list.AddRange(new[] { "Rooms/Door", "Rooms/Ladder" });
+            if (ArtLibrary.Data.Stairs)
+                list.AddRange(new[] { "Rooms/Stairs", "Rooms/Arch" });
             list.AddRange(new[] { "Badge", "Pill", "Bubble", "Plus", "Round", "Dot", "Bar", "Window", "ButtonOn", "Close", "Gear" }.Select(n => "UI/" + n));
             list.AddRange(Enum.GetValues(typeof(ResourceType)).Cast<ResourceType>().Select(t => "Icons/" + t));
             list.AddRange(new[] { "Collect", "Map", "Fortress", "Growth", "Routes", "Rewards", "Quests", "Shop", "Events" }.Select(n => "Buttons/" + n));
