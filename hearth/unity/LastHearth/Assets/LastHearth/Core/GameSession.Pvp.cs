@@ -15,6 +15,49 @@ namespace LastHearth.Core
         public long Materials;
     }
 
+    /// <summary>A hero of a ghost's squad, as its card shows it.</summary>
+    public sealed class PvpHero
+    {
+        public HeroClass Class;
+        public int Level;
+    }
+
+    /// <summary>One line of the arena and raid journal: our fights and the attacks on us.</summary>
+    [Serializable]
+    public sealed class PvpRecord
+    {
+        public long Time;
+        public bool Raid;
+        /// <summary>They attacked us (the arena defense or the fortress); false: our own fight.</summary>
+        public bool Attacked;
+        /// <summary>Our side won: our attack, or our defense held.</summary>
+        public bool Won;
+        public int RatingChange;
+        public long Glory;
+        public int Stars;
+        public bool Revenge;
+        public PvpOpponent Opponent = new PvpOpponent();
+        /// <summary>The revenge for this attack was taken (or started).</summary>
+        public bool Avenged;
+    }
+
+    /// <summary>The forge's traps of the raid defense (MODES.md, 3).</summary>
+    public enum TrapKind
+    {
+        None,
+        Snare,
+        Embers,
+        IceGrate,
+    }
+
+    /// <summary>One line of the fortress a raid storms: its trap and up to two heroes on guard.</summary>
+    [Serializable]
+    public sealed class RaidLine
+    {
+        public TrapKind Trap;
+        public List<int> Defenders = new List<int>();
+    }
+
     /// <summary>
     /// MODES.md, 2-3: the arena (squad against another hearth's defense) and raids (a storm of another
     /// fortress, floor by floor). Until the server exists both are played against ghosts of the same
@@ -111,6 +154,16 @@ namespace LastHearth.Core
 
         // ------------------------------------------------------------------ leagues
 
+        /// <summary>When the current arena week ends (the league pays): the next Sunday, 22:00 local.</summary>
+        public long ArenaWeekEnds(long now) => (ArenaWeekKey(now) + 1) * 7 * Day + 3 * Day + 22 * 3600 - State.UtcOffsetSeconds;
+
+        /// <summary>The league above a rating, or null at the top.</summary>
+        public LeagueData NextLeague(int rating)
+        {
+            int i = LeagueIndex(rating) + 1;
+            return i < Pvp.Leagues.Count ? Pvp.Leagues[i] : null;
+        }
+
         /// <summary>The arena week ends on Sunday at 22:00 local time.</summary>
         public long ArenaWeekKey(long now)
         {
@@ -154,7 +207,7 @@ namespace LastHearth.Core
             if (State.DefenseDay < 0)
                 State.DefenseDay = day;
             for (long d = Math.Max(State.DefenseDay + 1, day - 2); d <= day; d++)
-                DefendArena(d);
+                DefendArena(d, now);
             State.DefenseDay = day;
             if (RaidsOpen)
             {
@@ -179,16 +232,23 @@ namespace LastHearth.Core
         }
 
         /// <summary>Two ghosts attack the defense each day; a lost defense costs half a lost attack, never resources.</summary>
-        void DefendArena(long day)
+        void DefendArena(long day, long now)
         {
             var rng = new Rng((int)(day % 1000003) * 31 + State.ArenaRating);
+            double hold = ArenaDefenseHold();
             for (int i = 0; i < 2; i++)
             {
-                bool held = rng.Next() < (State.ArenaDefense.Count > 0 ? 0.55 : 0.45);
+                bool held = rng.Next() < hold;
                 int change = held ? 4 : -8;
                 State.ArenaRating = Math.Max(0, State.ArenaRating + change);
-                PvpNote(string.Format("{0} напал на вашу оборону: {1} ({2:+0;-0})", GhostNames[(int)(rng.Next() * GhostNames.Length)],
-                    held ? "отбились" : "оборона пала", change));
+                string name = GhostNames[(int)(rng.Next() * GhostNames.Length)];
+                PvpNote(string.Format("{0} напал на вашу оборону: {1} ({2:+0;-0})", name, held ? "отбились" : "оборона пала", change));
+                // the attacker stays in the journal: a revenge on the arena for a day
+                var attacker = Ghost(new Rng((int)(day % 1000003) * 7 + 3 + i), 0.92 + 0.08 * i, true);
+                attacker.Name = name;
+                long at = Math.Min(now, day * Day - State.UtcOffsetSeconds + (i == 0 ? 10 : 18) * 3600L);
+                attacker.Until = at + Pvp.RevengeHours * 3600L;
+                Record(new PvpRecord { Time = at, Attacked = true, Won = held, RatingChange = change, Opponent = attacker });
             }
         }
 
@@ -197,7 +257,16 @@ namespace LastHearth.Core
             var g = Ghost(new Rng(State.NextBattleSeed++), 0.9 + 0.2 * (State.NextBattleSeed % 5) / 4.0);
             g.Until = now + Pvp.RevengeHours * 3600L;
             State.Revenge.Add(g);
-            PvpNote(string.Format("{0} совершил набег на крепость. Вы ничего не потеряли; месть доступна сутки", g.Name));
+            // the ghost storms the lines one by one and stops at the first that holds
+            var rng = new Rng(g.Seed + 101);
+            int stars = 0;
+            while (stars < RaidLines && rng.Next() >= RaidHold(stars))
+                stars++;
+            long glory = RaidDenyGlory * (RaidLines - stars);
+            State.Wallet[ResourceType.Glory] += glory;
+            PvpNote(string.Format("{0} совершил набег на крепость: {1} зв.{2}. Вы ничего не потеряли; месть доступна сутки", g.Name, stars,
+                glory > 0 ? ", оборона дала " + glory + " славы" : ""));
+            Record(new PvpRecord { Time = now, Raid = true, Attacked = true, Won = stars < RaidLines, Stars = stars, Glory = glory, Opponent = g });
         }
 
         void PvpNote(string text)
@@ -205,6 +274,109 @@ namespace LastHearth.Core
             State.PvpLog.Add(text);
             if (State.PvpLog.Count > 30)
                 State.PvpLog.RemoveAt(0);
+        }
+
+        void Record(PvpRecord r)
+        {
+            State.PvpJournal.Add(r);
+            if (State.PvpJournal.Count > JournalSize)
+                State.PvpJournal.RemoveAt(0);
+        }
+
+        // ------------------------------------------------------------------ the journal and revenge
+
+        const int JournalSize = 20;
+
+        /// <summary>An attack on us that can still be avenged: on the arena for a ticket, on the fortress for free (raids).</summary>
+        public bool CanAvenge(PvpRecord r, long now)
+        {
+            if (!r.Attacked || r.Avenged || now >= r.Opponent.Until)
+                return false;
+            return r.Raid ? RaidsOpen && State.Revenge.Any(g => g.Seed == r.Opponent.Seed) : ArenaOpen;
+        }
+
+        /// <summary>The revenge for a journal record (an index of State.PvpJournal).</summary>
+        public Fail StartRevenge(int record, long now, out Battle battle)
+        {
+            battle = null;
+            Advance(now);
+            if (record < 0 || record >= State.PvpJournal.Count)
+                return Fail.NotFound;
+            var r = State.PvpJournal[record];
+            if (!CanAvenge(r, now))
+                return Fail.NotFound;
+            Fail fail;
+            if (r.Raid)
+            {
+                fail = StartRaid(State.Revenge.FindIndex(g => g.Seed == r.Opponent.Seed), true, now, out battle);
+            }
+            else
+            {
+                fail = ArenaReady(now);
+                if (fail == Fail.None)
+                {
+                    Spend(ref State.ArenaTickets, ref State.ArenaTicketAt, Pvp.Tickets, Pvp.TicketHours * 3600L, now);
+                    State.PvpBattle = new PvpBattle { Revenge = true, Opponent = r.Opponent, Seed = State.NextBattleSeed++ };
+                    battle = new Battle(Combat, PvpSetup(State.PvpBattle));
+                }
+            }
+            if (fail == Fail.None)
+                r.Avenged = true;
+            return fail;
+        }
+
+        // ------------------------------------------------------------------ power, squads, the arena defense
+
+        /// <summary>A hero's might as the cards show it: damage per second and health of the battle preview.</summary>
+        public double HeroPower(Dweller d)
+        {
+            var f = d == null ? null : HeroPreview(d.Id);
+            if (f == null)
+                return d == null || !d.IsHero ? 0 : 10 * d.HeroLevel;
+            double seconds = Math.Max(1, f.Interval) * (Combat?.TickSeconds ?? 0.1);
+            return Math.Round(f.Attack / seconds * 4 + f.MaxHp / 2);
+        }
+
+        /// <summary>The squad that attacks (the strongest heroes), its might summed.</summary>
+        public double SquadPower() => Squad().Sum(HeroPower);
+
+        /// <summary>The arena defense in its order; empty choice: the five strongest.</summary>
+        public List<Dweller> ArenaDefenders()
+        {
+            var chosen = State.ArenaDefense.Select(FindDweller).Where(d => d != null && d.IsHero).ToList();
+            return chosen.Count > 0 ? chosen : Squad().Take(5).ToList();
+        }
+
+        public double DefensePower() => ArenaDefenders().Sum(HeroPower);
+
+        /// <summary>How often the defense holds against a ghost: 45% without a choice, up to 55% for the five strongest.</summary>
+        public double ArenaDefenseHold()
+        {
+            double best = Squad().Take(5).Sum(HeroPower);
+            double share = State.ArenaDefense.Count == 0 || best <= 0 ? 0 : Math.Min(1, DefensePower() / best);
+            return 0.45 + 0.10 * share;
+        }
+
+        /// <summary>
+        /// The heroes of a ghost's defense for its card: as many as a squad of its hearth level holds, at the hero level of
+        /// that hearth (2L - 2, ±2), a front of a Guardian or a Swordsman, never more than two of a class. They come from the
+        /// opponent's seed, so the card and the fight stay the same until the list changes.
+        /// </summary>
+        public List<PvpHero> OpponentSquad(PvpOpponent o)
+        {
+            var rng = new Rng(o.Seed * 7 + 3);
+            int size = 5 + Balance.SquadSlots.Count(gate => o.HearthLevel >= gate);
+            var classes = Enum.GetValues(typeof(HeroClass)).Cast<HeroClass>().Where(c => c != HeroClass.None).ToList();
+            var squad = new List<PvpHero>();
+            while (squad.Count < size)
+            {
+                var c = squad.Count == 0 ? (rng.Next() < 0.6 ? HeroClass.Guardian : HeroClass.Swordsman) : classes[(int)(rng.Next() * classes.Count)];
+                if (squad.Count(h => h.Class == c) >= 2)
+                    continue;
+                int level = Math.Max(1, 2 * o.HearthLevel - 2 + (int)(rng.Next() * 5) - 2);
+                squad.Add(new PvpHero { Class = c, Level = level });
+            }
+            return squad;
         }
 
         // ------------------------------------------------------------------ opponents
@@ -275,6 +447,137 @@ namespace LastHearth.Core
             return Fail.None;
         }
 
+        // ------------------------------------------------------------------ the raid defense of the fortress
+
+        /// <summary>The lines a raid storms, top down: a star for each line taken (RaidStarNames).</summary>
+        public const int RaidLines = 3;
+        public static readonly string[] RaidLineNames = { "Верхние залы", "Казарма", "Очаг" };
+        public const int RaidLineDefenders = 2;
+        /// <summary>Glory (the raids' trophies) for every line a ghost raid did not take.</summary>
+        public const long RaidDenyGlory = 2;
+
+        public static readonly string[] TrapNames = { "Без ловушки", "Капкан", "Горящие угли", "Ледяная решётка" };
+        /// <summary>The hearth level that opens each trap of the forge, and how much it adds to its line's hold.</summary>
+        public static readonly int[] TrapUnlock = { 0, 17, 20, 23 };
+        static readonly double[] TrapHoldBase = { 0, 0.12, 0.15, 0.18 };
+
+        /// <summary>MODES.md, 5: late fortifications paid with the raids' trophies (Glory) or the Siege's outpost stone.</summary>
+        public static readonly string[] FortificationNames = { "Стены", "Сторожевые огни" };
+        public const int FortificationUnlock = 20;
+        public const int FortificationMax = 5;
+
+        public List<RaidLine> RaidDefense
+        {
+            get
+            {
+                while (State.RaidDefense.Count < RaidLines)
+                    State.RaidDefense.Add(new RaidLine());
+                return State.RaidDefense;
+            }
+        }
+
+        int[] Forts
+        {
+            get
+            {
+                if (State.Fortifications == null || State.Fortifications.Length < FortificationNames.Length)
+                    Array.Resize(ref State.Fortifications, FortificationNames.Length);
+                return State.Fortifications;
+            }
+        }
+
+        public int FortificationLevel(int kind) => kind >= 0 && kind < FortificationNames.Length ? Forts[kind] : 0;
+
+        /// <summary>Traps come from the forge: its highest level makes them stronger (+5% a level above the first).</summary>
+        public int ForgeLevel() => State.Rooms.Where(r => r.Type == RoomType.Forge).Select(r => r.Level).DefaultIfEmpty(0).Max();
+
+        public bool TrapOpen(TrapKind trap) => trap == TrapKind.None || ForgeLevel() > 0 && State.HearthLevel >= TrapUnlock[(int)trap];
+
+        public double TrapHold(TrapKind trap) => trap == TrapKind.None ? 0 : TrapHoldBase[(int)trap] * (1 + 0.05 * Math.Max(0, ForgeLevel() - 1));
+
+        /// <summary>
+        /// How likely a line stops a ghost raid: 15%, the trap, 12% for each defender (by his might against an average hero
+        /// of the squad, at most 1.5 times), the walls 3% a level on every line, the watch fires 6% a level at the Hearth; at most 85%.
+        /// </summary>
+        public double RaidHold(int line)
+        {
+            if (line < 0 || line >= RaidLines)
+                return 0;
+            var l = RaidDefense[line];
+            var squad = Squad();
+            double average = squad.Count == 0 ? 1 : Math.Max(1, squad.Average(HeroPower));
+            double hold = 0.15 + TrapHold(l.Trap);
+            foreach (var d in l.Defenders.Select(FindDweller).Where(d => d != null && d.IsHero))
+                hold += 0.12 * Math.Min(1.5, HeroPower(d) / average);
+            hold += 0.03 * Forts[0];
+            if (line == RaidLines - 1)
+                hold += 0.06 * Forts[1];
+            return Math.Min(0.85, hold);
+        }
+
+        public Fail SetRaidTrap(int line, TrapKind trap)
+        {
+            if (!RaidsOpen)
+                return Fail.Locked;
+            if (line < 0 || line >= RaidLines)
+                return Fail.NotFound;
+            if (!TrapOpen(trap))
+                return Fail.Locked;
+            RaidDefense[line].Trap = trap;
+            return Fail.None;
+        }
+
+        /// <summary>Up to two heroes guard a line, five in the whole fortress; a hero put on a line leaves the others.</summary>
+        public Fail SetRaidDefenders(int line, IList<int> heroes)
+        {
+            if (!RaidsOpen)
+                return Fail.Locked;
+            if (line < 0 || line >= RaidLines)
+                return Fail.NotFound;
+            var ids = heroes.Distinct().ToList();
+            if (ids.Any(id => FindDweller(id) == null || !FindDweller(id).IsHero))
+                return Fail.NotAHero;
+            int elsewhere = RaidDefense.Where((l, i) => i != line).Sum(l => l.Defenders.Count(id => !ids.Contains(id)));
+            if (ids.Count > RaidLineDefenders || elsewhere + ids.Count > 5)
+                return Fail.LimitReached;
+            for (int i = 0; i < RaidLines; i++)
+                RaidDefense[i].Defenders.RemoveAll(ids.Contains);
+            RaidDefense[line].Defenders = ids;
+            return Fail.None;
+        }
+
+        /// <summary>The next level of a fortification: 150 Glory a level, or 4 outpost stone a level while the Siege runs.</summary>
+        public long FortificationCost(int kind, bool stone) => (stone ? 4 : 150) * (FortificationLevel(kind) + 1);
+
+        public Fail UpgradeFortification(int kind, bool stone, long now)
+        {
+            Advance(now);
+            if (!RaidsOpen || State.HearthLevel < FortificationUnlock)
+                return Fail.Locked;
+            if (kind < 0 || kind >= FortificationNames.Length)
+                return Fail.NotFound;
+            if (Forts[kind] >= FortificationMax)
+                return Fail.LimitReached;
+            long cost = FortificationCost(kind, stone);
+            if (stone)
+            {
+                var run = ActiveRun("Siege", now);
+                if (run == null)
+                    return Fail.NotRunning;
+                if (run.Stone < cost)
+                    return Fail.NotEnough;
+                run.Stone -= cost;
+            }
+            else
+            {
+                if (State.Wallet[ResourceType.Glory] < cost)
+                    return Fail.NotEnough;
+                State.Wallet[ResourceType.Glory] -= cost;
+            }
+            Forts[kind]++;
+            return Fail.None;
+        }
+
         // ------------------------------------------------------------------ battles
 
         public BattleSetup PvpSetup(PvpBattle pb)
@@ -302,21 +605,29 @@ namespace LastHearth.Core
             return setup;
         }
 
-        public Fail StartArena(int index, long now, out Battle battle)
+        Fail ArenaReady(long now)
         {
-            battle = null;
-            Advance(now);
             if (!ArenaOpen)
                 return Fail.Locked;
             if (BattleBusy)
                 return Fail.HuntInProgress;
             if (Squad().Count == 0)
                 return Fail.NoHeroes;
+            return ArenaTickets(now) <= 0 ? Fail.NoTracks : Fail.None;
+        }
+
+        public Fail StartArena(int index, long now, out Battle battle)
+        {
+            battle = null;
+            Advance(now);
+            var fail = ArenaReady(now);
+            if (fail != Fail.None && fail != Fail.NoTracks)
+                return fail;
             var list = ArenaOpponents(now);
             if (index < 0 || index >= list.Count)
                 return Fail.NotFound;
-            if (ArenaTickets(now) <= 0)
-                return Fail.NoTracks;
+            if (fail != Fail.None)
+                return fail;
             Spend(ref State.ArenaTickets, ref State.ArenaTicketAt, Pvp.Tickets, Pvp.TicketHours * 3600L, now);
             State.PvpBattle = new PvpBattle { Opponent = list[index], Seed = State.NextBattleSeed++ };
             battle = new Battle(Combat, PvpSetup(State.PvpBattle));
@@ -360,20 +671,25 @@ namespace LastHearth.Core
             State.PvpBattle = null;
             reward.Won = battle.Won;
             if (pb.Raid)
-                FinishRaid(pb, battle, reward);
+                FinishRaid(pb, battle, reward, now);
             else
-                FinishArena(pb, battle, reward);
+                FinishArena(pb, battle, reward, now);
             State.Wallet.Add(reward.Got);
             return Fail.None;
         }
 
-        void FinishArena(PvpBattle pb, Battle battle, PvpReward reward)
+        /// <summary>What a win or a loss against this opponent does to the rating: +15..+30, -10..-20 by the rating gap.</summary>
+        public int ArenaRatingChange(PvpOpponent o, bool won)
         {
-            int diff = pb.Opponent.Rating - State.ArenaRating;
+            EnsurePvp();
+            int diff = o.Rating - State.ArenaRating;
+            return won ? Math.Max(15, Math.Min(30, 22 + diff / 20)) : -Math.Max(10, Math.Min(20, 15 - diff / 40));
+        }
+
+        void FinishArena(PvpBattle pb, Battle battle, PvpReward reward, long now)
+        {
             reward.Stars = battle.Won ? battle.Stars : 0;
-            reward.RatingChange = battle.Won
-                ? Math.Max(15, Math.Min(30, 22 + diff / 20))
-                : -Math.Max(10, Math.Min(20, 15 - diff / 40));
+            reward.RatingChange = ArenaRatingChange(pb.Opponent, battle.Won);
             State.ArenaRating = Math.Max(0, State.ArenaRating + reward.RatingChange);
             State.ArenaWeekFights++;
             long essenceDay = Balance.Activities.EssenceByLevel[State.HearthLevel - 1];
@@ -381,11 +697,18 @@ namespace LastHearth.Core
             reward.Got[ResourceType.Essence] = (long)Math.Round(essenceDay * Pvp.WinEssence * (battle.Won ? 1 : 1.0 / 3));
             if (battle.Won)
                 State.ArenaWins++;
-            State.ArenaList.Clear();
-            PvpNote(string.Format("Арена против {0}: {1} ({2:+0;-0})", pb.Opponent.Name, battle.Won ? "победа" : "поражение", reward.RatingChange));
+            if (!pb.Revenge)
+                State.ArenaList.Clear();
+            PvpNote(string.Format("{0} {1}: {2} ({3:+0;-0})", pb.Revenge ? "Месть на арене" : "Арена против", pb.Opponent.Name,
+                battle.Won ? "победа" : "поражение", reward.RatingChange));
+            Record(new PvpRecord
+            {
+                Time = now, Won = battle.Won, RatingChange = reward.RatingChange, Glory = reward.Got[ResourceType.Glory],
+                Stars = reward.Stars, Revenge = pb.Revenge, Opponent = pb.Opponent,
+            });
         }
 
-        void FinishRaid(PvpBattle pb, Battle battle, PvpReward reward)
+        void FinishRaid(PvpBattle pb, Battle battle, PvpReward reward, long now)
         {
             // a star per floor taken: traps, defenders, the hearth
             reward.Stars = battle.Won ? 3 : Math.Min(2, battle.Wave);
@@ -401,6 +724,11 @@ namespace LastHearth.Core
             }
             PvpNote(string.Format("{0} на крепость {1}: {2} зв., добыча {3}", pb.Revenge ? "Месть" : "Набег", pb.Opponent.Name,
                 reward.Stars, reward.Materials));
+            Record(new PvpRecord
+            {
+                Time = now, Raid = true, Won = battle.Won, Glory = reward.Got[ResourceType.Glory], Stars = reward.Stars,
+                Revenge = pb.Revenge, Opponent = pb.Opponent,
+            });
         }
 
         /// <summary>A fight left open when the game closed is finished by auto-battle.</summary>
@@ -414,6 +742,9 @@ namespace LastHearth.Core
         }
 
         // ------------------------------------------------------------------ Glory shop
+
+        /// <summary>When the Glory shop's weekly limits come back.</summary>
+        public long GloryShopResets(long now) => (LocalDay(now) / 7 + 1) * 7 * Day - State.UtcOffsetSeconds;
 
         public int GloryLeft(int goods, long now)
         {
