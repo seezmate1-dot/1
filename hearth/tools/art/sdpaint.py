@@ -378,7 +378,7 @@ PETS = {
 COMPANIONS = {
     "Squire": "a young medieval squire boy with a wooden shield and a short sword, full figure",
     "Wolfhound": "a big grey wolfhound dog with a leather collar, standing",
-    "Falcon": "a falcon with spread wings and a leather hood strap",
+    "Falcon": "a real falcon bird, an animal not a person, perched with folded wings, a leather jess on its leg",
     "Firefly": "a big glowing coal firefly, an insect with a bright orange ember body and translucent wings",
 }
 
