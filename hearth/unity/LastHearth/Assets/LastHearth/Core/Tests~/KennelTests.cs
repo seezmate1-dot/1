@@ -430,7 +430,7 @@ namespace LastHearth.Core.Tests
             Assert.AreEqual(inBattle.Attack, plain.Attack, 1e-6, "the card shows the battle's numbers");
             Assert.AreEqual(inBattle.MaxHp, plain.MaxHp, 1e-6);
             Assert.IsNull(s.HeroPreview(s.State.Dwellers.First(d => !d.IsHero).Id), "a dweller has no hero card");
-            Assert.AreEqual(Math.Pow(s.Combat.GearGrowth, 7), s.GearMult(), 1e-9, "the forge's gear follows the hearth (8)");
+            Assert.AreEqual(s.Balance.Items.KitAt(8), s.HeroGear(hero).Attack, 1e-9, "the forge's issued kit follows the hearth (8)");
 
             s.State.HuntWins = 3;
             s.CheckKennel(); // the wolf and the wolfhound

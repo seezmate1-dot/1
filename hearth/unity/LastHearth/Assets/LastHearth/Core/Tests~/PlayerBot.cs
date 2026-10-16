@@ -87,6 +87,7 @@ namespace LastHearth.Core.Tests
             Breed(now);
             Staff();
             Heroes();
+            Gear(now);
             Hunt(now);
             Campaign(now);
             Surge(now);
@@ -98,6 +99,90 @@ namespace LastHearth.Core.Tests
             Shop(now);
             Kennel(now);
             Halls(now);
+        }
+
+        // ------------------------------------------------------------------ equipment (GDD 8)
+
+        public int Equipped, Crafted, Upgraded, Sold, Dismantled;
+
+        /// <summary>
+        /// Puts the best item of the bag on every hero (by power), dismantles and sells the rest, forges an item for
+        /// the weakest slot of the squad from surplus materials and upgrades worn items with essence left after the
+        /// hero levels.
+        /// </summary>
+        void Gear(long now)
+        {
+            var heroes = S.Squad().Concat(S.State.Dwellers.Where(d => d.IsHero).Except(S.Squad())).ToList();
+            foreach (var hero in heroes)
+            {
+                // an old find the hearth has outgrown: the forge's issued piece is better now
+                foreach (var worn in S.WornBy(hero.Id))
+                {
+                    if (S.ItemPower(worn) < S.ItemPower(S.IssuedPiece(hero.HeroClass, worn.Slot)))
+                        S.Unequip(hero.Id, worn.Slot);
+                }
+                foreach (var slot in GameSession.Slots)
+                {
+                    var best = S.Bag().Where(i => i.Slot == slot && S.Fits(i, hero.HeroClass)).OrderByDescending(S.ItemPower).FirstOrDefault();
+                    if (best != null && S.ItemPower(best) > S.ItemPower(S.SlotItem(hero, slot)) && S.Equip(hero.Id, best.Id) == Fail.None)
+                        Equipped++;
+                }
+            }
+            // nothing in the bag is better than what a hero wears now: scrap first (the forge needs it), then silver
+            foreach (var item in S.Bag().OrderBy(S.ItemPower).ToList())
+            {
+                if (S.Dismantle(item.Id, now) == Fail.None)
+                    Dismantled++;
+                else if (S.SellItem(item.Id) == Fail.None)
+                    Sold++;
+            }
+            bool surplus = S.State.Wallet[ResourceType.Silver] >= S.Capacity(ResourceType.Silver) * 0.6 &&
+                           S.State.Wallet[ResourceType.Iron] >= S.Capacity(ResourceType.Iron) * 0.6;
+            if (S.Gear.Craft == null && S.ForgeLevel() >= 1)
+            {
+                Dweller weak = null;
+                var slotOf = ItemSlot.Weapon;
+                int low = int.MaxValue;
+                foreach (var hero in S.Squad())
+                {
+                    foreach (var slot in GameSession.Slots)
+                    {
+                        int p = S.ItemPower(S.SlotItem(hero, slot));
+                        if (p < low)
+                        {
+                            low = p;
+                            weak = hero;
+                            slotOf = slot;
+                        }
+                    }
+                }
+                if (weak != null)
+                {
+                    var kind = ItemKinds.For(weak.HeroClass, slotOf)[0];
+                    foreach (var rarity in Enum.GetValues(typeof(ItemRarity)).Cast<ItemRarity>().Reverse())
+                    {
+                        // only rare and better are worth the materials; legendary items are paid in Cores
+                        if (rarity < ItemRarity.Rare || (rarity != ItemRarity.Legendary && !surplus))
+                            continue;
+                        if (S.StartCraft(kind, rarity, now) == Fail.None)
+                        {
+                            Crafted++;
+                            break;
+                        }
+                    }
+                }
+            }
+            // essence the hero levels left over (the squad is at its cap) and spare iron: +1 on the best worn items
+            for (int guard = 0; guard < 6 && S.State.Wallet[ResourceType.Iron] >= S.Capacity(ResourceType.Iron) * 0.5; guard++)
+            {
+                if (S.Squad().Any(d => d.HeroLevel < Formulas.HeroLevelCap(S.Balance, S.State.HearthLevel)))
+                    break;
+                var item = S.Squad().SelectMany(d => S.WornBy(d.Id)).Where(i => S.UpgradeCost(i) != null && i.Level >= S.State.HearthLevel - 2)
+                    .OrderBy(i => S.UpgradeCost(i)[ResourceType.Essence]).FirstOrDefault();
+                if (item == null || S.UpgradeItem(item.Id) != Fail.None)
+                    break;
+                Upgraded++;
+            }
         }
 
         // ------------------------------------------------------------------ pets and companions (GDD 8.1-8.2)
@@ -798,7 +883,9 @@ namespace LastHearth.Core.Tests
                 S.State.Wallet[ResourceType.Blueprints], S.State.Dwellers.Count, S.State.Rooms.Count,
                 ArenaWins, ArenaFights, S.State.ArenaRating, Raids, S.State.Wallet[ResourceType.Glory]) +
                 string.Format(" | halls: hired {0} (let go {1}), research {2}, trained {3}, ascended {4}, gifts {5}, records {6}",
-                    Hires, Dismissals, S.ResearchCount, S.PointsTrained, Ascensions, Gifts, S.State.Halls.Read.Count);
+                    Hires, Dismissals, S.ResearchCount, S.PointsTrained, Ascensions, Gifts, S.State.Halls.Read.Count) +
+                string.Format(" | gear {0} (worn {1}, bag {2}, crafted {3}, +{4}, scrap {5})", squad.Sum(S.HeroGearPower),
+                    S.Gear.Items.Count(i => i.HeroId != 0), S.Bag().Count, Crafted, Upgraded, S.Gear.Scrap);
         }
     }
 

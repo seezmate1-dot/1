@@ -9,7 +9,8 @@ floor where the dwellers walk and the places on the map stay where the game expe
 
 Transparent pieces (group "pieces": Icons/<Name>, Buttons/<Name>, Decor/<name>, Rooms/Rubble, Rooms/Scaffold)
 are painted from text on a plain white ground and cut out with rembg (pip install "rembg[cpu]"; without
-it, a flood fill of the ground from the borders).
+it, a flood fill of the ground from the borders). Group "items": the icons of the heroes' equipment, Items/<Kind>
+(ITEMS; the game draws them once Art.json has "itemArt").
 
 MODEL: the checkpoint file (default: $SD_MODEL or ~/models/DreamShaperXL_Turbo_v2_1.safetensors).
 """
@@ -111,6 +112,14 @@ def pipe():
     return _pipe
 
 
+def painter(cls=StableDiffusionXLImg2ImgPipeline):
+    """A pipeline for the painting alone: the prompt comes encoded (embeds), and without the text encoders
+    diffusers casts it to the UNet's precision instead of the encoders' bfloat16."""
+    parts = dict(pipe().components)
+    parts["text_encoder"] = parts["text_encoder_2"] = None
+    return cls(**parts)
+
+
 def embeds(prompt, negative):
     """The prompt read by the text encoders, in the painting's precision."""
     p = pipe()
@@ -126,7 +135,8 @@ def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0, ne
     init = layout.convert("RGB").resize((w, h), Image.LANCZOS)
     g = torch.Generator().manual_seed(seed)
     # the subject first: the text encoders read only 77 tokens
-    out = pipe()(**embeds(prompt + ", " + STYLE, negative), image=init, strength=strength,
+    e = embeds(prompt + ", " + STYLE, negative)
+    out = painter()(**e, image=init, strength=strength,
                  num_inference_steps=max(steps, int(round(2 / strength))), guidance_scale=guidance, generator=g,
                  width=w, height=h)
     return grade(out.images[0])
@@ -149,9 +159,10 @@ def grade(img):
 def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
     """A picture from the prompt alone (text to image, the same model)."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
-    t2i = StableDiffusionXLPipeline(**pipe().components)
+    e = embeds(prompt + ", " + STYLE, negative)
+    t2i = painter(StableDiffusionXLPipeline)
     g = torch.Generator().manual_seed(seed)
-    return t2i(**embeds(prompt + ", " + STYLE, negative), num_inference_steps=steps, guidance_scale=guidance,
+    return t2i(**e, num_inference_steps=steps, guidance_scale=guidance,
                generator=g, width=w, height=h).images[0]
 
 
@@ -185,7 +196,7 @@ def repaint_centre(img, steps=8, seed=7, room="Bedrooms"):
     mask = Image.new("L", img.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((w * 0.1, h * 0.38, w * 0.9, h * 0.88), radius=h * 0.06, fill=255)
     mask = mask.filter(ImageFilter.GaussianBlur(h * 0.02))
-    inpaint = StableDiffusionXLInpaintPipeline(**pipe().components)
+    inpaint = painter(StableDiffusionXLInpaintPipeline)
     g = torch.Generator().manual_seed(seed)
     what, avoid = CENTRE[room]
     out = inpaint(**embeds(what + ", " + STYLE, NEGATIVE + avoid), image=img,
@@ -382,6 +393,28 @@ COMPANIONS = {
     "Firefly": "a big glowing coal firefly, an insect with a bright orange ember body and translucent wings",
 }
 
+# the heroes' equipment (GDD 8; Core/Items.cs ItemKind): one icon per kind, Items/<Kind>, drawn on a plate in
+# the colour of the item's rarity once Art.json has "itemArt"
+ITEMS = {
+    "Mace": "a heavy iron flanged mace with a leather-wrapped grip",
+    "Sword": "a straight steel longsword with a crossguard and a leather grip",
+    "Axe": "a big double-bladed battle axe on a long wooden haft",
+    "Bow": "a recurve wooden longbow with a taut string",
+    "Censer": "a bronze censer on a chain with glowing coals inside and a wisp of smoke",
+    "Staff": "a gnarled dark wooden mage staff topped with a smouldering ember crystal",
+    "Shield": "a round wooden shield with an iron rim and an iron boss",
+    "Bracers": "a pair of studded leather and iron bracers",
+    "Quiver": "a leather quiver full of feathered arrows",
+    "Tome": "a thick old leather-bound tome with brass corners and a clasp",
+    "Helmet": "an iron knight helmet with a nasal guard",
+    "Hood": "a dark grey cloth hood with a short cape",
+    "Armor": "a steel plate cuirass with shoulder pauldrons",
+    "Jerkin": "a brown leather jerkin with laces and a belt",
+    "Robe": "a long dark red mage robe with ember-coloured trim",
+    "Boots": "a pair of sturdy leather boots with iron toe caps",
+    "Amulet": "a silver amulet on a chain with a glowing amber stone",
+}
+
 
 def _piece_list():
     out = {}
@@ -404,6 +437,8 @@ def _piece_list():
                        "a fantasy game map piece", (192, 192))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
+    for kind, what in ITEMS.items():
+        out["Items/" + kind] = ("a game equipment icon: " + what + ", single item", (256, 256))
     return out
 
 
@@ -497,9 +532,10 @@ if __name__ == "__main__":
     args = ap.parse_args()
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder", "Stairs", "Rooms/Arch"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
-              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/"))],
+              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/", "Items/"))],
               "scene": [n for n in PIECES if n.startswith("Scene/")],
-              "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))]}
+              "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))],
+              "items": [n for n in PIECES if n.startswith("Items/")]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
         if n in PIECES:
             piece(n, args)

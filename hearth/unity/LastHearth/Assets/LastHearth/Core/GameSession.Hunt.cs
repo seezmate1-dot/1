@@ -9,6 +9,8 @@ namespace LastHearth.Core
     {
         public int Stars;
         public long Cores;
+        /// <summary>An item found (GDD 8), or null.</summary>
+        public GearItem Item;
         /// <summary>The monster of the week was beaten (double Cores).</summary>
         public bool Weekly;
     }
@@ -161,6 +163,7 @@ namespace LastHearth.Core
                 Count(DailyTask.Hunt);
                 State.HuntWins++;
                 GrantTreats(Balance.Pets.TreatsPerHuntWin); // pet treats (GDD 8.1)
+                reward.Item = Drop("hunt", hunt.Rank, hunt.Seed, "Охота, ранг " + hunt.Rank); // an item of the rank
                 CheckAchievements();
             }
             return Fail.None;

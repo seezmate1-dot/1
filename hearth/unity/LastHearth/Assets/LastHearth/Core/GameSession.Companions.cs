@@ -127,15 +127,15 @@ namespace LastHearth.Core
         // ------------------------------------------------------------------ the hero screen
 
         /// <summary>
-        /// A hero as the battle makes them now: the hero level, the main stat, the gear of the forge (it follows
-        /// the hearth level), the active pet and the companion. Null without the combat numbers or for a dweller.
+        /// A hero as the battle makes them now: the hero level, the main stat, the equipment (items, sets and the
+        /// forge's issued pieces), the active pet and the companion. Null without the combat numbers or for a dweller.
         /// </summary>
         public Fighter HeroPreview(int heroId)
         {
             var d = FindDweller(heroId);
             if (d == null || !d.IsHero || Combat == null)
                 return null;
-            var setup = new BattleSetup { GearLevel = State.HearthLevel };
+            var setup = new BattleSetup();
             ApplyPet(setup);
             var f = Battle.HeroFighter(Combat, new HeroSetup
             {
@@ -145,16 +145,14 @@ namespace LastHearth.Core
                 Level = d.HeroLevel,
                 SkillLevel = d.SkillLevel,
                 Stats = (int[])d.Stats.Clone(),
-            }, setup.GearLevel);
+                Gear = HeroGear(d),
+            });
             f.Attack *= setup.PetAttack;
             f.MaxHp *= setup.PetHp;
             f.Hp = f.MaxHp;
             f.Companion = CompanionSetupFor(d);
             return f;
         }
-
-        /// <summary>The gear of the forge: attack and health x this (one step per hearth level, combat.json).</summary>
-        public double GearMult() => Combat == null ? 1 : Math.Pow(Combat.GearGrowth, State.HearthLevel - 1);
 
         public string CompanionSkillText(CompanionKindData kind, int level)
         {

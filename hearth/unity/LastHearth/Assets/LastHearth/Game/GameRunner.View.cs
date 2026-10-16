@@ -698,6 +698,11 @@ namespace LastHearth.Game
             string size = room.Width > 1 ? string.Format(" · зал на {0} клетки, +{1:0}% выработки", room.Width, (session.MergeBonus(room) - 1) * 100) : "";
             GUILayout.Label(string.Format("<b>{0}</b>, уровень {1}, этаж {2}{3}{4}{5}", data.Name, room.Level, room.Floor + 1, size, output,
                 session.IsRoomWarm(room) ? "" : " · <color=#9cf>промёрз: поднимите очаг, включите «Пылающий» или изучите Тепло</color>"), Rich());
+            if (room.Type == RoomType.Forge && room.Level > 0 && ForgeTabs())
+            {
+                DrawForge(now); // the forging tab (GameRunner.Gear.cs)
+                return;
+            }
             GUILayout.BeginHorizontal();
             if (data.Produces != null && GUILayout.Button("Собрать"))
             {

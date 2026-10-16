@@ -103,7 +103,8 @@ public static class UiSmoke
         string[] must = { "[ячейка]", "Бой", "[ячейка]Атаковать", "[ячейка]Бой турнира", "[ячейка]Войти в Портал", "[ячейка]Сделка", "[ячейка]Гарнизон", "[ячейка]Играть", "[ячейка]Обновить соперников",
                           "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "[ячейка]ФОНАРЬ!", "Тепло:",
                           "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶", "Календарь", "Сезон", "Продолжить",
-                          "[ячейка]Далее", "[ячейка]Пропустить обучение", "Экономия батареи", "Назвать", "[поле]", "Перенести", "[ячейка]Отмена" };
+                          "[ячейка]Далее", "[ячейка]Пропустить обучение", "Экономия батареи", "Назвать", "[поле]", "Перенести", "[ячейка]Отмена",
+                          "Снаряжение", "Надеть", "Продать:", "Разобрать:", "Ковать в кузне" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
         Console.WriteLine("Картинок загружено: " + UnityEngine.Resources.TexturesLoaded + " (заглушек мест на поверхности: " +
@@ -124,7 +125,7 @@ public static class UiSmoke
         {
             Set(runner, "skip", session.State.Time + away - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             Call(runner, "StartSession", session);
-            if (away > 0 && (int)Get(runner, "window") != WindowCount - 1)
+            if (away > 0 && Get(runner, "window").ToString() != "Away")
                 throw new InvalidOperationException(name + ": the summary «Пока вас не было» did not open");
         }
         var rng = new Random(seed);
@@ -145,7 +146,7 @@ public static class UiSmoke
         {
             current = frame;
             // open every window in turn, and the bare fortress between them
-            SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. Win.Away
+            SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. the last one
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
             if (frame % 500 == 499)
                 Set(runner, "skip", (long)Get(runner, "skip") + 3 * 3600); // walk through the day: Surge, siege windows, new tasks

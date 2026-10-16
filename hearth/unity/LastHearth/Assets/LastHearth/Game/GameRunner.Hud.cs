@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin, Away }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin, Away, Gear }
 
         // the HUD's bands: the resource plates on top, the round buttons along the bottom and the right edge
         const float HudTop = 50, HudBottom = 92, HudRight = 74;
@@ -32,6 +32,7 @@ namespace LastHearth.Game
             (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"),
             (Win.Admin, "Админ-меню"),
             (Win.Away, "Пока вас не было"),
+            (Win.Gear, "Снаряжение"),
         };
 
         GUIStyle hudText, buttonLabel, titleText;
@@ -423,6 +424,9 @@ namespace LastHearth.Game
                     break;
                 case Win.Away:
                     DrawAway(now);
+                    break;
+                case Win.Gear:
+                    DrawGear(now); // GameRunner.Gear.cs
                     break;
             }
         }
