@@ -247,6 +247,41 @@ def sea_points(img, count=70, seed=3):
     return [{"name": "", "x": round(x, 4), "y": round(y, 4)} for x, y in picked]
 
 
+def ship_lanes(img, count=3, seed=5):
+    """Lanes for the little ships: straight runs between two points of open water that stay on the water all the
+    way (sampled every few pixels), a fifth to a third of the map long, not crossing each other's middles."""
+    import random
+    import numpy as np
+    small = img.convert("RGB").resize((240, 135))
+    a = np.asarray(small, dtype=np.float32)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    water = (b > r + 35) & (b > g + 5) & (b > 90)
+    m = np.asarray(Image.fromarray((water * 255).astype("uint8"), "L").filter(ImageFilter.MinFilter(7))) > 0
+    ys, xs = np.nonzero(m)
+    rng = random.Random(seed)
+    lanes = []
+    for _ in range(4000):
+        i, j = rng.randrange(len(xs)), rng.randrange(len(xs))
+        x0, y0, x1, y1 = xs[i], ys[i], xs[j], ys[j]
+        length = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+        if not 48 <= length <= 80 or abs(y1 - y0) > abs(x1 - x0) * 0.5:
+            continue
+        # away from the map's edges, where the view seldom goes
+        if min(y0, y1) < 14 or max(y0, y1) > 121 or min(x0, x1) < 8 or max(x0, x1) > 232:
+            continue
+        steps = int(length)
+        if not all(m[round(y0 + (y1 - y0) * k / steps), round(x0 + (x1 - x0) * k / steps)] for k in range(steps + 1)):
+            continue
+        mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+        if any(((mx - (l[0] + l[2]) / 2) ** 2 + (my - (l[1] + l[3]) / 2) ** 2) ** 0.5 < 70 for l in lanes):
+            continue
+        lanes.append((x0, y0, x1, y1))
+        if len(lanes) == count:
+            break
+    return [[{"name": "", "x": round(float(x0 + 0.5) / 240, 4), "y": round(float(y0 + 0.5) / 135, 4)},
+             {"name": "", "x": round(float(x1 + 0.5) / 240, 4), "y": round(float(y1 + 0.5) / 135, 4)}] for x0, y0, x1, y1 in lanes]
+
+
 def main(stage):
     for piece in ("Door", "Ladder"):
         p = os.path.join(stage, "Rooms", piece + ".png")
@@ -316,6 +351,13 @@ def main(stage):
                 manifest = os.path.join(ART, "Art.json")
                 m = json.load(open(manifest, encoding="utf-8"))
                 m.setdefault("map", {})["sea"] = sea_points(img)
+                ship = os.path.join(stage, "Map", "Ship.png")
+                if os.path.exists(ship):
+                    # a little ship sails the lanes (GameRunner.Map DrawShips)
+                    os.makedirs(os.path.join(ART, "Map"), exist_ok=True)
+                    trim(Image.open(ship), (192, 192), margin=2).save(os.path.join(ART, "Map", "Ship.png"))
+                    m["map"]["ships"] = ship_lanes(img)
+                    m["mapShips"] = True
                 json.dump(m, open(manifest, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
                 print("sea", len(m["map"]["sea"]))
 

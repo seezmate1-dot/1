@@ -845,5 +845,7 @@
  "rubble": true,
  "scaffold": true,
  "splash": true,
- "stairs": true
+ "stairs": true,
+ "petArt": true,
+ "companionArt": true
 }

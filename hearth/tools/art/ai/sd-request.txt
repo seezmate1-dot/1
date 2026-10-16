@@ -1,3 +1,3 @@
-Pets/MistFox Companions/Squire Pets/MistFox Companions/Squire
+Map/Ship Map/Ship
 0.5
-# the last two portraits, two copies each
+# a ship that sails on the map

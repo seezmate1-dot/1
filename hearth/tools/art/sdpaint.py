@@ -422,6 +422,9 @@ def _piece_list():
         out["Pets/" + n] = ("a cute pet for a fantasy game: " + what + ", full body, three-quarter view", (256, 256))
     for n, what in COMPANIONS.items():
         out["Companions/" + n] = ("a hero's companion for a fantasy game: " + what + ", three-quarter view", (256, 256))
+    # a small ship that sails between the islands of the map (GameRunner.Map DrawShips)
+    out["Map/Ship"] = ("a small wooden sailing ship with one white sail and a red pennant, seen from above at an angle, "
+                       "a fantasy game map piece", (192, 192))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     for kind, what in ITEMS.items():
