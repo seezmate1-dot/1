@@ -111,6 +111,14 @@ def pipe():
     return _pipe
 
 
+def painter(cls=StableDiffusionXLImg2ImgPipeline):
+    """A pipeline for the painting alone: the prompt comes encoded (embeds), and without the text encoders
+    diffusers casts it to the UNet's precision instead of the encoders' bfloat16."""
+    parts = dict(pipe().components)
+    parts["text_encoder"] = parts["text_encoder_2"] = None
+    return cls(**parts)
+
+
 def embeds(prompt, negative):
     """The prompt read by the text encoders, in the painting's precision."""
     p = pipe()
@@ -126,7 +134,8 @@ def paint(layout, prompt, size, strength=0.65, steps=8, seed=7, guidance=2.0, ne
     init = layout.convert("RGB").resize((w, h), Image.LANCZOS)
     g = torch.Generator().manual_seed(seed)
     # the subject first: the text encoders read only 77 tokens
-    out = pipe()(**embeds(prompt + ", " + STYLE, negative), image=init, strength=strength,
+    e = embeds(prompt + ", " + STYLE, negative)
+    out = painter()(**e, image=init, strength=strength,
                  num_inference_steps=max(steps, int(round(2 / strength))), guidance_scale=guidance, generator=g,
                  width=w, height=h)
     return grade(out.images[0])
@@ -149,9 +158,10 @@ def grade(img):
 def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
     """A picture from the prompt alone (text to image, the same model)."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
-    t2i = StableDiffusionXLPipeline(**pipe().components)
+    e = embeds(prompt + ", " + STYLE, negative)
+    t2i = painter(StableDiffusionXLPipeline)
     g = torch.Generator().manual_seed(seed)
-    return t2i(**embeds(prompt + ", " + STYLE, negative), num_inference_steps=steps, guidance_scale=guidance,
+    return t2i(**e, num_inference_steps=steps, guidance_scale=guidance,
                generator=g, width=w, height=h).images[0]
 
 
@@ -185,7 +195,7 @@ def repaint_centre(img, steps=8, seed=7, room="Bedrooms"):
     mask = Image.new("L", img.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((w * 0.1, h * 0.38, w * 0.9, h * 0.88), radius=h * 0.06, fill=255)
     mask = mask.filter(ImageFilter.GaussianBlur(h * 0.02))
-    inpaint = StableDiffusionXLInpaintPipeline(**pipe().components)
+    inpaint = painter(StableDiffusionXLInpaintPipeline)
     g = torch.Generator().manual_seed(seed)
     what, avoid = CENTRE[room]
     out = inpaint(**embeds(what + ", " + STYLE, NEGATIVE + avoid), image=img,
