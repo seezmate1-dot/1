@@ -655,6 +655,11 @@ namespace LastHearth.Core
                 Spend(ref State.RaidFlags, ref State.RaidFlagAt, Pvp.Flags, Pvp.FlagHours * 3600L, now);
             }
             State.PvpBattle = new PvpBattle { Raid = true, Revenge = revenge, Opponent = list[index], Seed = State.NextBattleSeed++ };
+            if (revenge)
+            {
+                foreach (var r in State.PvpJournal.Where(r => r.Raid && r.Attacked && r.Opponent.Seed == list[index].Seed))
+                    r.Avenged = true;
+            }
             list.RemoveAt(index);
             battle = new Battle(Combat, PvpSetup(State.PvpBattle));
             return Fail.None;

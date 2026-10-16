@@ -143,11 +143,13 @@ namespace LastHearth.Game
         }
 
         /// <summary>A hero's face in a dark frame with his level in the corner.</summary>
-        void Face(Rect r, HeroClass c, int level, bool levelShown = true)
+        void Face(Rect r, HeroClass c, int level, bool levelShown = true) => Face(r, "Portraits/" + ArtLibrary.HeroSheet(c), level, levelShown);
+
+        void Face(Rect r, string portrait, int level, bool levelShown)
         {
             ArtLibrary.DrawSliced(r, "UI/Pill", 30, Mathf.Min(8, r.width * 0.2f));
             float pad = Mathf.Max(2, r.width * 0.06f);
-            ArtLibrary.Draw(new Rect(r.x + pad, r.y + pad, r.width - 2 * pad, r.height - 2 * pad), "Portraits/" + ArtLibrary.HeroSheet(c));
+            ArtLibrary.Draw(new Rect(r.x + pad, r.y + pad, r.width - 2 * pad, r.height - 2 * pad), portrait);
             if (levelShown)
                 Txt(new Rect(r.x, r.yMax - 15, r.width - 3, 14), level.ToString(), 11, CreamText, TextAnchor.MiddleCenter);
         }
@@ -242,7 +244,7 @@ namespace LastHearth.Game
 
             // the league: its badge, its name, the rating and the way to the next league
             LeagueBadge(new Rect(r.x, r.y, 64, 64), league);
-            float lw = Mathf.Min(230, r.width * 0.3f);
+            float lw = Mathf.Min(230, r.width * 0.26f);
             var info = new Rect(r.x + 70, r.y, lw, 64);
             Txt(new Rect(info.x, info.y + 2, info.width, 22), "Лига «" + p.Leagues[league].Name + "»", 16, LeagueColor(league), TextAnchor.MiddleLeft);
             Txt(new Rect(info.x, info.y + 22, info.width, 18), "Рейтинг " + rating, 13, CreamText, TextAnchor.MiddleLeft);
@@ -263,12 +265,15 @@ namespace LastHearth.Game
             int tickets = session.ArenaTickets(now);
             var plate = new Rect(x, r.y + 4, w, 56);
             Card(plate);
-            ArtLibrary.Draw(new Rect(plate.x + 6, plate.y + 10, 36, 36), "Buttons/Fights");
+            // a narrow phone leaves out the plates' icons, the text keeps its room
+            float icon = w >= 175 ? 44 : 10;
+            if (w >= 175)
+                ArtLibrary.Draw(new Rect(plate.x + 6, plate.y + 10, 36, 36), "Buttons/Fights");
             long price = session.ArenaTicketPrice(now);
-            float plus = price > 0 ? 30 : 0;
-            Txt(new Rect(plate.x + 44, plate.y + 6, plate.width - 50 - plus, 24), string.Format("Билеты {0}/{1}", tickets, p.Tickets), 14,
+            float plus = price > 0 ? 32 : 0;
+            Txt(new Rect(plate.x + icon, plate.y + 6, plate.width - icon - 6 - plus, 24), string.Format("Билеты {0}/{1}", tickets, p.Tickets), 14,
                 tickets > 0 ? CreamText : BadText, TextAnchor.MiddleLeft);
-            Txt(new Rect(plate.x + 44, plate.y + 30, plate.width - 50 - plus, 18), st.ArenaTicketAt > 0 ? "+1 через " + Duration(st.ArenaTicketAt - now) : "запас полон",
+            Txt(new Rect(plate.x + icon, plate.y + 30, plate.width - icon - 6 - plus, 18), st.ArenaTicketAt > 0 ? "+1 через " + Duration(st.ArenaTicketAt - now) : "запас полон",
                 11, DimText, TextAnchor.MiddleLeft);
             if (price > 0)
             {
@@ -291,9 +296,10 @@ namespace LastHearth.Game
 
             plate.x += w + 6;
             Card(plate);
-            ArtLibrary.Draw(new Rect(plate.x + 6, plate.y + 10, 36, 36), "Icons/Glory");
-            Txt(new Rect(plate.x + 44, plate.y + 6, plate.width - 50, 24), "Слава " + ShortNum(st.Wallet[ResourceType.Glory]), 14, GoldText, TextAnchor.MiddleLeft);
-            Txt(new Rect(plate.x + 44, plate.y + 30, plate.width - 50, 18), "побед: " + st.ArenaWins, 11, DimText, TextAnchor.MiddleLeft);
+            if (w >= 175)
+                ArtLibrary.Draw(new Rect(plate.x + 6, plate.y + 10, 36, 36), "Icons/Glory");
+            Txt(new Rect(plate.x + icon, plate.y + 6, plate.width - icon - 6, 24), "Слава " + ShortNum(st.Wallet[ResourceType.Glory]), 14, GoldText, TextAnchor.MiddleLeft);
+            Txt(new Rect(plate.x + icon, plate.y + 30, plate.width - icon - 6, 18), "побед: " + st.ArenaWins, 11, DimText, TextAnchor.MiddleLeft);
         }
 
         // ------------------------------------------------------------------ opponents
@@ -304,7 +310,7 @@ namespace LastHearth.Game
             int tickets = session.ArenaTickets(now);
             double ours = session.SquadPower();
             var p = session.Balance.Activities.Pvp;
-            var r = Row(250);
+            var r = Row(238);
             float gap = 10, w = (r.width - gap * 2) / 3;
             for (int i = 0; i < list.Count && i < 3; i++)
             {
@@ -315,12 +321,8 @@ namespace LastHearth.Game
                 var reward = new Rect(c.x + 10, y, c.width - 20, 46);
                 Paper(reward);
                 float half = reward.width / 2;
-                Txt(new Rect(reward.x, reward.y + 3, half, 16), "Победа", 11, GoodText);
-                Txt(new Rect(reward.x + half, reward.y + 3, half, 16), "Поражение", 11, BadText);
-                IconAmount(new Rect(reward.x + 4, reward.y + 21, half - 8, 20), "Icons/Glory",
-                    Signed(session.ArenaRatingChange(o, true)) + " · " + p.WinGlory, CreamText, 12);
-                IconAmount(new Rect(reward.x + half + 4, reward.y + 21, half - 8, 20), "Icons/Glory",
-                    Signed(session.ArenaRatingChange(o, false)) + " · " + p.LossGlory, CreamText, 12);
+                RewardHalf(new Rect(reward.x, reward.y, half, reward.height), "Победа", GoodText, session.ArenaRatingChange(o, true), p.WinGlory);
+                RewardHalf(new Rect(reward.x + half, reward.y, half, reward.height), "Поражение", BadText, session.ArenaRatingChange(o, false), p.LossGlory);
                 var go = new Rect(c.x + 14, c.yMax - 48, c.width - 28, 38);
                 if (Plank(go, "В бой", tickets > 0, true, 17, "fight" + i))
                     StartPvp(session.StartArena(i, now, out var started), started, "Арена против " + o.Name);
@@ -340,6 +342,15 @@ namespace LastHearth.Game
             }
             Txt(new Rect(row.x + 2 * bw + 18, row.y, row.width - 2 * bw - 18, 36), "Бой стоит билет · своя мощь " + ShortNum(ours), 12, DimText,
                 TextAnchor.MiddleLeft, true);
+        }
+
+        /// <summary>Half of a card's reward strip: the outcome, the rating it moves, the Glory it pays.</summary>
+        void RewardHalf(Rect r, string title, Color color, int rating, long glory)
+        {
+            Txt(new Rect(r.x, r.y + 3, r.width, 16), title, 11, color);
+            float w = r.width / 2;
+            Txt(new Rect(r.x, r.y + 21, w - 2, 20), Signed(rating), 14, color, TextAnchor.MiddleCenter);
+            IconAmount(new Rect(r.x + w - 4, r.y + 21, w, 20), "Icons/Glory", "+" + glory, CreamText, 13);
         }
 
         /// <summary>The top of an opponent's card (name, hearth and rating, the squad, the might); returns where it ends.</summary>
@@ -404,13 +415,21 @@ namespace LastHearth.Game
             float y = box.y + 74;
             if (res.Raid || res.Won)
             {
-                Txt(new Rect(box.x, y, box.width, 30), StarText(res.Stars), 24, GoldText);
-                y += 32;
+                // the stars: laurels of Glory, the missing ones pale
+                for (int k = 0; k < 3; k++)
+                {
+                    var old = GUI.color;
+                    if (k >= res.Stars)
+                        GUI.color = new Color(0.3f, 0.3f, 0.3f, 0.6f * old.a);
+                    ArtLibrary.Draw(new Rect(box.center.x - 57 + k * 40, y, 34, 34), "Icons/Glory");
+                    GUI.color = old;
+                }
+                y += 38;
             }
             if (!res.Raid)
             {
                 int change = res.RatingAfter - res.RatingBefore;
-                Txt(new Rect(box.x, y, box.width, 24), string.Format("Рейтинг {0} → {1} ({2})", res.RatingBefore, res.RatingAfter, Signed(change)), 17,
+                Txt(new Rect(box.x, y, box.width, 24), string.Format("Рейтинг {0} ({1}), было {2}", res.RatingAfter, Signed(change), res.RatingBefore), 17,
                     change >= 0 ? GoodText : BadText);
                 y += 26;
                 int was = session.LeagueIndex(res.RatingBefore), now = session.LeagueIndex(res.RatingAfter);
@@ -448,10 +467,13 @@ namespace LastHearth.Game
             var heroes = st.Dwellers.Where(d => d.IsHero).OrderByDescending(session.HeroPower).ToList();
             var chosen = st.ArenaDefense.Select(session.FindDweller).Where(d => d != null && d.IsHero).ToList();
             var r = Row(36);
-            Txt(r, "Оборона — до 5 героев; первый стоит впереди. На неё нападают дважды в день: удержали +4 рейтинга, пала −8. " +
-                "Ресурсы не теряются никогда.", 12, DimText, TextAnchor.MiddleLeft, true);
+            Txt(r, "Оборона — до 5 героев, первый стоит впереди.\nНа неё нападают дважды в день: устояла +4 рейтинга, пала −8; ресурсы не теряются.",
+                12, DimText, TextAnchor.MiddleLeft, true);
 
             // the five places of the defense in their order: a tap takes the hero off
+            // without a choice the five strongest stand there: shown pale, marked "авто"
+            var standing = session.ArenaDefenders();
+            bool auto = chosen.Count == 0;
             var slots = Row(128);
             float gap = 8, sw = Mathf.Min(150, (slots.width - 4 * gap - 190) / 5);
             for (int i = 0; i < 5; i++)
@@ -459,24 +481,28 @@ namespace LastHearth.Game
                 var s = new Rect(slots.x + i * (sw + gap), slots.y, sw, 124);
                 Card(s);
                 Txt(new Rect(s.x + 8, s.y + 4, 24, 20), (i + 1).ToString(), 14, GoldText);
-                if (i < chosen.Count)
+                if (i < standing.Count)
                 {
-                    var d = chosen[i];
+                    var d = standing[i];
+                    var old = GUI.color;
+                    if (auto)
+                        GUI.color = new Color(1, 1, 1, 0.55f * old.a);
                     float face = Mathf.Min(64, sw - 20);
                     Face(new Rect(s.center.x - face / 2, s.y + 8, face, face), d.HeroClass, d.HeroLevel);
                     Txt(new Rect(s.x + 4, s.y + face + 12, s.width - 8, 18), d.Name, 12, CreamText);
-                    Txt(new Rect(s.x + 4, s.y + face + 30, s.width - 8, 16), "мощь " + ShortNum(session.HeroPower(d)), 11, DimText);
-                    if (Hit(s, "Снять из обороны " + d.Name))
+                    Txt(new Rect(s.x + 4, s.y + face + 30, s.width - 8, 16), auto ? "авто" : "мощь " + ShortNum(session.HeroPower(d)), 11, DimText);
+                    GUI.color = old;
+                    if (!auto && Hit(s, "Снять из обороны " + d.Name))
                         Report(session.SetArenaDefense(chosen.Where(h => h != d).Select(h => h.Id).ToList()));
                 }
                 else
                 {
-                    Txt(Inset(s, 10, 30), chosen.Count == 0 && i == 0 ? "пусто: защищают сильнейшие" : "свободно", 12, DimText, TextAnchor.MiddleCenter, true);
+                    Txt(Inset(s, 10, 30), "свободно", 12, DimText);
                 }
             }
             var side = new Rect(slots.x + 5 * (sw + gap), slots.y, slots.width - 5 * (sw + gap), 124);
             double power = session.DefensePower();
-            Txt(new Rect(side.x, side.y, side.width, 20), "Мощь обороны " + ShortNum(power), 14, GoldText);
+            Txt(new Rect(side.x, side.y, side.width, 20), (auto ? "Авто: " : "Мощь ") + ShortNum(power), 14, GoldText);
             Txt(new Rect(side.x, side.y + 20, side.width, 18), string.Format("держит {0:0}% нападений", session.ArenaDefenseHold() * 100), 12,
                 chosen.Count > 0 ? GoodText : DimText);
             if (Plank(new Rect(side.x, side.y + 44, side.width, 36), "Сильнейшие", false, true, 14, "defbest"))
@@ -565,8 +591,7 @@ namespace LastHearth.Game
                         Txt(icon, (goods.Amount / 60).ToString("0.#") + " ч", 20, CreamText);
                         break;
                     default:
-                        Face(icon, HeroClass.None, 0, false);
-                        ArtLibrary.Draw(Inset(icon, 5, 5), "Portraits/" + ArtLibrary.DwellerSheet(3));
+                        Face(icon, "Portraits/" + ArtLibrary.DwellerSheet(3), 0, false);
                         break;
                 }
                 Txt(new Rect(c.x + 6, c.y + 86, c.width - 12, 20), GloryName(goods.Goods), 14, GoldText);
@@ -607,7 +632,7 @@ namespace LastHearth.Game
                 case "Hourglass":
                     return "ускоряют любую стройку на " + (g.Amount / 60).ToString("0.#") + " ч";
                 default:
-                    return "житель с +3 ко всем качествам; нужно место в спальнях";
+                    return "житель: +3 ко всем качествам";
             }
         }
 
@@ -616,7 +641,7 @@ namespace LastHearth.Game
         void DrawJournal(long now, bool raids)
         {
             var journal = session.State.PvpJournal;
-            var shown = Enumerable.Range(0, journal.Count).Reverse().Where(i => journal[i].Raid == raids || !raids).ToList();
+            var shown = Enumerable.Range(0, journal.Count).Reverse().Where(i => journal[i].Raid == raids).ToList();
             if (shown.Count == 0)
             {
                 Txt(Row(40), raids ? "Набегов пока не было" : "Боёв пока не было: нападите на соперника или подождите нападения на оборону", 13, DimText);
@@ -640,7 +665,7 @@ namespace LastHearth.Game
                 string verdict = e.Attacked ? (e.Raid ? (e.Won ? "Отбились" : "Взяли крепость") : e.Won ? "Отбились" : "Оборона пала") : e.Won ? "Победа" : "Поражение";
                 var res = new Rect(c.xMax - right, c.y, right - 130, 52);
                 Txt(new Rect(res.x, res.y + 6, res.width, 20), verdict, 14, e.Won ? GoodText : BadText);
-                string detail = (e.Raid ? StarText(e.Stars) : "рейтинг " + Signed(e.RatingChange)) + (e.Glory > 0 ? " · +" + e.Glory + " славы" : "");
+                string detail = (e.Raid ? "звёзд " + e.Stars + " из 3" : "рейтинг " + Signed(e.RatingChange)) + (e.Glory > 0 ? " · +" + e.Glory + " славы" : "");
                 Txt(new Rect(res.x, res.y + 28, res.width, 18), detail, 11, DimText);
                 var btn = new Rect(c.xMax - 124, c.y + 8, 114, 36);
                 if (session.CanAvenge(e, now))
@@ -700,7 +725,7 @@ namespace LastHearth.Game
             }
             GUILayout.Space(4);
             var foot = Row(40);
-            Txt(foot, string.Format("Награда лиги приходит в воскресенье в 22:00 (через {0}) тем, кто дрался на неделе: боёв сейчас {1}. " +
+            Txt(foot, string.Format("Награда лиги — в воскресенье в 22:00 (через {0}), если на неделе был бой (сейчас боёв: {1}).\n" +
                 "Сезон — 6 недель, затем рейтинг сжимается к {2} наполовину.", Duration(session.ArenaWeekEnds(now) - now), session.State.ArenaWeekFights,
                 p.StartRating), 12, DimText, TextAnchor.MiddleCenter, true);
         }
@@ -755,8 +780,8 @@ namespace LastHearth.Game
                 DimText, TextAnchor.MiddleLeft);
             plate.x += w + 6;
             Card(plate);
-            Txt(new Rect(plate.x + 8, plate.y + 6, plate.width - 16, 24), "Звёзды: этаж за этажом", 14, CreamText, TextAnchor.MiddleLeft);
-            Txt(new Rect(plate.x + 8, plate.y + 30, plate.width - 16, 18), string.Join(" · ", GameSession.RaidStarNames), 11, DimText, TextAnchor.MiddleLeft);
+            Txt(new Rect(plate.x + 8, plate.y + 6, plate.width - 16, 24), "Звезда за каждый этаж", 14, CreamText, TextAnchor.MiddleLeft);
+            Txt(new Rect(plate.x + 8, plate.y + 30, plate.width - 16, 18), "ловушки · защитники · очаг", 11, DimText, TextAnchor.MiddleLeft);
             plate.x += w + 6;
             Card(plate);
             ArtLibrary.Draw(new Rect(plate.x + 6, plate.y + 10, 36, 36), "Icons/Glory");
@@ -777,7 +802,7 @@ namespace LastHearth.Game
             }
             else
             {
-                var r = Row(250);
+                var r = Row(238);
                 float gap = 10, w = (r.width - gap * 2) / 3;
                 for (int i = 0; i < list.Count; i++)
                 {
@@ -816,8 +841,9 @@ namespace LastHearth.Game
             var st = session.State;
             var defense = session.RaidDefense;
             raidLine = Mathf.Clamp(raidLine, 0, GameSession.RaidLines - 1);
-            Txt(Row(36), "Набег идёт сверху вниз и останавливается на линии, которая устояла. Ловушки куёт кузня, на линию встают до двух героев " +
-                "(всего пятеро). За каждую неприступную линию — " + GameSession.RaidDenyGlory + " славы.", 12, DimText, TextAnchor.MiddleLeft, true);
+            Txt(Row(36), "Набег идёт сверху вниз и останавливается на линии, которая устояла. За каждую устоявшую линию — " + GameSession.RaidDenyGlory +
+                " славы.\nЛовушки куёт кузня; на линию — до двух героев, всего до пяти. Выберите линию и нажмите героя.", 12, DimText,
+                TextAnchor.MiddleLeft, true);
             for (int line = 0; line < GameSession.RaidLines; line++)
             {
                 var l = defense[line];
@@ -831,7 +857,7 @@ namespace LastHearth.Game
                 float nameW = Mathf.Min(190, c.width * 0.24f);
                 Txt(new Rect(c.x + 12, c.y + 8, nameW, 22), (line + 1) + ". " + GameSession.RaidLineNames[line], 15, line == raidLine ? GoldText : CreamText,
                     TextAnchor.MiddleLeft);
-                Txt(new Rect(c.x + 12, c.y + 30, nameW, 18), "звезда: " + GameSession.RaidStarNames[line], 11, DimText, TextAnchor.MiddleLeft);
+                Txt(new Rect(c.x + 12, c.y + 30, nameW, 18), GameSession.RaidStarNames[line], 11, DimText, TextAnchor.MiddleLeft);
                 double hold = session.RaidHold(line);
                 Txt(new Rect(c.x + 12, c.y + 50, nameW, 20), string.Format("держит {0:0}%", hold * 100), 13, hold >= 0.5 ? GoodText : hold >= 0.3 ? EvenText : BadText,
                     TextAnchor.MiddleLeft);
@@ -839,7 +865,7 @@ namespace LastHearth.Game
                     raidLine = line;
 
                 // the trap of the line
-                float tx = c.x + nameW + 18, tw = Mathf.Min(90, (c.width - nameW - 18 - 160) / 4 - 4);
+                float tx = c.x + nameW + 18, tw = Mathf.Min(110, (c.width - nameW - 18 - 170) / 4 - 4);
                 Txt(new Rect(tx, c.y + 6, tw * 4, 18), "Ловушка кузни", 11, DimText, TextAnchor.MiddleLeft);
                 for (int k = 0; k < TrapShort.Length; k++)
                 {

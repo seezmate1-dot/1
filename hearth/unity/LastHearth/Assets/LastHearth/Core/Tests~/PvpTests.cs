@@ -213,6 +213,7 @@ namespace LastHearth.Core.Tests
             long coal = s.State.Wallet[ResourceType.Coal];
             int flags = s.RaidFlags(t + Day);
             Assert.AreEqual(Fail.None, s.StartRaid(0, true, t + Day, out var battle));
+            Assert.IsTrue(s.State.PvpJournal.Single(r => r.Raid && r.Attacked).Avenged, "the journal knows the revenge was taken");
             battle.Brain = Brains.Careful();
             s.FinishPvp(battle, t + Day, out var reward);
             Assert.AreEqual(flags, s.RaidFlags(t + Day), "revenge is free");
