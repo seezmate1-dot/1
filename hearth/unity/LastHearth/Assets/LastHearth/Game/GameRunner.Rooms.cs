@@ -303,5 +303,47 @@ namespace LastHearth.Game
             if (hidden > 0)
                 GUILayout.Label("Ещё не найдено записей: " + hidden + " — их приносят очаг, кампания, Охота, вылазки и исследования.");
         }
+        // ------------------------------------------------------------------ the developer's menu, page «Залы»
+
+        void AdminHalls(AdminList list, long now)
+        {
+            var board = session.TavernBoard(now);
+            list.Row(string.Format("Таверна · на доске {0}, не нанято {1}", board.Count, board.Count(r => !r.Hired)));
+            list.Add("Новая доска", _ => session.TavernOpen()
+                ? "Новая доска: " + string.Join(", ", session.AdminRefreshBoard(now).Select(r => r.Name + " (" + session.RarityInfo(r.Rarity).Name + ")"))
+                : "Сначала постройте таверну");
+            var current = session.CurrentResearch;
+            list.Row(string.Format("Библиотека · изучено {0} из {1}{2}", session.ResearchCount, session.ResearchNodes.Count,
+                current == null ? "" : " · сейчас «" + current.Name + "»"));
+            list.Add("Завершить исследование", _ =>
+            {
+                var node = session.AdminFinishResearch(now);
+                return node == null ? "Сейчас ничего не исследуется" : "Изучено: «" + node.Name + "»";
+            });
+            list.Add("Изучить всё", _ => "Новых исследований: " + session.AdminResearchAll(now));
+            list.Row(string.Format("Тренировочный зал · тренируются {0} · лазарет: больных {1}", session.Trainings.Count(), session.Patients(now).Count));
+            list.Add("Завершить тренировки", _ => "Очков получено: " + session.AdminFinishTraining(now));
+            list.Add("Вылечить всех", _ => "Вылечено: " + session.AdminHealAll(now));
+            list.Row(string.Format("Архив · прочитано {0} из {1}", session.Records.Count(r => session.RecordRead(r.Id)), session.Records.Count));
+            list.Add("Открыть все записи", _ => "Новых записей: " + session.AdminUnlockRecords(now));
+            list.Row("Часовня · дар дня и возвышение");
+            list.Add("Дар сейчас", _ =>
+            {
+                var fail = session.AdminChapelGift(now, out var gift, out long amount);
+                if (fail != Fail.None)
+                    return "Сначала постройте часовню";
+                return "Дар: " + (gift.Goods == GiftGoods.Essence ? amount + " эссенции" : gift.Goods == GiftGoods.Treats ? amount + " лакомств" : "часы " + Duration(amount));
+            });
+            int ranks = session.Balance.Halls.Chapel.Ranks.Count;
+            foreach (var h in session.Squad())
+            {
+                int id = h.Id, rank = session.AscensionRank(id);
+                string name = h.Name;
+                list.Row(string.Format("{0}: ранг возвышения {1}", name, rank));
+                list.Add("Ранг −1", _ => name + ": ранг " + session.AdminSetAscension(id, rank - 1));
+                list.Add("Ранг +1", _ => name + ": ранг " + session.AdminSetAscension(id, rank + 1));
+                list.Add("Ранг " + ranks, _ => name + ": ранг " + session.AdminSetAscension(id, ranks));
+            }
+        }
     }
 }

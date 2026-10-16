@@ -65,6 +65,7 @@ namespace LastHearth.Game
             ("События", AdminEvents),
             ("Бои", AdminFights),
             ("Герои", AdminHeroes),
+            ("Залы", AdminHalls), // GameRunner.Rooms.cs
             ("Сохранение", AdminSave),
             ("Арт", AdminArt),
         };
