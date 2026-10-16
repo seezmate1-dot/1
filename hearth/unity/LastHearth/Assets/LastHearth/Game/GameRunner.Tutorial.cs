@@ -169,6 +169,8 @@ namespace LastHearth.Game
         void TutorInput()
         {
             var e = Event.current;
+            if (battle != null || surge != null || lanternSeed != 0)
+                tutorShown = false; // a fight covers the fortress: the bubble is not there
             if (!tutorShown || (e.type != EventType.MouseDown && e.type != EventType.MouseUp) || !tutorBubble.Contains(e.mousePosition))
                 return;
             if (e.type == EventType.MouseUp)

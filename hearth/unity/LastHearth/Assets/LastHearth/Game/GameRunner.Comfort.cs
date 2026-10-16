@@ -149,6 +149,8 @@ namespace LastHearth.Game
         void MoveInput()
         {
             var e = Event.current;
+            if (battle != null || surge != null || lanternSeed != 0)
+                return; // a fight covers the fortress and the plate
             if (movingRoom < 0 || (e.type != EventType.MouseDown && e.type != EventType.MouseUp) || !moveCancel.Contains(e.mousePosition))
                 return;
             if (e.type == EventType.MouseUp)
