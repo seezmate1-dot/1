@@ -128,10 +128,10 @@ namespace LastHearth.Core
             {
                 var d = FindDweller(id);
                 if (d != null)
-                    total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value));
+                    total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value)) * WorkerHealth(d);
             }
             double warm = IsRoomWarm(room) ? 1.0 : Balance.Warmth.FrozenOutput;
-            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * PetOutputMult(data.Produces.Value) * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
+            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * PetOutputMult(data.Produces.Value) * ResearchOutputMult(data.Produces.Value) * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
                    SiegePenalty(State.Time);
         }
 
@@ -172,6 +172,7 @@ namespace LastHearth.Core
             CheckLogin(State.Time);
             SettlePvp(State.Time);
             SettleBirths(State.Time);
+            SettleHalls(State.Time); // the tavern, infirmary, library, training hall and archive (GameSession.Rooms.cs)
         }
 
         void Produce(long seconds)
@@ -189,7 +190,7 @@ namespace LastHearth.Core
             wallet[ResourceType.Coal] = Math.Max(0, wallet[ResourceType.Coal] - burn);
             State.CoalDebt -= burn;
 
-            State.FoodDebt += State.Dwellers.Count * Balance.FoodPerDwellerHour * hours;
+            State.FoodDebt += State.Dwellers.Count * Balance.FoodPerDwellerHour * FoodEatMult() * hours;
             long eat = (long)Math.Floor(State.FoodDebt);
             wallet[ResourceType.Food] = Math.Max(0, wallet[ResourceType.Food] - eat);
             State.FoodDebt -= eat;
@@ -210,7 +211,10 @@ namespace LastHearth.Core
             {
                 State.HearthLevel = job.ToLevel;
                 State.Queue.EnsureBuilders(BuilderCount());
-                RefugeesArrive();
+                if (TavernOpen())
+                    RefugeesToTavern(); // with a tavern they wait on its board to be hired (GameSession.Rooms.cs)
+                else
+                    RefugeesArrive();
                 CheckAchievements();
             }
             else if (job.IsClearing)

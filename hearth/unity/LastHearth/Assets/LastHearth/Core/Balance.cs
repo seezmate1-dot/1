@@ -40,6 +40,8 @@ namespace LastHearth.Core
         public PetsData Pets = new PetsData();
         public CompanionsData Companions = new CompanionsData();
         public MarketData Market = new MarketData();
+        /// <summary>GDD 6: the work of the rooms that produce nothing (Halls.cs, GameSession.Rooms.cs).</summary>
+        public HallsData Halls = new HallsData();
 
         public static Balance FromJson(string json)
         {

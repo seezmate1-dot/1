@@ -282,5 +282,8 @@ namespace LastHearth.Core
         public PetState Pets = new PetState();
         public CompanionState Companions = new CompanionState();
         public MarketState Market = new MarketState();
+
+        // The work of the halls: tavern, infirmary, library, training hall, chapel, archive (GDD 6; Halls.cs)
+        public HallsState Halls = new HallsState();
     }
 }

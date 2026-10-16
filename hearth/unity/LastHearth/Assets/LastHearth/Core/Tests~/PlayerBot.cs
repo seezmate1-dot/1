@@ -93,6 +93,7 @@ namespace LastHearth.Core.Tests
             Pvp(now);
             Shop(now);
             Kennel(now);
+            Halls(now);
         }
 
         // ------------------------------------------------------------------ pets and companions (GDD 8.1-8.2)
@@ -160,6 +161,115 @@ namespace LastHearth.Core.Tests
                     continue;
                 }
                 break;
+            }
+        }
+
+        // ------------------------------------------------------------------ the work of the halls (GDD 6, GameSession.Rooms.cs)
+
+        public int Hires, Dismissals, Researches, Trainings, Ascensions, Gifts, RecordsRead;
+
+        static readonly RoomType[] Halls_ = { RoomType.Infirmary, RoomType.Library, RoomType.Tavern, RoomType.Watchtower, RoomType.Chapel, RoomType.Archive };
+
+        /// <summary>Research order: the economy and war first, the household and the lore of the fog after.</summary>
+        static readonly string[] BranchOrder = { "Crafts", "War", "Household", "Lore" };
+
+        /// <summary>
+        /// Silver to spare for the halls: the hearth is being built (its price is paid) and the store is this full,
+        /// or the store is nearly full anyway. Saving for the hearth comes first (MODES.md, 5).
+        /// </summary>
+        bool SilverSurplus(double share)
+        {
+            double fill = (double)S.State.Wallet[ResourceType.Silver] / Math.Max(1, S.Capacity(ResourceType.Silver));
+            return fill >= 0.95 || fill >= share && S.State.Queue.AllJobs().Any(j => j.IsHearth);
+        }
+
+        void Halls(long now)
+        {
+            Tavern(now);
+            // idle people (not heroes) staff the halls without output, one per hall, by the hall's stat
+            foreach (var type in Halls_)
+            {
+                var room = S.BestRoom(type);
+                if (room == null || room.Workers.Count > 0)
+                    continue;
+                var stat = S.Balance.Room(type).Stat.Value;
+                var idle = S.State.Dwellers.Where(d => d.RoomId < 0 && d.RouteId == 0 && !d.IsHero)
+                    .OrderByDescending(d => d.StatOf(stat)).FirstOrDefault();
+                if (idle != null)
+                    S.Assign(idle.Id, room.Id);
+            }
+            // research from a surplus of materials, the cheapest step first
+            if (S.CurrentResearch == null && SilverSurplus(0.6))
+            {
+                var next = S.ResearchFront().Where(n => S.CanResearch(n) == Fail.None)
+                    .OrderBy(n => n.Cost).ThenBy(n => Array.IndexOf(BranchOrder, n.Branch)).FirstOrDefault();
+                if (next != null && S.StartResearch(next.Id, now) == Fail.None)
+                    Researches++;
+            }
+            // the training hall: people without a job train their best stat for the rooms (the squad's power stays
+            // on the campaign's curve); those already in the hall go on first
+            var hall = S.TrainingHall();
+            if (hall != null)
+            {
+                foreach (var d in S.State.Dwellers.Where(x => !x.IsHero && x.RouteId == 0 && S.TrainingOf(x.Id) == null && S.PairingOf(x.Id) == null &&
+                                                             (x.RoomId < 0 || x.RoomId == hall.Id))
+                             .OrderBy(x => x.RoomId == hall.Id ? 0 : 1).ThenByDescending(x => x.Stats.Max()).ToList())
+                {
+                    if (!SilverSurplus(0.5))
+                        break;
+                    var stat = (Stat)Array.IndexOf(d.Stats, d.Stats.Max());
+                    var fail = S.StartTraining(d.Id, stat, now);
+                    if (fail == Fail.None)
+                        Trainings++;
+                    else if (fail == Fail.RoomFull)
+                        break;
+                    else if (fail == Fail.LimitReached && d.RoomId == hall.Id)
+                        S.Unassign(d.Id); // trained to the cap: back to work
+                }
+            }
+            // the chapel: the gift of the day, and ascension of heroes at their level cap (spare essence)
+            if (S.ClaimGift(now, out _, out _) == Fail.None)
+                Gifts++;
+            int cap = Formulas.HeroLevelCap(S.Balance, S.State.HearthLevel);
+            foreach (var hero in S.Squad().Where(h => h.HeroLevel >= cap).ToList())
+            {
+                if (S.Ascend(hero.Id, now) == Fail.None)
+                    Ascensions++;
+            }
+            // the archive: the first record found and not read
+            if (S.ArchiveOpen() && S.CurrentReading == null)
+            {
+                var record = S.Records.FirstOrDefault(r => S.RecordFound(r) && !S.RecordRead(r.Id));
+                if (record != null && S.StartReading(record.Id, now) == Fail.None)
+                    RecordsRead++;
+            }
+        }
+
+        /// <summary>Hires the best recruits while there is room; when full, a rare one replaces the weakest idle dweller.</summary>
+        void Tavern(long now)
+        {
+            if (!S.TavernOpen())
+                return;
+            for (int guard = 0; guard < 6; guard++)
+            {
+                var board = S.TavernBoard(now);
+                int best = Enumerable.Range(0, board.Count).Where(i => !board[i].Hired && S.State.Wallet.Covers(S.HireCost(board[i])))
+                    .OrderByDescending(i => board[i].Rarity).ThenByDescending(i => board[i].Stats.Sum()).DefaultIfEmpty(-1).First();
+                if (best < 0)
+                    return;
+                if (S.PopulationFull())
+                {
+                    if (board[best].Rarity < Rarity.Rare)
+                        return;
+                    var weakest = S.State.Dwellers.Where(d => S.CanDismiss(d) == Fail.None && S.RarityOf(d.Id) == Rarity.Common)
+                        .OrderBy(d => d.Stats.Sum()).FirstOrDefault();
+                    if (weakest == null || weakest.Stats.Sum() >= board[best].Stats.Sum() || S.Dismiss(weakest.Id, now) != Fail.None)
+                        return;
+                    Dismissals++;
+                }
+                if (S.Hire(best, now, out _) != Fail.None)
+                    return;
+                Hires++;
             }
         }
 
@@ -664,7 +774,9 @@ namespace LastHearth.Core.Tests
                 S.HeartTotal, S.State.SpecChoice.Values.Sum(v => v.Count(x => x != 0)),
                 S.State.Wallet[ResourceType.Sparks], S.State.Wallet[ResourceType.Ember], S.State.Wallet[ResourceType.Cores],
                 S.State.Wallet[ResourceType.Blueprints], S.State.Dwellers.Count, S.State.Rooms.Count,
-                ArenaWins, ArenaFights, S.State.ArenaRating, Raids, S.State.Wallet[ResourceType.Glory]);
+                ArenaWins, ArenaFights, S.State.ArenaRating, Raids, S.State.Wallet[ResourceType.Glory]) +
+                string.Format(" | halls: hired {0} (let go {1}), research {2}, trained {3}, ascended {4}, gifts {5}, records {6}",
+                    Hires, Dismissals, S.ResearchCount, S.PointsTrained, Ascensions, Gifts, S.State.Halls.Read.Count);
         }
     }
 

@@ -58,7 +58,8 @@ SILVER_SHARE = 0.6              # the rest is iron
 MATERIAL_SINKS = {
     "Стройка (очаг и залы)": 0.80,
     "Снаряжение и кузня": 0.10,
-    "Тренировка жителей": 0.06,
+    "Тренировка жителей": 0.03,
+    "Исследования в библиотеке": 0.03,
     "Найм в таверне": 0.04,
 }
 
@@ -627,7 +628,7 @@ PLAYTIME = [  # minutes a day of a typical free player, 4 sessions of 12-13 minu
     ("Наплыв: живая оборона крепости вечером", 2),
     ("Вылазки-маршруты: проложить путь, решить развилки", 3),
     ("Арена: 5 боёв (с очага 16)", 4),
-    ("Таверна, кузня, лазарет, Сердце очага", 5),
+    ("Таверна, кузня, лазарет, библиотека, часовня, Сердце очага", 5),
     ("События", 10),
     ("Поручения дня и сюжетные диалоги", 4),
 ]
@@ -1109,6 +1110,7 @@ def report(result):
           "Жар, Сердцевины и Чертежи расходуются по своим деревьям за год; "
           "игрок попадает в целевые дни с точностью 15%; секции горы открываются тёплыми, вся гора открыта к 20-му уровню очага.")
     out += kennel_report(result)
+    out += halls_report(result)
     return "\n".join(out) + "\n", problems
 
 
@@ -1339,6 +1341,7 @@ def export_balance(result):
             "firstClearHours": CAMPAIGN_FIRST_CLEAR_HOURS,
         },
         **kennel_export(result),  # pets, companions and shops (section "pets, companions and shops" below)
+        "halls": halls_export(result),  # the work of the halls (section "the work of the halls" below)
         "activities": {
             "essenceByLevel": [int(round(essence_income_per_day(lv))) for lv in range(1, 31)],
             "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE, "startHour": 19,
@@ -1626,6 +1629,325 @@ def kennel_report(result):
     w("")
     w("Модель года (разделы 1–13) не учитывает питомцев: бонус одного активного питомца (до +12% выработки) меньше "
       "точности попадания в целевые дни (15%), а траты искр в лавке — по желанию, из того же бюджета, что ускорения.")
+    return out
+
+
+# ---------------------------------------------------------------- the work of the halls (GDD 6)
+# The rooms that produce nothing have their own work (Core/GameSession.Rooms.cs): the tavern hires,
+# the infirmary heals, the library researches, the training hall trains, the watchtower scouts,
+# the chapel raises heroes and gives gifts, the archive keeps the story. The forge belongs to the
+# equipment (another part of the model). Silver prices are in hours of the material income, so
+# every price matters at every hearth level; the shares are the sinks of section 4.
+
+# Tavern («Таверна»): a board of recruits from the fog; a new board every few hours.
+TAVERN_BOARD = 3                     # recruits on the board
+TAVERN_BOARD_EXTRA_AT = (10, 20)     # +1 recruit at these tavern levels
+TAVERN_BOARD_HOURS = 6               # a new board every 6 hours
+# rarity (GDD 8): (id, name, + to every stat, + to the training cap, base weight in %, hire price in hours of income)
+RARITIES = [
+    ("Common", "обычный", 0, 0, 70, 0.25),
+    ("Seasoned", "опытный", 2, 5, 24, 0.5),
+    ("Rare", "редкий", 4, 10, 5, 1.0),
+    ("Legendary", "легендарный", 7, 20, 1, 2.0),
+]
+RARITY_LUCK_SHIFT = (0, 0.6, 0.3, 0.1)  # every point of luck moves this much weight from the common recruits
+RARITY_MIN_COMMON = 10
+TAVERN_LUCK_PER_LEVEL = 1.0          # luck: the tavern level, plus the workers' Spirit / 10
+TAVERN_LUCK_PER_SPIRIT = 0.1
+HIRE_FOOD_HOURS = 6                  # food: 6 hours of the recruit's food x (1 + rarity)
+
+# Infirmary («Лазарет»): injuries and the illness from the fog heal faster with the level and the staff.
+INJURY_HOURS = 6                     # a hurt dweller walks no route for 6 hours without the infirmary
+ILLNESS_HOURS = 12                   # «туманная хворь»: the dweller works at half strength
+ILLNESS_CHANCE = 0.12                # for every member of a team back from a route
+SICK_OUTPUT = 0.5
+HEAL_PER_LEVEL = 0.05                # healing speed: 1 + 5% per level + the staff's Intellect / 50
+HEAL_INTELLECT_DIVISOR = 50
+HEAL_BLAZING = 1.25                  # GDD 7: the blazing hearth heals faster
+
+# Library («Библиотека»): a tree of 60 researches in 4 branches of 15 steps. A step needs the one
+# before it in its branch and a library of a level; one research at a time.
+RESEARCH_TIERS = 15
+RESEARCH_HOURS = 1.0                 # the first step; every next one x1.35 (the 15th: 67 hours)
+RESEARCH_HOURS_GROWTH = 1.35
+RESEARCH_COST_HOURS = (1.5, 0.75)    # materials: (1.5 + 0.75 x step) hours of the income at the library's level
+RESEARCH_INTELLECT_DIVISOR = 100     # the staff's Intellect / 100 adds to the speed
+# branch: (id, name, effects by step (cycled), value of each effect)
+RESEARCH_BRANCHES = [
+    ("Crafts", "Ремёсла", ["Supply", "Materials"],
+     ["Крепкие кирки", "Мерные весы", "Подземные печи", "Плавильные горны", "Сушильни", "Счётные доски",
+      "Вентиляция шахт", "Цеховые клейма", "Глубокие погреба", "Монетный двор", "Паровые насосы", "Торговые гильдии",
+      "Глубинное бурение", "Векселя Стражей", "Сердце горы"]),
+    ("War", "Ратное дело", ["Attack", "Health"],
+     ["Заточка клинков", "Стёганые куртки", "Строй щитов", "Кольчужное плетение", "Закалка в углях", "Полевые лекари",
+      "Гранёные стрелы", "Латы Стражей", "Боевые кличи", "Пепельная броня", "Клинки из звёздной руды", "Обет стойкости",
+      "Тактика Двора", "Щит очага", "Наследие Стражей"]),
+    ("Household", "Быт", ["CoalBurn", "Food", "Healing", "Training"],
+     ["Тяга дымоходов", "Сытная похлёбка", "Травяные сборы", "Строевые упражнения", "Каменные экраны",
+      "Соление и копчение", "Костоправы", "Наставники", "Угольные брикеты", "Общие трапезы", "Отвары из тумана",
+      "Школа мечников", "Печи с поддувом", "Кладовые без порчи", "Тёплые палаты"]),
+    ("Lore", "Тайны тумана", ["ResearchSpeed", "RecruitLuck", "SurgeDefense", "Decipher"],
+     ["Записи наставников", "Слухи из таверн", "Сигнальные огни", "Ключи к шифрам", "Читальня", "Вербовщики",
+      "Ловушки у люков", "Язык Двора", "Переписчики", "Знаки беженцев", "Обряд Вспышки", "Карты тумана",
+      "Хранилище свитков", "Голос Угля", "Тайна Матери Чащи"]),
+]
+RESEARCH_VALUES = {
+    "Supply": 0.015, "Materials": 0.015, "Attack": 0.015, "Health": 0.015, "CoalBurn": 0.015, "Food": 0.02,
+    "Healing": 0.10, "Training": 0.05, "ResearchSpeed": 0.05, "RecruitLuck": 2, "SurgeDefense": 0.03, "Decipher": 0.10,
+}
+RESEARCH_TEXT = {
+    "Supply": "выработка угля и еды +%s%%", "Materials": "выработка железа и серебра +%s%%",
+    "Attack": "атака отряда +%s%%", "Health": "здоровье отряда +%s%%", "CoalBurn": "расход угля −%s%%",
+    "Food": "жители едят на %s%% меньше", "Healing": "лечение в лазарете +%s%%", "Training": "тренировка +%s%%",
+    "ResearchSpeed": "исследования +%s%%", "RecruitLuck": "удача найма +%s", "SurgeDefense": "защитники Наплыва +%s%%",
+    "Decipher": "чтение записей в архиве +%s%%",
+}
+
+# Training hall («Тренировочный зал»): a dweller (or a hero) trains a stat of the player's choice, one
+# point at a time. Up to 10 + 3 x hall level (+ the rarity), at most 100.
+TRAIN_CAP_BASE = 10
+TRAIN_CAP_PER_LEVEL = 3
+TRAIN_HOURS = (1.0, 0.15)            # hours for the next point: 1 + 0.15 x stat ...
+TRAIN_LEVEL_FACTOR = 0.98            # ... x0.98 for every hall level
+TRAIN_SILVER_HOURS = (0.025, 50)     # silver: 0.025 hours of income x (1 + stat / 50) per point
+
+# Watchtower («Сторожевая башня»): scouting, and the sentries help in the Surge.
+# what the tower shows from its level: tonight's Surge, tomorrow's dens, where creatures come out,
+# which stat the next route tests, the forecast of the automatic defense
+SCOUT_LEVELS = [("Surge", 1), ("Dens", 3), ("Spawn", 5), ("Route", 8), ("Forecast", 10)]
+WATCH_DEFENSE_PER_LEVEL = 0.005      # Surge defenders +0.5% per tower level ...
+WATCH_AGILITY_DIVISOR = 400          # ... + the sentries' Agility / 400
+
+# Chapel of Coal («Часовня Угля»): ascension of heroes and a gift of the day.
+ASCENSION = [  # rank: (hero level, chapel level, essence in days of the free player's income)
+    (20, 1, 0.5), (30, 6, 1.0), (40, 12, 1.5), (50, 18, 2.0), (60, 24, 3.0),
+]
+ASCENSION_BONUS = 0.04               # +4% attack and health for every rank
+CHAPEL_GIFTS = [  # by local day, in turn: (goods, amount at chapel 1); x(1 + level / 30) x (1 + Spirit / 100)
+    ("Essence", 0.08),               # days of the free player's essence
+    ("Treats", 5),
+    ("Hourglass", 15),               # minutes
+]
+
+# Archive of the Guardians («Архив Стражей»): records of the story found by play; reading one takes hours.
+ARCHIVE_HOURS = (1.0, 0.5)           # hours: 1 + 0.5 x number of the record
+ARCHIVE_PER_LEVEL = 0.05             # speed: 1 + 5% per level + the staff's Intellect / 100
+ARCHIVE_INTELLECT_DIVISOR = 100
+ARCHIVE_ESSENCE_DAYS = 0.15          # a read record: 0.15 of a day of essence
+# (id, title, found when: hearth / missions / hunts / routes / research / ascension, value, text)
+ARCHIVE_RECORDS = [
+    ("oath", "Клятва Стражей", "hearth", 3,
+     "«Пока горит Уголь, мы стоим». Так начиналась присяга ордена. Её вырезали над очагом, и камень помнит её до сих пор."),
+    ("convoy", "Последний обоз", "missions", 19,
+     "Обоз дошёл до ворот на рассвете. Из сорока повозок уцелели девять, и в каждой ехали дети."),
+    ("beast", "Вожак стаи", "hunts", 1,
+     "Твари тумана ходят стаями и слушаются вожака. Убей его — и стая рассыплется, как зола."),
+    ("route", "Карта первой тропы", "routes", 1,
+     "На обороте карты чужой рукой: «Не ходите к мосту после заката. Мост помнит тех, кто упал»."),
+    ("coal", "Откуда берётся Уголь", "hearth", 8,
+     "Уголь Стражей — не простой камень. В каждом куске тлеет искра первого очага, зажжённого сто зим назад."),
+    ("mine", "Копи под Сторожевой", "missions", 38,
+     "Штейгер спустился в старый забой за жилой и вернулся другим. Глаза у него стали белыми, как туман."),
+    ("ledger", "Книга учёта", "research", 5,
+     "Первый хранитель вёл счёт всему: углю, хлебу, людям. На последней странице — только одно слово: «Мало»."),
+    ("widow", "Ледяная вдова", "missions", 57,
+     "Она звала мужа по имени три ночи подряд. На четвёртую ночь он ответил ей из тумана."),
+    ("hunter", "Записки охотника", "hunts", 15,
+     "Корневые чудовища медленны, но не спят. Они ждут, пока костёр погаснет."),
+    ("bridge", "Мост Пепельных", "missions", 76,
+     "Пепельные держали мост, пока последний беженец не перешёл. Потом мост сгорел вместе с ними."),
+    ("wander", "Дневник следопыта", "routes", 10,
+     "Туман не пуст. В нём есть дороги, деревни и люди, которые давно забыли, что такое тепло."),
+    ("court", "Письмо Бледного Двора", "hearth", 15,
+     "«Отдайте очаг, и туман пощадит ваших детей». Печать на письме холодная, как лёд, хоть его и держали у огня."),
+    ("envoy", "Бледные послы", "missions", 95,
+     "Послы не ели и не спали. Их кони стояли у ворот всю ночь, и иней не таял на их гривах."),
+    ("ascend", "Обряд возвышения", "ascension", 1,
+     "Жрецы Угля учили: сильнее не тот, кто не боится огня, а тот, кого огонь признаёт своим."),
+    ("library", "Утерянный трактат", "research", 15,
+     "Половина страниц сгорела. На уцелевших — чертёж очага, который греет без угля. Никто не знает, как его построить."),
+    ("thicket", "Чаща просыпается", "missions", 114,
+     "Деревья на опушке повернулись к крепости. Утром в снегу нашли следы корней, ведущие к стенам."),
+    ("siege", "Осада Стражей", "missions", 133,
+     "Командор Двора не штурмовал стены. Он ждал, пока холод сделает свою работу."),
+    ("silas", "Архивариус Сайлас", "missions", 152,
+     "Сайлас переписывал летописи ордена тридцать лет. Никто не заметил, когда он начал писать их по-своему."),
+    ("deep", "Глубокие тропы", "routes", 50,
+     "За седьмой развилкой тропы уходят под землю. Оттуда тянет теплом — чужим, неправильным теплом."),
+    ("heart", "Сердце тумана", "missions", 171,
+     "У тумана есть сердце. Оно бьётся медленно, раз в сто лет, и каждый удар гасит один очаг."),
+    ("scholar", "Ключ к шифру", "research", 40,
+     "Шифр Сайласа — не шифр. Это молитва Матери Чащи, записанная задом наперёд."),
+    ("hearth25", "Свет на перевале", "hearth", 25,
+     "С высокой башни видно далёкий огонь за перевалом. Значит, мы не последние."),
+    ("mother", "Мать Чащи", "missions", 190,
+     "Она не злая. Она просто очень замёрзла. И она идёт к нашему огню."),
+    ("last", "Последний очаг", "hearth", 30,
+     "Через сто лет в этих стенах найдут пепел и одну тлеющую искру. Этого хватит, чтобы начать снова."),
+]
+
+
+def research_nodes():
+    """The 60 steps of the tree: (branch, step, name, effect, value, library level, seconds, materials)."""
+    nodes = []
+    for branch, bname, effects, names in RESEARCH_BRANCHES:
+        for t in range(1, RESEARCH_TIERS + 1):
+            effect = effects[(t - 1) % len(effects)]
+            gate = max(1, 2 * t - 1)
+            seconds = int(round(RESEARCH_HOURS * RESEARCH_HOURS_GROWTH ** (t - 1) * 3600))
+            hours = RESEARCH_COST_HOURS[0] + RESEARCH_COST_HOURS[1] * t
+            lv = max(ROOM_UNLOCK["Library"], gate)
+            cost = int(nice(total_income(min(lv, pacing.MAX_LEVEL)) * hours, 2))
+            nodes.append({"id": "%s%d" % (branch, t), "branch": branch, "tier": t, "name": names[t - 1],
+                          "effect": effect, "value": RESEARCH_VALUES[effect], "gate": gate, "seconds": seconds,
+                          "cost": cost})
+    return nodes
+
+
+def train_hours(stat, hall_level):
+    return (TRAIN_HOURS[0] + TRAIN_HOURS[1] * stat) * TRAIN_LEVEL_FACTOR ** (hall_level - 1)
+
+
+def halls_export(result):
+    """balance.json: "halls" — the work of the rooms that produce nothing (GDD 6)."""
+    return {
+        "tavern": {"board": TAVERN_BOARD, "boardExtraAt": list(TAVERN_BOARD_EXTRA_AT), "boardHours": TAVERN_BOARD_HOURS,
+                   "rarities": [{"id": i, "name": n, "statBonus": sb, "capBonus": cb, "weight": wt, "hireHours": hh}
+                                for i, n, sb, cb, wt, hh in RARITIES],
+                   "luckShift": list(RARITY_LUCK_SHIFT), "minCommon": RARITY_MIN_COMMON,
+                   "luckPerLevel": TAVERN_LUCK_PER_LEVEL, "luckPerSpirit": TAVERN_LUCK_PER_SPIRIT,
+                   "foodHours": HIRE_FOOD_HOURS},
+        "infirmary": {"injuryHours": INJURY_HOURS, "illnessHours": ILLNESS_HOURS, "illnessChance": ILLNESS_CHANCE,
+                      "sickOutput": SICK_OUTPUT, "perLevel": HEAL_PER_LEVEL, "intellectDivisor": HEAL_INTELLECT_DIVISOR,
+                      "blazing": HEAL_BLAZING},
+        "library": {"intellectDivisor": RESEARCH_INTELLECT_DIVISOR,
+                    "branches": [{"id": b, "name": n} for b, n, *_ in RESEARCH_BRANCHES],
+                    "nodes": research_nodes()},
+        "training": {"capBase": TRAIN_CAP_BASE, "capPerLevel": TRAIN_CAP_PER_LEVEL, "hoursBase": TRAIN_HOURS[0],
+                     "hoursPerPoint": TRAIN_HOURS[1], "levelFactor": TRAIN_LEVEL_FACTOR,
+                     "silverHours": TRAIN_SILVER_HOURS[0], "silverStatDivisor": TRAIN_SILVER_HOURS[1]},
+        "watchtower": {"scout": [{"what": k, "level": lv} for k, lv in SCOUT_LEVELS],
+                       "defensePerLevel": WATCH_DEFENSE_PER_LEVEL, "agilityDivisor": WATCH_AGILITY_DIVISOR},
+        "chapel": {"ranks": [{"heroLevel": h, "chapel": c, "essenceDays": e} for h, c, e in ASCENSION],
+                   "bonus": ASCENSION_BONUS, "gifts": [{"goods": g, "amount": a} for g, a in CHAPEL_GIFTS]},
+        "archive": {"hoursBase": ARCHIVE_HOURS[0], "hoursPerRecord": ARCHIVE_HOURS[1], "perLevel": ARCHIVE_PER_LEVEL,
+                    "intellectDivisor": ARCHIVE_INTELLECT_DIVISOR, "essenceDays": ARCHIVE_ESSENCE_DAYS,
+                    "records": [{"id": i, "title": t, "kind": k.capitalize(), "need": n, "text": x} for i, t, k, n, x in ARCHIVE_RECORDS]},
+    }
+
+
+def halls_report(result):
+    """ECONOMY.md, section 15: the work of the halls."""
+    reached = result["reached"]
+    level_on = level_by_day(reached)
+    year_income = sum(total_income(level_on[d]) * EFFECTIVE_HOURS_PER_DAY for d in range(1, DAYS + 1))
+    nodes = research_nodes()
+    out = []
+    w = out.append
+    w("")
+    w("## 15. Работа залов: таверна, лазарет, библиотека, тренировка, башня, часовня, архив")
+    w("")
+    w("Залы без выработки делают свою работу (`Core/GameSession.Rooms.cs`, окно зала). Цены в серебре и материалах — "
+      "в часах дохода крепости, поэтому они одинаково ощутимы на любом уровне очага. Кузня и снаряжение — отдельная часть.")
+    w("")
+    w("**Таверна (очаг %d).** На доске %d беженца из тумана (+1 на %s-м уровне таверны), новая доска каждые %d часов. "
+      "С таверной двое беженцев нового уровня очага не входят сами, а ждут на доске: людей нанимают и выбирают лучших. Если крепость полна, "
+      "слабого жителя можно отпустить в туман. Удача найма — уровень таверны плюс Дух работников / %d; каждое очко удачи "
+      "переносит вес с обычных на опытных, редких и легендарных (%s)." % (
+          ROOM_UNLOCK["Tavern"], TAVERN_BOARD, "-м и ".join(str(x) for x in TAVERN_BOARD_EXTRA_AT),
+          TAVERN_BOARD_HOURS, round(1 / TAVERN_LUCK_PER_SPIRIT),
+          " / ".join(dec(x) for x in RARITY_LUCK_SHIFT[1:])))
+    w("")
+    w("| Редкость | Шанс без удачи | Шанс при удаче 40 | К каждой характеристике | К пределу тренировки | Цена: серебро | Еда |")
+    w("|---|---|---|---|---|---|---|")
+    for k, (i, n, sb, cb, wt, hh) in enumerate(RARITIES):
+        lucky = wt + RARITY_LUCK_SHIFT[k] * 40 if k else max(RARITY_MIN_COMMON, wt - sum(RARITY_LUCK_SHIFT) * 40)
+        w("| %s | %d%% | %d%% | +%d | +%d | %s ч дохода | %d |" % (n, wt, round(lucky), sb, cb, dec(hh), HIRE_FOOD_HOURS * (1 + k)))
+    w("")
+    w("**Лазарет (очаг %d).** Ранение в походе — %d часов без вылазок; «туманная хворь» (шанс %d%% на каждого из отряда "
+      "после похода) — %d часов работы вполсилы. Лазарет ускоряет лечение всех: `1 + %d%% × уровень + Ум работников / %d`, "
+      "«Пылающий» очаг — ещё ×%s." % (
+          ROOM_UNLOCK["Infirmary"], INJURY_HOURS, ILLNESS_CHANCE * 100, ILLNESS_HOURS, HEAL_PER_LEVEL * 100,
+          HEAL_INTELLECT_DIVISOR, dec(HEAL_BLAZING, 2)))
+    w("")
+    w("| Лазарет | нет | 5 | 10 | 20 | 30 |")
+    w("|---|---|---|---|---|---|")
+    speeds = [1] + [1 + HEAL_PER_LEVEL * lv + 2 * expected_stat(lv) / HEAL_INTELLECT_DIVISOR for lv in (5, 10, 20, 30)]
+    w("| Ранение, часов (2 работника) | " + " | ".join(dec(INJURY_HOURS / s) for s in speeds) + " |")
+    w("| Хворь, часов | " + " | ".join(dec(ILLNESS_HOURS / s) for s in speeds) + " |")
+    w("")
+    total_cost = sum(n["cost"] for n in nodes)
+    total_hours = sum(n["seconds"] for n in nodes) / 3600
+    w("**Библиотека (очаг %d).** Дерево из %d исследований: %d ветви по %d ступеней. Ступень требует предыдущую в своей "
+      "ветви и библиотеку уровня `2 × ступень − 1`; идёт одно исследование за раз, Ум работников ускоряет его "
+      "(`+ Ум / %d`), алмазы — как стройку. Всё дерево стоит %s материалов (%s%% дохода за год) и %d ч работы." % (
+          ROOM_UNLOCK["Library"], len(nodes), len(RESEARCH_BRANCHES), RESEARCH_TIERS, RESEARCH_INTELLECT_DIVISOR,
+          num(total_cost), dec(total_cost / year_income * 100), round(total_hours)))
+    w("")
+    w("| Ветвь | Что даёт (за всю ветвь) |")
+    w("|---|---|")
+    for branch, bname, effects, names in RESEARCH_BRANCHES:
+        parts = []
+        for e in effects:
+            total = sum(n["value"] for n in nodes if n["branch"] == branch and n["effect"] == e)
+            parts.append(RESEARCH_TEXT[e] % (num(total) if e == "RecruitLuck" else dec(total * 100, 1).replace(",0", "")))
+        w("| %s | %s |" % (bname, "; ".join(parts)))
+    w("")
+    w("| Ступень | 1 | 3 | 5 | 8 | 10 | 12 | 15 |")
+    w("|---|---|---|---|---|---|---|---|")
+    pick = [n for n in nodes if n["branch"] == "Crafts" and n["tier"] in (1, 3, 5, 8, 10, 12, 15)]
+    w("| Библиотека | " + " | ".join(str(n["gate"]) for n in pick) + " |")
+    w("| Время | " + " | ".join(dec(n["seconds"] / 3600) + " ч" for n in pick) + " |")
+    w("| Материалы | " + " | ".join(num(n["cost"]) for n in pick) + " |")
+    w("")
+    w("**Тренировочный зал (очаг %d).** Житель или герой тренирует выбранную характеристику по очку: `%s + %s × "
+      "характеристика` часов, ×%s за каждый уровень зала, серебро — `%s × (1 + характеристика / %d)` часа дохода. "
+      "Предел — `%d + %d × уровень зала` плюс бонус редкости, не больше 100. Мест — как работников в зале." % (
+          ROOM_UNLOCK["TrainingHall"], dec(TRAIN_HOURS[0]), dec(TRAIN_HOURS[1], 2), dec(TRAIN_LEVEL_FACTOR, 2),
+          dec(TRAIN_SILVER_HOURS[0], 3), TRAIN_SILVER_HOURS[1], TRAIN_CAP_BASE, TRAIN_CAP_PER_LEVEL))
+    w("")
+    w("| Характеристика → +1 | 10 | 20 | 40 | 60 | 90 |")
+    w("|---|---|---|---|---|---|")
+    for hall in (1, 10, 20, 30):
+        w("| Зал %d, часов | %s |" % (hall, " | ".join(dec(train_hours(s, hall)) for s in (10, 20, 40, 60, 90))))
+    w("")
+    names = {"Surge": "сегодняшний Наплыв: время и волны", "Dens": "логова Охоты на завтра",
+             "Spawn": "этажи, откуда выйдут твари", "Route": "какую характеристику проверит следующая вылазка",
+             "Forecast": "прогноз: сколько звёзд даст оборона без игрока"}
+    w("**Сторожевая башня (очаг %d).** Разведка: %s. Дозорные помогают в Наплыве: защитники +%s%% за уровень башни "
+      "и + Ловкость дозорных / %d." % (
+          ROOM_UNLOCK["Watchtower"], "; ".join("с %d-го уровня — %s" % (lv, names[k]) for k, lv in SCOUT_LEVELS),
+          dec(WATCH_DEFENSE_PER_LEVEL * 100), WATCH_AGILITY_DIVISOR))
+    w("")
+    w("**Часовня Угля (очаг %d).** Возвышение героя: +%d%% к атаке и здоровью за ранг. Предел уровня героя "
+      "возвышение не поднимает, поэтому защиту от раша не ломает; эссенция — та, что копится у героев на пределе." % (
+          ROOM_UNLOCK["Chapel"], ASCENSION_BONUS * 100))
+    w("")
+    w("| Ранг | %s |" % " | ".join(str(r + 1) for r in range(len(ASCENSION))))
+    w("|---|%s" % ("---|" * len(ASCENSION)))
+    w("| Уровень героя | %s |" % " | ".join(str(h) for h, c, e in ASCENSION))
+    w("| Уровень часовни | %s |" % " | ".join(str(c) for h, c, e in ASCENSION))
+    w("| Эссенция, дней дохода | %s |" % " | ".join(dec(e) for h, c, e in ASCENSION))
+    w("")
+    gift_names = {"Essence": "%s дня эссенции", "Treats": "%s лакомств", "Hourglass": "%s минут песочных часов"}
+    w("**Дар дня** — раз в сутки, по очереди: %s; ×(1 + уровень / 30) × (1 + Дух работников / 100)." % (
+        ", ".join(gift_names[g] % dec(a, 2).replace(",00", "") for g, a in CHAPEL_GIFTS)))
+    w("")
+    kinds = {"hearth": "очаг", "missions": "боёв кампании", "hunts": "побед на Охоте", "routes": "вылазок",
+             "research": "исследований", "ascension": "возвышений"}
+    w("**Архив Стражей (очаг %d).** Сюжетных записей — %d, они находятся игрой (очаг, кампания, Охота, вылазки, исследования, "
+      "возвышение); прочесть запись — `%s + %s × номер` часов, быстрее с уровнем архива (+%d%%) и Умом работников "
+      "(/ %d). Прочитанная запись даёт %s дня эссенции." % (
+          ROOM_UNLOCK["Archive"], len(ARCHIVE_RECORDS), dec(ARCHIVE_HOURS[0]), dec(ARCHIVE_HOURS[1]),
+          ARCHIVE_PER_LEVEL * 100, ARCHIVE_INTELLECT_DIVISOR, dec(ARCHIVE_ESSENCE_DAYS, 2)))
+    w("")
+    w("| Запись | Находится |")
+    w("|---|---|")
+    for i, t, k, n, x in ARCHIVE_RECORDS:
+        w("| %s | %s %d |" % (t, kinds[k], n))
+    w("")
+    w("Модель года (разделы 1–13) не учитывает бонусы исследований и возвышения: они растут вместе с тратами "
+      "(исследования и тренировка — доли трат раздела 4) и не больше точности попадания в целевые дни.")
     return out
 
 
