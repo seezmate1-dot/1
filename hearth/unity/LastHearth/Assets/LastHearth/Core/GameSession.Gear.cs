@@ -360,7 +360,7 @@ namespace LastHearth.Core
 
         public long CraftScrap(ItemRarity rarity) => ItemRarityInfo(rarity).CraftScrap;
 
-        public long CraftSeconds(ItemRarity rarity) => ItemRarityInfo(rarity).CraftMinutes * 60;
+        public long CraftSeconds(ItemRarity rarity) => (long)Math.Round(ItemRarityInfo(rarity).CraftMinutes * 60 / (1 + SpecSum(SpecEffect.CraftSpeed)));
 
         /// <summary>
         /// Starts forging: the player picks the kind and the rarity (and the set of a legendary item); the extra

@@ -858,15 +858,31 @@ namespace LastHearth.Core.Tests
         {
             foreach (var type in Producers.Concat(new[] { RoomType.Barracks, RoomType.Warehouse }))
             {
-                for (int tier = 0; tier < GameSession.SpecTiers.Length; tier++)
+                for (int tier = 0; tier < GameSession.SpecTierCount; tier++)
                 {
                     if (S.SpecChosen(type, tier) != 0)
                         continue;
-                    var fail = S.BuySpec(type, tier, Producers.Contains(type) ? 1 : 2);
+                    var fail = S.BuySpec(type, tier, SpecOption(type, tier));
                     if (fail == Fail.NotEnough)
                         return;
                 }
             }
+        }
+
+        /// <summary>The producers take more output (else warm walls, else longer stock); the barracks and the warehouse the second option.</summary>
+        static int SpecOption(RoomType type, int tier)
+        {
+            if (!Producers.Contains(type))
+                return 2;
+            foreach (var want in new[] { SpecEffect.Output, SpecEffect.NoFreeze, SpecEffect.StockHours })
+            {
+                for (int o = 1; o <= 2; o++)
+                {
+                    if (GameSession.SpecOptionOf(type, tier, o).Effect == want)
+                        return o;
+                }
+            }
+            return 1;
         }
 
         public string Summary(int day)

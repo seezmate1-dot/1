@@ -140,7 +140,7 @@ namespace LastHearth.Core.Tests
             mine.Level = 5;
             double before = s.RoomOutputPerHour(mine);
             Assert.AreEqual(Fail.None, s.BuySpec(RoomType.CoalMine, 0, 1));
-            Assert.AreEqual(before * 1.10, s.RoomOutputPerHour(mine), 1e-9);
+            Assert.AreEqual(before * 1.15, s.RoomOutputPerHour(mine), 1e-9, "«Глубокие жилы»: +15% угля");
             Assert.AreEqual(100 - s.SpecCost(0), s.State.Wallet[ResourceType.Blueprints]);
             Assert.AreEqual(Fail.AlreadyQueued, s.BuySpec(RoomType.CoalMine, 0, 2), "one option per tier");
             Assert.AreEqual(Fail.Locked, s.RankUpSpec(RoomType.CoalMine, 0), "mastery opens at hearth 25");
@@ -156,7 +156,7 @@ namespace LastHearth.Core.Tests
             s.Advance(T0 + Hour);
             Assert.IsFalse(s.IsRoomWarm(mine));
             s.State.Wallet[ResourceType.Blueprints] = 100;
-            Assert.AreEqual(Fail.None, s.BuySpec(RoomType.CoalMine, 1, 1));
+            Assert.AreEqual(Fail.None, s.BuySpec(RoomType.CoalMine, 0, 2), "«Крепкие своды»");
             Assert.IsTrue(s.IsRoomWarm(mine));
         }
 

@@ -394,6 +394,21 @@ namespace LastHearth.Core
         public double MaterialHours;
         /// <summary>All materials per hour of a typical fortress at each hearth level.</summary>
         public int[] IncomeByLevel = new int[0];
+        /// <summary>A fight point played by hand: seconds, the enemy's health and attack (×the team's own), the extra share of Blueprints a win adds.</summary>
+        public int SkirmishSeconds = 30;
+        public double SkirmishHp = 1;
+        public double SkirmishAttack = 1;
+        public double SkirmishBonus;
+        /// <summary>Chance of a note about the world at the ruins; of a map piece at a cache of the risky path and at the far stores of the long one.</summary>
+        public double NoteChance;
+        public double CacheFragmentChance;
+        public double FarFragmentChance;
+        /// <summary>Map pieces the Treasure hunters can use on one map.</summary>
+        public int FragmentsPerMap = 3;
+        /// <summary>Each good rest on the way takes this share off the chance of the illness from the fog.</summary>
+        public double RestGuard;
+        /// <summary>A second decision card at most (ACTIVITIES.md 4: «1–2 карточки»).</summary>
+        public int CardsMax = 2;
     }
 
     public sealed class SpecializationData

@@ -105,7 +105,8 @@ namespace LastHearth.Core
             if (level < 1)
                 return 0;
             var t = HallsNumbers.Tavern;
-            return t.LuckPerLevel * level + t.LuckPerSpirit * StaffStat(RoomType.Tavern, Stat.Spirit) + ResearchValue(ResearchEffect.RecruitLuck);
+            return t.LuckPerLevel * level + t.LuckPerSpirit * StaffStat(RoomType.Tavern, Stat.Spirit) + ResearchValue(ResearchEffect.RecruitLuck) +
+                   SpecSum(SpecEffect.RecruitLuck); // the tavern's specializations (GameSession.Specs.cs)
         }
 
         /// <summary>Chances of each rarity on the board (sum 1): luck moves weight from the common recruits.</summary>
@@ -130,7 +131,8 @@ namespace LastHearth.Core
             return sum <= 0 ? w : w.Select(x => x / sum).ToArray();
         }
 
-        public int BoardSize() => HallsNumbers.Tavern.Board + HallsNumbers.Tavern.BoardExtraAt.Count(lv => MaxRoomLevel(RoomType.Tavern) >= lv);
+        public int BoardSize() => HallsNumbers.Tavern.Board + HallsNumbers.Tavern.BoardExtraAt.Count(lv => MaxRoomLevel(RoomType.Tavern) >= lv) +
+                                  (int)SpecSum(SpecEffect.BoardSlot);
 
         long BoardSeconds => Math.Max(1, HallsNumbers.Tavern.BoardHours) * 3600L;
 
@@ -277,6 +279,7 @@ namespace LastHearth.Core
             int level = MaxRoomLevel(RoomType.Infirmary);
             if (level >= 1)
                 speed += m.PerLevel * level + StaffStat(RoomType.Infirmary, Stat.Intellect) / Math.Max(1, m.IntellectDivisor) + ResearchValue(ResearchEffect.Healing);
+            speed += SpecSum(SpecEffect.HealSpeed); // the specializations of the infirmary, greenhouse and chapel
             if (State.Mode == HearthMode.Blazing)
                 speed *= Math.Max(1, m.Blazing);
             return speed;
@@ -302,13 +305,15 @@ namespace LastHearth.Core
             var h = Halls;
             var m = HallsNumbers.Infirmary;
             var fresh = new HashSet<int>();
+            double chance = m.IllnessChance * Math.Max(0.1, 1 - SpecSum(SpecEffect.IllnessGuard));
             foreach (var e in State.Expeditions.Where(x => x.Back && !h.RoutesChecked.Contains(x.Id)))
             {
                 h.RoutesChecked.Add(e.Id);
                 var rng = new Rng(e.Seed * 31 + 17);
+                double rest = RouteRestGuard(e); // rest points on the way (GameSession.Routes.cs)
                 foreach (int id in e.Team)
                 {
-                    if (rng.Next() >= m.IllnessChance || FindDweller(id) == null)
+                    if (rng.Next() >= chance * rest || FindDweller(id) == null)
                         continue;
                     long until = e.End + (long)Math.Round(m.IllnessHours * 3600);
                     if (until > SickUntil(id))
@@ -406,7 +411,7 @@ namespace LastHearth.Core
         }
 
         /// <summary>The dwellers eat ×this («Быт»).</summary>
-        public double FoodEatMult() => Math.Max(0.5, 1 - ResearchValue(ResearchEffect.Food));
+        public double FoodEatMult() => Math.Max(0.5, 1 - ResearchValue(ResearchEffect.Food) - SpecSum(SpecEffect.FoodUse));
 
         /// <summary>The next step of every branch that is not finished.</summary>
         public List<ResearchNodeData> ResearchFront() =>
@@ -434,7 +439,7 @@ namespace LastHearth.Core
         public long ResearchSeconds(ResearchNodeData node)
         {
             double speed = 1 + StaffStat(RoomType.Library, Stat.Intellect) / Math.Max(1, HallsNumbers.Library.IntellectDivisor) +
-                           ResearchValue(ResearchEffect.ResearchSpeed);
+                           ResearchValue(ResearchEffect.ResearchSpeed) + SpecSum(SpecEffect.ResearchSpeed);
             return Math.Max(1, (long)Math.Ceiling(node.Seconds / speed));
         }
 
@@ -505,7 +510,7 @@ namespace LastHearth.Core
             var t = HallsNumbers.Training;
             int level = TrainingHall()?.Level ?? 1;
             double hours = (t.HoursBase + t.HoursPerPoint * d.StatOf(stat)) * Math.Pow(t.LevelFactor, level - 1) /
-                           (1 + ResearchValue(ResearchEffect.Training));
+                           (1 + ResearchValue(ResearchEffect.Training) + SpecSum(SpecEffect.TrainingSpeed));
             return Math.Max(60, (long)Math.Round(hours * 3600));
         }
 
@@ -715,7 +720,7 @@ namespace LastHearth.Core
             if (gift == null)
                 return 0;
             int level = MaxRoomLevel(RoomType.Chapel);
-            double k = (1 + level / 30.0) * (1 + StaffStat(RoomType.Chapel, Stat.Spirit) / 100.0);
+            double k = (1 + level / 30.0) * (1 + StaffStat(RoomType.Chapel, Stat.Spirit) / 100.0) * (1 + SpecSum(SpecEffect.GiftMult));
             switch (gift.Goods)
             {
                 case GiftGoods.Essence: return (long)Math.Round(EssenceDay() * gift.Amount * k);
@@ -759,7 +764,8 @@ namespace LastHearth.Core
         /// <summary>The library («Ратное дело») and the chapel (ascension) make the squad stronger (SquadSetup).</summary>
         void ApplyHalls(BattleSetup setup)
         {
-            double attack = 1 + ResearchValue(ResearchEffect.Attack), hp = 1 + ResearchValue(ResearchEffect.Health);
+            double attack = 1 + ResearchValue(ResearchEffect.Attack) + SpecSum(SpecEffect.SquadAttack);
+            double hp = 1 + ResearchValue(ResearchEffect.Health) + SpecSum(SpecEffect.SquadHp); // + the halls' specializations
             foreach (var h in setup.Heroes)
             {
                 double rank = AscensionMult(h.Id);
@@ -770,7 +776,8 @@ namespace LastHearth.Core
 
         /// <summary>Attack and health of a hero ×these from the halls (for the hero screen).</summary>
         public (double attack, double hp) HallsHeroMult(int heroId) =>
-            ((1 + ResearchValue(ResearchEffect.Attack)) * AscensionMult(heroId), (1 + ResearchValue(ResearchEffect.Health)) * AscensionMult(heroId));
+            ((1 + ResearchValue(ResearchEffect.Attack) + SpecSum(SpecEffect.SquadAttack)) * AscensionMult(heroId),
+             (1 + ResearchValue(ResearchEffect.Health) + SpecSum(SpecEffect.SquadHp)) * AscensionMult(heroId));
 
         // ------------------------------------------------------------------ archive
 
@@ -807,7 +814,7 @@ namespace LastHearth.Core
         {
             var a = HallsNumbers.Archive;
             double speed = 1 + a.PerLevel * MaxRoomLevel(RoomType.Archive) + StaffStat(RoomType.Archive, Stat.Intellect) / Math.Max(1, a.IntellectDivisor) +
-                           ResearchValue(ResearchEffect.Decipher);
+                           ResearchValue(ResearchEffect.Decipher) + SpecSum(SpecEffect.ReadSpeed);
             return Math.Max(60, (long)Math.Round((a.HoursBase + a.HoursPerRecord * Records.IndexOf(r)) * 3600 / speed));
         }
 

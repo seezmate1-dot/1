@@ -512,6 +512,7 @@ namespace LastHearth.Core
             hold += 0.03 * Forts[0];
             if (line == RaidLines - 1)
                 hold += 0.06 * Forts[1];
+            hold *= 1 + SpecSum(SpecEffect.RaidDefense); // «Охрана» of the warehouse and the like (GameSession.Specs.cs)
             return Math.Min(0.85, hold);
         }
 

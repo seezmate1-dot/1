@@ -70,7 +70,7 @@ namespace LastHearth.Core
                 return Fail.RulesNotMet;
             State.DailyClaimed = true;
             State.Wallet[ResourceType.Sparks] += d.TaskSparks;
-            State.HourglassSeconds += d.TaskHourglassMinutes * 60;
+            State.HourglassSeconds += (long)Math.Round((d.TaskHourglassMinutes + SpecSum(SpecEffect.TaskHourglass)) * 60); // + «Учёт» of the warehouse
             GrantTreats(Balance.Pets.TreatsDaily); // pet treats (GDD 8.1)
             AddSeasonXp(SeasonInfo.DailyXp);
             FestivalTasksDone(now);

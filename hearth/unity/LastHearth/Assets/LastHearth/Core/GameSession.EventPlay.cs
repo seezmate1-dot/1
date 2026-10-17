@@ -651,6 +651,7 @@ namespace LastHearth.Core
         {
             run.Opened = new List<int> { HexCenter };
             run.Pieces = 0;
+            run.RouteFragments = 0; // pieces of maps from the routes (GameSession.Routes.cs)
             if (run.MapNo == 0)
                 run.Torches = 6;
         }

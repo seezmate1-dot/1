@@ -5072,7 +5072,17 @@
     17171,
     20606,
     24727
-   ]
+   ],
+   "skirmishSeconds": 30,
+   "skirmishHp": 1.0,
+   "skirmishAttack": 0.8,
+   "skirmishBonus": 0.3,
+   "noteChance": 0.35,
+   "cacheFragmentChance": 0.5,
+   "farFragmentChance": 0.25,
+   "fragmentsPerMap": 3,
+   "restGuard": 0.2,
+   "cardsMax": 2
   },
   "specializations": {
    "tiers": [
