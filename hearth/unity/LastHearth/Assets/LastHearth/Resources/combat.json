@@ -49,7 +49,7 @@
   "Elite":  {"waves": 1, "hpMult": 0.8, "attackMult": 0.95, "telegraphs": true},
   "Boss":   {"waves": 1, "hpMult": 1.05, "attackMult": 1.0, "telegraphs": true},
   "Defense": {"waves": 4, "hpMult": 0.3, "attackMult": 0.85, "telegraphs": false, "objective": "Hold", "holdTicks": 600},
-  "Escort": {"waves": 3, "hpMult": 0.3, "attackMult": 0.75, "telegraphs": false, "objective": "Escort", "holdTicks": 650, "escortHp": 1.5, "escortEvery": 3},
+  "Escort": {"waves": 3, "hpMult": 0.3, "attackMult": 0.75, "telegraphs": false, "objective": "Escort", "holdTicks": 650, "escortHp": 2.0, "escortEvery": 4},
   "Secret": {"waves": 1, "hpMult": 0.85, "attackMult": 0.95, "telegraphs": true},
   "Arena":  {"waves": 3, "hpMult": 3.0, "attackMult": 1.2, "telegraphs": true},
   "Raid":   {"waves": 3, "hpMult": 3.0, "attackMult": 1.2, "telegraphs": true}

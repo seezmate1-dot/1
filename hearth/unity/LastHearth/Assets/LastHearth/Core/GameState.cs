@@ -315,6 +315,8 @@ namespace LastHearth.Core
         public int PendingMissionSeed;
         public int RepeatsUsed;
         public long RepeatsDay;
+        /// <summary>Hard mode, the secret battles, the admin's switches (GameSession.CampaignModes.cs).</summary>
+        public CampaignState CampaignModes = new CampaignState();
 
         // Pets, companions of heroes, the merchant's and the Sparks shops (GDD 8.1-8.3, 13.1; Kennel.cs)
         public PetState Pets = new PetState();

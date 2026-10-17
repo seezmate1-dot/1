@@ -964,8 +964,19 @@ def report(result):
     w("")
     w("Бой длится 60–90 секунд. Звёзды: победа, никто не пал, быстрее 60 секунд. Повтор пройденного боя — "
       "автобой без таймера, награда ×0,5 (защита от фарма, 10 повторов в день). "
-      "**Сложный режим** открывается после акта: 6 боёв ×1,6 силы, 3 попытки в день, награда — эссенция и снаряжение "
-      "редкости на ступень выше; это задел на второй год.")
+      "**Сложный режим** открывается после акта: %d боёв ×%s силы, %d попытки в день; первая победа — ×%s эссенции и "
+      "×%s материалов первого прохождения и %d алмазов, следующие — ×%s; снаряжение редкости на ступень выше. "
+      "Модель года сложный режим не считает: это задел на дни между новыми боями и на второй год." % (
+          len(HARD_SLOTS), dec(HARD_POWER), HARD_ATTEMPTS, dec(HARD_FIRST_ESSENCE), dec(HARD_FIRST_MATERIALS),
+          HARD_FIRST_SPARKS, dec(HARD_REPEAT_SHARE)))
+    w("")
+    w("**Типы боёв акта:** %d обычных, %d обороны (удержать точку 60 секунд), %d сопровождения (беженцы должны дожить), "
+      "%d элиты и босс. **Тайный бой** — сверх 190, по одному на акт: находится после %d-го боя акта игрой (вылазки, "
+      "Охота, исследования), даёт ×%s эссенции %d-го боя, редкую или эпическую вещь и сюжетную запись. **Замок силы:** "
+      "новый бой закрыт, пока сила отряда ниже %d%% рекомендуемой; с ×%s он проходится автобоем." % (
+          MISSIONS_PER_ACT - len(ELITE_SLOTS) - len(DEFENSE_SLOTS) - len(ESCORT_SLOTS), len(DEFENSE_SLOTS),
+          len(ESCORT_SLOTS), len(ELITE_SLOTS), SECRET_AFTER, dec(SECRET_ESSENCE), SECRET_AFTER,
+          round(GATE_LOCK_BELOW * 100), dec(GATE_AUTO_AT)))
     w("")
     w("## 8. Алмазы (Искры)")
     w("")
@@ -1267,7 +1278,83 @@ ACT_CONTENT = [
     ("Сердце тумана", "Сердце тумана", ["Fiend", "Root", "Possessed"]),
     ("Последний очаг", "Мать Чащи", ["Root", "Knight", "Possessed"]),
 ]
+# The story of the acts (MODES.md, 1): a short intro when the act opens and an outro when its boss falls.
+ACT_STORY = [
+    ("Туман сомкнулся за последним обозом. Сорок повозок, дети и старики — и только ваш отряд между ними и стаей.",
+     "Вожак стаи пал, и твари рассыпались, как зола. Обоз вошёл в ворота Сторожевой — очаг снова горит."),
+    ("Угля в крепости на неделю. Старые копи под Сторожевой молчат с той ночи, когда штейгер не вернулся наверх.",
+     "Штейгер упал в отвал, и шёпот в штольнях стих. В копях снова звенят кирки — Уголь есть."),
+    ("Иней ложится на стены не по погоде. По ночам кто-то зовёт дозорных по именам их матерей.",
+     "Ледяная вдова рассыпалась инеем. На её троне нашли брошь с гербом Бледного Двора."),
+    ("Мост через Пепельную реку — единственный путь на юг. Мостник не берёт серебро: он берёт тех, кто оступился.",
+     "Мост ваш. С того берега видны костры — и знамёна Бледного Двора."),
+    ("Бледный Двор прислал послов: «Отдайте Уголь — и туман вас пощадит». Послы не отбрасывают тени.",
+     "Посол исчез, оставив пустой плащ. Двор ответа не ждал — его рыцари уже в пути."),
+    ("Лес за стенами шевелится. Корни выходят из земли и идут к очагу, как к последнему теплу на свете.",
+     "Дитя Матери Чащи уснуло. Но лес не забыл: он только ждёт свою мать."),
+    ("Рыцари Двора взяли в кольцо дальние заставы. Командор шлёт вызов: сдайте ключ от очага.",
+     "Командор пал у стен. Среди его писем — донесения из нашего же Архива."),
+    ("В Архиве Стражей кто-то читает запретное. Сайлас, хранитель записей, больше не выходит к ужину.",
+     "Сайлас признался: он хотел остановить туман его же силой. Записи сожжены, но он успел открыть дверь."),
+    ("Дверь открыта, и туман идёт к своему сердцу — к старому святилищу на холме, где когда-то зажгли первый очаг.",
+     "Сердце тумана разбито, туман редеет. Под ним проступают корни — они уходят глубоко, к Матери Чащи."),
+    ("Мать Чащи проснулась. Всё, что пережил очаг, было лишь её сном. Пора разбудить её навсегда.",
+     "Мать Чащи упала, и лес затих. Над Сторожевой встаёт солнце — впервые за много лет. Очаг будет гореть."),
+]
 ELITE_SLOTS = (9, 15)                 # mission numbers inside an act; 19 is the boss
+DEFENSE_SLOTS = (4, 11, 17)           # «оборона»: hold the point 60 seconds (combat.json "Defense")
+ESCORT_SLOTS = (7, 13)                # «сопровождение»: the refugees must live (combat.json "Escort")
+# The power gate (MODES.md, 1): the recommended power is the free player's squad at the battle's rank x0.95; the
+# core measures it on a reference squad (GameSession.ReferencePower) that the 30-day bot reaches at about 0.9 of
+# its hearth level (0.8-1.1), hence the scale. Below 80% of it a new battle is locked.
+GATE_REFERENCE_SCALE = 0.95
+GATE_RECOMMENDED_SHARE = 0.95
+GATE_LOCK_BELOW = 0.8
+GATE_AUTO_AT = 1.2
+# Hard mode of a cleared act (MODES.md, 1): six battles x1.6, three tries a day, gear a step of rarity higher.
+HARD_SLOTS = (3, 7, 9, 11, 15, 19)
+HARD_POWER = 1.6
+HARD_ATTEMPTS = 3
+HARD_FIRST_ESSENCE = 1.5              # of the battle's first-clear essence
+HARD_FIRST_MATERIALS = 1.0
+HARD_FIRST_SPARKS = 5
+HARD_REPEAT_SHARE = 0.5
+# Secret battles («тайник», MODES.md, 1): one per act, off the line of 190; found when battle AFTER of the act is
+# cleared and the play below is done (the Archive's counters); the reward is a story record.
+SECRET_AFTER = 10
+SECRET_ESSENCE = 1.5                  # of the act's battle 10 first-clear essence
+SECRETS = [
+    ("Тайник обозника", "routes", 1, "Fiend",
+     "Возчик из обоза говорил о спрятанном сундуке у старой тропы. Сходите в вылазку",
+     "В сундуке — письмо командира обоза: «Если не дойдём — пусть Стражи знают: мы шли к ним, а не от них»."),
+    ("Забытая штольня", "hunts", 3, "Possessed",
+     "Охотники видели свет в заваленной штольне. Победите на Охоте",
+     "На стене штольни — список горняков. Последнее имя вписано кровью: штейгер знал, что не вернётся."),
+    ("Ледяной склеп", "routes", 6, "Fiend",
+     "Разведчики нашли вход в склеп подо льдом. Ходите в вылазки",
+     "В склепе спит женщина в венце из инея. На плите: «Вдова Стража, что не дождалась мужа с моста»."),
+    ("Опора моста", "hunts", 10, "Knight",
+     "Под мостом кто-то прячет знамёна. Побеждайте на Охоте",
+     "Знамёна Двора, сложенные столетия назад. Двор готовился к этой войне задолго до тумана."),
+    ("Шатёр посла", "routes", 15, "Knight",
+     "Беглый слуга знает, где посол хранит печать. Ходите в вылазки",
+     "Печать Двора — не воск, а пепел. Посол не человек: его голос шёл из пустого плаща."),
+    ("Корень-колыбель", "research", 5, "Root",
+     "Библиотека ищет в книгах, где спит дитя Чащи. Ведите исследования",
+     "Колыбель из корней тёплая. Мать Чащи не злая: она греет своих детей тем же огнём, что и мы."),
+    ("Тайный ход заставы", "routes", 40, "Knight",
+     "Старый дозорный помнит ход под дальней заставой. Ходите в вылазки",
+     "В ходе — сундук Стражей с гербом ордена. И записка рукой Сайласа: «Ход открыт для гостей Двора»."),
+    ("Запретная полка", "research", 12, "Possessed",
+     "Сайлас прятал книги за ложной стеной. Ведите исследования",
+     "«О тумане как о лекарстве» — книга без автора. На полях пометки Сайласа: «Можно управлять. Можно»."),
+    ("Святилище первого огня", "hunts", 60, "Root",
+     "Чудовища сторожат тропу к святилищу. Побеждайте на Охоте",
+     "Первый очаг зажгла женщина из леса. Её звали Мать — и она ушла в чащу, когда люди забыли спасибо."),
+    ("Последний уголь", "routes", 120, "Possessed",
+     "В пепле святилища лежит уголь, что не гаснет. Ходите в вылазки",
+     "Уголь тёплый, как ладонь. Его хватит, чтобы зажечь очаг, даже если всё остальное погаснет."),
+]
 CAMPAIGN_FIRST_CLEAR_HOURS = 3        # first clear: three hours of full material income
 CAMPAIGN_REPEATS_PER_DAY = 10         # repeats: instant auto-battle (MODES.md, 1)
 # Ten repeats give about 40% of the daily essence (0.07 x 0.6 day x 10) and 5 hours of materials,
@@ -1290,7 +1377,8 @@ def campaign_missions(reached):
         act = (n - 1) // (MISSIONS_PER_ACT + 1) + 1
         index = (n - 1) % (MISSIONS_PER_ACT + 1) + 1
         name, boss, families = ACT_CONTENT[act - 1]
-        kind = "Boss" if index == MISSIONS_PER_ACT + 1 else "Elite" if index in ELITE_SLOTS else "Normal"
+        kind = "Boss" if index == MISSIONS_PER_ACT + 1 else "Elite" if index in ELITE_SLOTS else \
+            "Defense" if index in DEFENSE_SLOTS else "Escort" if index in ESCORT_SLOTS else "Normal"
         day = mission_day(n)
         lv = level_at(reached, day)
         missions.append({
@@ -1302,6 +1390,16 @@ def campaign_missions(reached):
             "sparks": DIAMONDS_PER_ACT_BOSS if kind == "Boss" else 0,
         })
     return missions
+
+
+def campaign_secrets(missions):
+    out = []
+    for act, (title, kind, need, family, hint, lore) in enumerate(SECRETS, 1):
+        m = missions[(act - 1) * (MISSIONS_PER_ACT + 1) + SECRET_AFTER - 1]
+        out.append({"act": act, "after": SECRET_AFTER, "kind": kind.capitalize(), "need": need, "family": family,
+                    "rank": m["rank"], "title": title, "hint": hint, "lore": lore,
+                    "essence": int(round(m["essence"] * SECRET_ESSENCE)), "materials": m["materials"]})
+    return out
 
 
 def export_balance(result):
@@ -1364,8 +1462,15 @@ def export_balance(result):
                    "statSpread": BIRTH_STAT_SPREAD, "giftChance": BIRTH_GIFT_CHANCE, "giftBonus": BIRTH_GIFT_BONUS},
         "squadSlots": list(SQUAD_SLOTS),
         "campaign": {
-            "acts": [{"name": n, "boss": bname, "families": fam} for n, bname, fam in ACT_CONTENT],
+            "acts": [{"name": n, "boss": bname, "families": fam, "intro": story[0], "outro": story[1]}
+                     for (n, bname, fam), story in zip(ACT_CONTENT, ACT_STORY)],
             "missions": campaign_missions(result["reached"]),
+            "gate": {"referenceScale": GATE_REFERENCE_SCALE, "recommendedShare": GATE_RECOMMENDED_SHARE,
+                     "lockBelow": GATE_LOCK_BELOW, "autoAt": GATE_AUTO_AT},
+            "hard": {"slots": list(HARD_SLOTS), "power": HARD_POWER, "attemptsPerDay": HARD_ATTEMPTS,
+                     "firstEssence": HARD_FIRST_ESSENCE, "firstMaterials": HARD_FIRST_MATERIALS,
+                     "firstSparks": HARD_FIRST_SPARKS, "repeatShare": HARD_REPEAT_SHARE},
+            "secrets": campaign_secrets(campaign_missions(result["reached"])),
             "chestSparks": DIAMONDS_PER_3_STAR_CHEST,
             "repeatsPerDay": CAMPAIGN_REPEATS_PER_DAY,
             "repeatEssenceShare": CAMPAIGN_REPEAT_ESSENCE_SHARE,
@@ -1734,6 +1839,9 @@ ITEM_DROPS = {
     "route": (0.35, [50, 35, 13, 2, 0]),
     "event": (1.0, [0, 0, 70, 30, 0]),       # thresholds 5 and 10 of every event
     "eventRank": (1.0, [0, 0, 0, 100, 0]),   # the top 5 of an event
+    "hard": (1.0, [0, 0, 45, 55, 0]),        # the first win of a hard battle: a step of rarity above (MODES.md, 1)
+    "hardRepeat": (0.35, [0, 0, 45, 55, 0]),  # later hard wins (3 tries a day)
+    "secret": (1.0, [0, 0, 50, 50, 0]),      # a secret battle of an act, once
 }
 EVENT_ITEM_THRESHOLDS = (5, 10)
 EVENT_RANK_ITEM = 5
@@ -1869,7 +1977,9 @@ def items_report(result):
            "boss": "босс акта", "chest": "сундук трёх звёзд в кампании", "repeat": "повтор боя кампании",
            "hunt": "победа на Охоте (ранг = уровень вещи)", "route": "возвращение вылазки",
            "event": "пороги %d и %d каждого события" % EVENT_ITEM_THRESHOLDS,
-           "eventRank": "место 1–%d в событии" % EVENT_RANK_ITEM}
+           "eventRank": "место 1–%d в событии" % EVENT_RANK_ITEM,
+           "hard": "первая победа в сложном бою", "hardRepeat": "следующие победы в сложном бою",
+           "secret": "тайный бой акта"}
     w("| Источник | Шанс | Обычн. / необычн. / редк. / эпич. / легенд., % |")
     w("|---|---|---|")
     for k, (c, wts) in ITEM_DROPS.items():

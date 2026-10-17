@@ -12,6 +12,14 @@ namespace LastHearth.Core
         public Dweller NewHero;
         /// <summary>Items found (GDD 8): a first clear, the chest of three stars, a repeat.</summary>
         public List<GearItem> Items = new List<GearItem>();
+        /// <summary>A battle of the hard mode (GameSession.CampaignModes.cs).</summary>
+        public bool Hard;
+        /// <summary>The story record of a secret battle won for the first time.</summary>
+        public string Lore;
+        /// <summary>The act's closing story, when its boss falls for the first time.</summary>
+        public string Outro;
+        /// <summary>A lost battle: what to improve (DefeatHints).</summary>
+        public List<string> Hints = new List<string>();
     }
 
     /// <summary>MODES.md, 1: the campaign on the battle engine of the Hunt.</summary>
@@ -37,24 +45,11 @@ namespace LastHearth.Core
             return Balance.Campaign.RepeatsPerDay - State.RepeatsUsed;
         }
 
-        public BattleSetup MissionSetup(int index, int seed)
+        /// <summary>The battle of a mission; hard: its hard version (enemies x Hard.Power).</summary>
+        public BattleSetup MissionSetup(int index, int seed, bool hard = false)
         {
             var m = Mission(index);
-            var kind = Combat.MissionKinds[m.Kind.ToString()];
-            var setup = SquadSetup(seed);
-            for (int w = 0; w < kind.Waves; w++)
-            {
-                setup.Waves.Add(new WaveSpec
-                {
-                    Family = m.Family,
-                    Rank = m.Rank,
-                    // the free player's kennel and finds are part of the recommended strength
-                    HpMult = kind.HpMult * KennelExpected(Balance.Companions.CampaignHp, m.Rank) * GearEdge(m.Rank),
-                    AttackMult = kind.AttackMult * KennelExpected(Balance.Companions.CampaignAttack, m.Rank) * GearEdge(m.Rank),
-                    Telegraphs = kind.Telegraphs,
-                });
-            }
-            return setup;
+            return CampaignSetup(m.Kind, m.Family, m.Rank, seed, hard ? Hard.Power : 1);
         }
 
         /// <summary>Starts the next mission, or replays a cleared one for more stars.</summary>
@@ -64,13 +59,13 @@ namespace LastHearth.Core
             Advance(now);
             if (index < 0 || index >= Balance.Campaign.Missions.Count || index > MissionsCleared)
                 return Fail.Locked;
-            if (State.PendingMission >= 0 || State.Hunt != null)
-                return Fail.HuntInProgress;
-            if (Squad().Count == 0)
-                return Fail.NoHeroes;
-            State.PendingMission = index;
-            State.PendingMissionSeed = State.NextBattleSeed++;
-            battle = new Battle(Combat, MissionSetup(index, State.PendingMissionSeed));
+            var busy = CampaignBusy();
+            if (busy != Fail.None)
+                return busy;
+            // MODES.md, 1: a new battle stays locked while the squad is 20% below its recommended power
+            if (index == MissionsCleared && TooWeak(RecommendedPower(index)))
+                return Fail.TooWeak;
+            battle = BeginCampaignBattle(index, CampaignMode.Normal);
             return Fail.None;
         }
 
@@ -83,10 +78,25 @@ namespace LastHearth.Core
                 battle.RunToEnd();
             int index = State.PendingMission;
             int seed = State.PendingMissionSeed;
+            var mode = Modes.PendingMode;
             State.PendingMission = -1;
-            reward = new MissionReward { Stars = battle.Stars };
+            Modes.PendingMode = CampaignMode.Normal;
+            reward = new MissionReward { Stars = battle.Stars, Hard = mode == CampaignMode.Hard };
             if (!battle.Won)
+            {
+                reward.Hints = DefeatHints(battle, mode == CampaignMode.Secret ? SecretRecommended(index + 1) : RecommendedPower(index, mode == CampaignMode.Hard));
                 return Fail.None;
+            }
+            if (mode == CampaignMode.Hard)
+            {
+                FinishHard(battle, index, seed, reward);
+                return Fail.None;
+            }
+            if (mode == CampaignMode.Secret)
+            {
+                FinishSecret(battle, index + 1, seed, reward);
+                return Fail.None;
+            }
             var m = Mission(index);
             Tutor(TutorialEvent.MissionWon);
             if (index == MissionsCleared)
@@ -97,7 +107,10 @@ namespace LastHearth.Core
                 reward.Got.Add(ResourceBag.Materials(m.Materials, Balance.SilverShare));
                 reward.Got[ResourceType.Sparks] += m.Sparks;
                 if (m.Kind == MissionKind.Boss)
+                {
                     reward.NewHero = StoryHero(m.Act);
+                    reward.Outro = Act(m.Act).Outro;
+                }
                 string kind = m.Kind == MissionKind.Boss ? "boss" : m.Kind == MissionKind.Elite ? "elite" : "mission";
                 AddFind(reward.Items, Drop(kind, m.Rank, seed, "Поход: бой " + (index + 1)));
             }

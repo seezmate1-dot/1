@@ -175,7 +175,7 @@ namespace LastHearth.Core
         {
             if (State.PendingMission < 0)
                 return null;
-            var battle = new Battle(Combat, MissionSetup(State.PendingMission, State.PendingMissionSeed)) { Brain = Brains.AutoBattle() };
+            var battle = new Battle(Combat, PendingMissionSetup()) { Brain = Brains.AutoBattle() };
             FinishMission(battle, out var reward);
             return reward;
         }

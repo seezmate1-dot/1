@@ -8,6 +8,8 @@ namespace LastHearth.Core
     /// <summary>MODES.md, 1: the recommended power of a battle and the lock below it.</summary>
     public sealed class CampaignGateData
     {
+        /// <summary>The free player's squad against the reference squad of ReferencePower (calibrated on the 30-day bot).</summary>
+        public double ReferenceScale = 1;
         /// <summary>The recommended power: the free player's squad at the mission's rank, times this.</summary>
         public double RecommendedShare = 0.95;
         /// <summary>A first attempt is locked while the squad is below this share of the recommended power.</summary>
@@ -137,7 +139,7 @@ namespace LastHearth.Core
             return s == null ? 0 : RecommendedAt(s.Rank, 1);
         }
 
-        int RecommendedAt(int rank, double mult) => (int)(Math.Round(ReferencePower(rank) * Gate.RecommendedShare * mult / 10) * 10);
+        int RecommendedAt(int rank, double mult) => (int)(Math.Round(ReferencePower(rank) * Gate.ReferenceScale * Gate.RecommendedShare * mult / 10) * 10);
 
         public bool PowerGateOn => !Modes.GateOff;
 

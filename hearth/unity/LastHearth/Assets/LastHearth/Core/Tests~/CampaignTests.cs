@@ -11,7 +11,7 @@ namespace LastHearth.Core.Tests
         const long T0 = TestData.Start;
 
         /// <summary>A fortress with the squad a free player has at this hearth level (heroes at 2L).</summary>
-        static GameSession Fortress(int hearth)
+        internal static GameSession Fortress(int hearth)
         {
             var s = TestData.NewSession();
             s.Combat = TestData.Combat();

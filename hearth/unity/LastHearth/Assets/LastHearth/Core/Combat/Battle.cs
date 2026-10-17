@@ -276,6 +276,7 @@ namespace LastHearth.Core.Combat
         /// <summary>Escort: the enemy's blows that went at the refugees.</summary>
         public int EscortHits;
         readonly int escortEvery;
+        readonly double escortArmor;
         int enemyBlows;
         readonly double petStrike;
         readonly int petEvery;
@@ -333,6 +334,8 @@ namespace LastHearth.Core.Combat
             {
                 EscortMaxHp = EscortHp = Math.Max(0.1, setup.EscortHp) * (Heroes.Count == 0 ? 100 : Heroes.Average(h => h.MaxHp));
                 escortEvery = Math.Max(1, setup.EscortEvery);
+                // the refugees walk behind the shields: the squad's average armor covers them
+                escortArmor = Heroes.Count == 0 ? 0 : Heroes.Average(h => h.Armor);
             }
             StartWave(0);
         }
@@ -776,7 +779,7 @@ namespace LastHearth.Core.Combat
             if (WallUp)
                 damage *= 1 - c.Skills.WallReduction;
             EscortHits++;
-            EscortHp -= damage;
+            EscortHp -= damage * 100 / (100 + escortArmor);
             if (EscortHp <= 0)
             {
                 EscortHp = 0;

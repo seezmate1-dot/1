@@ -32,6 +32,8 @@ namespace LastHearth.Core
         NotAPair,
         /// <summary>The bag of items is full: sell or dismantle something first.</summary>
         InventoryFull,
+        /// <summary>The squad is too weak for the battle (MODES.md, 1: 20% below the recommended power).</summary>
+        TooWeak,
     }
 
     /// <summary>

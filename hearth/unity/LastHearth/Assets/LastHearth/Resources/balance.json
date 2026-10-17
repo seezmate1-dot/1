@@ -887,7 +887,9 @@
     "boss": "Вожак стаи тварей",
     "families": [
      "Fiend"
-    ]
+    ],
+    "intro": "Туман сомкнулся за последним обозом. Сорок повозок, дети и старики — и только ваш отряд между ними и стаей.",
+    "outro": "Вожак стаи пал, и твари рассыпались, как зола. Обоз вошёл в ворота Сторожевой — очаг снова горит."
    },
    {
     "name": "Копи под Сторожевой",
@@ -895,7 +897,9 @@
     "families": [
      "Possessed",
      "Fiend"
-    ]
+    ],
+    "intro": "Угля в крепости на неделю. Старые копи под Сторожевой молчат с той ночи, когда штейгер не вернулся наверх.",
+    "outro": "Штейгер упал в отвал, и шёпот в штольнях стих. В копях снова звенят кирки — Уголь есть."
    },
    {
     "name": "Шёпот в инее",
@@ -903,7 +907,9 @@
     "families": [
      "Fiend",
      "Possessed"
-    ]
+    ],
+    "intro": "Иней ложится на стены не по погоде. По ночам кто-то зовёт дозорных по именам их матерей.",
+    "outro": "Ледяная вдова рассыпалась инеем. На её троне нашли брошь с гербом Бледного Двора."
    },
    {
     "name": "Мост Пепельных",
@@ -911,14 +917,18 @@
     "families": [
      "Knight",
      "Possessed"
-    ]
+    ],
+    "intro": "Мост через Пепельную реку — единственный путь на юг. Мостник не берёт серебро: он берёт тех, кто оступился.",
+    "outro": "Мост ваш. С того берега видны костры — и знамёна Бледного Двора."
    },
    {
     "name": "Бледные послы",
     "boss": "Посол Бледного Двора",
     "families": [
      "Knight"
-    ]
+    ],
+    "intro": "Бледный Двор прислал послов: «Отдайте Уголь — и туман вас пощадит». Послы не отбрасывают тени.",
+    "outro": "Посол исчез, оставив пустой плащ. Двор ответа не ждал — его рыцари уже в пути."
    },
    {
     "name": "Чаща просыпается",
@@ -926,7 +936,9 @@
     "families": [
      "Root",
      "Fiend"
-    ]
+    ],
+    "intro": "Лес за стенами шевелится. Корни выходят из земли и идут к очагу, как к последнему теплу на свете.",
+    "outro": "Дитя Матери Чащи уснуло. Но лес не забыл: он только ждёт свою мать."
    },
    {
     "name": "Осада Стражей",
@@ -934,7 +946,9 @@
     "families": [
      "Knight",
      "Root"
-    ]
+    ],
+    "intro": "Рыцари Двора взяли в кольцо дальние заставы. Командор шлёт вызов: сдайте ключ от очага.",
+    "outro": "Командор пал у стен. Среди его писем — донесения из нашего же Архива."
    },
    {
     "name": "Предатель в Архиве",
@@ -942,7 +956,9 @@
     "families": [
      "Possessed",
      "Knight"
-    ]
+    ],
+    "intro": "В Архиве Стражей кто-то читает запретное. Сайлас, хранитель записей, больше не выходит к ужину.",
+    "outro": "Сайлас признался: он хотел остановить туман его же силой. Записи сожжены, но он успел открыть дверь."
    },
    {
     "name": "Сердце тумана",
@@ -951,7 +967,9 @@
      "Fiend",
      "Root",
      "Possessed"
-    ]
+    ],
+    "intro": "Дверь открыта, и туман идёт к своему сердцу — к старому святилищу на холме, где когда-то зажгли первый очаг.",
+    "outro": "Сердце тумана разбито, туман редеет. Под ним проступают корни — они уходят глубоко, к Матери Чащи."
    },
    {
     "name": "Последний очаг",
@@ -960,7 +978,9 @@
      "Root",
      "Knight",
      "Possessed"
-    ]
+    ],
+    "intro": "Мать Чащи проснулась. Всё, что пережил очаг, было лишь её сном. Пора разбудить её навсегда.",
+    "outro": "Мать Чащи упала, и лес затих. Над Сторожевой встаёт солнце — впервые за много лет. Очаг будет гореть."
    }
   ],
   "missions": [
@@ -1000,7 +1020,7 @@
    {
     "act": 1,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 8,
     "family": "Fiend",
     "day": 0.33,
@@ -1033,7 +1053,7 @@
    {
     "act": 1,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 9,
     "family": "Fiend",
     "day": 0.58,
@@ -1077,7 +1097,7 @@
    {
     "act": 1,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 9,
     "family": "Fiend",
     "day": 0.92,
@@ -1099,7 +1119,7 @@
    {
     "act": 1,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 9,
     "family": "Fiend",
     "day": 1.14,
@@ -1143,7 +1163,7 @@
    {
     "act": 1,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 10,
     "family": "Fiend",
     "day": 1.71,
@@ -1209,7 +1229,7 @@
    {
     "act": 2,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 11,
     "family": "Fiend",
     "day": 2.63,
@@ -1242,7 +1262,7 @@
    {
     "act": 2,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 11,
     "family": "Possessed",
     "day": 3.11,
@@ -1286,7 +1306,7 @@
    {
     "act": 2,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 12,
     "family": "Possessed",
     "day": 3.74,
@@ -1308,7 +1328,7 @@
    {
     "act": 2,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 12,
     "family": "Possessed",
     "day": 4.05,
@@ -1352,7 +1372,7 @@
    {
     "act": 2,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 12,
     "family": "Possessed",
     "day": 4.68,
@@ -1418,7 +1438,7 @@
    {
     "act": 3,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 13,
     "family": "Possessed",
     "day": 6.05,
@@ -1451,7 +1471,7 @@
    {
     "act": 3,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 13,
     "family": "Fiend",
     "day": 6.84,
@@ -1495,7 +1515,7 @@
    {
     "act": 3,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 14,
     "family": "Fiend",
     "day": 7.89,
@@ -1517,7 +1537,7 @@
    {
     "act": 3,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 14,
     "family": "Fiend",
     "day": 8.42,
@@ -1561,7 +1581,7 @@
    {
     "act": 3,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 14,
     "family": "Fiend",
     "day": 9.47,
@@ -1627,7 +1647,7 @@
    {
     "act": 4,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 15,
     "family": "Possessed",
     "day": 11.68,
@@ -1660,7 +1680,7 @@
    {
     "act": 4,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 15,
     "family": "Knight",
     "day": 12.95,
@@ -1704,7 +1724,7 @@
    {
     "act": 4,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 16,
     "family": "Knight",
     "day": 14.63,
@@ -1726,7 +1746,7 @@
    {
     "act": 4,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 16,
     "family": "Knight",
     "day": 15.47,
@@ -1770,7 +1790,7 @@
    {
     "act": 4,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 16,
     "family": "Knight",
     "day": 17.16,
@@ -1836,7 +1856,7 @@
    {
     "act": 5,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 17,
     "family": "Knight",
     "day": 20.95,
@@ -1869,7 +1889,7 @@
    {
     "act": 5,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 17,
     "family": "Knight",
     "day": 23.16,
@@ -1913,7 +1933,7 @@
    {
     "act": 5,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 18,
     "family": "Knight",
     "day": 26.11,
@@ -1935,7 +1955,7 @@
    {
     "act": 5,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 18,
     "family": "Knight",
     "day": 27.58,
@@ -1979,7 +1999,7 @@
    {
     "act": 5,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 18,
     "family": "Knight",
     "day": 30.53,
@@ -2045,7 +2065,7 @@
    {
     "act": 6,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 19,
     "family": "Fiend",
     "day": 36.84,
@@ -2078,7 +2098,7 @@
    {
     "act": 6,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 19,
     "family": "Root",
     "day": 40.47,
@@ -2122,7 +2142,7 @@
    {
     "act": 6,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 20,
     "family": "Root",
     "day": 45.32,
@@ -2144,7 +2164,7 @@
    {
     "act": 6,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 20,
     "family": "Root",
     "day": 47.74,
@@ -2188,7 +2208,7 @@
    {
     "act": 6,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 20,
     "family": "Root",
     "day": 52.58,
@@ -2254,7 +2274,7 @@
    {
     "act": 7,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 21,
     "family": "Root",
     "day": 62.37,
@@ -2287,7 +2307,7 @@
    {
     "act": 7,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 21,
     "family": "Knight",
     "day": 67.89,
@@ -2331,7 +2351,7 @@
    {
     "act": 7,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 22,
     "family": "Knight",
     "day": 75.26,
@@ -2353,7 +2373,7 @@
    {
     "act": 7,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 22,
     "family": "Knight",
     "day": 78.95,
@@ -2397,7 +2417,7 @@
    {
     "act": 7,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 23,
     "family": "Knight",
     "day": 86.32,
@@ -2463,7 +2483,7 @@
    {
     "act": 8,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 23,
     "family": "Knight",
     "day": 100.53,
@@ -2496,7 +2516,7 @@
    {
     "act": 8,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 24,
     "family": "Possessed",
     "day": 108.42,
@@ -2540,7 +2560,7 @@
    {
     "act": 8,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 24,
     "family": "Possessed",
     "day": 118.95,
@@ -2562,7 +2582,7 @@
    {
     "act": 8,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 24,
     "family": "Possessed",
     "day": 124.21,
@@ -2606,7 +2626,7 @@
    {
     "act": 8,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 25,
     "family": "Possessed",
     "day": 134.74,
@@ -2672,7 +2692,7 @@
    {
     "act": 9,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 25,
     "family": "Fiend",
     "day": 151.58,
@@ -2705,7 +2725,7 @@
    {
     "act": 9,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 25,
     "family": "Fiend",
     "day": 160.26,
@@ -2749,7 +2769,7 @@
    {
     "act": 9,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 26,
     "family": "Root",
     "day": 171.84,
@@ -2771,7 +2791,7 @@
    {
     "act": 9,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 26,
     "family": "Fiend",
     "day": 177.63,
@@ -2815,7 +2835,7 @@
    {
     "act": 9,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 26,
     "family": "Root",
     "day": 189.21,
@@ -2881,7 +2901,7 @@
    {
     "act": 10,
     "index": 4,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 27,
     "family": "Root",
     "day": 207.63,
@@ -2914,7 +2934,7 @@
    {
     "act": 10,
     "index": 7,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 27,
     "family": "Root",
     "day": 217.11,
@@ -2958,7 +2978,7 @@
    {
     "act": 10,
     "index": 11,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 27,
     "family": "Knight",
     "day": 229.74,
@@ -2980,7 +3000,7 @@
    {
     "act": 10,
     "index": 13,
-    "kind": "Normal",
+    "kind": "Escort",
     "rank": 27,
     "family": "Root",
     "day": 236.05,
@@ -3024,7 +3044,7 @@
    {
     "act": 10,
     "index": 17,
-    "kind": "Normal",
+    "kind": "Defense",
     "rank": 27,
     "family": "Knight",
     "day": 248.68,
@@ -3053,6 +3073,160 @@
     "essence": 2765,
     "materials": 51514,
     "sparks": 50
+   }
+  ],
+  "gate": {
+   "referenceScale": 0.95,
+   "recommendedShare": 0.95,
+   "lockBelow": 0.8,
+   "autoAt": 1.2
+  },
+  "hard": {
+   "slots": [
+    3,
+    7,
+    9,
+    11,
+    15,
+    19
+   ],
+   "power": 1.6,
+   "attemptsPerDay": 3,
+   "firstEssence": 1.5,
+   "firstMaterials": 1.0,
+   "firstSparks": 5,
+   "repeatShare": 0.5
+  },
+  "secrets": [
+   {
+    "act": 1,
+    "after": 10,
+    "kind": "Routes",
+    "need": 1,
+    "family": "Fiend",
+    "rank": 9,
+    "title": "Тайник обозника",
+    "hint": "Возчик из обоза говорил о спрятанном сундуке у старой тропы. Сходите в вылазку",
+    "lore": "В сундуке — письмо командира обоза: «Если не дойдём — пусть Стражи знают: мы шли к ним, а не от них».",
+    "essence": 406,
+    "materials": 1612
+   },
+   {
+    "act": 2,
+    "after": 10,
+    "kind": "Hunts",
+    "need": 3,
+    "family": "Possessed",
+    "rank": 12,
+    "title": "Забытая штольня",
+    "hint": "Охотники видели свет в заваленной штольне. Победите на Охоте",
+    "lore": "На стене штольни — список горняков. Последнее имя вписано кровью: штейгер знал, что не вернётся.",
+    "essence": 586,
+    "materials": 2786
+   },
+   {
+    "act": 3,
+    "after": 10,
+    "kind": "Routes",
+    "need": 6,
+    "family": "Fiend",
+    "rank": 14,
+    "title": "Ледяной склеп",
+    "hint": "Разведчики нашли вход в склеп подо льдом. Ходите в вылазки",
+    "lore": "В склепе спит женщина в венце из инея. На плите: «Вдова Стража, что не дождалась мужа с моста».",
+    "essence": 750,
+    "materials": 4012
+   },
+   {
+    "act": 4,
+    "after": 10,
+    "kind": "Hunts",
+    "need": 10,
+    "family": "Knight",
+    "rank": 16,
+    "title": "Опора моста",
+    "hint": "Под мостом кто-то прячет знамёна. Побеждайте на Охоте",
+    "lore": "Знамёна Двора, сложенные столетия назад. Двор готовился к этой войне задолго до тумана.",
+    "essence": 957,
+    "materials": 5778
+   },
+   {
+    "act": 5,
+    "after": 10,
+    "kind": "Routes",
+    "need": 15,
+    "family": "Knight",
+    "rank": 18,
+    "title": "Шатёр посла",
+    "hint": "Беглый слуга знает, где посол хранит печать. Ходите в вылазки",
+    "lore": "Печать Двора — не воск, а пепел. Посол не человек: его голос шёл из пустого плаща.",
+    "essence": 1222,
+    "materials": 8320
+   },
+   {
+    "act": 6,
+    "after": 10,
+    "kind": "Research",
+    "need": 5,
+    "family": "Root",
+    "rank": 20,
+    "title": "Корень-колыбель",
+    "hint": "Библиотека ищет в книгах, где спит дитя Чащи. Ведите исследования",
+    "lore": "Колыбель из корней тёплая. Мать Чащи не злая: она греет своих детей тем же огнём, что и мы.",
+    "essence": 1560,
+    "materials": 11980
+   },
+   {
+    "act": 7,
+    "after": 10,
+    "kind": "Routes",
+    "need": 40,
+    "family": "Knight",
+    "rank": 22,
+    "title": "Тайный ход заставы",
+    "hint": "Старый дозорный помнит ход под дальней заставой. Ходите в вылазки",
+    "lore": "В ходе — сундук Стражей с гербом ордена. И записка рукой Сайласа: «Ход открыт для гостей Двора».",
+    "essence": 1992,
+    "materials": 17252
+   },
+   {
+    "act": 8,
+    "after": 10,
+    "kind": "Research",
+    "need": 12,
+    "family": "Possessed",
+    "rank": 24,
+    "title": "Запретная полка",
+    "hint": "Сайлас прятал книги за ложной стеной. Ведите исследования",
+    "lore": "«О тумане как о лекарстве» — книга без автора. На полях пометки Сайласа: «Можно управлять. Можно».",
+    "essence": 2544,
+    "materials": 24843
+   },
+   {
+    "act": 9,
+    "after": 10,
+    "kind": "Hunts",
+    "need": 60,
+    "family": "Root",
+    "rank": 26,
+    "title": "Святилище первого огня",
+    "hint": "Чудовища сторожат тропу к святилищу. Побеждайте на Охоте",
+    "lore": "Первый очаг зажгла женщина из леса. Её звали Мать — и она ушла в чащу, когда люди забыли спасибо.",
+    "essence": 3249,
+    "materials": 35774
+   },
+   {
+    "act": 10,
+    "after": 10,
+    "kind": "Routes",
+    "need": 120,
+    "family": "Possessed",
+    "rank": 27,
+    "title": "Последний уголь",
+    "hint": "В пепле святилища лежит уголь, что не гаснет. Ходите в вылазки",
+    "lore": "Уголь тёплый, как ладонь. Его хватит, чтобы зажечь очаг, даже если всё остальное погаснет.",
+    "essence": 3670,
+    "materials": 42928
    }
   ],
   "chestSparks": 5,
@@ -4721,6 +4895,36 @@
      0,
      0,
      100,
+     0
+    ]
+   },
+   "hard": {
+    "chance": 1.0,
+    "weights": [
+     0,
+     0,
+     45,
+     55,
+     0
+    ]
+   },
+   "hardRepeat": {
+    "chance": 0.35,
+    "weights": [
+     0,
+     0,
+     45,
+     55,
+     0
+    ]
+   },
+   "secret": {
+    "chance": 1.0,
+    "weights": [
+     0,
+     0,
+     50,
+     50,
      0
     ]
    }
