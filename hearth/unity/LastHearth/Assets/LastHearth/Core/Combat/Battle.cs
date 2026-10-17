@@ -146,6 +146,25 @@ namespace LastHearth.Core.Combat
         public double PetHp = 1;
         public double PetStrike;
         public int PetEvery;
+        /// <summary>MODES.md, 1: what wins the battle (killing every wave, holding the point, bringing the refugees through).</summary>
+        public BattleObjective Objective;
+        /// <summary>Hold and Escort: the battle is won when this many ticks pass (the point held, the refugees arrived).</summary>
+        public int HoldTicks;
+        /// <summary>Escort: the refugees' health as a share of the squad's average hero health.</summary>
+        public double EscortHp;
+        /// <summary>Escort: every this-many blow of the enemy goes at the refugees.</summary>
+        public int EscortEvery;
+    }
+
+    /// <summary>MODES.md, 1: the kinds of campaign battles by what wins them.</summary>
+    public enum BattleObjective
+    {
+        /// <summary>Kill every wave.</summary>
+        Kill,
+        /// <summary>«Оборона»: stand HoldTicks with anyone alive (or kill every wave sooner).</summary>
+        Hold,
+        /// <summary>«Сопровождение»: the refugees walk HoldTicks through the field and must live.</summary>
+        Escort,
     }
 
     public sealed class Fighter
@@ -247,6 +266,17 @@ namespace LastHearth.Core.Combat
         /// <summary>All damage the squad dealt (event scores).</summary>
         public double DamageDealt;
         double healMult = 1;
+        /// <summary>MODES.md, 1: what wins this battle; Hold and Escort end at HoldTicks.</summary>
+        public readonly BattleObjective Objective;
+        public readonly int HoldTicks;
+        /// <summary>Escort: the refugees (they do not fight; the Wall covers them too).</summary>
+        public double EscortMaxHp;
+        public double EscortHp;
+        public bool EscortLost;
+        /// <summary>Escort: the enemy's blows that went at the refugees.</summary>
+        public int EscortHits;
+        readonly int escortEvery;
+        int enemyBlows;
         readonly double petStrike;
         readonly int petEvery;
         int petNext;
@@ -261,6 +291,8 @@ namespace LastHearth.Core.Combat
         public bool WallUp => Tick < WallUntil;
         public bool Retreated => Tick < RetreatUntil;
         public double Rand() => rng.Next();
+        /// <summary>Hold and Escort: the share of the time already stood (0..1); Kill: 0.</summary>
+        public double HoldProgress => HoldTicks <= 0 ? 0 : Math.Min(1, (double)Tick / HoldTicks);
 
         public int Stars
         {
@@ -295,6 +327,13 @@ namespace LastHearth.Core.Combat
             petStrike = setup.PetStrike;
             petEvery = setup.PetEvery;
             petNext = petEvery > 0 && petStrike > 0 ? petEvery : int.MaxValue;
+            Objective = setup.Objective;
+            HoldTicks = Objective == BattleObjective.Kill ? 0 : Math.Max(1, setup.HoldTicks);
+            if (Objective == BattleObjective.Escort)
+            {
+                EscortMaxHp = EscortHp = Math.Max(0.1, setup.EscortHp) * (Heroes.Count == 0 ? 100 : Heroes.Average(h => h.MaxHp));
+                escortEvery = Math.Max(1, setup.EscortEvery);
+            }
             StartWave(0);
         }
 
@@ -656,9 +695,16 @@ namespace LastHearth.Core.Combat
             }
             if (Tick >= bossNext)
             {
-                var target = FrontMost();
-                if (target != null)
-                    HitHero(target, BossAttack);
+                if (EscortHp > 0 && ++enemyBlows % escortEvery == 0)
+                {
+                    HitEscort(BossAttack);
+                }
+                else
+                {
+                    var target = FrontMost();
+                    if (target != null)
+                        HitHero(target, BossAttack);
+                }
                 bossNext = Tick + BossInterval;
             }
         }
@@ -724,6 +770,21 @@ namespace LastHearth.Core.Combat
                 Log.Add(Tick + ": пал " + h.Name);
         }
 
+        /// <summary>Escort: a blow at the refugees; the Wall covers them as well as the squad.</summary>
+        void HitEscort(double damage)
+        {
+            if (WallUp)
+                damage *= 1 - c.Skills.WallReduction;
+            EscortHits++;
+            EscortHp -= damage;
+            if (EscortHp <= 0)
+            {
+                EscortHp = 0;
+                EscortLost = true;
+                Log.Add(Tick + ": беженцы пали");
+            }
+        }
+
         /// <summary>The line the boss hits: front first; during a retreat the middle steps forward.</summary>
         List<Fighter> LineTargets()
         {
@@ -772,6 +833,16 @@ namespace LastHearth.Core.Combat
             {
                 Over = true;
                 Log.Add(Tick + ": отряд пал");
+            }
+            else if (EscortLost)
+            {
+                Over = true;
+            }
+            else if (HoldTicks > 0 && Tick >= HoldTicks)
+            {
+                Over = true;
+                Won = true;
+                Log.Add(Tick + (Objective == BattleObjective.Escort ? ": беженцы дошли — победа" : ": точка удержана — победа"));
             }
             else if (Tick >= c.MaxTicks)
             {

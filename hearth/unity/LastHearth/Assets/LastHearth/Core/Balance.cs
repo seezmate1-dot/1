@@ -190,6 +190,10 @@ namespace LastHearth.Core
         public double RepeatEssenceShare;
         public double RepeatMaterialHours;
         public double FirstClearHours;
+        /// <summary>The power gate, hard mode and the secret battles (GameSession.CampaignModes.cs).</summary>
+        public CampaignGateData Gate = new CampaignGateData();
+        public HardModeData Hard = new HardModeData();
+        public List<SecretData> Secrets = new List<SecretData>();
     }
 
     public sealed class ActData
@@ -197,6 +201,9 @@ namespace LastHearth.Core
         public string Name = "";
         public string Boss = "";
         public List<string> Families = new List<string>();
+        /// <summary>The act's story: shown when it opens and when its boss falls.</summary>
+        public string Intro = "";
+        public string Outro = "";
     }
 
     public enum MissionKind
@@ -204,6 +211,12 @@ namespace LastHearth.Core
         Normal,
         Elite,
         Boss,
+        /// <summary>«Оборона»: hold the point (Battle.cs, BattleObjective.Hold).</summary>
+        Defense,
+        /// <summary>«Сопровождение»: the refugees must live (BattleObjective.Escort).</summary>
+        Escort,
+        /// <summary>«Тайник»: a secret battle off the line, found by play (Balance.Campaign.Secrets).</summary>
+        Secret,
     }
 
     public sealed class MissionData

@@ -140,6 +140,11 @@ namespace LastHearth.Core.Combat
         public double HpMult;
         public double AttackMult;
         public bool Telegraphs;
+        /// <summary>MODES.md, 1: «оборона» holds the point, «сопровождение» brings the refugees through (Battle.cs).</summary>
+        public BattleObjective Objective;
+        public int HoldTicks;
+        public double EscortHp;
+        public int EscortEvery;
     }
 
     public sealed class FamilyData
