@@ -546,6 +546,44 @@
     "x": 0.5812,
     "y": 0.9815
    }
+  ],
+  "ships": [
+   [
+    {
+     "name": "",
+     "x": 0.4604,
+     "y": 0.7815
+    },
+    {
+     "name": "",
+     "x": 0.6604,
+     "y": 0.863
+    }
+   ],
+   [
+    {
+     "name": "",
+     "x": 0.6312,
+     "y": 0.863
+    },
+    {
+     "name": "",
+     "x": 0.9604,
+     "y": 0.9
+    }
+   ],
+   [
+    {
+     "name": "",
+     "x": 0.4854,
+     "y": 0.1074
+    },
+    {
+     "name": "",
+     "x": 0.2437,
+     "y": 0.137
+    }
+   ]
   ]
  },
  "rooms": {
@@ -847,5 +885,7 @@
  "splash": true,
  "stairs": true,
  "petArt": true,
- "companionArt": true
+ "companionArt": true,
+ "itemArt": true,
+ "mapShips": true
 }

@@ -273,11 +273,11 @@ def ship_lanes(img, count=3, seed=5):
     ys, xs = np.nonzero(m)
     rng = random.Random(seed)
     lanes = []
-    for _ in range(4000):
+    for _ in range(20000):
         i, j = rng.randrange(len(xs)), rng.randrange(len(xs))
         x0, y0, x1, y1 = xs[i], ys[i], xs[j], ys[j]
         length = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
-        if not 48 <= length <= 80 or abs(y1 - y0) > abs(x1 - x0) * 0.5:
+        if not 40 <= length <= 85 or abs(y1 - y0) > abs(x1 - x0) * 0.6:
             continue
         # away from the map's edges, where the view seldom goes
         if min(y0, y1) < 14 or max(y0, y1) > 121 or min(x0, x1) < 8 or max(x0, x1) > 232:
@@ -286,7 +286,7 @@ def ship_lanes(img, count=3, seed=5):
         if not all(m[round(y0 + (y1 - y0) * k / steps), round(x0 + (x1 - x0) * k / steps)] for k in range(steps + 1)):
             continue
         mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-        if any(((mx - (l[0] + l[2]) / 2) ** 2 + (my - (l[1] + l[3]) / 2) ** 2) ** 0.5 < 70 for l in lanes):
+        if any(((mx - (l[0] + l[2]) / 2) ** 2 + (my - (l[1] + l[3]) / 2) ** 2) ** 0.5 < 55 for l in lanes):
             continue
         lanes.append((x0, y0, x1, y1))
         if len(lanes) == count:
