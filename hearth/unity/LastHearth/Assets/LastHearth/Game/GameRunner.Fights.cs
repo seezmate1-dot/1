@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace LastHearth.Game
 {
-    /// <summary>The "Бои" and "Наплыв" tabs: the campaign and the live evening defense (the arena and raids: GameRunner.Arena.cs).</summary>
+    /// <summary>The "Наплыв" tab: the live evening defense (the campaign: GameRunner.Campaign.cs; the arena and raids: GameRunner.Arena.cs).</summary>
     public sealed partial class GameRunner
     {
         SurgeDefense surge;
@@ -16,69 +16,7 @@ namespace LastHearth.Game
         float surgeClock;
         int surgeHero = -1;
 
-        // ------------------------------------------------------------------ campaign
-
-        void DrawCampaign(long now)
-        {
-            var c = session.Balance.Campaign;
-            int next = session.MissionsCleared;
-            GUILayout.Label(string.Format("<b>Кампания</b> · пройдено {0}/{1} · повторов сегодня {2}/{3}", next, c.Missions.Count,
-                session.RepeatsLeft(now), c.RepeatsPerDay), Rich());
-            if (next < c.Missions.Count)
-            {
-                var m = session.Mission(next);
-                var act = c.Acts[Math.Max(0, Math.Min(c.Acts.Count - 1, m.Act - 1))];
-                if (TutorButton("campaignNext", string.Format("Бой {0}: акт «{1}», {2}, {3} ранга {4} · +{5} эсс., +{6} мат.{7}", next + 1, act.Name,
-                        KindName(m.Kind), combat.Family(m.Family).Name, m.Rank, m.Essence, m.Materials, m.Sparks > 0 ? ", +" + m.Sparks + " искр" : "")))
-                    StartMissionBattle(next, now);
-            }
-            if (next == 0)
-                return;
-            GUILayout.BeginHorizontal();
-            int last = next - 1;
-            var stars = session.State.CampaignStars;
-            for (int i = Math.Max(0, next - 5); i < next; i++)
-            {
-                if (GUILayout.Button(string.Format("{0} {1}", i + 1, StarText(stars[i])), GUILayout.Width(110)))
-                    StartMissionBattle(i, now);
-            }
-            if (GUILayout.Button("Повторить бой " + (last + 1) + " мгновенно"))
-            {
-                var fail = session.RepeatMission(last, now, out var reward);
-                Report(fail);
-                if (fail == Fail.None)
-                    message = "Повтор: " + CostText(reward.Got);
-            }
-            GUILayout.EndHorizontal();
-        }
-
-        void StartMissionBattle(int index, long now)
-        {
-            var fail = session.StartMission(index, now, out var started);
-            Report(fail);
-            if (fail != Fail.None)
-                return;
-            BeginBattle(started, done =>
-            {
-                session.FinishMission(done, out var reward);
-                string text = (done.Won ? "Победа " : "Поражение ") + StarText(reward.Stars);
-                if (reward.FirstClear)
-                    text += " · первая победа: " + CostText(reward.Got);
-                if (reward.NewHero != null)
-                    text += " · к отряду примкнул " + reward.NewHero.Name;
-                return text;
-            }, "Бой " + (index + 1));
-        }
-
-        static string KindName(MissionKind k)
-        {
-            switch (k)
-            {
-                case MissionKind.Elite: return "элита";
-                case MissionKind.Boss: return "БОСС";
-                default: return "обычный";
-            }
-        }
+        // the campaign: GameRunner.Campaign.cs
 
         // ------------------------------------------------------------------ the evening Surge
 

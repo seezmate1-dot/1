@@ -36,7 +36,8 @@ namespace LastHearth.Game
             var st = session.State;
             var c = session.Balance.Campaign;
             return session.Squad().Count > 0 && st.PendingMission < 0 && session.MissionsCleared < c.Missions.Count &&
-                   session.Mission(session.MissionsCleared).Rank <= st.HearthLevel;
+                   session.Mission(session.MissionsCleared).Rank <= st.HearthLevel &&
+                   !session.TooWeak(session.RecommendedPower(session.MissionsCleared));
         }
 
         bool PlaceWaits(string key, long now)
@@ -233,7 +234,11 @@ namespace LastHearth.Game
                 if (fog)
                     message = "Туман ещё скрывает этот край: сначала пройдите акт " + currentAct;
                 else
+                {
+                    campaignAct = act; // the window opens on this act's story (GameRunner.Campaign.cs)
+                    campaignHard = campaignHard && session.HardOpen(act);
                     Open(Win.Campaign);
+                }
             }
         }
     }

@@ -64,6 +64,7 @@ namespace LastHearth.Game
             ("Время", AdminTime),
             ("События", AdminEvents),
             ("Бои", AdminFights),
+            ("Кампания", AdminCampaign), // GameRunner.Campaign.cs
             ("Герои", AdminHeroes),
             ("Залы", AdminHalls), // GameRunner.Rooms.cs
             ("Предметы", AdminItems), // GameRunner.Gear.cs

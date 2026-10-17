@@ -124,6 +124,7 @@ namespace LastHearth.Game
             battleTitle = title;
             battleFinish = finish;
             battleResult = null;
+            campaignNotes.Clear();
             battleClock = 0;
             battle.Brain = autoBattle ? Brains.AutoBattle() : null;
             heroAttackAt.Clear();
@@ -650,6 +651,7 @@ namespace LastHearth.Game
             GUILayout.Label(string.Format("Оглушение {0:0}/100 {1}{2}{3}{4}", battle.Stagger, Bar(battle.Stagger / 100),
                 battle.BossStunned ? " · <color=#fd5>ОГЛУШЁН</color>" : "", battle.Burning ? " · <color=#f84>горит</color>" : "",
                 battle.WallUp ? " · <color=#8cf>Стена</color>" : ""), Rich());
+            DrawObjective(); // hold and escort (GameRunner.Campaign.cs)
             if (battle.Pending != null)
             {
                 double left = (battle.Pending.ImpactTick - battle.Tick) * combat.TickSeconds;
@@ -694,9 +696,11 @@ namespace LastHearth.Game
             if (battleResult != null)
             {
                 GUILayout.Label("<size=22><b>" + battleResult + "</b></size>", Rich());
+                DrawCampaignNotes(); // what to improve, the story (GameRunner.Campaign.cs)
                 if (GUILayout.Button("Закрыть", GUILayout.Height(40)))
                 {
                     message = battleResult;
+                    campaignNotes.Clear();
                     battle = null;
                 }
             }
@@ -807,6 +811,7 @@ namespace LastHearth.Game
                 case Fail.NoTracks: return "Попытки на сегодня кончились";
                 case Fail.LimitReached: return "Лимит исчерпан";
                 case Fail.InventoryFull: return "Сумка полна: продайте или разберите вещь";
+                case Fail.TooWeak: return "Отряд слишком слаб для этого боя: нужно 80% рекомендуемой силы";
                 case Fail.HuntInProgress: return "Сначала закончите начатый бой";
                 case Fail.NoHeroes: return "Нет героев: нужна казарма и герои";
                 case Fail.NotToday: return "Пока нельзя: подождите";
