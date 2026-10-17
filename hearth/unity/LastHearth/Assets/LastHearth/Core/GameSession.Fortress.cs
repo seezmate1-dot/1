@@ -203,6 +203,7 @@ namespace LastHearth.Core
             var job = State.Queue.Enqueue(builder, BuildJob.ClearTarget, 0, ClearSeconds(floor, cell), now);
             job.Floor = floor;
             job.Cell = cell;
+            Tutor(TutorialEvent.ObstacleClearing);
             Advance(now);
             return Fail.None;
         }

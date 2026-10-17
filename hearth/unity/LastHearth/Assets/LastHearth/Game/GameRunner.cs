@@ -66,7 +66,7 @@ namespace LastHearth.Game
         void Awake()
         {
             DontDestroyOnLoad(gameObject);
-            Application.targetFrameRate = 60;
+            ApplyFrameRate(); // 60 FPS, 30 with «Экономия батареи» (GameRunner.Comfort.cs)
             sounds = new AudioDirector(gameObject);
             skip = long.Parse(PlayerPrefs.GetString(SkipKey, "0"));
             var balance = Core.Balance.FromJson(UnityEngine.Resources.Load<TextAsset>("balance").text);
@@ -79,6 +79,7 @@ namespace LastHearth.Game
         {
             session = s;
             session.Combat = combat;
+            TutorHook(s); // the first session's guide (GameRunner.Tutorial.cs)
             session.State.UtcOffsetSeconds = (int)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds;
             session.JobCompleted += job =>
             {
@@ -245,6 +246,11 @@ namespace LastHearth.Game
             }
             if (lanternSeed != 0)
                 return;
+            if (movingRoom >= 0)
+            {
+                CancelMove();
+                return;
+            }
             if (window != Win.None)
             {
                 CloseWindow();
@@ -324,6 +330,8 @@ namespace LastHearth.Game
             GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1));
             if (DrawLoading())
                 return;
+            TutorInput(); // taps on the tutorial's bubble are its own (GameRunner.Tutorial.cs)
+            MoveInput(); // and the «Отмена» of a room being moved (GameRunner.Comfort.cs)
             UiSkin.DrawBackground(new Rect(0, 0, Screen.width / uiScale, Screen.height / uiScale));
             // the safe area keeps buttons away from the camera cut-out and rounded corners
             var safe = Screen.safeArea;
@@ -349,7 +357,9 @@ namespace LastHearth.Game
                 DrawWorldMap(area, now);
             else
                 DrawMainScreen(area, now);
+            DrawMoveBar(area);
             AnimWindow(area, now); // DrawWindow with its pop (GameRunner.Anim.cs)
+            DrawTutorial(area); // Mara, the dimming and the arrow of the tutorial (GameRunner.Tutorial.cs)
             DrawFx();
         }
 
@@ -376,7 +386,7 @@ namespace LastHearth.Game
             var unmet = session.HearthRequirements(now);
             string title = string.Format("Улучшить очаг до {0}: {1}, {2}", level + 1, Duration(row.HearthSeconds), CostText(session.HearthJobCost(level)));
             GUI.enabled = unmet.Count == 0;
-            if (GUILayout.Button(title))
+            if (TutorButton("hearthUpgrade", title))
                 Report(session.UpgradeHearth(now));
             GUI.enabled = true;
             foreach (var r in unmet)

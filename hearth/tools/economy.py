@@ -239,6 +239,7 @@ ACHIEVEMENT_POOL = 3000        # one-time, front-loaded
 DIAMONDS_PER_ACT_BOSS = 50
 DIAMONDS_PER_3_STAR_CHEST = 5  # one chest per mission with 3 stars
 FOURTH_BUILDER_PRICE = 2500
+CONVENIENCE_PRICE = 50         # a new name for the fortress (the first is free), a room moved (MODES.md 4.4)
 
 # Spending habits of a free player (diamonds per day once available).
 ARENA_UNLOCK = 16              # PvP waits until the two-week hook is over (docs/RESEARCH.md)
@@ -1398,7 +1399,8 @@ def export_balance(result):
                                 "ranksFromHearth": SPEC_RANKS_FROM},
             "shop": {"fourthBuilder": FOURTH_BUILDER_PRICE, "fourthBuilderFrom": 8, "packPrice": PACK_PRICE,
                      "packsPerWeek": PACKS_PER_WEEK, "refresh": [SHOP_REFRESH, 2 * SHOP_REFRESH, 4 * SHOP_REFRESH],
-                     "slots": 8, "arenaTicket": [ARENA_EXTRA_TICKETS, 2 * ARENA_EXTRA_TICKETS, 3 * ARENA_EXTRA_TICKETS]},
+                     "slots": 8, "arenaTicket": [ARENA_EXTRA_TICKETS, 2 * ARENA_EXTRA_TICKETS, 3 * ARENA_EXTRA_TICKETS],
+                     "convenience": CONVENIENCE_PRICE},
             "pvp": {"arenaUnlock": ARENA_UNLOCK, "tickets": ARENA_TICKETS, "ticketHours": ARENA_TICKET_HOURS,
                     "startRating": ARENA_START_RATING,
                     "leagues": [{"name": n, "rating": r, "sparks": d, "glory": g, "essenceDays": e}

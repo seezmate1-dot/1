@@ -5115,7 +5115,8 @@
     20,
     40,
     60
-   ]
+   ],
+   "convenience": 50
   },
   "pvp": {
    "arenaUnlock": 16,

@@ -59,7 +59,19 @@ public static class UiSmoke
             new PlayerBot(played).PlayDays(TestData.Start, 20);
             Run("крепость бота, 20 дней", played, frames, 2, clicks);
             if (args.Length > 1)
-                Preview(played, args[1], args.Length > 2 ? int.Parse(args[2]) : 0, args.Skip(3).ToArray());
+            {
+                int shown = args.Length > 2 ? int.Parse(args[2]) : 0;
+                // -4 and below: a new game with the tutorial on step -4 - window (-4 Mara's welcome, -5 collect, -6 the hearth...)
+                var who = played;
+                if (shown <= -4)
+                {
+                    who = NewGame.Create(balance, TestData.Start);
+                    who.Combat = combat;
+                    who.JumpTutorial((TutorialStep)(-4 - shown), TestData.Start);
+                    shown = 0;
+                }
+                Preview(who, args[1], shown, args.Skip(3).ToArray());
+            }
 
             var late = NewGame.Create(balance, TestData.Start);
             late.Combat = combat;
@@ -91,6 +103,7 @@ public static class UiSmoke
         string[] must = { "[ячейка]", "Бой", "[ячейка]Атаковать", "[ячейка]Бой турнира", "[ячейка]Войти в Портал", "[ячейка]Сделка", "[ячейка]Гарнизон", "[ячейка]Играть", "[ячейка]Обновить соперников",
                           "Защищать вживую", "Отправить отряд", "Набор материалов", "Забрать:", "Вспышка очага", "[ячейка]ФОНАРЬ!", "Тепло:",
                           "Кормить:", "Сделать активным", "Купить:", "Обменять", "Узы +", "Следующий ▶", "Календарь", "Сезон", "Продолжить",
+                          "[ячейка]Далее", "[ячейка]Пропустить обучение", "Экономия батареи", "Назвать", "[поле]", "Перенести", "[ячейка]Отмена",
                           "Снаряжение", "Надеть", "Продать:", "Разобрать:", "Ковать в кузне" };
         var missing = must.Where(m => !clicks.Keys.Any(k => k.StartsWith(m))).ToList();
         Console.WriteLine("Не нажимались: " + (missing.Count == 0 ? "—" : string.Join(", ", missing)));
@@ -116,9 +129,13 @@ public static class UiSmoke
                 throw new InvalidOperationException(name + ": the summary «Пока вас не было» did not open");
         }
         var rng = new Random(seed);
+        int current = 0;
         GUILayout.Click = label =>
         {
             if (label.Contains("Новая игра") || rng.NextDouble() > 0.04)
+                return false;
+            // the new game keeps its tutorial for the first half of the run, so its layer is drawn and tapped through
+            if (label.Contains("Пропустить обучение") && current < frames / 2)
                 return false;
             string key = new string(label.TakeWhile(c => !char.IsDigit(c) && c != '\n' && c != '(').ToArray()).Trim();
             clicks[key] = clicks.TryGetValue(key, out int n) ? n + 1 : 1;
@@ -127,6 +144,7 @@ public static class UiSmoke
         int battles = 0, surges = 0;
         for (int frame = 0; frame < frames; frame++)
         {
+            current = frame;
             // open every window in turn, and the bare fortress between them
             SetEnum(runner, "window", (frame / 150) % WindowCount); // every window: Win.None .. the last one
             Set(runner, "onMap", (frame / 75) % 3 == 1); // the map of the islands, under the windows too
@@ -154,8 +172,9 @@ public static class UiSmoke
         }
         Call(runner, "OnApplicationQuit");
         var s = (GameSession)Get(runner, "session");
-        Console.WriteLine(string.Format("{0}: {1} кадров, кадров в бою {2}, в Наплыве {3}, очаг {4}, сообщение «{5}»", name, frames, battles, surges,
-            s.State.HearthLevel, Get(runner, "message")));
+        var tutorial = s.TutorialState;
+        Console.WriteLine(string.Format("{0}: {1} кадров, кадров в бою {2}, в Наплыве {3}, очаг {4}, обучение {5}, сообщение «{6}»", name, frames, battles, surges,
+            s.State.HearthLevel, tutorial.Active ? "на шаге " + tutorial.Step : tutorial.Skipped ? "пропущено" : "пройдено", Get(runner, "message")));
     }
 
     /// <summary>Writes what the main screen draws (the fortress and its HUD), for hearth/ui-smoke/preview.py.</summary>

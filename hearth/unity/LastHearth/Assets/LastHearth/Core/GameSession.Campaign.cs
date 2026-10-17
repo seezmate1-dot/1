@@ -88,6 +88,7 @@ namespace LastHearth.Core
             if (!battle.Won)
                 return Fail.None;
             var m = Mission(index);
+            Tutor(TutorialEvent.MissionWon);
             if (index == MissionsCleared)
             {
                 reward.FirstClear = true;

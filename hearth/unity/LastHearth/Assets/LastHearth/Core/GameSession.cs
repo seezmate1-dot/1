@@ -176,6 +176,7 @@ namespace LastHearth.Core
             SettlePvp(State.Time);
             SettleBirths(State.Time);
             SettleHalls(State.Time); // the tavern, infirmary, library, training hall and archive (GameSession.Rooms.cs)
+            SettleTutorial(); // the tutorial ends by itself past the first session (Tutorial.cs)
         }
 
         void Produce(long seconds)
@@ -256,7 +257,10 @@ namespace LastHearth.Core
             long taken = Deposit(data.Produces.Value, whole);
             room.Stock -= taken;
             if (taken > 0)
+            {
                 Count(DailyTask.Collect);
+                Tutor(TutorialEvent.Collected);
+            }
             return taken;
         }
 
@@ -302,6 +306,7 @@ namespace LastHearth.Core
             built = new Room { Id = State.NextRoomId++, Type = type, Level = 0, Floor = floor, Cell = cell };
             State.Rooms.Add(built);
             State.Queue.Enqueue(builder, built.Id, 1, RoomJob(1).seconds, now);
+            Tutor(TutorialEvent.RoomBuilt);
             Advance(now);
             return Fail.None;
         }
@@ -326,6 +331,7 @@ namespace LastHearth.Core
             State.Wallet.Subtract(cost);
             State.Queue.Enqueue(builder, roomId, to, RoomJob(to).seconds, now);
             Count(DailyTask.Build);
+            Tutor(TutorialEvent.RoomUpgradeStarted);
             Advance(now);
             return Fail.None;
         }
@@ -345,6 +351,7 @@ namespace LastHearth.Core
             int builder = State.Queue.PickBuilder(Balance.Build.QueuePerBuilder, now);
             State.Wallet.Subtract(HearthJobCost(level));
             State.Queue.Enqueue(builder, BuildJob.HearthTarget, level + 1, Balance.Level(level).HearthSeconds, now);
+            Tutor(TutorialEvent.HearthUpgradeStarted);
             Advance(now);
             return Fail.None;
         }
@@ -417,6 +424,7 @@ namespace LastHearth.Core
             Unassign(dwellerId);
             room.Workers.Add(dwellerId);
             d.RoomId = roomId;
+            Tutor(TutorialEvent.DwellerAssigned);
             return Fail.None;
         }
 
@@ -441,6 +449,7 @@ namespace LastHearth.Core
             if (d.HeroLevel < 1)
                 d.HeroLevel = 1;
             FitGear(d); // a new class: the weapon of the old one goes to the bag (the forge's issued piece stands in)
+            Tutor(TutorialEvent.HeroPromoted);
             return Fail.None;
         }
 
@@ -459,6 +468,7 @@ namespace LastHearth.Core
             State.Wallet[ResourceType.Essence] -= cost;
             d.HeroLevel++;
             Count(DailyTask.HeroGrowth);
+            Tutor(TutorialEvent.HeroLevelUp);
             return Fail.None;
         }
     }

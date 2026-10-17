@@ -148,6 +148,7 @@ namespace LastHearth.Game
                 Plate(new Rect(x, bar.y + 9, w, 30), type, text, fill, type == ResourceType.Coal && st.OutOfCoal);
                 x += w + 4;
             }
+            DrawFortressName(new Rect(x + 4, bar.y + 9, bar.xMax - 46 - 104 - 12 - x, 30)); // GameRunner.Comfort.cs
             // Sparks (the premium currency) on the right, before the settings
             Plate(new Rect(bar.xMax - 46 - 104, bar.y + 9, 100, 30), ResourceType.Sparks, ShortNum(st.Wallet[ResourceType.Sparks]), -1, false);
             var gear = new Rect(bar.xMax - 44, bar.y + 3, 42, 42);
@@ -225,6 +226,7 @@ namespace LastHearth.Game
             };
             // "collect all" first, the windows after it, all centred on the panel
             float x = bar.x + Math.Max(6, (bar.width - (buttons.Length + 1) * (size + 22) - 4) / 2);
+            TutorTarget("collect", new Rect(x, bar.y + 4, size, size));
             if (RoundButton(new Rect(x, bar.y + 4, size, size), "Buttons/Collect", "Собрать", st.Rooms.Any(r => r.Stock >= 1)))
             {
                 CollectingAll(session.CollectAll, new Rect(x, bar.y + 4, size, size));
@@ -233,6 +235,8 @@ namespace LastHearth.Game
             x += size + 22;
             foreach (var (icon, label, win, dot) in buttons)
             {
+                if (TutorOn)
+                    TutorTarget(win == Win.None ? (onMap ? "fortress" : "map") : win.ToString(), new Rect(x, bar.y + 4, size, size));
                 if (RoundButton(new Rect(x, bar.y + 4, size, size), icon, label, dot))
                 {
                     if (win == Win.None)
@@ -435,6 +439,7 @@ namespace LastHearth.Game
             if (sounds != null && GUILayout.Button(sounds.SoundOn ? "Звуки: вкл" : "Звуки: выкл"))
                 sounds.ToggleSound();
             GUILayout.EndHorizontal();
+            DrawComfortSettings(now); // the battery saver, the fortress's name (GameRunner.Comfort.cs)
             DrawDevSettings(); // the time skips and the new game live in the developer's menu now
             GUILayout.Space(10);
             DrawRooms(now);

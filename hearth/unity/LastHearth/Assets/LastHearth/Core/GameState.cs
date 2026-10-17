@@ -326,5 +326,12 @@ namespace LastHearth.Core
 
         // The heroes' items, the bag, the forge's job (GDD 8; Items.cs, GameSession.Gear.cs)
         public GearState Gear = new GearState();
+
+        // The first session (MODES.md, 10; Tutorial.cs): a save without it loads with the tutorial done
+        public TutorialState Tutorial = new TutorialState();
+
+        /// <summary>The name the player gave the fortress ("" until then: «Последний очаг»), and how many times it was renamed.</summary>
+        public string FortressName = "";
+        public int Renames;
     }
 }
