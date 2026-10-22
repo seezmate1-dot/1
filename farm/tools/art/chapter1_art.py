@@ -14,6 +14,8 @@ One table per zone (below) is the single source of two files:
 
     python3 farm/tools/art/chapter1_art.py           # writes both files
     python3 farm/tools/art/chapter1_art.py --check   # fails if they are stale or a task has no picture
+    python3 farm/tools/art/chapter1_art.py --install [DIR]   # copies painted DIR/Farm/Ch1/** (default: the sd-art.yml
+                                                             # staging folder hearth/tools/art/ai/sd) into Resources/Art/Ch1
 
 Painting (on GitHub, sd-art.yml): sdpaint.py farm-ch1 (all), farm-ch1-bg, farm-ch1-objects, farm-ch1-portraits;
 the pictures land in Farm/Ch1/... and go to the game as Resources/Art/Ch1/... (the "Farm/" prefix dropped, like
@@ -486,7 +488,27 @@ def dump(o):
     return json.dumps(o, ensure_ascii=False, indent=1) + "\n"
 
 
+def install(src):
+    """Puts the painted chapter 1 pictures into the game: <src>/Farm/Ch1/X → Resources/Art/Ch1/X."""
+    import shutil
+    base = os.path.join(src, "Farm", "Ch1")
+    dst = os.path.join(META, "..", "Art", "Ch1")
+    n = 0
+    for folder, _, files in os.walk(base):
+        for f in files:
+            if f.endswith((".png", ".jpg")):
+                rel = os.path.relpath(os.path.join(folder, f), base)
+                os.makedirs(os.path.dirname(os.path.join(dst, rel)), exist_ok=True)
+                shutil.copyfile(os.path.join(folder, f), os.path.join(dst, rel))
+                n += 1
+    print("installed %d pictures into %s" % (n, os.path.normpath(dst)))
+
+
 def main():
+    if "--install" in sys.argv:
+        i = sys.argv.index("--install")
+        install(sys.argv[i + 1] if len(sys.argv) > i + 1 else os.path.join(FARM, "..", "hearth", "tools", "art", "ai", "sd"))
+        return
     chapter, manifest, layout = build()
     problems = coverage(chapter, layout)
     if problems:

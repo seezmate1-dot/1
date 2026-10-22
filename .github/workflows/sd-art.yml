@@ -52,6 +52,12 @@ jobs:
                                                         "pumpkin", "rug", "shelf", "shield", "shrine", "throne", "treasure")]
                               + ["Rooms/Rubble", "Rooms/Scaffold"]}
           groups["tiers"] = [r + "_" + t for r in groups["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")]
+          # «Солнечная долина» chapter 1 (farm/tools/art/chapter1_art.json): farm-ch1, farm-ch1-bg, -objects, -portraits, -fx
+          ch1 = json.load(open("farm/tools/art/chapter1_art.json", encoding="utf-8"))["pieces"]
+          kinds = {"bg": ("background",), "objects": ("object", "look", "before", "junk"), "portraits": ("portrait",), "fx": ("fx",)}
+          groups["farm-ch1"] = list(ch1)
+          for g, ks in kinds.items():
+              groups["farm-ch1-" + g] = [n for n, v in ch1.items() if v["kind"] in ks]
           names = [n for a in sys.argv[1].replace(",", " ").split() for n in groups.get(a, [a])]
           chunks = names  # one picture per runner: the slow runners take up to 40 minutes a picture
           print("chunks=" + json.dumps(chunks))
