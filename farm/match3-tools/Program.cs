@@ -172,29 +172,105 @@ namespace SunnyValley.Tools
             var levels = LoadLevels(1, 60);
             var designs = LevelDesigns.All().ToDictionary(d => d.Id);
             var sb = new StringBuilder();
-            sb.AppendLine("# «Солнечная долина» — уровни 1–60");
+            sb.AppendLine($"Доля побед: «средний игрок» — {games} попыток на уровень (сиды 1…{games}), «хороший игрок» (Монте-Карло) — {goodGames} попыток.");
             sb.AppendLine();
-            sb.AppendLine("Сгенерировано `dotnet run -c Release --project farm/match3-tools -- report`. Уровни лежат в");
-            sb.AppendLine("`farm/unity/SunnyValley/Assets/SunnyValley/Resources/Levels/level_NNN.json`; формы, препятствия и цели");
-            sb.AppendLine("задаются в `farm/match3-tools/LevelDesigns.cs`, число ходов подбирает `build` по боту «средний игрок».");
-            sb.AppendLine();
-            sb.AppendLine($"Доля побед: «средний игрок» — {games} попыток на уровень, «хороший игрок» (Монте-Карло) — {goodGames} попыток.");
-            sb.AppendLine("Кривая: 1–20 ≥ 90% у среднего; дальше волны — каждый 10-й уровень трудный (35–50%), следующий за ним лёгкий.");
-            sb.AppendLine();
-            sb.AppendLine("| # | Название | Новое | Цвета | Ходы | Цели | Средний | Хороший | Ходов в запасе (средний) | Цель кривой |");
+            sb.AppendLine("| # | Название | Новое | Цвета | Ходы | Цели | Средний | Хороший | Запас ходов¹ | Цель кривой |");
             sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
+            var avgRates = new Dictionary<int, double>();
+            var goodRates = new Dictionary<int, double>();
             foreach (var level in levels)
             {
                 var sw = Stopwatch.StartNew();
                 var avg = LevelSimulator.Run(level, BotFactory("average"), games, 1);
                 var good = LevelSimulator.Run(level, BotFactory("good"), goodGames, 100001);
+                avgRates[level.Id] = avg.WinRate;
+                goodRates[level.Id] = good.WinRate;
                 var d = designs[level.Id];
-                string goals = string.Join(", ", level.Goals.Select(g => g.Type + (g.Color != null ? " " + g.Color : "") + (g.Count > 0 ? " " + g.Count : " (все)")));
-                string target = d.Hard ? "трудный 35–50%" : $"≥ {d.Target * 100:0}%";
-                sb.AppendLine($"| {level.Id} | {level.Name} | {level.Intro ?? ""} | {level.Colors} | {level.Moves} | {goals} | {avg.WinRate * 100:0}% | {good.WinRate * 100:0}% | {avg.AvgMovesLeft:0.0} | {target} |");
+                string goals = string.Join(", ", level.Goals.Select(g => GoalRu(g)));
+                string target = d.Hard ? "трудный 35–50%" : d.Target >= 0.88 && level.Id > 20 ? "лёгкий после трудного" : $"≥ {d.Target * 100:0}%";
+                sb.AppendLine($"| {level.Id} | {level.Name} | {IntroRu(level.Intro)} | {level.Colors} | {level.Moves} | {goals} | {avg.WinRate * 100:0}% | {good.WinRate * 100:0}% | {avg.AvgMovesLeft:0.0} | {target} |");
                 Console.WriteLine($"level {level.Id,2}: avg {avg.WinRate * 100,5:0.0}%  good {good.WinRate * 100,5:0.0}%  [{sw.ElapsedMilliseconds / 1000.0:0.0}s]");
             }
-            File.WriteAllText(Path.Combine(Root, "farm", "docs", "LEVELS.md.table"), sb.ToString());
+            sb.AppendLine();
+            sb.AppendLine("¹ среднее число оставшихся ходов в выигранных попытках «среднего игрока».");
+            sb.AppendLine();
+            var early = avgRates.Where(kv => kv.Key <= 20).Select(kv => kv.Value).DefaultIfEmpty(0);
+            var hard = avgRates.Where(kv => kv.Key > 20 && kv.Key % 10 == 0).ToList();
+            sb.AppendLine("Итог:");
+            sb.AppendLine($"- уровни 1–20: у среднего от {early.Min() * 100:0}% до {early.Max() * 100:0}% (цель ≥ 90%);");
+            sb.AppendLine("- трудные: " + string.Join(", ", hard.Select(kv => $"{kv.Key} — {kv.Value * 100:0}%")) + " (цель 35–50%);");
+            var after = avgRates.Where(kv => kv.Key > 20 && kv.Key % 10 == 1).ToList();
+            sb.AppendLine("- лёгкие после трудных: " + string.Join(", ", after.Select(kv => $"{kv.Key} — {kv.Value * 100:0}%")) + ";");
+            sb.AppendLine($"- «хороший игрок» выигрывает каждый уровень не реже чем в {goodRates.Values.DefaultIfEmpty(0).Min() * 100:0}% попыток.");
+
+            string path = Path.Combine(Root, "farm", "docs", "LEVELS.md");
+            string doc = File.Exists(path) ? File.ReadAllText(path) : "<!-- levels:begin -->\n<!-- levels:end -->\n";
+            int i0 = doc.IndexOf("<!-- levels:begin -->"), i1 = doc.IndexOf("<!-- levels:end -->");
+            if (i0 < 0 || i1 < 0) throw new InvalidOperationException("LEVELS.md needs the levels:begin/end markers");
+            doc = doc.Substring(0, i0) + "<!-- levels:begin -->\n" + sb + doc.Substring(i1);
+            File.WriteAllText(path, doc);
+            Console.WriteLine("written " + path);
+        }
+
+        static string GoalRu(GoalData g)
+        {
+            string n;
+            switch (g.Type)
+            {
+                case "collect": n = "собрать " + ColorRu(g.Color); break;
+                case "grass": n = "трава"; break;
+                case "crate": n = "ящики"; break;
+                case "ice": n = "лёд"; break;
+                case "stone": n = "камни"; break;
+                case "honey": n = "мёд"; break;
+                case "weed": n = "сорняк"; break;
+                case "chain": n = "цепи"; break;
+                case "chick": n = "цыплята"; break;
+                case "crop": n = "урожай грядок"; break;
+                case "basket": n = "корзины"; break;
+                default: n = g.Type; break;
+            }
+            return n + (g.Count > 0 ? " " + g.Count : " (все)");
+        }
+
+        static string ColorRu(string c)
+        {
+            switch (c)
+            {
+                case "tomato": return "помидоры";
+                case "corn": return "кукурузу";
+                case "apple": return "яблоки";
+                case "carrot": return "морковь";
+                case "eggplant": return "баклажаны";
+                case "blueberry": return "чернику";
+                default: return c;
+            }
+        }
+
+        static string IntroRu(string intro)
+        {
+            switch (intro)
+            {
+                case null: return "";
+                case "grass": return "трава";
+                case "lineH": return "вилы (4 в ряд)";
+                case "bee": return "пчела (квадрат)";
+                case "crate": return "ящики";
+                case "bomb": return "бочка-бомба (L/T)";
+                case "rainbow": return "радуга (5 в ряд)";
+                case "ice": return "лёд";
+                case "chick": return "цыплята";
+                case "chain": return "цепи";
+                case "bed": return "грядки";
+                case "honey": return "мёд";
+                case "basket": return "корзины";
+                case "stone": return "камни";
+                case "wall": return "стенки";
+                case "weed": return "сорняк";
+                case "portal": return "порталы";
+                case "colors6": return "6 культур";
+                default: return intro;
+            }
         }
     }
 }
