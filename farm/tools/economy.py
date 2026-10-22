@@ -264,7 +264,7 @@ def order_max_kinds(level):
 
 
 def order_max_units(level):
-    return min(12, 3 + level // 2)
+    return min(11, 3 + level // 2)
 
 
 def order_max_work(level):
