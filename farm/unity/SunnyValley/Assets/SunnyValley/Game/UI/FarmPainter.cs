@@ -277,7 +277,7 @@ namespace SunnyValley.Game.UI
         {
             c.Poly(col, true, 0.22f, 0.02f, 0.78f, 0.02f, 0.68f, 0.78f, 0.32f, 0.78f);
             c.Poly(old ? Grey(0x8A5A3AFF) : 0x8A5A3AFF, true, 0.26f, 0.76f, 0.74f, 0.76f, 0.5f, 0.98f);
-            c.Box(0.42f, 0.02f, 0.58f, 0.24f, old ? 0x6A5A4AFF : 0x5A3A1EFF, 0.05f);
+            c.Box(0.42f, 0.02f, 0.58f, 0.24f, old ? 0x6A5A4AFFu : 0x5A3A1EFFu, 0.05f);
             if (old)
             {
                 c.Line(0.4f, 0.04f, 0.6f, 0.22f, 6, WoodDark);

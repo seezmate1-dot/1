@@ -25,7 +25,7 @@ namespace SunnyValley.Game.Flow
         LevelHud Hud() => new LevelHud
         {
             Level = Session.Level, Moves = Session.Moves, Cols = Session.Cols, Rows = Session.Rows,
-            Goals = Session.Goals.Select(g => new Goal(g.Icon, g.Count)).ToList(), Boosters = App.State.boosters,
+            Goals = Session.Goals.Select(g => new Goal(g.Icon, g.Count)).ToList(), Boosters = App.State.InLevelBoosters(),
         };
 
         protected override UiLayout Layout(CanvasFit fit) => Screens.Level(fit, Hud());
@@ -48,7 +48,7 @@ namespace SunnyValley.Game.Flow
         {
             if (finished)
                 return;
-            if (App.State.boosters[b] <= 0)
+            if (App.State.InLevelBoosters()[b] <= 0)
             {
                 Ui.Toast($"«{Screens.BoosterNames[b]}» закончились — их дают задания и события");
                 return;
@@ -78,9 +78,9 @@ namespace SunnyValley.Game.Flow
 
         void Spend(int b)
         {
-            App.State.boosters[b]--;
+            App.State.Meta.UseBooster(GameState.Now, Core.Meta.Boosters.InLevel[b]);
             App.State.Save();
-            View.SetBadge("level.booster" + b + ".badge", App.State.boosters[b]);
+            View.SetBadge("level.booster" + b + ".badge", App.State.InLevelBoosters()[b]);
         }
 
         void OnBoardTap(int col, int row)
@@ -145,9 +145,9 @@ namespace SunnyValley.Game.Flow
         }
 
         /// <summary>After «+5 ходов»: back to playing.</summary>
-        public void Continue()
+        public void Continue(int moves = 5)
         {
-            Session.AddMoves(5);
+            Session.AddMoves(moves);
             finished = false;
             UpdateHud();
         }
