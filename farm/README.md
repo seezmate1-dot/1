@@ -9,6 +9,10 @@
   сохранения с миграциями. Экономика — модель `tools/economy.py`: генерирует `Resources/Meta/balance.json` и
   `docs/ECONOMY.md` (темп, потоки монет); `python3 farm/tools/economy.py --check` — проверка согласованности (CI
   `farm-meta.yml`), бот-игрок `MetaBotTests` сверяет настоящие правила с моделью на 7 и 30 днях.
+- 3-в-ряд (`Core/Match3`, вход — `Match3Game`): поле до 9×9 с дырками, стенками, порталами, спецфишки и комбо,
+  11 препятствий, цели, бусты, лог шагов для анимации, боты «средний»/«хороший» (Монте-Карло). Правила, формат
+  уровня и отчёт по сложности — `docs/LEVELS.md`; уровни — `Resources/Levels/level_001…060.json`, их делает и
+  настраивает ботом `match3-tools` (`dotnet run -c Release --project farm/match3-tools -- build|sim|report`).
 - `core-tests` — тесты ядра без Unity: `dotnet test farm/core-tests`.
 - `ui-tests` — вёрстка интерфейса на 11 экранах (безопасная зона, кнопки не пересекаются, 44 pt, текст влезает)
   без Unity: `dotnet test farm/ui-tests`; схемы экранов — в `farm/ui-tests/previews`. Подробнее: `unity/README.md`.
