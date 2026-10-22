@@ -590,6 +590,10 @@ namespace LastHearth.Game
                         ArtLibrary.Draw(icon, "UI/Round");
                         Txt(icon, (goods.Amount / 60).ToString("0.#") + " ч", 20, CreamText);
                         break;
+                    case "Gear":
+                        // the epic piece is shown before buying (GameSession.GloryGearPreview, GameRunner.Gear.cs)
+                        DrawItemPlate(icon, session.GloryGearPreview(now), false);
+                        break;
                     default:
                         Face(icon, "Portraits/" + ArtLibrary.DwellerSheet(3), 0, false);
                         break;
@@ -612,15 +616,7 @@ namespace LastHearth.Game
             }
         }
 
-        static string GloryName(string goods)
-        {
-            switch (goods)
-            {
-                case "Essence": return "Эссенция";
-                case "Hourglass": return "Песочные часы";
-                default: return "Печать редкого жителя";
-            }
-        }
+        static string GloryName(string goods) => GameSession.GloryGoodsName(goods);
 
         string GloryText(GloryGoodsData g)
         {
@@ -631,6 +627,10 @@ namespace LastHearth.Game
                     return "+" + ShortNum(amount) + " эссенции на уровни героев";
                 case "Hourglass":
                     return "ускоряют любую стройку на " + (g.Amount / 60).ToString("0.#") + " ч";
+                case "Gear":
+                    var item = session.GloryGearPreview(session.State.Time);
+                    return item == null ? "нужен отряд героев"
+                        : string.Format("{0}, ур. {1}, сила {2} — для самого слабого места отряда", ItemKinds.Of(item.Kind).Name, item.Level, session.ItemPower(item));
                 default:
                     return "житель: +3 ко всем качествам";
             }

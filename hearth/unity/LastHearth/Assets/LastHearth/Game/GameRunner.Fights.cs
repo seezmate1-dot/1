@@ -28,7 +28,7 @@ namespace LastHearth.Game
             {
                 var m = session.Mission(next);
                 var act = c.Acts[Math.Max(0, Math.Min(c.Acts.Count - 1, m.Act - 1))];
-                if (GUILayout.Button(string.Format("Бой {0}: акт «{1}», {2}, {3} ранга {4} · +{5} эсс., +{6} мат.{7}", next + 1, act.Name,
+                if (TutorButton("campaignNext", string.Format("Бой {0}: акт «{1}», {2}, {3} ранга {4} · +{5} эсс., +{6} мат.{7}", next + 1, act.Name,
                         KindName(m.Kind), combat.Family(m.Family).Name, m.Rank, m.Essence, m.Materials, m.Sparks > 0 ? ", +" + m.Sparks + " искр" : "")))
                     StartMissionBattle(next, now);
             }

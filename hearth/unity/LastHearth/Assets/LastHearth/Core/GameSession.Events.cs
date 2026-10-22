@@ -171,6 +171,7 @@ namespace LastHearth.Core
                 run.Thresholds++;
                 PayBudget(run, 0.08);
                 Purse(run) += CurrencyPerThreshold(run);
+                EventItem(run, run.Thresholds); // thresholds 5 and 10 bring an item (GameSession.Gear.cs)
                 if (run.Id == "Fair" && run.Thresholds == 10 && !run.Wanderer)
                 {
                     run.Wanderer = true;
@@ -229,6 +230,7 @@ namespace LastHearth.Core
             if (run.Points <= 0)
                 return Fail.None; // did not take part: nothing to take
             PayBudget(run, RankShare(run.Rank));
+            EventRankItem(run, run.Rank); // the top ranks: an epic item (GameSession.Gear.cs)
             if (!run.Burned)
                 Purse(run) += RankCurrency(run, run.Rank);
             if (run.Id == "Festival" && FestivalServerGoal(run, run.End) >= 1 && !run.Burned)

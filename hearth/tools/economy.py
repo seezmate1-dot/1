@@ -239,6 +239,7 @@ ACHIEVEMENT_POOL = 3000        # one-time, front-loaded
 DIAMONDS_PER_ACT_BOSS = 50
 DIAMONDS_PER_3_STAR_CHEST = 5  # one chest per mission with 3 stars
 FOURTH_BUILDER_PRICE = 2500
+CONVENIENCE_PRICE = 50         # a new name for the fortress (the first is free), a room moved (MODES.md 4.4)
 
 # Spending habits of a free player (diamonds per day once available).
 ARENA_UNLOCK = 16              # PvP waits until the two-week hook is over (docs/RESEARCH.md)
@@ -1126,7 +1127,7 @@ def report(result):
     w("")
     w("## 14. Проверки модели")
     w("")
-    problems = checks(result)
+    problems = checks(result) + items_checks()
     if problems:
         for p in problems:
             w("- **Проблема:** %s" % p)
@@ -1141,6 +1142,7 @@ def report(result):
     retention, retention_problems = retention_report(result)
     out += retention
     out += halls_report(result)
+    out += items_report(result)
     people, people_problems = people_report(result)
     out += people
     return "\n".join(out) + "\n", problems + retention_problems + people_problems
@@ -1375,6 +1377,7 @@ def export_balance(result):
         **kennel_export(result),  # pets, companions and shops (section "pets, companions and shops" below)
         "halls": halls_export(result),  # the work of the halls (section "the work of the halls" below)
         "people": people_export(result),  # dwellers and the spirit of the fortress (section "dwellers and the spirit" below)
+        "items": items_export(),  # equipment (section "equipment" below)
         "activities": {
             "essenceByLevel": [int(round(essence_income_per_day(lv))) for lv in range(1, 31)],
             "surge": {"unlock": SURGE_UNLOCK, "autoShare": SURGE_AUTO_SHARE, "startHour": 19,
@@ -1399,7 +1402,8 @@ def export_balance(result):
                                 "ranksFromHearth": SPEC_RANKS_FROM},
             "shop": {"fourthBuilder": FOURTH_BUILDER_PRICE, "fourthBuilderFrom": 8, "packPrice": PACK_PRICE,
                      "packsPerWeek": PACKS_PER_WEEK, "refresh": [SHOP_REFRESH, 2 * SHOP_REFRESH, 4 * SHOP_REFRESH],
-                     "slots": 8, "arenaTicket": [ARENA_EXTRA_TICKETS, 2 * ARENA_EXTRA_TICKETS, 3 * ARENA_EXTRA_TICKETS]},
+                     "slots": 8, "arenaTicket": [ARENA_EXTRA_TICKETS, 2 * ARENA_EXTRA_TICKETS, 3 * ARENA_EXTRA_TICKETS],
+                     "convenience": CONVENIENCE_PRICE},
             "pvp": {"arenaUnlock": ARENA_UNLOCK, "tickets": ARENA_TICKETS, "ticketHours": ARENA_TICKET_HOURS,
                     "startRating": ARENA_START_RATING,
                     "leagues": [{"name": n, "rating": r, "sparks": d, "glory": g, "essenceDays": e}
@@ -1672,6 +1676,238 @@ def kennel_report(result):
     w("Модель года (разделы 1–13) не учитывает питомцев: бонус одного активного питомца (до +12% выработки) меньше "
       "точности попадания в целевые дни (15%), а траты искр в лавке — по желанию, из того же бюджета, что ускорения.")
     return out
+
+
+# ---------------------------------------------------------------- equipment (GDD 8 «Снаряжение», 8.3; Core/Items.cs)
+# Six slots, five rarities, items of a level (the hearth level of the place they come from). Every hero
+# wears the forge's issued kit (common, of the hearth level, no extra stats) in any slot without an item:
+# that kit is the "gear of hearth L" of the power model (hero_power: x1.05^L), so the curve of battles stays
+# and every found or forged item is a step above it.
+GEAR_GROWTH = 1.05          # a common kit of level L: attack and health x(1.05^(L-1) + 0.05 x 0.75^(L-1))
+GEAR_KIT_BASE = 0.05        # a level-1 kit already gives +5% (a level-1 item shows a number); it fades by level 10,
+GEAR_KIT_FADE = 0.75        # so the battles keep their calibration on the power model
+# slot: (enum, share of the kit's attack, share of its health); each slot carries about a third of a kit
+ITEM_SLOTS = [("Weapon", 0.34, 0.0), ("OffHand", 0.10, 0.24), ("Helmet", 0.06, 0.26), ("Armor", 0.0, 0.34),
+              ("Boots", 0.16, 0.16), ("Amulet", 0.34, 0.0)]
+# rarity: (enum, name, colour, main stats x, extra stats, extra stats x, forge level to forge it,
+#          forging: hours of income in materials, scrap, minutes; selling: hours of income in silver;
+#          dismantling: scrap)
+ITEM_RARITIES = [
+    ("Common", "обычный", "#9d9d9d", 1.00, 0, 0.0, 1, 0.5, 0, 5, 0.05, 1),
+    ("Uncommon", "необычный", "#5fc25a", 1.08, 1, 0.8, 4, 1.0, 0, 20, 0.10, 2),
+    ("Rare", "редкий", "#4f8ff0", 1.16, 2, 1.0, 8, 2.0, 6, 60, 0.20, 4),
+    ("Epic", "эпический", "#b25ae8", 1.25, 3, 1.2, 14, 2.3, 24, 240, 0.40, 8),
+    ("Legendary", "легендарный", "#f39a2b", 1.40, 3, 1.5, LEGENDARY_FROM, 0.0, 0, 480, 0.80, 16),
+]
+# extra stats: (enum, name, top value of a rare item, power: how much of a main stat one unit is worth)
+ITEM_STATS = [
+    ("Crit", "шанс крита", 0.04, 0.5),
+    ("Dodge", "уклонение", 0.04, 1.0),
+    ("Haste", "скорость атаки", 0.06, 1.0),
+    ("Armor", "броня", 12, 0.005),
+    ("Healing", "лечение", 0.12, 0.25),
+    ("MonsterDamage", "урон по чудовищам", 0.08, 0.8),
+    ("SkillPower", "сила умения", 0.10, 0.3),
+]
+# sets (epic items by chance, legendary always): (id, name, bonus of 2 pieces, bonus of 4 pieces)
+ITEM_SETS = [
+    ("Hearthguard", "Стражи очага", [("Health", 0.06)], [("Armor", 10), ("Dodge", 0.03)]),
+    ("Ash", "Пепел", [("Attack", 0.06)], [("MonsterDamage", 0.08), ("Crit", 0.03)]),
+    ("Ember", "Угли", [("Healing", 0.12)], [("SkillPower", 0.12), ("Health", 0.05)]),
+    ("Mist", "Туман", [("Crit", 0.03)], [("Haste", 0.06), ("Dodge", 0.03)]),
+]
+EPIC_SET_CHANCE = 0.5
+# upgrades +1..+10 with iron and essence (GDD 8): each step +4% of the item's main stats
+PLUS_MAX = 10
+PLUS_STEP = 0.04
+PLUS_IRON_HOURS = [round(0.10 * 1.35 ** k, 3) for k in range(PLUS_MAX)]     # of the income, at the item's level
+PLUS_ESSENCE_DAYS = [round(0.02 * 1.3 ** k, 3) for k in range(PLUS_MAX)]    # of the daily essence
+INVENTORY_BASE = 30
+INVENTORY_PER_FORGE = 2     # every level of the forge: two more places in the bag
+DISMANTLE_PER_DAY = 10      # GDD 8: dismantling has a daily cap (no farming)
+# drops: source -> (chance, weights of common, uncommon, rare, epic, legendary). No lottery for money:
+# items come from play, the forge and the Glory shop (an epic piece shown before buying).
+ITEM_DROPS = {
+    "mission": (0.35, [55, 30, 12, 3, 0]),   # a first clear of a normal battle
+    "elite": (1.0, [0, 45, 40, 15, 0]),
+    "boss": (1.0, [0, 0, 60, 40, 0]),
+    "chest": (1.0, [0, 40, 45, 15, 0]),      # the chest of three stars (MODES.md, 1)
+    "repeat": (0.25, [60, 30, 9, 1, 0]),     # repeats are "for collecting gear" (MODES.md, 1)
+    "hunt": (0.4, [35, 40, 20, 5, 0]),
+    "route": (0.35, [50, 35, 13, 2, 0]),
+    "event": (1.0, [0, 0, 70, 30, 0]),       # thresholds 5 and 10 of every event
+    "eventRank": (1.0, [0, 0, 0, 100, 0]),   # the top 5 of an event
+}
+EVENT_ITEM_THRESHOLDS = (5, 10)
+EVENT_RANK_ITEM = 5
+GLORY_GEAR = ("Gear", 400, 2, 0)            # MODES.md 4.2: an epic piece for 400 Glory, 2 a week
+GLORY_SHOP.append(GLORY_GEAR)
+CRAFT_PER_DAY = 1           # the model: the free player forges one item a day (the best rarity the forge allows)
+# The free player's finds are a step above the issued kit: rarer items, extra stats (the bot measures about +5% of
+# main stats and 4-6% of crit and dodge at hearth 10-20). Like the kennel, the campaign's recommended strength
+# counts it: its enemies get +GEAR_EDGE_PER_LEVEL of health and attack per hearth level above GEAR_EDGE_FROM (the
+# first days the bag is still filling: the issued kit is what the squad wears).
+GEAR_EDGE_PER_LEVEL = 0.009
+GEAR_EDGE_FROM = 8
+
+
+def gear_kit(level):
+    """Attack and health a full common kit of this level adds (x the base of the hero)."""
+    return GEAR_GROWTH ** (level - 1) - 1 + GEAR_KIT_BASE * GEAR_KIT_FADE ** (level - 1)
+
+
+def gear_edge(level):
+    """The free player's items over the issued kit at this hearth level, counted in the campaign's enemies."""
+    return round(1 + GEAR_EDGE_PER_LEVEL * max(0, level - GEAR_EDGE_FROM), 3)
+
+
+def best_craft(level):
+    """The best rarity the forge (at the hearth level) makes from materials."""
+    return [r for r in ITEM_RARITIES if r[6] <= level and r[7] > 0][-1]
+
+
+def gear_material_share(level):
+    """Share of the day's materials the model's forging takes (one item a day, ECONOMY.md section 17)."""
+    return CRAFT_PER_DAY * best_craft(level)[7] / EFFECTIVE_HOURS_PER_DAY
+
+
+def items_export():
+    """balance.json: "items"."""
+    return {
+        "kit": [round(gear_kit(lv), 4) for lv in range(1, 31)],
+        "slots": [{"slot": s, "attack": a, "health": h} for s, a, h in ITEM_SLOTS],
+        "rarities": [{"rarity": r, "name": n, "color": c, "mult": m, "secondaries": k, "roll": x, "forgeLevel": f,
+                      "craftHours": ch, "craftScrap": cs, "craftMinutes": cm, "sellHours": sh, "scrap": sc}
+                     for r, n, c, m, k, x, f, ch, cs, cm, sh, sc in ITEM_RARITIES],
+        "stats": [{"stat": s, "name": n, "max": mx, "power": p} for s, n, mx, p in ITEM_STATS],
+        "sets": [{"id": i, "name": n, "two": [{"stat": s, "value": v} for s, v in two],
+                  "four": [{"stat": s, "value": v} for s, v in four]} for i, n, two, four in ITEM_SETS],
+        "epicSetChance": EPIC_SET_CHANCE,
+        "plusMax": PLUS_MAX, "plusStep": PLUS_STEP, "plusIronHours": PLUS_IRON_HOURS,
+        "plusEssenceDays": PLUS_ESSENCE_DAYS,
+        "inventoryBase": INVENTORY_BASE, "inventoryPerForge": INVENTORY_PER_FORGE,
+        "dismantlePerDay": DISMANTLE_PER_DAY,
+        "drops": {k: {"chance": c, "weights": w} for k, (c, w) in ITEM_DROPS.items()},
+        "eventThresholds": list(EVENT_ITEM_THRESHOLDS), "eventRankItem": EVENT_RANK_ITEM,
+        "campaignEdge": [gear_edge(lv) for lv in range(1, 31)],
+    }
+
+
+def items_report(result):
+    """ECONOMY.md, section 17: equipment."""
+    out = []
+    w = out.append
+    w("")
+    w("## 17. Снаряжение")
+    w("")
+    w("Шесть мест: оружие, вторая рука (щит, наручи, колчан или фолиант — по классу), шлем, доспех, сапоги, амулет. "
+      "Вещь имеет редкость и уровень — уровень очага места, где она найдена (ранг боя кампании или Охоты, вылазка, "
+      "событие) или уровень кузни, где выкована. Подробно — `docs/GDD.md`, раздел 8.")
+    w("")
+    w("**Казённый комплект кузни.** Пустое место героя занимает обычная вещь уровня очага без доп. свойств. Полный "
+      "комплект даёт атаке и здоровью `×(1,05^(очаг − 1) + %s × 0,75^(очаг − 1))` — это и есть «снаряжение уровня очага» модели "
+      "силы (раздел 6), поэтому бои кампании и Охоты, откалиброванные под него, не меняются, а каждая найденная "
+      "вещь — шаг выше. Старые сохранения загружаются в этом же комплекте: сила героев не падает." % dec(GEAR_KIT_BASE, 2))
+    w("")
+    w("| Место | Атака | Здоровье |")
+    w("|---|---|---|")
+    names = {"Weapon": "Оружие", "OffHand": "Вторая рука", "Helmet": "Шлем", "Armor": "Доспех", "Boots": "Сапоги",
+             "Amulet": "Амулет"}
+    for s, a, h in ITEM_SLOTS:
+        w("| %s | %d%% комплекта | %d%% комплекта |" % (names[s], round(a * 100), round(h * 100)))
+    w("")
+    w("Комплект уровня 1 / 10 / 20 / 30: +%s / +%s / +%s / +%s к атаке и здоровью." % tuple(
+        dec(gear_kit(lv) * 100, 0) + "%" for lv in (1, 10, 20, 30)))
+    w("")
+    w("| Редкость | Основные ×| Доп. свойств | Кузня | Ковка | Продажа | Разборка |")
+    w("|---|---|---|---|---|---|---|")
+    for r, n, c, m, k, x, f, ch, cs, cm, sh, sc in ITEM_RARITIES:
+        if r == "Legendary":
+            craft = "%d сердцевин, %d ч (очаг %d)" % (LEGENDARY_COST, cm // 60, LEGENDARY_FROM)
+        else:
+            craft = "%s ч дохода%s, %s" % (dec(ch), " + %d обломков" % cs if cs else "",
+                                          "%d мин" % cm if cm < 60 else "%d ч" % (cm // 60))
+        w("| %s | ×%s | %d (×%s) | %d | %s | %s ч дохода серебром | %d обломков |" % (
+            n, dec(m, 2), k, dec(x), f, craft, dec(sh, 2), sc))
+    w("")
+    w("**Доп. свойства** (0–3 по редкости, у редкой вещи от половины до полного значения, у эпической ×1,2, у "
+      "легендарной ×1,5):")
+    w("")
+    w("| Свойство | Редкая вещь, до | Что делает в бою |")
+    w("|---|---|---|")
+    effect = {"Crit": "шанс крита героя", "Dodge": "шанс, что удар врага пройдёт мимо",
+              "Haste": "герой бьёт чаще", "Armor": "урон по герою × 100 / (100 + броня)",
+              "Healing": "лечение от героя и по герою сильнее", "MonsterDamage": "урон по чудовищам (не в PvP)",
+              "SkillPower": "сила особого умения"}
+    for s, n, mx, p in ITEM_STATS:
+        shown = "+%d" % mx if s == "Armor" else "+%s%%" % dec(mx * 100, 0)
+        w("| %s | %s | %s |" % (n.capitalize(), shown, effect[s]))
+    w("")
+    w("**Сеты** (эпические вещи — с шансом %d%%, легендарные — всегда; бонус за 2 и 4 надетые вещи сета):" % round(
+        EPIC_SET_CHANCE * 100))
+    w("")
+    stat_names = dict((s, n) for s, n, _, _ in ITEM_STATS)
+    stat_names.update({"Attack": "атака", "Health": "здоровье"})
+
+    def bonus(lst):
+        return ", ".join("%s +%s" % (stat_names[s], str(v) if s == "Armor" else dec(v * 100, 0) + "%") for s, v in lst)
+    w("| Сет | 2 вещи | 4 вещи |")
+    w("|---|---|---|")
+    for i, n, two, four in ITEM_SETS:
+        w("| %s | %s | %s |" % (n, bonus(two), bonus(four)))
+    w("")
+    w("**Улучшение** до +%d железом и эссенцией: каждый шаг +%d%% основных свойств вещи. Шаг k стоит %s часа дохода "
+      "железом (от +0 до +10 — %s ч) и %s дневной нормы эссенции (всего %s нормы)." % (
+          PLUS_MAX, round(PLUS_STEP * 100), dec(PLUS_IRON_HOURS[0], 2) + "…" + dec(PLUS_IRON_HOURS[-1], 2),
+          dec(sum(PLUS_IRON_HOURS)), dec(PLUS_ESSENCE_DAYS[0], 2) + "…" + dec(PLUS_ESSENCE_DAYS[-1], 2),
+          dec(sum(PLUS_ESSENCE_DAYS), 2)))
+    w("")
+    w("**Сумка:** %d мест + %d за уровень кузни. **Разборка** даёт обломки для ковки редких и эпических вещей, не "
+      "больше %d вещей в день; **продажа** — серебро. Казённые вещи не продаются и не разбираются." % (
+          INVENTORY_BASE, INVENTORY_PER_FORGE, DISMANTLE_PER_DAY))
+    w("")
+    w("**Откуда вещи** (лотерей за деньги нет: всё добывается игрой):")
+    w("")
+    src = {"mission": "первая победа в обычном бою кампании", "elite": "первая победа над элитой",
+           "boss": "босс акта", "chest": "сундук трёх звёзд в кампании", "repeat": "повтор боя кампании",
+           "hunt": "победа на Охоте (ранг = уровень вещи)", "route": "возвращение вылазки",
+           "event": "пороги %d и %d каждого события" % EVENT_ITEM_THRESHOLDS,
+           "eventRank": "место 1–%d в событии" % EVENT_RANK_ITEM}
+    w("| Источник | Шанс | Обычн. / необычн. / редк. / эпич. / легенд., % |")
+    w("|---|---|---|")
+    for k, (c, wts) in ITEM_DROPS.items():
+        total = sum(wts)
+        w("| %s | %d%% | %s |" % (src[k], round(c * 100), " / ".join(str(round(x * 100 / total)) for x in wts)))
+    w("| Лавка славы (арена) | %d славы, %d в неделю | эпическая вещь для самого слабого места отряда, видна до покупки |" % (
+        GLORY_GEAR[1], GLORY_GEAR[2]))
+    w("| Кузня | по таблице выше | вид и редкость выбирает игрок, свойства случайны |")
+    w("")
+    per_day = 1.5 * ITEM_DROPS["mission"][0] + CAMPAIGN_REPEATS_PER_DAY * ITEM_DROPS["repeat"][0] + \
+        HUNTS_PER_DAY * ITEM_DROPS["hunt"][0] + routes_per_day(15) * ITEM_DROPS["route"][0]
+    shares = [gear_material_share(lv) for lv in range(1, 31)]
+    w("Бесплатный игрок на очаге 15 находит около %s вещей в день и выковывает %d. Ковка лучшей доступной редкости "
+      "забирает до %d%% материалов дня — в пределах доли «Снаряжение и кузня» (%d%%, раздел 4)." % (
+          dec(per_day), CRAFT_PER_DAY, round(max(shares) * 100), round(MATERIAL_SINKS["Снаряжение и кузня"] * 100)))
+    w("")
+    w("Находки бесплатного игрока немного сильнее казённого комплекта (редкость, доп. свойства). Как и питомцы, "
+      "это входит в рекомендуемую силу кампании (раздел 7) и в бои и очки событий: враги на очаге 10 / 20 / 30 крепче и бьют сильнее на "
+      "%s / %s / %s%%." % tuple(dec((gear_edge(lv) - 1) * 100) for lv in (10, 20, 30)))
+    act = result["activities"]
+    w("")
+    w("**Легендарные вещи** — с очага %d за %d сердцевин (ACTIVITIES.md, 3): по модели к концу года их %d из 30." % (
+        LEGENDARY_FROM, LEGENDARY_COST, act["legendary"]))
+    return out
+
+
+def items_checks():
+    problems = []
+    if any(gear_material_share(lv) > MATERIAL_SINKS["Снаряжение и кузня"] + 1e-9 for lv in range(1, 31)):
+        problems.append("ковка забирает больше доли «Снаряжение и кузня»")
+    if abs(sum(a for _, a, _ in ITEM_SLOTS) - 1) > 1e-9 or abs(sum(h for _, _, h in ITEM_SLOTS) - 1) > 1e-9:
+        problems.append("места снаряжения не дают ровно один комплект атаки и здоровья")
+    if gear_kit(1) <= 0 or any(gear_kit(lv) + 1 < GEAR_GROWTH ** (lv - 1) for lv in range(1, 31)):
+        problems.append("казённый комплект слабее снаряжения модели силы")
+    return problems
 
 
 # ---------------------------------------------------------------- calendar, season, warm week, monster of the week
@@ -2103,7 +2339,7 @@ def halls_report(result):
 # from work, training and battles; a level-up may add a point to the stat the dweller uses (more often for a
 # rarer one). The fortress has a spirit («Дух крепости», 0-100) that follows food, warmth, comfort, the sick and
 # the news of the day; its band changes the output of the rooms by up to +-15%, and in despair the newcomers
-# desert (Core/GameSession.People.cs, docs/ECONOMY.md section 17).
+# desert (Core/GameSession.People.cs, docs/ECONOMY.md section 18).
 DWELLER_MAX_LEVEL = 60
 XP_TO_NEXT = (2.0, 1.25)          # experience to go from level L to L + 1: 2 x L^1.25
 XP_WORK_PER_HOUR = 1.0            # an hour of work in a room with a stat
@@ -2112,17 +2348,17 @@ XP_SICK_MULT = 0.5                # a sick dweller works and learns at half stre
 XP_BATTLE = (0.5, 0.25, 0.25)     # every hero of the squad: a won battle, a lost one, an auto repeat of a mission
 SECOND_TRAIT_LEVEL = 30           # at level 30 experience gives a second, good trait
 # rarity: (a stat point per level, chance that the trait is a good one)
-RARITY_GROWTH = {"Common": (0.34, 0.5), "Seasoned": (0.5, 0.65), "Rare": (0.67, 0.8), "Legendary": (1.0, 1.0)}
+RARITY_GROWTH = {"Common": (0.25, 0.5), "Seasoned": (0.4, 0.65), "Rare": (0.55, 0.8), "Legendary": (0.8, 1.0)}
 # trait: (id, name, good, work output +, battle attack and health +, spirit of the fortress +, experience +,
 #         output in a frozen room (0: as everyone), illness chance x, text)
 TRAITS = [
     ("Hardworking", "Трудяга", True, 0.10, 0, 0, 0, 0, 1, "+10% выработки"),
-    ("Brave", "Храбрец", True, 0, 0.10, 0, 0, 0, 1, "+10% атаки и здоровья в бою"),
+    ("Brave", "Храбрец", True, 0, 0.05, 0, 0, 0, 1, "+5% атаки и здоровья в бою"),
     ("Cheerful", "Весельчак", True, 0, 0, 2, 0, 0, 1, "+2 к духу крепости"),
     ("Hardy", "Закалённый", True, 0, 0, 0, 0, 0.8, 1, "в промёрзшем зале работает на 80%, а не на 50%"),
     ("Keeper", "Помнит Стражей", True, 0, 0, 0, 0.25, 0, 1, "+25% опыта; помнит старые предания"),
     ("Lazy", "Лентяй", False, -0.10, 0, 0, 0, 0, 1, "−10% выработки"),
-    ("Coward", "Трус", False, 0.10, -0.10, 0, 0, 0, 1, "−10% в бою, зато +10% выработки в тылу"),
+    ("Coward", "Трус", False, 0.10, -0.05, 0, 0, 0, 1, "−5% в бою, зато +10% выработки в тылу"),
     ("Gloomy", "Нытик", False, 0, 0, -2, 0, 0, 1, "−2 к духу крепости"),
     ("Sickly", "Хворый", False, 0, 0, 0, 0, 0, 2, "туманная хворь цепляется вдвое чаще"),
 ]
@@ -2224,7 +2460,7 @@ def people_export(result):
 
 
 def people_report(result):
-    """ECONOMY.md, section 17: dwellers (traits, rarity, levels) and the spirit of the fortress."""
+    """ECONOMY.md, section 18: dwellers (traits, rarity, levels) and the spirit of the fortress."""
     out, problems = [], []
     w = out.append
     month, year = level_after_hours(30 * 24), level_after_hours(365 * 24)
@@ -2243,7 +2479,7 @@ def people_report(result):
     if MORALE_BASE + MORALE_FED + MORALE_MODE["Blazing"] + MORALE_DECOR[1] + chapel_morale(ROOM_UNLOCK["Chapel"]) < above:
         problems.append("дух: «Пылающий» очаг, украшения и часовня не дают бодрости")
     w("")
-    w("## 17. Жители и дух крепости")
+    w("## 18. Жители и дух крепости")
     w("")
     w("У каждого жителя есть черта характера, редкость (та же, что у найма в таверне, раздел 16) и уровень до %d "
       "(`Core/GameSession.People.cs`). Опыт идёт от работы (%s в час в зале с характеристикой, в тренировочном зале ×%s, "

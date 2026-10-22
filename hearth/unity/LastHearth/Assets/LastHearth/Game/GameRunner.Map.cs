@@ -218,6 +218,7 @@ namespace LastHearth.Game
                 UiSkin.Outlined(new Rect(b.x, b.y - 1, b.width - 2, b.height - 2), act.ToString(), current ? titleText : buttonLabel);
                 if (current)
                 {
+                    TutorTarget("act", b);
                     // as wide as the name, so it hides as little of the acts next to it as it can
                     float pw = Mathf.Clamp(c.Acts[i].Name.Length * 8.5f + 30, 90, 200);
                     var plaque = MapPlate(new Rect(at.x - pw / 2, b.yMax - 2, pw, 26));

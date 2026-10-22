@@ -444,6 +444,7 @@ namespace LastHearth.Game
             if (job != null)
                 Pill(r, job.IsRunning(now) ? Duration(job.Remaining(now)) : "ждёт");
             RoomFx(r, HearthFx);
+            TutorTarget("hearth", r);
             if (Tap(r))
             {
                 selectedRoom = -1;
@@ -482,6 +483,7 @@ namespace LastHearth.Game
             if (selectedRoom == room.Id)
                 Outline(r);
             RoomFx(r, room.Id); // the «Готово» glow, where the collected icons fly from
+            TutorRoom(room.Id, r);
             if (data.Produces != null && room.Stock >= 1 && Bubble(r, data.Produces.Value, room.Id))
             {
                 message = string.Format("Собрано {0}", Collecting(() => session.Collect(room.Id)));
@@ -573,6 +575,7 @@ namespace LastHearth.Game
                         var b = new Rect(r.center.x - bw / 2, sy, bw, bh);
                         ArtLibrary.DrawSliced(b, "UI/Pill", 30);
                         UiSkin.Outlined(b, "Расчистить", BadgeStyle());
+                        TutorTarget("obstacle", r);
                     }
                     if (selected)
                         Outline(r);
@@ -603,9 +606,11 @@ namespace LastHearth.Game
             }
             float s = r.height * 0.36f * (1 + 0.05f * Mathf.Sin(Time.time * 3 + cell));
             ArtLibrary.Draw(new Rect(r.center.x - s / 2, r.y + r.height * 0.42f - s / 2, s, s), "UI/Plus");
+            TutorTarget("free", r);
+            MoveMark(r, floor, cell); // a room being moved can go here (GameRunner.Comfort.cs)
             if (selected)
                 Outline(r);
-            if (Tap(r))
+            if (Tap(r) && !MoveTap(floor, cell))
                 SelectCell(floor, cell);
         }
 
@@ -693,6 +698,11 @@ namespace LastHearth.Game
             string size = room.Width > 1 ? string.Format(" · зал на {0} клетки, +{1:0}% выработки", room.Width, (session.MergeBonus(room) - 1) * 100) : "";
             GUILayout.Label(string.Format("<b>{0}</b>, уровень {1}, этаж {2}{3}{4}{5}", data.Name, room.Level, room.Floor + 1, size, output,
                 session.IsRoomWarm(room) ? "" : " · <color=#9cf>промёрз: поднимите очаг, включите «Пылающий» или изучите Тепло</color>"), Rich());
+            if (room.Type == RoomType.Forge && room.Level > 0 && ForgeTabs())
+            {
+                DrawForge(now); // the forging tab (GameRunner.Gear.cs)
+                return;
+            }
             GUILayout.BeginHorizontal();
             if (data.Produces != null && GUILayout.Button("Собрать"))
             {
@@ -700,7 +710,7 @@ namespace LastHearth.Game
                 sounds?.Play("Coins");
             }
             if (room.Level < session.State.HearthLevel && !session.State.Queue.IsQueued(room.Id) &&
-                GUILayout.Button("Улучшить до " + (room.Level + 1) + ": " + CostText(session.RoomUpgradeCost(room))))
+                TutorButton("roomUpgrade", "Улучшить до " + (room.Level + 1) + ": " + CostText(session.RoomUpgradeCost(room))))
                 Report(session.UpgradeRoom(room.Id, now), "Build");
             var mate = session.MergeCandidate(room);
             if (mate != null && GUILayout.Button("Объединить с соседним залом"))
@@ -718,11 +728,12 @@ namespace LastHearth.Game
             {
                 var idle = session.State.Dwellers.Where(d => d.RoomId < 0 && d.RouteId == 0 && !d.IsHero)
                     .OrderByDescending(d => d.StatOf(data.Stat.Value)).FirstOrDefault();
-                if (idle != null && GUILayout.Button("Поставить: " + idle.Name))
+                if (idle != null && TutorButton("roomAssign", "Поставить: " + idle.Name))
                     Report(session.Assign(idle.Id, room.Id));
             }
             if (GUILayout.Button(decorPicker ? "Скрыть украшения" : "Украсить"))
                 decorPicker = !decorPicker;
+            DrawMoveButton(room); // to another free cell for sparks (GameRunner.Comfort.cs)
             GUILayout.EndHorizontal();
             if (decorPicker)
                 DrawDecorPicker(room, now);
@@ -863,7 +874,7 @@ namespace LastHearth.Game
                 GUILayout.BeginVertical(GUILayout.Width(150));
                 var icon = GUILayoutUtility.GetRect(144, 90);
                 ArtLibrary.Draw(new Rect(icon.x, icon.y, 144, 90), "Rooms/" + data.Type);
-                if (GUILayout.Button(data.Name))
+                if (TutorButton(data.Type == RoomType.Barracks ? "buildBarracks" : "buildAny", data.Name))
                 {
                     var fail = session.BuildRoom(data.Type, selectedFloor, selectedCell, now, out var built);
                     Report(fail, "Build");
@@ -896,7 +907,7 @@ namespace LastHearth.Game
             GUILayout.Label(string.Format("Завал на этаже {0}. Строитель разберёт его за {1}, и здесь можно будет строить. " +
                 "Чем дальше от очага, тем дороже.", floor + 1, Duration(seconds)));
             GUILayout.Label("Цена: " + CostText(cost));
-            if (GUILayout.Button("Расчистить: " + CostText(cost) + ", " + Duration(seconds)))
+            if (TutorButton("clearObstacle", "Расчистить: " + CostText(cost) + ", " + Duration(seconds)))
             {
                 var fail = session.ClearObstacle(floor, cell, now);
                 Report(fail, "Build");

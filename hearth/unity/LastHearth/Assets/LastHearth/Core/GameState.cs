@@ -181,8 +181,9 @@ namespace LastHearth.Core
     [Serializable]
     public sealed class GameState
     {
-        /// <summary>2: obstacles, merged rooms and births. Older saves are upgraded on load (GameSession).</summary>
-        public int SaveVersion = 2;
+        /// <summary>2: obstacles, merged rooms and births; 3: the heroes' items (GearState). Older saves are
+        /// upgraded on load (GameSession).</summary>
+        public int SaveVersion = 3;
 
         /// <summary>Seconds (Unix time) up to which the fortress has been simulated.</summary>
         public long Time;
@@ -325,5 +326,14 @@ namespace LastHearth.Core
 
         // The spirit of the fortress and the deserters (GDD 7; People.cs)
         public PeopleState People = new PeopleState();
+        // The heroes' items, the bag, the forge's job (GDD 8; Items.cs, GameSession.Gear.cs)
+        public GearState Gear = new GearState();
+
+        // The first session (MODES.md, 10; Tutorial.cs): a save without it loads with the tutorial done
+        public TutorialState Tutorial = new TutorialState();
+
+        /// <summary>The name the player gave the fortress ("" until then: «Последний очаг»), and how many times it was renamed.</summary>
+        public string FortressName = "";
+        public int Renames;
     }
 }

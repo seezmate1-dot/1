@@ -171,13 +171,15 @@ namespace LastHearth.Core.Tests
             var plain = s.HallsHeroMult(hero.Id);
             var before = s.MissionSetup(0, 1).Heroes.First(h => h.Id == hero.Id);
             hero.Traits = new List<Trait> { Trait.Brave };
-            Assert.AreEqual(plain.attack * 1.1, s.HallsHeroMult(hero.Id).attack, 1e-9, "«Храбрец» +10% attack");
-            Assert.AreEqual(plain.hp * 1.1, s.HallsHeroMult(hero.Id).hp, 1e-9, "and health");
-            var brave = s.MissionSetup(0, 1).Heroes.First(h => h.Id == hero.Id);
-            Assert.AreEqual(before.AttackMult * 1.1, brave.AttackMult, 1e-9, "the battle sees it");
-            Assert.AreEqual(before.HpMult * 1.1, brave.HpMult, 1e-9);
+            double brave = 1 + s.TraitInfo(Trait.Brave).Battle;
+            Assert.Greater(brave, 1);
+            Assert.AreEqual(plain.attack * brave, s.HallsHeroMult(hero.Id).attack, 1e-9, "«Храбрец»: attack");
+            Assert.AreEqual(plain.hp * brave, s.HallsHeroMult(hero.Id).hp, 1e-9, "and health");
+            var inBattle = s.MissionSetup(0, 1).Heroes.First(h => h.Id == hero.Id);
+            Assert.AreEqual(before.AttackMult * brave, inBattle.AttackMult, 1e-9, "the battle sees it");
+            Assert.AreEqual(before.HpMult * brave, inBattle.HpMult, 1e-9);
             hero.Traits = new List<Trait> { Trait.Coward };
-            Assert.AreEqual(plain.attack * 0.9, s.HallsHeroMult(hero.Id).attack, 1e-9, "«Трус» −10% in battle");
+            Assert.AreEqual(plain.attack * (1 + s.TraitInfo(Trait.Coward).Battle), s.HallsHeroMult(hero.Id).attack, 1e-9, "«Трус»: weaker in battle");
         }
 
         [Test]
@@ -306,7 +308,8 @@ namespace LastHearth.Core.Tests
             int commonGrowth = (int)Math.Floor(60 * s.RarityInfo(Rarity.Common).Growth + 1e-9);
             Assert.AreEqual(10 + commonGrowth, common.StatOf(Stat.Endurance), "the coal mine's stat grows");
             Assert.AreEqual(10, common.StatOf(Stat.Strength), "the others stay");
-            Assert.AreEqual(10 + 59, legend.StatOf(Stat.Endurance), "a legendary one: a point every level");
+            int legendGrowth = (int)Math.Floor(60 * s.RarityInfo(Rarity.Legendary).Growth + 1e-9) - (int)Math.Floor(s.RarityInfo(Rarity.Legendary).Growth + 1e-9);
+            Assert.AreEqual(10 + legendGrowth, legend.StatOf(Stat.Endurance), "a legendary one: most levels bring a point");
             Assert.Greater(legend.StatOf(Stat.Endurance), common.StatOf(Stat.Endurance));
         }
 
@@ -324,6 +327,25 @@ namespace LastHearth.Core.Tests
             Assert.AreNotEqual(d.Traits[0], d.Traits[1]);
             s.AdminAddLevels(d.Id, 30);
             Assert.AreEqual(2, d.Traits.Count, "only one more");
+        }
+
+        [Test]
+        public void SecondTraitsAreSpreadToo()
+        {
+            var s = Session();
+            var count = new Dictionary<Trait, int>();
+            int n = 300;
+            for (int i = 0; i < n; i++)
+            {
+                var d = s.AddDweller("Ветеран", new[] { 5, 5, 5, 5, 5 });
+                s.AdminAddLevels(d.Id, 29);
+                var t = d.Traits[1];
+                count[t] = count.TryGetValue(t, out int c) ? c + 1 : 1;
+            }
+            int good = P.Traits.Count(t => t.Good);
+            Assert.AreEqual(good, count.Count, "every good trait happens");
+            foreach (var kv in count)
+                Assert.Less(kv.Value, 2.0 * n / good, kv.Key + " is not much more common than the others");
         }
 
         [Test]

@@ -5,7 +5,7 @@ namespace LastHearth.Core
 {
     // GDD 7-8: the dwellers' traits and levels and the spirit of the fortress («Дух крепости»). The rules live in
     // GameSession.People.cs; the numbers come from hearth/tools/economy.py (balance.json: "people"; docs/ECONOMY.md,
-    // section 17); the saved part is PeopleState in GameState and Dweller.Level / Xp / Traits. Rarity is the tavern's
+    // section 18); the saved part is PeopleState in GameState and Dweller.Level / Xp / Traits. Rarity is the tavern's
     // (Halls.cs): it decides how often a level-up adds a stat point and how likely the trait is a good one.
 
     /// <summary>GDD 8: a trait of character. Good ones first, then the bad ones (the order of balance.json).</summary>

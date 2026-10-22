@@ -56,6 +56,8 @@ namespace LastHearth.Game
             {
                 int level = session.PetLevel(kind.Id);
                 GUILayout.BeginHorizontal();
+                if (ArtLibrary.Data.PetArt)
+                    Portrait("Pets/" + kind.Id, level > 0, 64);
                 if (level > 0)
                 {
                     bool isActive = active != null && active.Id == kind.Id;
@@ -84,13 +86,29 @@ namespace LastHearth.Game
             {
                 bool found = session.CompanionUnlocked(kind.Id);
                 int walking = session.State.Dwellers.Count(d => d.IsHero && session.CompanionOf(d.Id)?.Kind == kind.Id);
+                GUILayout.BeginHorizontal();
+                if (ArtLibrary.Data.CompanionArt)
+                    Portrait("Companions/" + kind.Id, found, 64);
                 GUILayout.Label(found
                     ? string.Format("<b>{0}</b> · {1}{2}", kind.Name, session.CompanionSkillText(kind, 1), walking > 0 ? " · с героями: " + walking : "")
                     : string.Format("<color=#a99>{0}</color> · {1} · <color=#b8a888>как получить: {2}{3}</color>", kind.Name,
                         session.CompanionSkillText(kind, 1), kind.Text, ProgressText(kind.Source, kind.Condition)), Rich());
+                GUILayout.EndHorizontal();
             }
             if (session.State.Dwellers.Any(d => d.IsHero) && GUILayout.Button("Герои и их компаньоны", GUILayout.Height(34)))
                 Open(Win.Hero);
+        }
+
+        /// <summary>A painted portrait in a small panel at the start of a row; one not found yet stands in shadow.</summary>
+        void Portrait(string path, bool found, float size)
+        {
+            var r = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size), GUILayout.Height(size));
+            ArtLibrary.DrawSliced(r, "UI/Panel", 30);
+            var old = GUI.color;
+            if (!found)
+                GUI.color = new Color(0.25f, 0.22f, 0.22f, 0.9f);
+            ArtLibrary.Draw(new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8), path);
+            GUI.color = old;
         }
 
         string ProgressText(UnlockSource source, int condition)
@@ -135,7 +153,9 @@ namespace LastHearth.Game
             if (f != null)
                 GUILayout.Label(string.Format("В бою: атака {0:0}, здоровье {1:0}, броня {2:0}, крит {3:0}%, удар раз в {4:0.0} с",
                     f.Attack, f.MaxHp, f.Armor, f.Crit * 100, f.Interval * (session.Combat?.TickSeconds ?? 0.1)));
-            GUILayout.Label(string.Format("Снаряжение кузни: ступень {0} (растёт с очагом) — атака и здоровье ×{1:0.00}", session.State.HearthLevel, session.GearMult()));
+            var gear = session.HeroGear(hero);
+            GUILayout.Label(string.Format("Снаряжение: сила {0}, вещей {1} из 6 — атака +{2:0}%, здоровье +{3:0}% (пустые места — казённое кузни)",
+                session.HeroGearPower(hero), session.WornBy(hero.Id).Count, gear.Attack * 100, gear.Health * 100));
             var pet = session.ActivePet();
             GUILayout.Label(pet == null ? "Питомец: нет активного" : string.Format("Питомец: {0}, ур.{1} — {2}", pet.Name, session.PetLevel(pet.Id),
                 session.PetBonusText(pet, session.PetLevel(pet.Id))));
@@ -147,16 +167,22 @@ namespace LastHearth.Game
                 Report(session.LevelUpHero(hero.Id));
             if (hero.SkillLevel < session.Balance.Activities.Skills.Max && GUILayout.Button("Умение +1 (" + session.SkillCost(hero) + " серд.)"))
                 Report(session.UpgradeSkill(hero.Id));
+            if (GUILayout.Button("Снаряжение"))
+                Open(Win.Gear); // GameRunner.Gear.cs: the six slots, the bag
             GUILayout.EndHorizontal();
 
             GUILayout.Space(8);
             var comp = session.CompanionOf(hero.Id);
             int bond = session.BondLevel(hero.Id), cap = session.BondCap(hero);
             var kindNow = comp == null ? null : session.CompanionKind(comp.Kind);
+            GUILayout.BeginHorizontal();
+            if (kindNow != null && ArtLibrary.Data.CompanionArt)
+                Portrait("Companions/" + kindNow.Id, true, 72);
             GUILayout.Label(kindNow == null
                 ? string.Format("<b>Компаньон</b>: нет · узы ур.{0} (предел {1})", bond, cap)
                 : string.Format("<b>Компаньон</b>: {0} · узы ур.{1} (предел {2}) — {3}", kindNow.Name, bond, cap,
                     session.CompanionSkillText(kindNow, Math.Min(bond, cap))), Rich());
+            GUILayout.EndHorizontal();
             long bondCost = session.BondCost(hero.Id);
             if (kindNow != null && bondCost > 0 &&
                 GUILayout.Button(string.Format("Узы +1: {0} лакомств (есть {1})", bondCost, session.Treats)))

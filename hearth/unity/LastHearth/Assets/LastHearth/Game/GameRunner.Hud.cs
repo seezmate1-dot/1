@@ -13,7 +13,7 @@ namespace LastHearth.Game
     /// </summary>
     public sealed partial class GameRunner
     {
-        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin, Away }
+        enum Win { None, Hearth, Room, Build, Campaign, Hunt, Arena, Raids, Surge, Dwellers, Growth, Routes, Quests, Shop, Events, Settings, Pets, Hero, Admin, Away, Gear }
 
         // the HUD's bands: the resource plates on top, the round buttons along the bottom and the right edge
         const float HudTop = 50, HudBottom = 92, HudRight = 74;
@@ -32,6 +32,7 @@ namespace LastHearth.Game
             (Win.Shop, "Лавка"), (Win.Events, "События"), (Win.Settings, "Настройки"), (Win.Pets, "Питомцы"), (Win.Hero, "Герой"),
             (Win.Admin, "Админ-меню"),
             (Win.Away, "Пока вас не было"),
+            (Win.Gear, "Снаряжение"),
         };
 
         GUIStyle hudText, buttonLabel, titleText;
@@ -148,6 +149,8 @@ namespace LastHearth.Game
                 x += w + 4;
             }
             DrawMoralePlate(new Rect(x, bar.y + 9, MoralePlateWidth, 30)); // the spirit of the fortress (GameRunner.People.cs)
+            x += MoralePlateWidth + 4;
+            DrawFortressName(new Rect(x + 4, bar.y + 9, bar.xMax - 46 - 104 - 12 - x, 30)); // GameRunner.Comfort.cs
             // Sparks (the premium currency) on the right, before the settings
             Plate(new Rect(bar.xMax - 46 - 104, bar.y + 9, 100, 30), ResourceType.Sparks, ShortNum(st.Wallet[ResourceType.Sparks]), -1, false);
             var gear = new Rect(bar.xMax - 44, bar.y + 3, 42, 42);
@@ -225,6 +228,7 @@ namespace LastHearth.Game
             };
             // "collect all" first, the windows after it, all centred on the panel
             float x = bar.x + Math.Max(6, (bar.width - (buttons.Length + 1) * (size + 22) - 4) / 2);
+            TutorTarget("collect", new Rect(x, bar.y + 4, size, size));
             if (RoundButton(new Rect(x, bar.y + 4, size, size), "Buttons/Collect", "Собрать", st.Rooms.Any(r => r.Stock >= 1)))
             {
                 CollectingAll(session.CollectAll, new Rect(x, bar.y + 4, size, size));
@@ -233,6 +237,8 @@ namespace LastHearth.Game
             x += size + 22;
             foreach (var (icon, label, win, dot) in buttons)
             {
+                if (TutorOn)
+                    TutorTarget(win == Win.None ? (onMap ? "fortress" : "map") : win.ToString(), new Rect(x, bar.y + 4, size, size));
                 if (RoundButton(new Rect(x, bar.y + 4, size, size), icon, label, dot))
                 {
                     if (win == Win.None)
@@ -421,6 +427,9 @@ namespace LastHearth.Game
                 case Win.Away:
                     DrawAway(now);
                     break;
+                case Win.Gear:
+                    DrawGear(now); // GameRunner.Gear.cs
+                    break;
             }
         }
 
@@ -432,6 +441,7 @@ namespace LastHearth.Game
             if (sounds != null && GUILayout.Button(sounds.SoundOn ? "Звуки: вкл" : "Звуки: выкл"))
                 sounds.ToggleSound();
             GUILayout.EndHorizontal();
+            DrawComfortSettings(now); // the battery saver, the fortress's name (GameRunner.Comfort.cs)
             DrawDevSettings(); // the time skips and the new game live in the developer's menu now
             GUILayout.Space(10);
             DrawRooms(now);

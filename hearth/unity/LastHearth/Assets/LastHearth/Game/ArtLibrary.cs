@@ -61,6 +61,10 @@ namespace LastHearth.Game
             public bool Stairs;
             /// <summary>A little ship is painted (Map/Ship): ships sail the map's lanes.</summary>
             public bool MapShips;
+            /// <summary>The pets' portraits are painted (Pets/&lt;Id&gt;).</summary>
+            public bool PetArt;
+            /// <summary>The companions' portraits are painted (Companions/&lt;Id&gt;).</summary>
+            public bool CompanionArt;
             /// <summary>The rooms are painted interiors that sit in the rock's opening (Rooms/Frame).</summary>
             public bool Framed;
             /// <summary>The loading screen's painted key art is there (Splash).</summary>
@@ -75,6 +79,9 @@ namespace LastHearth.Game
             /// Scene/Arena, Scene/Board, Scene/Pier, Scene/Pen; 512 x 512, transparent, the object on the bottom
             /// edge): they open their windows from the fortress instead of the buttons along the right edge.</summary>
             public bool Scene;
+            /// <summary>The pictures of the item kinds are painted (Items/&lt;Kind&gt;, 256 x 256, transparent; ItemIcon):
+            /// without them an item is a plate in its rarity's colour with the kind's short name.</summary>
+            public bool ItemArt;
         }
 
         static Manifest manifest;
@@ -174,6 +181,9 @@ namespace LastHearth.Game
         }
 
         public static string HeroSheet(LastHearth.Core.HeroClass c) => "Hero" + c;
+
+        /// <summary>The picture of an item kind (GDD 8): one per kind, drawn only when Art.json has "itemArt".</summary>
+        public static string ItemIcon(LastHearth.Core.ItemKind kind) => "Items/" + kind;
 
         public static string DwellerSheet(int dwellerId) => "Dweller" + (dwellerId * 7 + 3) % 10;
 

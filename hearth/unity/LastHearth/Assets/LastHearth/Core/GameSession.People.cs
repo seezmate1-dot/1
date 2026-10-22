@@ -13,7 +13,7 @@ namespace LastHearth.Core
     /// The spirit («Дух крепости», 0-100) follows its target: food, warmth and coal, the hearth's mode, decorations,
     /// the chapel, beds in the living quarters, the injured and the sick, cheerful and gloomy people and the news of
     /// the day. Its band makes the rooms produce up to ±15%; in despair the fortress warns, then the newest dweller
-    /// deserts (and can be called back later). Numbers: balance.json "people" (economy.py, ECONOMY.md section 17).
+    /// deserts (and can be called back later). Numbers: balance.json "people" (economy.py, ECONOMY.md section 18).
     /// </summary>
     public sealed partial class GameSession
     {
@@ -71,15 +71,16 @@ namespace LastHearth.Core
         /// <summary>A trait by the dweller's id: good with the rarity's chance (or as asked), never one the dweller has.</summary>
         Trait RollTrait(int dwellerId, Rarity rarity, List<Trait> has, bool? good)
         {
-            var rng = new Rng(Mix(dwellerId * 31 + has.Count));
-            double roll = rng.Next();
+            // two independent hashes of the id: one decides good or bad, the other which one
+            int key = dwellerId * 31 + has.Count;
+            double roll = Mix(key) % 10000 / 10000.0;
             bool want = good ?? roll < RarityInfo(rarity).GoodTrait;
             var pool = TraitList.Where(t => t.Good == want && !has.Contains(t.Id)).ToList();
             if (pool.Count == 0)
                 pool = TraitList.Where(t => !has.Contains(t.Id)).ToList();
             if (pool.Count == 0)
                 return Trait.Hardworking;
-            return pool[(int)(rng.Next() * pool.Count) % pool.Count].Id;
+            return pool[Mix(key ^ 0x5BD1E995) % pool.Count].Id;
         }
 
         /// <summary>A well-mixed seed of a small number (neighbouring ids give unrelated traits).</summary>
@@ -239,7 +240,7 @@ namespace LastHearth.Core
         void LevelUp(Dweller d)
         {
             // a hero's strength is the hero level (essence) and gear: experience gives heroes no stat points, so the
-            // campaign and the anti-rush rules keep the economy model's pace (ECONOMY.md, sections 6, 11 and 17)
+            // campaign and the anti-rush rules keep the economy model's pace (ECONOMY.md, sections 6, 11 and 18)
             int points = d.IsHero ? 0 : GrowthPoints(RarityOf(d.Id), d.Level);
             if (points > 0)
             {
@@ -436,8 +437,8 @@ namespace LastHearth.Core
                 p.LowSince = 0;
                 return null;
             }
-            if (p.LowSince <= 0)
-                p.LowSince = now;
+            if (p.LowSince <= 0 || NextDeserter() == null)
+                p.LowSince = now; // nobody could leave yet: whoever comes or frees up gets the whole warning
             if (!force && now - p.LowSince < MoraleNumbers.DesertHours * 3600)
                 return null;
             var gone = Desert(now);
