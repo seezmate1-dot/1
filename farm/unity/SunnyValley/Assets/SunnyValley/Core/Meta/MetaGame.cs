@@ -63,8 +63,14 @@ namespace SunnyValley.Core.Meta
             return r;
         }
 
-        void Emit(MetaEventKind kind, string id, int value = 0, Reward reward = null, string text = null) =>
+        /// <summary>Events kept for the UI at most; older ones are dropped if nobody drains them.</summary>
+        public const int MaxPendingEvents = 200;
+
+        void Emit(MetaEventKind kind, string id, int value = 0, Reward reward = null, string text = null)
+        {
+            if (events.Count >= MaxPendingEvents) events.RemoveAt(0);
             events.Add(new MetaEvent { Kind = kind, Id = id, Value = value, Reward = reward, Text = text });
+        }
 
         // ------------------------------------------------------------------ currencies
 
