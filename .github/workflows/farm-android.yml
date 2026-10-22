@@ -1,0 +1,121 @@
+# Builds the Android APK of «Солнечная долина» and puts it on the Releases page (tags farm-apk-N, apart from the
+# old game's apk-N), then renders pictures of every screen and popup on eleven phone and tablet screens.
+# Needs the same three repository secrets as «Последний очаг» (hearth/INSTALL.md): UNITY_LICENSE, UNITY_EMAIL,
+# UNITY_PASSWORD. Without them the job only explains what is missing. Runs only when farm/unity changes.
+name: Farm Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master, 'claude/**']
+    paths:
+      - 'farm/unity/**'
+      - '.github/workflows/farm-android.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: farm-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Unity license present?
+        id: license
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_LICENSE" ] || [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=APK не собран::Добавьте секреты UNITY_LICENSE, UNITY_EMAIL и UNITY_PASSWORD (hearth/INSTALL.md, шаг 2)"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.license.outputs.ok == 'true'
+
+      # the Unity image for Android is large: make room on the runner
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        if: steps.license.outputs.ok == 'true'
+        with:
+          tool-cache: false
+
+      - uses: actions/cache@v4
+        if: steps.license.outputs.ok == 'true'
+        with:
+          path: farm/unity/SunnyValley/Library
+          key: Farm-Library-Android-${{ hashFiles('farm/unity/SunnyValley/Packages/manifest.json', 'farm/unity/SunnyValley/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: Farm-Library-Android-
+
+      - name: Build the APK (Unity 6.3, IL2CPP, ARM64 + ARMv7)
+        if: steps.license.outputs.ok == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: farm/unity/SunnyValley
+          targetPlatform: Android
+          buildName: SunnyValley
+          buildMethod: SunnyValley.EditorTools.BuildAndroid.BuildFromCommandLine
+          androidExportType: androidPackage
+          androidVersionCode: ${{ github.run_number }}
+          versioning: None
+
+      - uses: actions/upload-artifact@v4
+        if: steps.license.outputs.ok == 'true'
+        with:
+          name: SunnyValley-apk-${{ github.run_number }}
+          path: build/Android/*.apk
+          if-no-files-found: error
+
+      - name: Put the APK on the Releases page
+        if: steps.license.outputs.ok == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: farm-apk-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: «Солнечная долина» — сборка ${{ github.run_number }}
+          make_latest: false
+          files: build/Android/*.apk
+          body: |
+            Тестовая сборка «Солнечной долины» для Android 7.1 и новее (вертикальный экран). Откройте эту страницу
+            на телефоне, нажмите SunnyValley.apk, разрешите установку из браузера и установите. Новая сборка
+            ставится поверх старой, прогресс остаётся.
+            Ветка: ${{ github.ref_name }}, коммит ${{ github.sha }}.
+
+      # The same editor (graphics through xvfb in the game-ci image) renders the real uGUI screens into textures of
+      # each test phone's size: Editor/Screenshots.cs. If the runner cannot render (no OpenGL under xvfb), the step
+      # fails without failing the build; the layout stays guarded by farm/ui-tests and their wireframes (farm-checks.yml).
+      - name: Pictures of the screens on 11 phones and tablets
+        id: screens
+        if: always() && steps.license.outputs.ok == 'true'
+        continue-on-error: true
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: farm/unity/SunnyValley
+          targetPlatform: Android
+          buildName: Screens
+          buildMethod: SunnyValley.EditorTools.Screenshots.CaptureFromCommandLine
+          androidExportType: androidPackage
+          versioning: None
+          allowDirtyBuild: true
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.license.outputs.ok == 'true'
+        with:
+          name: SunnyValley-screens-${{ github.run_number }}
+          path: build/Android/screens/*.png
+          if-no-files-found: warn
