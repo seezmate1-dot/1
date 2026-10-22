@@ -72,7 +72,8 @@ namespace SunnyValley.Layout
         /// <summary>Board cells: nine across even a 360 dp phone, swiped rather than tapped precisely.</summary>
         public const float MinCellPoints = 36;
 
-        public const float PlateHeight = 104;
+        public const float PlateHeight = 104;     // the pill
+        public const float PlateTouch = 132;      // its tap area
         public const float PlateMaxWidth = 300;
         public const float SideButtonWidth = 172;
         public const float SideButtonHeight = 200;
@@ -87,7 +88,7 @@ namespace SunnyValley.Layout
         public const float PopupMaxWidth = 940;
         public const float PopupMargin = 48;
         public const float LevelTopHeight = 200;
-        public const float BoosterWidth = 176;
+        public const float BoosterWidth = 200;
         public const float BoosterHeight = 204;
         public const float BoosterMaxGap = 56;
         public const float BoardMargin = 16;
