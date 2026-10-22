@@ -203,6 +203,13 @@ namespace SunnyValley.Game.UI
             }
         }
 
+        /// <summary>Removes a popup at once, without the closing animation (rebuilds).</summary>
+        public void RemovePopupNow(UiView view)
+        {
+            if (view != null && popups.Remove(view))
+                view.Destroy();
+        }
+
         public void CloseAllPopups()
         {
             foreach (var p in popups.ToArray())
