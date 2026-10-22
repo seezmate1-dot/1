@@ -51,16 +51,45 @@ namespace SunnyValley.Game.UI
             }
         }
 
-        /// <summary>The icon by name: art from Resources/Icons if there is any, else a painted placeholder.</summary>
+        /// <summary>
+        /// Painted art in Resources/Art for the icon names the layouts use (farm/tools art pipeline). Names without art
+        /// look in Resources/Icons/&lt;name&gt;, and without that get a placeholder painted in code (IconPainter).
+        /// </summary>
+        public static readonly Dictionary<string, string> ArtPaths = new Dictionary<string, string>
+        {
+            { "coin", "Art/Currency/Coin" }, { "star", "Art/Currency/Star" }, { "crystal", "Art/Currency/Crystal" },
+            { "heart", "Art/Currency/Heart" },
+            { "tomato", "Art/Tiles/Tomato" }, { "corn", "Art/Tiles/Corn" }, { "apple", "Art/Tiles/Apple" },
+            { "carrot", "Art/Tiles/Carrot" }, { "eggplant", "Art/Tiles/Eggplant" }, { "blueberry", "Art/Tiles/Blueberry" },
+            { "pitchfork", "Art/Specials/Pitchfork" }, { "bomb", "Art/Specials/Bomb" }, { "rainbow", "Art/Specials/Rainbow" },
+            { "shovel", "Art/Boosters/Shovel" }, { "rake", "Art/Boosters/Rake" }, { "can", "Art/Boosters/WateringCan" },
+            { "shuffle", "Art/Boosters/Shuffle" },
+        };
+
+        /// <summary>The icon by name: painted art if there is any, else a placeholder painted in code.</summary>
         public static Sprite Icon(string name)
         {
             if (string.IsNullOrEmpty(name))
                 return null;
             if (icons.TryGetValue(name, out var cached) && cached != null)
                 return cached;
-            var art = Resources.Load<Sprite>("Icons/" + name);
+            var art = LoadArt(ArtPaths.TryGetValue(name, out string path) ? path : "Icons/" + name);
             var sprite = art != null ? art : PaintIcon(name);
             icons[name] = sprite;
+            return sprite;
+        }
+
+        static Sprite LoadArt(string path)
+        {
+            var sprite = Resources.Load<Sprite>(path);
+            if (sprite != null)
+                return sprite;
+            // imported as a plain texture (no .meta yet): make the sprite here
+            var tex = Resources.Load<Texture2D>(path);
+            if (tex == null)
+                return null;
+            sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect);
+            sprite.name = path;
             return sprite;
         }
 
