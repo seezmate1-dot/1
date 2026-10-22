@@ -19,7 +19,8 @@ namespace SunnyValley.EditorTools
             importer.spriteImportMode = SpriteImportMode.Single;
             importer.mipmapEnabled = false;
             importer.alphaIsTransparency = true;
-            importer.maxTextureSize = 512;
+            // the chapter 1 farm: zone backgrounds are 1600×1200 opaque pictures, buildings up to 1024
+            importer.maxTextureSize = assetPath.StartsWith(Root + "Ch1/Backgrounds/") ? 2048 : assetPath.StartsWith(Root + "Ch1/") ? 1024 : 512;
             importer.wrapMode = UnityEngine.TextureWrapMode.Clamp;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
         }

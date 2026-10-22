@@ -73,6 +73,11 @@ namespace SunnyValley.Game.UI
                 return null;
             if (icons.TryGetValue(name, out var cached) && cached != null)
                 return cached;
+            // the chapter 1 farm: «farm/Ch1/Looks/PorchStone» (a picker card), «portrait.anya» (a speaker)
+            if (name.StartsWith("farm/"))
+                return icons[name] = FarmArt.ByArt(name.Substring(5));
+            if (name.StartsWith("portrait."))
+                return icons[name] = FarmArt.Portrait(name.Substring(9));
             var art = LoadArt(ArtPaths.TryGetValue(name, out string path) ? path : "Icons/" + name);
             var sprite = art != null ? art : PaintIcon(name);
             icons[name] = sprite;
