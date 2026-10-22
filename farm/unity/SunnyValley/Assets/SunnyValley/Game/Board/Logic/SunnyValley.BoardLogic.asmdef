@@ -1,0 +1,16 @@
+{
+    "name": "SunnyValley.BoardLogic",
+    "rootNamespace": "SunnyValley.Game.Board",
+    "references": [
+        "SunnyValley.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
