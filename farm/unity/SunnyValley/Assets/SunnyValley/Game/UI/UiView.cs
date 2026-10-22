@@ -167,7 +167,7 @@ namespace SunnyValley.Game.UI
             SetShape(face, n);
             face.color = ToColor(n.Color);
             face.raycastTarget = false;
-            if (n.Kind == NodeKind.Button || n.Kind == NodeKind.Panel && n.Depth > 0)
+            if (n.Shape == LShape.RoundRect && (n.Kind == NodeKind.Button || n.Kind == NodeKind.Panel && n.Depth > 0))
             {
                 // a soft highlight on the upper half: the glossy cartoon look
                 var shine = NewRect("shine", faceRect);
@@ -176,8 +176,7 @@ namespace SunnyValley.Game.UI
                 shine.offsetMax = new Vector2(-10, -8);
                 var si = shine.gameObject.AddComponent<Image>();
                 SetShape(si, n);
-                if (n.Shape == LShape.RoundRect)
-                    si.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, n.Radius - 10);
+                si.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, n.Radius - 10);
                 si.color = new Color(1, 1, 1, 0.18f);
                 si.raycastTarget = false;
             }
