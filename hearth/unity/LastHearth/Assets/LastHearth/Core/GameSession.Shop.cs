@@ -89,7 +89,8 @@ namespace LastHearth.Core
                 new ShopItem { Goods = ShopGoods.Food, Amount = Formulas.DwellerCap(Balance, L) * 24, PayWith = ResourceType.Silver, Price = 2 * income },
             };
             // shuffle deterministically and keep 7, then the "deal of the day" for Sparks
-            var picked = offers.OrderBy(_ => rng.Next()).Take(Balance.Activities.Shop.Slots - 1).ToList();
+            int slots = Math.Min(offers.Count, Balance.Activities.Shop.Slots - 1 + (int)SpecSum(SpecEffect.ShopSlot)); // «Связи» of the trading post
+            var picked = offers.OrderBy(_ => rng.Next()).Take(slots).ToList();
             picked.Add(new ShopItem { Goods = ShopGoods.HourglassDeal, Amount = 2 * 3600, PayWith = ResourceType.Sparks, Price = 30 });
             State.Shop = picked;
         }

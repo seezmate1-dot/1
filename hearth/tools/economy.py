@@ -701,6 +701,15 @@ def blueprints_per_route(level):
 
 TREASURE_BLUEPRINTS = 10         # Кладоискатели add Чертежи per event
 
+# The points of a route (ACTIVITIES.md 4): a fight played by hand lasts 30 seconds against an enemy as strong as
+# the team (its health and attack x the team's own); a win adds a share of the route's Blueprints. The ruins keep
+# notes about the world, the caches and far stores pieces of maps for the Treasure hunters (3 per map at most).
+ROUTE_SKIRMISH = {"seconds": 30, "hp": 2.0, "attack": 1.0, "bonus": 0.3}
+ROUTE_NOTE_CHANCE = 0.35
+ROUTE_FRAGMENT_CHANCE = (0.5, 0.25)  # the cache of the risky way, the far stores of the long one
+ROUTE_FRAGMENTS_PER_MAP = 3
+ROUTE_REST_GUARD = 0.2           # each good rest takes 20% off the chance of the illness from the fog
+
 # Event currencies and shops (docs/EVENTS.md, 1): every threshold brings currency, the place in the
 # rating adds some; it buys in the event's shop until 24 hours after the end, then the rest turns
 # into silver 1:5. The shops sell the activity resource the model counts per event (Сердцевины of the
@@ -1502,7 +1511,12 @@ def export_balance(result):
             "routes": {"unlock": ROUTES_UNLOCK, "squadsByLevel": [routes_per_day(lv) for lv in range(1, 31)],
                        "blueprintsByLevel": [blueprints_per_route(lv) for lv in range(1, 31)],
                        "essenceShare": ROUTE_ESSENCE_SHARE, "materialHours": ROUTE_MATERIAL_HOURS,
-                       "incomeByLevel": [int(round(total_income(lv))) for lv in range(1, 31)]},
+                       "incomeByLevel": [int(round(total_income(lv))) for lv in range(1, 31)],
+                       "skirmishSeconds": ROUTE_SKIRMISH["seconds"], "skirmishHp": ROUTE_SKIRMISH["hp"],
+                       "skirmishAttack": ROUTE_SKIRMISH["attack"], "skirmishBonus": ROUTE_SKIRMISH["bonus"],
+                       "noteChance": ROUTE_NOTE_CHANCE, "cacheFragmentChance": ROUTE_FRAGMENT_CHANCE[0],
+                       "farFragmentChance": ROUTE_FRAGMENT_CHANCE[1], "fragmentsPerMap": ROUTE_FRAGMENTS_PER_MAP,
+                       "restGuard": ROUTE_REST_GUARD, "cardsMax": 2},
             "specializations": {"tiers": [list(t) for t in SPEC_TIERS], "ranks": SPEC_RANKS,
                                 "ranksFromHearth": SPEC_RANKS_FROM},
             "shop": {"fourthBuilder": FOURTH_BUILDER_PRICE, "fourthBuilderFrom": 8, "packPrice": PACK_PRICE,

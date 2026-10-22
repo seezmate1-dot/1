@@ -153,6 +153,7 @@ namespace LastHearth.Core
             int stars = battle.Stars;
             bool weekly = hunt.Weekly && battle.Won;
             double mult = weekly ? Balance.Activities.Hunt.Weekly.CoreMult : 1;
+            mult *= 1 + SpecSum(SpecEffect.HuntCores); // the library's and the archive's bestiaries (GameSession.Specs.cs)
             long cores = (long)Math.Round(Balance.Activities.Hunt.CoresByLevel[hunt.Rank - 1] * Combat.StarReward[stars] * mult);
             State.Wallet[ResourceType.Cores] += cores;
             reward = new HuntReward { Stars = stars, Cores = cores, Weekly = weekly };

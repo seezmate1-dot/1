@@ -36,6 +36,23 @@ namespace LastHearth.Core
         public bool Back;
         public string Report = "";
         public int Card = -1;
+
+        // the points of the path (GameSession.Routes.cs)
+        /// <summary>How many points of the path the team has passed.</summary>
+        public int Passed;
+        /// <summary>What happened at each passed point, in order.</summary>
+        public List<string> Log = new List<string>();
+        /// <summary>Fights the player took by hand: node id -> 1 won, 0 lost, -1 started and left (the stats decide).</summary>
+        public Dictionary<int, int> Skirmish = new Dictionary<int, int>();
+        /// <summary>What the points brought so far: a share of the route's Blueprints, hours of materials, injuries, good rests.</summary>
+        public double Share;
+        public double MatHours;
+        public int Hurt;
+        public int Rests;
+        public int Fragments;
+        public List<int> Notes = new List<int>();
+        /// <summary>Decision cards after the current one (Card): a route brings one or two.</summary>
+        public List<int> MoreCards = new List<int>();
     }
 
     public enum ShopGoods
@@ -158,6 +175,8 @@ namespace LastHearth.Core
         public int MapNo;
         public int Pieces;
         public int Treasures;
+        /// <summary>Pieces of this map brought from the routes (GameSession.UseMapFragment).</summary>
+        public int RouteFragments;
 
         // Fair
         public long RateKey = -1;
@@ -240,12 +259,18 @@ namespace LastHearth.Core
         /// <summary>Room specializations by room type: chosen option (0 none, 1 or 2) and rank of each tier.</summary>
         public Dictionary<RoomType, int[]> SpecChoice = new Dictionary<RoomType, int[]>();
         public Dictionary<RoomType, int[]> SpecRank = new Dictionary<RoomType, int[]>();
+        /// <summary>The version of the specialization table the choices follow (GameSession.Specs.cs): 0 the old generic one.</summary>
+        public int SpecTable;
 
         // Expedition routes (ACTIVITIES.md, 4)
         public List<Expedition> Expeditions = new List<Expedition>();
         public int NextExpeditionId = 1;
         public long RoutesDay;
         public int RoutesStarted;
+        /// <summary>Notes about the world the routes found (ids of GameSession.RouteNotes), in the order found.</summary>
+        public List<int> RouteNotes = new List<int>();
+        /// <summary>Pieces of maps the routes brought, waiting for the Treasure hunters.</summary>
+        public int MapFragments;
 
         // Daily tasks, login calendar, achievements (MODES.md, 7)
         public long DailyDay = -1;
