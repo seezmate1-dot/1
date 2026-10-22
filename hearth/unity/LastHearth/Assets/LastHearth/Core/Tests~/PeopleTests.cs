@@ -368,6 +368,9 @@ namespace LastHearth.Core.Tests
             hero.Traits = new List<Trait> { Trait.Hardy };
             hero.Level = 5;
             hero.Xp = 0;
+            // a new fortress is below the first battle's power lock (MODES.md, 1); the lock is not what this test checks
+            Assert.AreEqual(Fail.TooWeak, s.StartMission(0, T0, out _));
+            s.AdminSetPowerGate(false);
             Assert.AreEqual(Fail.None, s.StartMission(0, T0, out var battle));
             battle.Brain = Brains.Careful();
             s.FinishMission(battle, out var reward);
@@ -761,7 +764,7 @@ namespace LastHearth.Core.Tests
             var spirit = new List<double>();
             bot.PlayDays(TestData.Start, 20, day => spirit.Add(s.Morale));
             TestContext.WriteLine("spirit by day: " + string.Join(" ", spirit.Select(x => x.ToString("0"))) + " | lowest " + bot.LowestSpirit.ToString("0") +
-                                  " | hungry turns " + bot.HungryTurns + " | blazing turns " + bot.BlazingTurns);
+                                  " | hungry turns " + bot.HungryTurns + " | blazing turns " + bot.BlazingTurns + " | smoulder " + bot.SmolderTurns + " | lowest at " + bot.LowestWhy);
             Assert.AreEqual(0, s.State.People.DesertedTotal, "nobody deserts a cared-for fortress");
             Assert.IsTrue(spirit.All(x => x >= 40), "calm at the end of every day");
             Assert.Greater(bot.LowestSpirit, M.DesertBelow, "never in despair");

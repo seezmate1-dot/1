@@ -104,8 +104,10 @@ namespace LastHearth.Core.Tests
 
         // ------------------------------------------------------------------ the spirit of the fortress (GDD 7, GameSession.People.cs)
 
-        public int HungryTurns, BlazingTurns, Recalls;
+        public int HungryTurns, BlazingTurns, SmolderTurns, Recalls;
         public double LowestSpirit = 100;
+        /// <summary>When the spirit was lowest and why (the factors then).</summary>
+        public string LowestWhy = "";
 
         /// <summary>
         /// Keeps the spirit healthy: when it sinks below calm, the hearth blazes (+10) while there is coal for a day of
@@ -114,6 +116,9 @@ namespace LastHearth.Core.Tests
         void Spirit(long now)
         {
             double spirit = S.Morale;
+            if (spirit < LowestSpirit)
+                LowestWhy = string.Format("day {0:0.00}, hearth {1}: ", (now - TestData.Start) / 86400.0, S.State.HearthLevel) +
+                            string.Join("; ", S.MoraleFactors(now).Select(f => f.Name + " " + f.Value.ToString("0.#")));
             LowestSpirit = Math.Min(LowestSpirit, spirit);
             if (S.FoodReserve() < 1)
                 HungryTurns++;
@@ -123,6 +128,19 @@ namespace LastHearth.Core.Tests
                 S.SetMode(HearthMode.Blazing);
             else if (S.State.Mode == HearthMode.Blazing && (spirit >= calm + 10 || S.State.Wallet[ResourceType.Coal] < dayOfBlaze / 4))
                 S.SetMode(HearthMode.Steady);
+            // a careful player never lets the hearth go out over the night: short of half a day of coal it smoulders
+            // (half the coal, a little chill) until a day of coal is back
+            double steadyHour = Formulas.CoalBurnPerHour(S.Balance, S.State.HearthLevel, HearthMode.Steady);
+            long coal = S.State.Wallet[ResourceType.Coal];
+            if (S.State.Mode == HearthMode.Steady && coal < steadyHour * 12)
+            {
+                S.SetMode(HearthMode.Smoldering);
+                SmolderTurns++;
+            }
+            else if (S.State.Mode == HearthMode.Smoldering && coal >= steadyHour * 24)
+            {
+                S.SetMode(HearthMode.Steady);
+            }
             if (S.State.Mode == HearthMode.Blazing)
                 BlazingTurns++;
             while (S.Deserters.Count > 0 && S.Recall(0, now, out _) == Fail.None)
