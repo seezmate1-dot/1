@@ -68,7 +68,7 @@ namespace SunnyValley.Layout
             float rowW = W - 2 * M;
             float pw = Math.Min((rowW - 3 * Tokens.Gap) / 4, Tokens.PlateMaxWidth);
             float x0 = (rowW - (4 * pw + 3 * Tokens.Gap)) / 2;
-            bool full = hud.Lives >= hud.MaxLives;
+            bool full = hud.Lives >= hud.MaxLives && !hud.InfiniteLives;
             var plates = new[]
             {
                 Kit.Plate("farm.coins", Icons.Coin, Format.Amount(hud.Coins)),
@@ -97,8 +97,29 @@ namespace SunnyValley.Layout
             L.Safe.Add(Kit.Button("farm.play", "Играть " + hud.Level, Tokens.Yellow, Tokens.YellowShade, Tokens.PlayHeight,
                     fontSize: Tokens.FontPlay, fontMin: Tokens.FontPlayMin))
                 .BottomCenter(0, M + Tokens.Gap, playW, Tokens.PlayHeight);
+
+            // over it: the zone being restored with its progress (a tap shows it on the farm)
+            if (hud.ZoneName != null)
+            {
+                float zw = Math.Min(W - 2 * M, ZoneStripWidth);
+                var zone = L.Safe.Add(new UiNode("farm.zone", NodeKind.Button)
+                {
+                    Shape = Shape.RoundRect, Radius = Tokens.RadiusMedium, Color = Tokens.Plate,
+                });
+                zone.BottomCenter(0, M + Tokens.Gap + Tokens.PlayHeight + Tokens.GapBig, zw, ZoneStripHeight);
+                zone.Add(Kit.Label("farm.zone.name", hud.ZoneName, Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextLight, outline: true))
+                    .StretchTop(24, 24, 8, 52);
+                float value = hud.ZoneTotal > 0 ? (float)hud.ZoneDone / hud.ZoneTotal : 1;
+                zone.Add(Kit.Bar("farm.zone.bar", value, ZoneProgress(hud.ZoneDone, hud.ZoneTotal)))
+                    .StretchBottom(24, 24, 16, Tokens.ProgressHeight);
+            }
             return L.Finish();
         }
+
+        public const float ZoneStripWidth = 640;
+        public const float ZoneStripHeight = 140;
+
+        public static string ZoneProgress(int done, int total) => done + " из " + total;
 
         static UiNode SideButton(UiNode parent, string id, string icon, uint color, string caption, int badge)
         {

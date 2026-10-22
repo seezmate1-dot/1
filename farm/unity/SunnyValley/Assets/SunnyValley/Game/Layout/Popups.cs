@@ -7,7 +7,7 @@ namespace SunnyValley.Layout
     /// The popups: a dark veil over the whole screen and a wooden panel centred in the safe area, as wide as the
     /// screen allows up to PopupMaxWidth. The content is stacked top to bottom; the panel is as tall as its content.
     /// </summary>
-    public static class Popups
+    public static partial class Popups
     {
         public static readonly string[] PreBoosterIcons = { Icons.Pitchfork, Icons.Bomb, Icons.Rainbow };
         public static readonly string[] PreBoosterNames = { "Вилы", "Бомба", "Радуга" };
@@ -152,10 +152,31 @@ namespace SunnyValley.Layout
 
         // ------------------------------------------------------------------ tasks: a scrolling list
 
-        public static UiLayout Tasks(CanvasFit fit, IList<TaskItem> tasks)
+        /// <summary>
+        /// The restoration tasks open now (GDD 5): the zone and its progress on top, then a scrolling list; each row
+        /// is the task's title with the zone under it and a button with its star cost (green when the stars on hand
+        /// pay for it, grey when not).
+        /// </summary>
+        public static UiLayout Tasks(CanvasFit fit, TasksInfo info)
         {
             var L = Begin("tasks", fit, "Задания", true, out var s);
-            int n = tasks?.Count ?? 0;
+            var head = s.Add(Kit.Panel("tasks.zone", Tokens.WoodInset, Tokens.RadiusMedium), 150);
+            head.Add(Kit.Label("tasks.zone.name", info.ZoneName ?? "", Tokens.FontBody, Tokens.FontBodyMin, Tokens.TextDark, 1, TextAlign.Left))
+                .StretchTop(28, 220, 12, 60);
+            head.Add(Kit.Icon("tasks.zone.star", Icons.Star)).TopRight(136, 10, 64, 64);
+            head.Add(Kit.Label("tasks.zone.stars", Format.Amount(info.Stars), Tokens.FontValue, Tokens.FontValueMin, Tokens.TextDark, 1, TextAlign.Left))
+                .TopRight(16, 12, 116, 60);
+            head.Add(Kit.Bar("tasks.zone.bar", info.ZoneTotal > 0 ? (float)info.ZoneDone / info.ZoneTotal : 1,
+                Screens.ZoneProgress(info.ZoneDone, info.ZoneTotal))).StretchBottom(28, 28, 14, Tokens.ProgressHeight);
+
+            var tasks = info.Tasks ?? new List<TaskItem>();
+            int n = tasks.Count;
+            if (n == 0)
+            {
+                s.Add(Kit.Label("tasks.empty", "Новые задания откроются скоро — проходите уровни!", Tokens.FontBody, Tokens.FontBodyMin,
+                    Tokens.TextMuted, 2), 2 * Tokens.RowHeight);
+                return End(L, s);
+            }
             float rowStep = Tokens.RowHeight + Tokens.Gap;
             float contentH = Math.Max(0, n * rowStep - Tokens.Gap);
             // the list takes what the screen leaves, at least two rows, at most all of them
@@ -165,27 +186,41 @@ namespace SunnyValley.Layout
             var content = scroll.Add(Kit.Group("tasks.content")).StretchTop(0, 0, 0, contentH);
             for (int i = 0; i < n; i++)
             {
-                var row = content.Add(Kit.Panel("tasks.row" + i, Tokens.WoodInset, Tokens.RadiusMedium));
+                var t = tasks[i];
+                string id = "tasks.row" + i;
+                var row = content.Add(Kit.Panel(id, Tokens.WoodInset, Tokens.RadiusMedium));
                 row.StretchTop(0, 0, i * rowStep, Tokens.RowHeight);
-                row.Add(Kit.Label("tasks.row" + i + ".title", tasks[i].Title, Tokens.FontBody, Tokens.FontBodyMin, Tokens.TextDark, 2, TextAlign.Left))
-                    .Stretch(28, 220 + 32, 10, 10);
-                row.Add(Kit.Button("tasks.row" + i + ".do", tasks[i].Stars.ToString(), Tokens.Green, Tokens.GreenShade, Tokens.SmallButtonHeight, Icons.Star))
+                bool sub = t.Zone != null || t.HasLooks;
+                row.Add(Kit.Label(id + ".title", t.Title, Tokens.FontBody, Tokens.FontBodyMin, Tokens.TextDark, sub ? 1 : 2, TextAlign.Left))
+                    .Stretch(28, 220 + 32, 12, sub ? 66 : 12);
+                if (sub)
+                {
+                    string caption = (t.Zone ?? "") + (t.HasLooks ? (t.Zone != null ? " · " : "") + "3 вида" : "");
+                    row.Add(Kit.Label(id + ".zone", caption, Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextMuted, 1, TextAlign.Left))
+                        .StretchBottom(28, 220 + 32, 14, 50);
+                }
+                row.Add(Kit.Button(id + ".do", t.Stars.ToString(), t.Affordable ? Tokens.Green : Tokens.TrackOff,
+                        t.Affordable ? Tokens.GreenShade : Tokens.WoodDark, Tokens.SmallButtonHeight, Icons.Star))
                     .RightMiddle(16, 0, 210, Tokens.SmallButtonHeight);
             }
             return End(L, s);
         }
 
-        /// <summary>The first tasks of chapter 1 (GDD §5), until Core's meta provides them.</summary>
-        public static List<TaskItem> DemoTasks() => new List<TaskItem>
+        /// <summary>Tasks of chapter 1 with long titles, for the tests and previews.</summary>
+        public static TasksInfo DemoTasks() => new TasksInfo
         {
-            new TaskItem("Расчистить двор от бурьяна", 1),
-            new TaskItem("Починить крыльцо", 1),
-            new TaskItem("Поставить новый забор вдоль дороги к дому", 2),
-            new TaskItem("Вставить окна в доме", 2),
-            new TaskItem("Покрасить амбар", 3),
-            new TaskItem("Посадить цветы у калитки", 1),
-            new TaskItem("Вычистить пруд", 2),
-            new TaskItem("Починить курятник", 3),
+            ZoneName = "Мельница", ZoneDone = 3, ZoneTotal = 9, Stars = 99_999,
+            Tasks = new List<TaskItem>
+            {
+                new TaskItem("Расчистить двор от бурьяна", 1, "Двор"),
+                new TaskItem("Починить крыльцо", 1, "Дом", true, true),
+                new TaskItem("Поставить фонарики вдоль берега", 2, "Пруд", false),
+                new TaskItem("Заполнить амбар первым урожаем", 2, "Амбар", false),
+                new TaskItem("Расчистить дорогу к мельнице", 1, "Мельница"),
+                new TaskItem("Повесить фонарь над воротами", 1),
+                new TaskItem("Поставить мостки для рыбалки", 1, "Пруд", true, false),
+                new TaskItem("Подготовить праздник урожая", 2, "Мельница", false, true),
+            },
         };
     }
 }

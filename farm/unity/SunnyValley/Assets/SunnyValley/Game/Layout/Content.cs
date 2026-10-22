@@ -18,6 +18,12 @@ namespace SunnyValley.Layout
         public int Level = 1;
         /// <summary>Red dots on the side buttons (0 = none).</summary>
         public int TasksBadge, EventsBadge, OrdersBadge, ShopBadge;
+        /// <summary>Infinite lives running: the plate shows their timer instead of «Полные».</summary>
+        public bool InfiniteLives;
+        /// <summary>The zone being restored, shown over «Играть»; null hides the strip.</summary>
+        public string ZoneName = "Двор";
+        public int ZoneDone = 3;
+        public int ZoneTotal = 9;
     }
 
     /// <summary>One goal of a level: a piece or obstacle icon and how many are left.</summary>
@@ -85,13 +91,89 @@ namespace SunnyValley.Layout
 
     public sealed class TaskItem
     {
+        public string Id;
         public string Title;
         public int Stars;
+        /// <summary>The zone's name under the title (null: none).</summary>
+        public string Zone;
+        /// <summary>The stars on hand pay for it: a green button, else a grey one.</summary>
+        public bool Affordable = true;
+        /// <summary>Has 3 looks to choose from (a small «3 вида» mark).</summary>
+        public bool HasLooks;
 
-        public TaskItem(string title, int stars)
+        public TaskItem(string title, int stars, string zone = null, bool affordable = true, bool hasLooks = false, string id = null)
         {
+            Id = id;
             Title = title;
             Stars = stars;
+            Zone = zone;
+            Affordable = affordable;
+            HasLooks = hasLooks;
         }
+    }
+
+    /// <summary>The task list: the current zone's progress over the rows.</summary>
+    public sealed class TasksInfo
+    {
+        public string ZoneName = "Двор";
+        public int ZoneDone = 3;
+        public int ZoneTotal = 9;
+        public int Stars = 2;
+        public List<TaskItem> Tasks = new List<TaskItem>();
+    }
+
+    /// <summary>One look of a task with choices: its picture (an icon name, «farm/…» for farm art) and name.</summary>
+    public sealed class LookCard
+    {
+        public string Icon;
+        public string Name;
+
+        public LookCard(string icon, string name)
+        {
+            Icon = icon;
+            Name = name;
+        }
+    }
+
+    /// <summary>The look picker: three cards, the picked one highlighted, a confirm button.</summary>
+    public sealed class PickerInfo
+    {
+        public string Title = "Выберите вид";
+        public string Caption = "Каким будет крыльцо?";
+        public List<LookCard> Cards = new List<LookCard>();
+        public int Selected;
+        public string Button = "Выбрать";
+        /// <summary>The star cost shown on the button (0: none, changing a look is free).</summary>
+        public int Stars;
+    }
+
+    /// <summary>One replica of a dialogue or a story scene.</summary>
+    public sealed class DialogueInfo
+    {
+        public string Name = "Аня";
+        public string Portrait = "portrait.anya";
+        public string Text = "";
+        /// <summary>A story scene's title over the screen (null for a task's replica).</summary>
+        public string SceneTitle;
+        public bool CanSkip;
+        /// <summary>The portrait stands on the right (the second speaker of a scene).</summary>
+        public bool Right;
+    }
+
+    /// <summary>A zone or the chapter is done: a big picture, a line of text, the rewards.</summary>
+    public sealed class CelebrateInfo
+    {
+        public string Title = "Двор восстановлен!";
+        public string Text = "";
+        public string Icon = "star";
+        public List<(string icon, string text)> Rewards = new List<(string icon, string text)>();
+        public string Button = "Дальше";
+    }
+
+    /// <summary>«Пока вас не было»: what grew and came back while the game was closed.</summary>
+    public sealed class AwayInfo
+    {
+        public string Away = "Вас не было 2 ч";
+        public List<string> Lines = new List<string>();
     }
 }
