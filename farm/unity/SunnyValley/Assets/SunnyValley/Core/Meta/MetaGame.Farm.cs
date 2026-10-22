@@ -127,8 +127,11 @@ namespace SunnyValley.Core.Meta
             return r;
         }
 
-        /// <summary>Plants a crop: uses one unit from the barn as seed if there is one, otherwise buys the seed.</summary>
-        public ActionResult Plant(long now, int plot, string crop)
+        /// <summary>
+        /// Plants a crop (GDD 6: seeds for coins or from the harvest): buys the seed, or with
+        /// <paramref name="fromBarn"/> uses one unit of the crop from the barn instead.
+        /// </summary>
+        public ActionResult Plant(long now, int plot, string crop, bool fromBarn = false)
         {
             if (!FarmOpen) return ActionResult.Fail(MetaError.FarmClosed);
             if (plot < 0 || plot >= State.Farm.Plots.Count) return ActionResult.Fail(MetaError.UnknownId);
@@ -136,8 +139,11 @@ namespace SunnyValley.Core.Meta
             if (!ItemUnlocked(crop)) return ActionResult.Fail(MetaError.Locked);
             var p = State.Farm.Plots[plot];
             if (p.Crop != null) return ActionResult.Fail(MetaError.Busy);
-            if (BarnCount(crop) > 0)
+            if (fromBarn)
+            {
+                if (BarnCount(crop) <= 0) return ActionResult.Fail(MetaError.NotEnoughItems);
                 Dict.Add(State.Barn, crop, -1);
+            }
             else if (!SpendCoins(def.SeedCoins))
                 return ActionResult.Fail(MetaError.NotEnoughCoins);
             p.Crop = crop;

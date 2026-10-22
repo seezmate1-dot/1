@@ -111,7 +111,7 @@ namespace SunnyValley.Core.Meta
     {
         public string Item;
         public int GrowSeconds;
-        /// <summary>Coins for a seed when the barn has none of this crop (planting uses one from the barn first).</summary>
+        /// <summary>Coins for a seed (or the player plants one unit from the barn).</summary>
         public int SeedCoins;
         /// <summary>Units harvested from one plot.</summary>
         public int Yield = 2;
