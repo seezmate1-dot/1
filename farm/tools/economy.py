@@ -33,7 +33,7 @@ CHAPTER_PATH = os.path.join(META, "chapter1.json")
 DOC_PATH = os.path.join(ROOT, "docs", "ECONOMY.md")
 
 MAX_LEVEL = 30
-MODEL_DAYS = 60
+MODEL_DAYS = 90
 
 # ============================================================== the player the model plays for
 SESSION_HOURS = [8.0, 12.0, 16.0, 19.5, 22.5]   # local time of the 5 daily sessions
@@ -959,7 +959,7 @@ def write_doc(items, balance, zones, total_stars, chapter_day, reached, flows, f
       "(база %d, расширения за пилу и топор). Мастерским и фермам животных нужны работники (жители)." % (
         TOWN_BASE_POPULATION_CAP, TOWN_BASE_LOTS))
     a("")
-    a("| Мастерская | Уровень | Монет | Жителей |")
+    a("| Мастерская или ферма животных | Уровень | Монет | Жителей |")
     a("|---|---:|---:|---:|")
     for w in WORKSHOPS:
         a("| %s | %d | %d | %d |" % (w[1], w[2], w[3], w[4]))
@@ -977,6 +977,23 @@ def write_doc(items, balance, zones, total_stars, chapter_day, reached, flows, f
         START["crystals"], MATCH3["milestoneEvery"], MATCH3["milestoneReward"]["crystals"], DAILY_CHEST["crystals"],
         SPEEDUP["secondsPerCrystal"] // 60, LIVES["refillCrystals"]))
     a("- Жизни: %d, одна за %d мин; проигрыш тратит жизнь, выигрыш — нет." % (LIVES["max"], LIVES["regenSeconds"] // 60))
+    wins_day = len(SESSION_HOURS) * ATTEMPTS_PER_SESSION * WIN_RATE
+    lv_cr = sum(level_reward(l)["crystals"] for l in range(2, 21)) / max(1.0, reached.get(20, MODEL_DAYS) - reached[1])
+    cr_day = DAILY_CHEST["crystals"] + wins_day / MATCH3["milestoneEvery"] * MATCH3["milestoneReward"]["crystals"] + lv_cr
+    slots = sum(sum(w[6]) for w in WORKSHOPS)
+    a("- Приток кристаллов ≈ %.0f в день (сундук дня, вехи 3-в-ряд, уровни фермы); все слоты мастерских стоят %d — "
+      "около %.0f дней накоплений, ускорения и жизни — остальное." % (cr_day, slots, slots / cr_day))
+    a("- Монеты в день по уровням — в таблице уровней; 3-в-ряд даёт ≈ %.0f монет в день (%.0f побед)." % (
+        wins_day * (MATCH3["winCoins"] + BOARD_COINS_AVG), wins_day))
+    a("")
+    a("## Проверка ботом")
+    a("")
+    a("`MetaBotTests` играет настоящими правилами ядра %d и 30 дней: те же сессии и доля побед, звёзды — сразу в задания, "
+      "на ферме — сбор, заказы, производство под заказы, покупки, продажа при полном амбаре. Проверяется: глава 1 "
+      "за %.0f–%.0f дня, каждый уровень фермы — в пределах %d%% от дня модели (считая от открытия фермы, не меньше "
+      "¾ дня), уровень на 30-й день — модельный ±1, каждый день есть прогресс, амбар не держит урожай дольше двух "
+      "заходов подряд, монеты не уходят в минус; слабый игрок (60%% побед) медленнее, но не застревает." % (
+        7, 3.0, 5.0, TOLERANCE_PERCENT))
     a("")
     return "\n".join(L) + "\n"
 
