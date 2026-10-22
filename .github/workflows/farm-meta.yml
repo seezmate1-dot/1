@@ -1,0 +1,30 @@
+name: farm-meta
+
+# «Солнечная долина»: the economy model and the core (match-3 + meta) tests.
+on:
+  push:
+    paths:
+      - "farm/**"
+      - ".github/workflows/farm-meta.yml"
+  pull_request:
+    paths:
+      - "farm/**"
+      - ".github/workflows/farm-meta.yml"
+
+jobs:
+  economy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Economy model checks; balance.json and ECONOMY.md are generated, not edited by hand
+        run: python3 farm/tools/economy.py --check
+
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Core tests (the same C# that Unity compiles), incl. the 30-day player bot
+        run: dotnet test farm/core-tests
