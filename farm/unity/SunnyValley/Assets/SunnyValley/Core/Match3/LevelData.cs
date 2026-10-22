@@ -35,6 +35,9 @@ namespace SunnyValley.Core.Match3
         /// </summary>
         [JsonProperty("pieces", NullValueHandling = NullValueHandling.Ignore)] public string[] Pieces;
 
+        /// <summary>Preset specials with a chosen colour (override "pieces" at that cell).</summary>
+        [JsonProperty("specials", NullValueHandling = NullValueHandling.Ignore)] public List<SpecialData> Specials;
+
         [JsonProperty("baskets", NullValueHandling = NullValueHandling.Ignore)] public List<BasketData> Baskets;
         [JsonProperty("walls", NullValueHandling = NullValueHandling.Ignore)] public List<WallData> Walls;
         /// <summary>Cells that create new pieces. Default: the top cell of every column.</summary>
@@ -58,6 +61,29 @@ namespace SunnyValley.Core.Match3
         [JsonProperty("y")] public int Y;
         [JsonProperty("color")] public string Color;
         [JsonProperty("count")] public int Count;
+    }
+
+    public sealed class SpecialData
+    {
+        [JsonProperty("x")] public int X;
+        [JsonProperty("y")] public int Y;
+        /// <summary>lineH, lineV, bee, bomb, rainbow.</summary>
+        [JsonProperty("kind")] public string Kind;
+        /// <summary>Colour (ignored for rainbow).</summary>
+        [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)] public string Color;
+
+        public static SpecialKind ParseKind(string s)
+        {
+            switch (s)
+            {
+                case "lineH": return SpecialKind.LineH;
+                case "lineV": return SpecialKind.LineV;
+                case "bee": return SpecialKind.Bee;
+                case "bomb": return SpecialKind.Bomb;
+                case "rainbow": return SpecialKind.Rainbow;
+                default: throw new System.FormatException("Unknown special '" + s + "'");
+            }
+        }
     }
 
     public sealed class WallData

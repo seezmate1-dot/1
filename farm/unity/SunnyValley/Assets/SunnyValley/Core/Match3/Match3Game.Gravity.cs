@@ -179,6 +179,20 @@ namespace SunnyValley.Core.Match3
                 }
                 Board.Pieces[i] = p;
             }
+            if (Level.Specials != null)
+                foreach (var sd in Level.Specials)
+                {
+                    int i = Topo.Index(sd.X, sd.Y);
+                    var kind = SpecialData.ParseKind(sd.Kind);
+                    preset[i] = true;
+                    Board.Pieces[i] = new Piece
+                    {
+                        Id = Board.Pieces[i].Id != 0 ? Board.Pieces[i].Id : _nextPieceId++,
+                        Kind = PieceKind.Tile,
+                        Special = kind,
+                        Color = kind == SpecialKind.Rainbow ? TileColor.None : sd.Color != null ? TileColors.Parse(sd.Color) : (TileColor)Rng.Next(Colors),
+                    };
+                }
             for (int attempt = 0; attempt < 200; attempt++)
             {
                 for (int i = 0; i < n; i++)

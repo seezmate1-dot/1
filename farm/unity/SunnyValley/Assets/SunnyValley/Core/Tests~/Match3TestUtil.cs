@@ -48,6 +48,21 @@ namespace SunnyValley.Core.Tests
             return rows.Select(r => new string(r)).ToArray();
         }
 
+        public static LevelData With(this LevelData level, params (int x, int y, string kind, string color)[] specials)
+        {
+            level.Specials ??= new List<SpecialData>();
+            foreach (var (x, y, kind, color) in specials) level.Specials.Add(new SpecialData { X = x, Y = y, Kind = kind, Color = color });
+            return level;
+        }
+
+        public static System.Collections.Generic.HashSet<Pos> Rect(int x0, int y0, int x1, int y1)
+        {
+            var set = new HashSet<Pos>();
+            for (int y = y0; y <= y1; y++)
+                for (int x = x0; x <= x1; x++) set.Add(new Pos(x, y));
+            return set;
+        }
+
         public static MatchEvent GroupAt(MoveResult r, int x, int y, int wave = 0) =>
             r.OfType<MatchEvent>().FirstOrDefault(m => m.Wave == wave && m.Cells.Contains(new Pos(x, y)));
 

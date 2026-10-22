@@ -137,6 +137,22 @@ namespace SunnyValley.Core.Match3
                         }
                     }
             }
+            if (level.Specials != null)
+                foreach (var sd in level.Specials)
+                {
+                    if (!Cell(sd.X, sd.Y)) { errors.Add("special (" + sd.X + "," + sd.Y + ") is not on a cell"); continue; }
+                    if (blocker[sd.Y * w + sd.X] != ObstacleKind.None) errors.Add("special (" + sd.X + "," + sd.Y + ") is under a blocker");
+                    try
+                    {
+                        var k = SpecialData.ParseKind(sd.Kind);
+                        if (k != SpecialKind.Rainbow && sd.Color != null)
+                        {
+                            var c = TileColors.Parse(sd.Color);
+                            if (c == TileColor.None || (int)c >= level.Colors) errors.Add("special (" + sd.X + "," + sd.Y + ") colour not in play");
+                        }
+                    }
+                    catch (FormatException e) { errors.Add(e.Message); }
+                }
             if (level.Walls != null)
                 foreach (var wl in level.Walls)
                 {
