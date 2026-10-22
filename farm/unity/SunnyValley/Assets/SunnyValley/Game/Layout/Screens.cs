@@ -40,6 +40,20 @@ namespace SunnyValley.Layout
 
         public static string Percent(float p) => (int)Math.Round(Math.Max(0, Math.Min(1, p)) * 100) + "%";
 
+        // ------------------------------------------------------------------ a toast
+
+        /// <summary>A short message in a dark pill under the top row, up to two lines; it takes no taps.</summary>
+        public static UiLayout Toast(CanvasFit fit, string text)
+        {
+            var L = UiLayout.Begin("toast", fit);
+            float w = Math.Min(L.W - 2 * Tokens.Margin, 860);
+            float h = 2 * FontMetrics.LineHeight(Tokens.FontBody) + 40;
+            var pill = L.Safe.Add(Kit.Panel("toast.pill", 0x2B1D10E0, Tokens.RadiusLarge));
+            pill.TopCenter(0, Tokens.Margin + Tokens.PlateTouch + Tokens.Gap, w, h);
+            pill.Add(Kit.Label("toast.label", text, Tokens.FontBody, Tokens.FontBodyMin, Tokens.TextLight, 2)).Stretch(32, 32, 16, 16);
+            return L.Finish();
+        }
+
         // ------------------------------------------------------------------ the farm
 
         public static UiLayout Farm(CanvasFit fit, FarmHud hud)

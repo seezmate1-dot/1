@@ -71,6 +71,7 @@ namespace SunnyValley.Layout
             }));
             yield return ("popup-lose-poor", f => Popups.Lose(f, new LoseInfo { CanAfford = false }));
             yield return ("popup-settings", f => Popups.Settings(f, new SettingsInfo { InLevel = true, Version = "0.1.9999" }));
+            yield return ("toast", f => Screens.Toast(f, "Нет жизней. Следующая через 29:59 — а пока загляните на ферму"));
             yield return ("popup-tasks", f => Popups.Tasks(f, Popups.DemoTasks()));
         }
     }
