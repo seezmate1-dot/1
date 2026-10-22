@@ -71,7 +71,12 @@ namespace SunnyValley.Core.Match3
 
         // ------------------------------------------------------------------ creation
 
-        public static Match3Game Create(LevelData level, long? seed = null, IList<BoosterKind> preBoosters = null)
+        /// <summary>
+        /// Starts an attempt. The starting board comes from the level's own seed (the same every attempt, as
+        /// designed); <paramref name="attemptSeed"/> drives everything after it (spawns, bee ties, reshuffles,
+        /// pre-level booster cells). Omitted = the level seed.
+        /// </summary>
+        public static Match3Game Create(LevelData level, long? attemptSeed = null, IList<BoosterKind> preBoosters = null)
         {
             var errors = LevelValidator.ValidateStructure(level);
             if (errors.Count > 0) throw new ArgumentException("Invalid level " + level.Id + ": " + string.Join("; ", errors));
@@ -79,7 +84,7 @@ namespace SunnyValley.Core.Match3
             g.Level = level;
             g.Topo = LevelLoader.BuildTopology(level);
             g.Board = LevelLoader.BuildBoard(level, g.Topo);
-            g.Rng = new Rng(seed ?? level.Seed);
+            g.Rng = new Rng(level.Seed);
             g.Colors = level.Colors;
             g.MovesLeft = level.Moves;
             g.Status = GameStatus.Playing;
@@ -107,6 +112,7 @@ namespace SunnyValley.Core.Match3
             g.FillInitial();
             // A preset layout can come out dead: reshuffle it (keeps obstacles) so every start is playable.
             if (g.FindMatches().Count > 0 || !g.HasValidMove()) g.Reshuffle(false);
+            g.Rng = new Rng(unchecked((attemptSeed ?? level.Seed) * 31 + 17));
             if (preBoosters != null && preBoosters.Count > 0) g.PlacePreBoosters(preBoosters);
             return g;
         }
@@ -114,11 +120,19 @@ namespace SunnyValley.Core.Match3
         Match3Game() { }
 
         /// <summary>Deep copy for bots and hints. The copy logs only if <paramref name="withLog"/>.</summary>
-        public Match3Game Clone(bool withLog = false)
+        public Match3Game Clone(bool withLog = false) => Clone(withLog, null);
+
+        /// <summary>
+        /// Deep copy whose future randomness is re-seeded: a bot that looks ahead on it does not see the real
+        /// spawns to come (no clairvoyance), only plausible ones.
+        /// </summary>
+        public Match3Game CloneReseeded(ulong seed) => Clone(false, seed);
+
+        Match3Game Clone(bool withLog, ulong? reseed)
         {
             var g = (Match3Game)MemberwiseClone();
             g.Board = Board.Clone();
-            g.Rng = Rng.Clone();
+            g.Rng = reseed.HasValue ? new Rng(reseed.Value) : Rng.Clone();
             g.Goals = new List<Goal>(Goals.Count);
             foreach (var goal in Goals) g.Goals.Add(goal.Clone());
             g.InitialEvents = new List<StepEvent>();

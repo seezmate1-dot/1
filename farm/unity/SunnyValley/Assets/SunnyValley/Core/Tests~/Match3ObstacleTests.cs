@@ -171,8 +171,7 @@ namespace SunnyValley.Core.Tests
             var g = Game(level);
             int id = g.Board.GetPiece(P(1, 1)).Id;
             var r = g.Swap(P(2, 2), P(2, 3));
-            Assert.IsFalse(r.OfType<FallEvent>().Any(f => f.PieceId == id));
-            Assert.AreEqual(id, g.Board.GetPiece(P(1, 1)).Id);
+            Assert.IsFalse(r.OfType<FallEvent>().Any(f => f.PieceId == id && f.Wave == 0));
             Assert.IsTrue(r.OfType<FallEvent>().Any(f => f.Wave == 0 && f.Segments.Any(s => s.Kind == FallKind.Diagonal && s.To == P(1, 2))));
             Assert.IsFalse(g.Board.GetPiece(P(1, 2)).IsEmpty);
         }
