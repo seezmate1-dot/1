@@ -156,10 +156,10 @@ def grade(img):
     return img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=40, threshold=2))
 
 
-def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE):
+def draw(prompt, size, steps=8, seed=7, guidance=2.0, negative=NEGATIVE, style=None):
     """A picture from the prompt alone (text to image, the same model)."""
     w, h = (size[0] // 8) * 8, (size[1] // 8) * 8
-    e = embeds(prompt + ", " + STYLE, negative)
+    e = embeds(prompt + ", " + (style or STYLE), negative)
     t2i = painter(StableDiffusionXLPipeline)
     g = torch.Generator().manual_seed(seed)
     return t2i(**e, num_inference_steps=steps, guidance_scale=guidance,
@@ -415,6 +415,44 @@ ITEMS = {
     "Amulet": "a silver amulet on a chain with a glowing amber stone",
 }
 
+# «Солнечная долина» (farm/): the match-3 pieces and icons in Township's look — glossy rounded 3D cartoon,
+# bright and cheerful, unlike the painterly castle (names Farm/<group>/<Name>)
+FARM_STYLE = ("glossy 3D cartoon mobile game icon, Township and Royal Match style, bright saturated cheerful colors, "
+              "soft studio lighting, smooth rounded shapes, thick readable silhouette, polished game asset")
+FARM_NEGATIVE = ("photo, photorealistic, dull colors, dark, gloomy, grunge, painterly, sketch, text, watermark, signature, "
+                 "blurry, lowres, deformed, cropped, several objects, people, person, face")
+FARM = {
+    "Tiles/Tomato": "one shiny round red tomato with a small green leafy top",
+    "Tiles/Corn": "one bright yellow corn cob with green husks",
+    "Tiles/Apple": "one shiny bright green apple with a leaf",
+    "Tiles/Carrot": "one bright orange carrot with a green top, diagonal",
+    "Tiles/Eggplant": "one glossy deep purple eggplant with a green cap",
+    "Tiles/Blueberry": "a cluster of three plump glossy blue blueberries",
+    "Specials/Pitchfork": "a wooden pitchfork with three shiny steel tines, horizontal",
+    "Specials/Bee": "a cute chubby striped bumblebee with tiny wings, smiling",
+    "Specials/Bomb": "a small round wooden barrel bomb with metal bands and a lit sparkling fuse",
+    "Specials/Rainbow": "a magical sunflower with rainbow colored petals and a golden glowing center",
+    "Obstacles/Crate1": "a light wooden crate box",
+    "Obstacles/Crate2": "a wooden crate box reinforced with metal corners",
+    "Obstacles/Crate3": "a heavy dark wooden crate box bound with iron bands and rivets",
+    "Obstacles/Ice": "a translucent light blue ice cube block with frosty edges",
+    "Obstacles/Honey": "a round puddle of golden honey with a drip, seen from above",
+    "Obstacles/Chain": "two steel chains crossed in an X shape",
+    "Obstacles/Chick": "a cute fluffy yellow baby chick, front view",
+    "Obstacles/Basket": "an empty woven wicker basket, front view",
+    "Obstacles/Stone": "a round grey boulder stone with cracks",
+    "Obstacles/Bed": "a small square garden bed with dark soil and a green sprout",
+    "Obstacles/Weed": "a spiky dark green weed bush",
+    "Boosters/Shovel": "a small garden shovel with a wooden handle",
+    "Boosters/Rake": "a garden rake with a wooden handle",
+    "Boosters/WateringCan": "a red metal watering can",
+    "Boosters/Shuffle": "a colorful wooden toy pinwheel windmill",
+    "Currency/Coin": "a shiny gold coin with a sunflower emblem",
+    "Currency/Star": "a glossy golden star",
+    "Currency/Crystal": "a sparkling green emerald gem",
+    "Currency/Heart": "a glossy plump red heart",
+}
+
 
 def _piece_list():
     out = {}
@@ -435,6 +473,8 @@ def _piece_list():
     # a small ship that sails between the islands of the map (GameRunner.Map DrawShips)
     out["Map/Ship"] = ("a small wooden sailing ship with one white sail and a red pennant, seen from above at an angle, "
                        "a fantasy game map piece", (192, 192))
+    for n, what in FARM.items():
+        out["Farm/" + n] = (what, (256, 256))
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     for kind, what in ITEMS.items():
@@ -507,7 +547,9 @@ def piece(name, args):
     prompt, size = PIECES[name]
     wide = size[0] >= size[1] * 1.6
     gen = (1216, 608) if wide else (1024, 1024)
-    img = draw(prompt + BACKDROP, gen, steps=args.steps, seed=args.seed)
+    farm = name.startswith("Farm/")
+    img = draw(prompt + BACKDROP, gen, steps=args.steps, seed=args.seed,
+               negative=FARM_NEGATIVE if farm else NEGATIVE, style=FARM_STYLE if farm else None)
     alpha = _matte(img, _ground(img), holes=name.startswith("Rooms/"))
     graded = grade(img)
     out = _unmix(graded, alpha, _ground(graded))
@@ -532,7 +574,8 @@ if __name__ == "__main__":
     args = ap.parse_args()
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder", "Stairs", "Rooms/Arch"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
-              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/", "Items/"))],
+              "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/", "Items/", "Farm/"))],
+              "farm": [n for n in PIECES if n.startswith("Farm/")],
               "scene": [n for n in PIECES if n.startswith("Scene/")],
               "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))],
               "items": [n for n in PIECES if n.startswith("Items/")]}

@@ -1,3 +1,3 @@
-Items/Tome Items/Bow Items/Tome Items/Bow
+Farm/Tiles/Tomato Farm/Tiles/Corn Farm/Tiles/Apple Farm/Tiles/Carrot Farm/Tiles/Eggplant Farm/Tiles/Blueberry Farm/Specials/Pitchfork Farm/Specials/Bee Farm/Specials/Bomb Farm/Specials/Rainbow Farm/Obstacles/Crate1 Farm/Obstacles/Crate2 Farm/Obstacles/Crate3 Farm/Obstacles/Ice Farm/Obstacles/Honey Farm/Obstacles/Chain Farm/Obstacles/Chick Farm/Obstacles/Basket Farm/Obstacles/Stone Farm/Obstacles/Bed Farm/Obstacles/Weed Farm/Boosters/Shovel Farm/Boosters/Rake Farm/Boosters/WateringCan Farm/Boosters/Shuffle Farm/Currency/Coin Farm/Currency/Star Farm/Currency/Crystal Farm/Currency/Heart
 0.5
-# the tome as a book, one bow
+# «Солнечная долина»: the match-3 pieces, obstacles, boosters, currencies in Township's look
