@@ -12,7 +12,7 @@ namespace SunnyValley.Core.Match3
 
         public static readonly Pos None = new Pos(-1, -1);
 
-        public bool IsNone => X < 0 || Y < 0;
+        [Newtonsoft.Json.JsonIgnore] public bool IsNone => X < 0 || Y < 0;
         public bool Equals(Pos other) => X == other.X && Y == other.Y;
         public override bool Equals(object obj) => obj is Pos p && Equals(p);
         public override int GetHashCode() => (X * 397) ^ Y;

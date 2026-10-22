@@ -162,5 +162,34 @@ namespace SunnyValley.Core.Tests
                 Assert.AreEqual(0, g.FindMatches().Count, "board must be still after a move");
             }
         }
+
+        [Test]
+        public void CustomSpawnersAndChickExits()
+        {
+            // A hole at (3,1); an extra spawner right under it at (3,2). Chicks leave at (4,5) only.
+            var board = Bg(6, 6, Std.Concat(new[] { (4, 2, 'C') }).ToArray());
+            board[1] = board[1].Substring(0, 3) + " " + board[1].Substring(4);
+            var level = Level(board, goals: new List<GoalData> { Goal("chick", 1) });
+            level.Spawners = new List<int[]> { new[] { 0, 0 } };
+            Assert.IsTrue(LevelValidator.Validate(level).Any(e => e.Contains("can never be refilled")), "top cells without a spawner");
+            level.Spawners = Enumerable.Range(0, 6).Select(x => new[] { x, 0 }).Append(new[] { 3, 2 }).ToList();
+            level.ChickExits = new List<int[]> { new[] { 4, 5 } };
+            CollectionAssert.IsEmpty(LevelValidator.Validate(level));
+            var t = LevelLoader.BuildTopology(level);
+            Assert.IsTrue(t.Spawner[t.Index(3, 2)]);
+            Assert.IsTrue(t.ChickExit[t.Index(4, 5)]);
+            Assert.IsFalse(t.ChickExit[t.Index(0, 5)]);
+            var r = StdMove(level, out var g);
+            Assert.IsTrue(r.OfType<SpawnEvent>().All(e => t.Spawner[t.Index(e.Cell)]));
+            for (int i = 0; i < g.Topo.Count; i++) if (g.Board.IsOpen(i)) Assert.IsFalse(g.Board.Pieces[i].IsEmpty);
+        }
+
+        [Test]
+        public void PosSerializesAsXY()
+        {
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(P(3, 4));
+            Assert.AreEqual("{\"X\":3,\"Y\":4}", json);
+            Assert.AreEqual(P(3, 4), Newtonsoft.Json.JsonConvert.DeserializeObject<Pos>(json));
+        }
     }
 }
