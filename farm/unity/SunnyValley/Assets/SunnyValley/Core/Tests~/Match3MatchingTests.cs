@@ -115,8 +115,8 @@ namespace SunnyValley.Core.Tests
         [Test]
         public void Priority_FourBeatsSquare()
         {
-            // r r r r on row 3 after the swap, with (0,4),(1,4) under it forming squares too.
-            var r = Play(Bg(6, 6, (0, 3, 'r'), (1, 3, 'r'), (3, 3, 'r'), (0, 4, 'r'), (1, 4, 'r'), (2, 2, 'r')), P(2, 2), P(2, 3), out _);
+            // r r r r on row 3 after the swap, with (2,4),(3,4) under it forming a square too.
+            var r = Play(Bg(6, 6, (0, 3, 'r'), (1, 3, 'r'), (3, 3, 'r'), (2, 4, 'r'), (3, 4, 'r'), (2, 2, 'r')), P(2, 2), P(2, 3), out _);
             AssertGroup(r, P(0, 3), MatchShape.Four, SpecialKind.LineH, 6, P(2, 3));
         }
 
@@ -138,7 +138,7 @@ namespace SunnyValley.Core.Tests
         [Test]
         public void InvalidSwap_RevertsAndSpendsNoMove()
         {
-            var g = Game(Level(Bg(6, 6, (0, 3, 'r'))));
+            var g = Game(Level(Bg(6, 6, (0, 3, 'r'), (1, 3, 'r'), (2, 2, 'r'))));
             string before = g.Board.Dump();
             var r = g.Swap(P(0, 0), P(1, 0));
             Assert.IsFalse(r.Accepted);
@@ -151,7 +151,7 @@ namespace SunnyValley.Core.Tests
         [Test]
         public void NonAdjacentAndHoleSwapsAreRejected()
         {
-            var board = Bg(6, 6, (0, 3, 'r'));
+            var board = Bg(6, 6, (0, 3, 'r'), (1, 3, 'r'), (2, 2, 'r'));
             board[0] = " " + board[0].Substring(1);
             var g = Game(Level(board));
             Assert.AreEqual(RejectReason.NotAdjacent, g.Swap(P(1, 1), P(2, 2)).OfType<SwapRejectedEvent>().Single().Reason);

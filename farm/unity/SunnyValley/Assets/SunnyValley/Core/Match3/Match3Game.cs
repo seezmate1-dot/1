@@ -105,6 +105,8 @@ namespace SunnyValley.Core.Match3
             }
 
             g.FillInitial();
+            // A preset layout can come out dead: reshuffle it (keeps obstacles) so every start is playable.
+            if (g.FindMatches().Count > 0 || !g.HasValidMove()) g.Reshuffle(false);
             if (preBoosters != null && preBoosters.Count > 0) g.PlacePreBoosters(preBoosters);
             return g;
         }

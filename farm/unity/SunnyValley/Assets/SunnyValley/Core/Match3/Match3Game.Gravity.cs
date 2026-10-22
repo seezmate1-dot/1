@@ -136,7 +136,7 @@ namespace SunnyValley.Core.Match3
 
         Piece NewSpawnPiece()
         {
-            if (_chicksToSpawn > 0 && MovesUsed - _lastChickSpawnMove >= _chickGap && MovesUsed > 0 && CountChicks() < _chickMaxOnBoard)
+            if (_chicksToSpawn > 0 && MovesUsed > 0 && _lastChickSpawnMove != MovesUsed && MovesUsed - _lastChickSpawnMove >= _chickGap && CountChicks() < _chickMaxOnBoard)
             {
                 _chicksToSpawn--;
                 _lastChickSpawnMove = MovesUsed;

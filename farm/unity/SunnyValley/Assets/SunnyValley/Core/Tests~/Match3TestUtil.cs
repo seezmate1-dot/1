@@ -63,6 +63,14 @@ namespace SunnyValley.Core.Tests
             return set;
         }
 
+        /// <summary>A layer grid of '.' with one digit at (x, y).</summary>
+        public static string[] One(int w, int h, int x, int y, char digit)
+        {
+            var rows = Enumerable.Range(0, h).Select(_ => new string('.', w).ToCharArray()).ToArray();
+            rows[y][x] = digit;
+            return rows.Select(r => new string(r)).ToArray();
+        }
+
         public static MatchEvent GroupAt(MoveResult r, int x, int y, int wave = 0) =>
             r.OfType<MatchEvent>().FirstOrDefault(m => m.Wave == wave && m.Cells.Contains(new Pos(x, y)));
 
