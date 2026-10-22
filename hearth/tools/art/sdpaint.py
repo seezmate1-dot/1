@@ -431,7 +431,7 @@ FARM = {
     "Tiles/Carrot": "one bright orange carrot with a green top, diagonal",
     "Tiles/Eggplant": "one glossy deep purple eggplant with a green cap",
     "Tiles/Blueberry": "a cluster of three plump glossy blue blueberries",
-    "Specials/Pitchfork": "a chunky cartoon pitchfork with a thick wooden handle and three big shiny steel tines, diagonal, bold silhouette",
+    "Specials/Pitchfork": "a farm hay fork tool with four long curved steel tines on a thick wooden handle, the whole tool, diagonal, chunky toy-like proportions",
     "Specials/Bee": "a cute chubby striped bumblebee with tiny wings, smiling",
     "Specials/Bomb": "a small round wooden barrel bomb with metal bands and a lit sparkling fuse",
     "Specials/Rainbow": "a magical sunflower with rainbow colored petals and a golden glowing center",
