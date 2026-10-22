@@ -675,6 +675,7 @@ namespace LastHearth.Core
                 battle.RunToEnd();
             State.PvpBattle = null;
             reward.Won = battle.Won;
+            FightXp(battle); // the heroes learn (GameSession.People.cs)
             if (pb.Raid)
                 FinishRaid(pb, battle, reward, now);
             else

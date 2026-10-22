@@ -128,14 +128,15 @@ namespace LastHearth.Core
             if (data.Produces == null || data.Stat == null || room.Level < 1)
                 return 0;
             double total = 0;
+            bool warm = IsRoomWarm(room);
             foreach (int id in room.Workers)
             {
                 var d = FindDweller(id);
                 if (d != null)
-                    total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value)) * WorkerHealth(d);
+                    total += Formulas.WorkerOutputPerHour(Balance, data.Produces.Value, room.Level, d.StatOf(data.Stat.Value)) * WorkerHealth(d) *
+                             TraitWorkMult(d) * (warm ? 1.0 : ColdOutput(d)); // traits (GameSession.People.cs)
             }
-            double warm = IsRoomWarm(room) ? 1.0 : Balance.Warmth.FrozenOutput;
-            return total * warm * Balance.Mode(State.Mode).Output * OutputMult() * PetOutputMult(data.Produces.Value) * ResearchOutputMult(data.Produces.Value) * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
+            return total * MoraleOutputMult() * Balance.Mode(State.Mode).Output * OutputMult() * PetOutputMult(data.Produces.Value) * ResearchOutputMult(data.Produces.Value) * (1 + SpecValue(room, SpecEffect.Output)) * MergeBonus(room) *
                    SiegePenalty(State.Time);
         }
 
@@ -178,6 +179,7 @@ namespace LastHearth.Core
             SettlePvp(State.Time);
             SettleBirths(State.Time);
             SettleHalls(State.Time); // the tavern, infirmary, library, training hall and archive (GameSession.Rooms.cs)
+            SettlePeople(State.Time); // experience, the spirit of the fortress, desertion (GameSession.People.cs)
             SettleTutorial(); // the tutorial ends by itself past the first session (Tutorial.cs)
         }
 
@@ -217,6 +219,7 @@ namespace LastHearth.Core
             {
                 State.HearthLevel = job.ToLevel;
                 State.Queue.EnsureBuilders(BuilderCount());
+                AddNews(MoraleNews.HearthUp);
                 if (TavernOpen())
                     RefugeesToTavern(); // with a tavern they wait on its board to be hired (GameSession.Rooms.cs)
                 else
@@ -411,6 +414,7 @@ namespace LastHearth.Core
         {
             int id = State.NextDwellerId++;
             var d = new Dweller { Id = id, Name = name, Sex = sex == Sex.Unknown ? SexOfName(name, id) : sex, Stats = (int[])stats.Clone() };
+            GiveTrait(d); // GDD 8: a trait of character (GameSession.People.cs)
             State.Dwellers.Add(d);
             return d;
         }

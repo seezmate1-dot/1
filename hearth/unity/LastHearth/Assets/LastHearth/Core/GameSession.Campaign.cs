@@ -82,6 +82,7 @@ namespace LastHearth.Core
             State.PendingMission = -1;
             Modes.PendingMode = CampaignMode.Normal;
             reward = new MissionReward { Stars = battle.Stars, Hard = mode == CampaignMode.Hard };
+            FightXp(battle); // the heroes learn (GameSession.People.cs)
             if (!battle.Won)
             {
                 reward.Hints = DefeatHints(battle, mode == CampaignMode.Secret ? SecretRecommended(index + 1) : RecommendedPower(index, mode == CampaignMode.Hard));
@@ -142,6 +143,7 @@ namespace LastHearth.Core
             var battle = new Battle(Combat, MissionSetup(index, seed)) { Brain = Brains.AutoBattle() };
             battle.RunToEnd();
             reward = new MissionReward { Stars = battle.Stars };
+            FightXp(battle, true);
             if (!battle.Won)
                 return Fail.None;
             var m = Mission(index);

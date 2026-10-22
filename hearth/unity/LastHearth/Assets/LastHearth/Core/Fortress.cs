@@ -110,6 +110,11 @@ namespace LastHearth.Core
         public int RouteId;
         /// <summary>Hurt on a route: no new route until then (the infirmary heals).</summary>
         public long InjuredUntil;
+        /// <summary>GDD 8: level 1-60 from work, training and battles, experience towards the next (GameSession.People.cs).</summary>
+        public int Level = 1;
+        public double Xp;
+        /// <summary>GDD 8: traits of character (one; a second, good one at level 30).</summary>
+        public List<Trait> Traits = new List<Trait>();
 
         [Newtonsoft.Json.JsonIgnore]
         public bool IsHero => HeroClass != HeroClass.None;

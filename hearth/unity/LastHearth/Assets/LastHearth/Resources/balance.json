@@ -3527,7 +3527,9 @@
      "statBonus": 0,
      "capBonus": 0,
      "weight": 70,
-     "hireHours": 0.25
+     "hireHours": 0.25,
+     "growth": 0.25,
+     "goodTrait": 0.5
     },
     {
      "id": "Seasoned",
@@ -3535,7 +3537,9 @@
      "statBonus": 2,
      "capBonus": 5,
      "weight": 24,
-     "hireHours": 0.5
+     "hireHours": 0.5,
+     "growth": 0.4,
+     "goodTrait": 0.65
     },
     {
      "id": "Rare",
@@ -3543,7 +3547,9 @@
      "statBonus": 4,
      "capBonus": 10,
      "weight": 5,
-     "hireHours": 1.0
+     "hireHours": 1.0,
+     "growth": 0.55,
+     "goodTrait": 0.8
     },
     {
      "id": "Legendary",
@@ -3551,7 +3557,9 @@
      "statBonus": 7,
      "capBonus": 20,
      "weight": 1,
-     "hireHours": 2.0
+     "hireHours": 2.0,
+     "growth": 0.8,
+     "goodTrait": 1.0
     }
    ],
    "luckShift": [
@@ -4512,6 +4520,226 @@
      "text": "Через сто лет в этих стенах найдут пепел и одну тлеющую искру. Этого хватит, чтобы начать снова."
     }
    ]
+  }
+ },
+ "people": {
+  "maxLevel": 60,
+  "xpBase": 2.0,
+  "xpGrowth": 1.25,
+  "xpWork": 1.0,
+  "xpTraining": 2.0,
+  "xpSick": 0.5,
+  "xpWin": 0.5,
+  "xpLoss": 0.25,
+  "xpRepeat": 0.25,
+  "secondTraitLevel": 30,
+  "traits": [
+   {
+    "id": "Hardworking",
+    "name": "Трудяга",
+    "good": true,
+    "work": 0.1,
+    "battle": 0,
+    "morale": 0,
+    "xp": 0,
+    "cold": 0,
+    "illness": 1,
+    "text": "+10% выработки"
+   },
+   {
+    "id": "Brave",
+    "name": "Храбрец",
+    "good": true,
+    "work": 0,
+    "battle": 0.05,
+    "morale": 0,
+    "xp": 0,
+    "cold": 0,
+    "illness": 1,
+    "text": "+5% атаки и здоровья в бою"
+   },
+   {
+    "id": "Cheerful",
+    "name": "Весельчак",
+    "good": true,
+    "work": 0,
+    "battle": 0,
+    "morale": 2,
+    "xp": 0,
+    "cold": 0,
+    "illness": 1,
+    "text": "+2 к духу крепости"
+   },
+   {
+    "id": "Hardy",
+    "name": "Закалённый",
+    "good": true,
+    "work": 0,
+    "battle": 0,
+    "morale": 0,
+    "xp": 0,
+    "cold": 0.8,
+    "illness": 1,
+    "text": "в промёрзшем зале работает на 80%, а не на 50%"
+   },
+   {
+    "id": "Keeper",
+    "name": "Помнит Стражей",
+    "good": true,
+    "work": 0,
+    "battle": 0,
+    "morale": 0,
+    "xp": 0.25,
+    "cold": 0,
+    "illness": 1,
+    "text": "+25% опыта; помнит старые предания"
+   },
+   {
+    "id": "Lazy",
+    "name": "Лентяй",
+    "good": false,
+    "work": -0.1,
+    "battle": 0,
+    "morale": 0,
+    "xp": 0,
+    "cold": 0,
+    "illness": 1,
+    "text": "−10% выработки"
+   },
+   {
+    "id": "Coward",
+    "name": "Трус",
+    "good": false,
+    "work": 0.1,
+    "battle": -0.05,
+    "morale": 0,
+    "xp": 0,
+    "cold": 0,
+    "illness": 1,
+    "text": "−5% в бою, зато +10% выработки в тылу"
+   },
+   {
+    "id": "Gloomy",
+    "name": "Нытик",
+    "good": false,
+    "work": 0,
+    "battle": 0,
+    "morale": -2,
+    "xp": 0,
+    "cold": 0,
+    "illness": 1,
+    "text": "−2 к духу крепости"
+   },
+   {
+    "id": "Sickly",
+    "name": "Хворый",
+    "good": false,
+    "work": 0,
+    "battle": 0,
+    "morale": 0,
+    "xp": 0,
+    "cold": 0,
+    "illness": 2,
+    "text": "туманная хворь цепляется вдвое чаще"
+   }
+  ],
+  "traitMoraleCap": 6,
+  "morale": {
+   "base": 50,
+   "hours": 3.0,
+   "foodHours": 12,
+   "fed": 10,
+   "hunger": -35,
+   "noCoal": -20,
+   "frozen": -15,
+   "modes": [
+    {
+     "mode": "Smoldering",
+     "value": -5
+    },
+    {
+     "mode": "Steady",
+     "value": 0
+    },
+    {
+     "mode": "Blazing",
+     "value": 10
+    }
+   ],
+   "decor": 1,
+   "decorMax": 8,
+   "chapelBase": 2,
+   "chapelLevels": 6,
+   "bedsBase": 6,
+   "bedsPerLevel": 2,
+   "crowd": -2,
+   "crowdMax": -16,
+   "patient": -2,
+   "patientMax": -10,
+   "news": [
+    {
+     "id": "SurgeWon",
+     "name": "Наплыв отбит",
+     "value": 4,
+     "hours": 12
+    },
+    {
+     "id": "SurgeLost",
+     "name": "Наплыв прорвался",
+     "value": -10,
+     "hours": 12
+    },
+    {
+     "id": "Birth",
+     "name": "В покоях родился ребёнок",
+     "value": 3,
+     "hours": 12
+    },
+    {
+     "id": "HearthUp",
+     "name": "Очаг вырос",
+     "value": 5,
+     "hours": 12
+    },
+    {
+     "id": "Desertion",
+     "name": "Житель ушёл в туман",
+     "value": -5,
+     "hours": 24
+    }
+   ],
+   "bands": [
+    {
+     "from": 0,
+     "name": "Отчаяние",
+     "output": -0.15
+    },
+    {
+     "from": 20,
+     "name": "Уныние",
+     "output": -0.08
+    },
+    {
+     "from": 40,
+     "name": "Спокойствие",
+     "output": 0.0
+    },
+    {
+     "from": 80,
+     "name": "Бодрость",
+     "output": 0.08
+    },
+    {
+     "from": 90,
+     "name": "Воодушевление",
+     "output": 0.15
+    }
+   ],
+   "desertBelow": 20,
+   "desertHours": 8,
+   "desertersKept": 3,
+   "deserterDays": 3,
+   "recallMorale": 40
   }
  },
  "items": {

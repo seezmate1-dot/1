@@ -142,12 +142,14 @@ namespace LastHearth.Game
                 (ResourceType.Silver, ShortNum(st.Wallet[ResourceType.Silver]), Fill(ResourceType.Silver)),
                 (ResourceType.Essence, ShortNum(st.Wallet[ResourceType.Essence]), -1),
             };
-            float w = Mathf.Min(118, (bar.width - 52 - 46 - 100) / plates.Length - 4);
+            float w = Mathf.Min(118, (bar.width - 52 - 46 - 100 - MoralePlateWidth - 4) / plates.Length - 4);
             foreach (var (type, text, fill) in plates)
             {
                 Plate(new Rect(x, bar.y + 9, w, 30), type, text, fill, type == ResourceType.Coal && st.OutOfCoal);
                 x += w + 4;
             }
+            DrawMoralePlate(new Rect(x, bar.y + 9, MoralePlateWidth, 30)); // the spirit of the fortress (GameRunner.People.cs)
+            x += MoralePlateWidth + 4;
             DrawFortressName(new Rect(x + 4, bar.y + 9, bar.xMax - 46 - 104 - 12 - x, 30)); // GameRunner.Comfort.cs
             // Sparks (the premium currency) on the right, before the settings
             Plate(new Rect(bar.xMax - 46 - 104, bar.y + 9, 100, 30), ResourceType.Sparks, ShortNum(st.Wallet[ResourceType.Sparks]), -1, false);
@@ -346,7 +348,7 @@ namespace LastHearth.Game
             switch (window)
             {
                 case Win.Hearth:
-                    GUILayout.Label(string.Format("Режим очага: <b>{0}</b>. Тлеющий бережёт уголь, Пылающий греет дальние этажи.", ModeName(st.Mode)), Rich());
+                    GUILayout.Label(string.Format("Режим очага: <b>{0}</b>. Тлеющий бережёт уголь, Пылающий греет дальние этажи, поднимает дух (+10) и быстрее лечит.", ModeName(st.Mode)), Rich());
                     GUILayout.BeginHorizontal();
                     foreach (HearthMode mode in Enum.GetValues(typeof(HearthMode)))
                     {
