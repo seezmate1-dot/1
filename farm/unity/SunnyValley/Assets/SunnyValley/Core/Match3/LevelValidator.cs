@@ -15,7 +15,7 @@ namespace SunnyValley.Core.Match3
             if (errors.Count > 0) return errors;
             var topo = LevelLoader.BuildTopology(level);
             if (topo.HasFallCycle()) { errors.Add("portals form a loop"); return errors; }
-            CheckRefill(topo, errors);
+            CheckRefill(topo, LevelLoader.BuildBoard(level, topo), errors);
             CheckGoals(level, topo, errors);
             if (errors.Count > 0) return errors;
             try
@@ -204,8 +204,11 @@ namespace SunnyValley.Core.Match3
             return errors;
         }
 
-        /// <summary>Every cell must be refillable once emptied: fed from a spawner straight or by a diagonal slide.</summary>
-        static void CheckRefill(BoardTopology t, List<string> errors)
+        /// <summary>
+        /// Every cell must be refillable once emptied: fed from a spawner straight or by a diagonal slide.
+        /// Removable obstacles count as gone; garden beds stay forever, so they neither need nor pass on pieces.
+        /// </summary>
+        static void CheckRefill(BoardTopology t, Board board, List<string> errors)
         {
             int n = t.Count, w = t.Width;
             var fed = new bool[n];
@@ -215,7 +218,7 @@ namespace SunnyValley.Core.Match3
                 changed = false;
                 foreach (int i in t.BottomUpOrder)
                 {
-                    if (!t.Exists[i] || fed[i]) continue;
+                    if (!t.Exists[i] || fed[i] || board.Blocker[i] == ObstacleKind.Bed) continue;
                     bool f = t.Spawner[i] || (t.Above[i] >= 0 && fed[t.Above[i]]);
                     int x = i % w, y = i / w;
                     if (!f && y > 0)
@@ -225,7 +228,7 @@ namespace SunnyValley.Core.Match3
                 }
             }
             for (int i = 0; i < n; i++)
-                if (t.Exists[i] && !fed[i]) { errors.Add("cell (" + i % w + "," + i / w + ") can never be refilled"); return; }
+                if (t.Exists[i] && !fed[i] && board.Blocker[i] != ObstacleKind.Bed) { errors.Add("cell (" + i % w + "," + i / w + ") can never be refilled"); return; }
         }
 
         static void CheckGoals(LevelData level, BoardTopology topo, List<string> errors)

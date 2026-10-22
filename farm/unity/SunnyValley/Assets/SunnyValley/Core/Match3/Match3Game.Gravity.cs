@@ -23,6 +23,8 @@ namespace SunnyValley.Core.Match3
             for (int i = 0; i < s.Stamp.Length; i++) s.Stamp[i] = -1;
             _falls = _log != null ? new Dictionary<int, FallEvent>() : null;
             var order = new List<FallEvent>();
+            var spawns = _log != null ? new List<StepEvent>() : null;
+            var rescues = _log != null ? new List<StepEvent>() : null;
             _tick = 0;
             int n = Topo.Count, w = Topo.Width;
             for (int guard = 0; guard < 10000; guard++)
@@ -45,7 +47,7 @@ namespace SunnyValley.Core.Match3
                     Board.Pieces[i] = p;
                     s.Stamp[i] = _tick;
                     s.Landed[i] = true;
-                    if (_log != null) AddEvent(new SpawnEvent { PieceId = p.Id, Cell = Topo.PosOf(i), Tick = _tick, Kind = p.Kind, Color = p.Color });
+                    spawns?.Add(new SpawnEvent { PieceId = p.Id, Cell = Topo.PosOf(i), Tick = _tick, Kind = p.Kind, Color = p.Color });
                     moved = true;
                 }
                 // 3. diagonals
@@ -87,7 +89,7 @@ namespace SunnyValley.Core.Match3
                         if (!Topo.ChickExit[i] || !Board.Pieces[i].IsChick || Board.Overlay[i] != ObstacleKind.None) continue;
                         var p = Board.Pieces[i];
                         Board.Pieces[i] = default;
-                        if (_log != null) AddEvent(new ChickRescuedEvent { PieceId = p.Id, Cell = Topo.PosOf(i) });
+                        rescues?.Add(new ChickRescuedEvent { PieceId = p.Id, Cell = Topo.PosOf(i), Tick = _tick });
                         Progress(GoalType.Chick, TileColor.None, i);
                         rescued = true;
                     }
@@ -95,8 +97,13 @@ namespace SunnyValley.Core.Match3
                 }
                 _tick++;
             }
+            // One refill = its spawns, then the falls, then the rescues; the view plays them by tick.
             if (_log != null)
+            {
+                foreach (var e in spawns) AddEvent(e);
                 foreach (var f in order) AddEvent(f);
+                foreach (var e in rescues) AddEvent(e);
+            }
             _falls = null;
         }
 

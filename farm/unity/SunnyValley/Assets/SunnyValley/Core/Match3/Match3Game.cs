@@ -388,8 +388,13 @@ namespace SunnyValley.Core.Match3
             }
             if (ev != null) _log.Add(ev);
             // A growing obstacle adds work to an "all of them" goal.
-            foreach (var goal in Goals)
-                if (LevelLoader.GoalObstacle(goal.Type) == kind && !goal.Done && LevelGoalIsAll(goal)) goal.Target++;
+            for (int k = 0; k < Goals.Count; k++)
+            {
+                var goal = Goals[k];
+                if (LevelLoader.GoalObstacle(goal.Type) != kind || goal.Done || !LevelGoalIsAll(goal)) continue;
+                goal.Target++;
+                if (_log != null) AddEvent(new GoalProgressEvent { GoalIndex = k, Goal = goal.Type, Delta = 0, Current = goal.Current, Target = goal.Target, Cell = Topo.PosOf(t) });
+            }
         }
 
         bool LevelGoalIsAll(Goal goal)

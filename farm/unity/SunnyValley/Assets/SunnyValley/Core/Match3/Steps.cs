@@ -11,12 +11,16 @@ namespace SunnyValley.Core.Match3
     /// Timing model:
     ///   * <see cref="StepEvent.Wave"/> — cascade wave. Wave 0 is the player's swap/booster and what it set off;
     ///     every refill that produces new matches starts the next wave. Waves play strictly one after another.
-    ///   * Within a wave the order is: Swap/Combo → Match → Activation (by <see cref="ActivationEvent.Generation"/>)
-    ///     → hits/clears/obstacle damage (each points at its cause) → SpecialCreated → Fall/Spawn → ChickRescued.
+    ///   * Within a wave the order is: Swap/Combo → Match (all groups) → the match's clears and obstacle hits →
+    ///     SpecialCreated → Activations in firing order (generation = chain depth), each followed by its own
+    ///     clears/hits → refill (Spawn/Fall/ChickRescued). Hits point at their cause via CauseId.
     ///   * <see cref="StepEvent.CauseId"/> links a hit to the match group (<see cref="MatchEvent.GroupId"/>) or the
     ///     activation (<see cref="ActivationEvent.ActivationId"/>) that caused it, so a rocket's hits can be
     ///     animated as the rocket passes. Ids are unique within one <see cref="MoveResult"/>.
-    ///   * Falls are given per piece as one-cell segments with a tick number; all pieces move one cell per tick.
+    ///   * A refill is a run of Spawn, Fall and ChickRescued events (in that order in the list). Play it by tick:
+    ///     falls are per piece, as one-cell segments with a tick number (all pieces move one cell per tick);
+    ///     a spawn appears at its spawner at its tick (after that tick's moves); a rescue happens at its tick.
+    ///     <see cref="StepLogMirror"/> is a reference implementation of playing the log on a board.
     /// </summary>
     public enum StepType
     {
@@ -205,6 +209,8 @@ namespace SunnyValley.Core.Match3
         public override StepType Type => StepType.ChickRescued;
         public int PieceId;
         public Pos Cell;
+        /// <summary>Tick of the refill at which the chick leaves (after it has landed on the exit).</summary>
+        public int Tick;
     }
 
     /// <summary>Honey covered a neighbour's tile, or weed grew into a neighbour (the tile there is gone).</summary>
