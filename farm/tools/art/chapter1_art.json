@@ -1,0 +1,1158 @@
+{
+ "about": "Chapter 1 art for hearth/tools/art/sdpaint.py (FARM_CH1, FARM_CH1_BACKGROUNDS), written by farm/tools/art/chapter1_art.py",
+ "pieces": {
+  "Farm/Ch1/Backgrounds/Yard": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "an overgrown farmyard of trampled grass and patches of bare earth, a faint dirt track running from the bottom center straight up to the top center, a few stones, nothing built, empty ground, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Before/GateFallen": {
+   "kind": "before",
+   "prompt": "a broken wooden farm gate lying fallen flat on the grass, cracked boards, one leaning post, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    256
+   ]
+  },
+  "Farm/Ch1/Objects/Gate": {
+   "kind": "object",
+   "prompt": "a sturdy wooden farm gate with two square posts, the two wings swung open, a small roof over it, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    400
+   ]
+  },
+  "Farm/Ch1/Junk/WeedsTall": {
+   "kind": "junk",
+   "prompt": "a clump of tall overgrown wild weeds and burdock, dry grass, thistles, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    352
+   ]
+  },
+  "Farm/Ch1/Junk/WeedsBush": {
+   "kind": "junk",
+   "prompt": "a thick overgrown bush of nettles and weeds with dry stalks, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    344
+   ]
+  },
+  "Farm/Ch1/Looks/PathStone": {
+   "kind": "look",
+   "prompt": "a straight garden path of grey flat stone slabs going away from the viewer, isometric three-quarter view from above, Township style",
+   "size": [
+    376,
+    1024
+   ]
+  },
+  "Farm/Ch1/Looks/PathBrick": {
+   "kind": "look",
+   "prompt": "a straight garden path of red bricks laid in a herringbone pattern going away from the viewer, isometric three-quarter view from above, Township style",
+   "size": [
+    376,
+    1024
+   ]
+  },
+  "Farm/Ch1/Looks/PathWood": {
+   "kind": "look",
+   "prompt": "a straight garden path of round wooden log slices going away from the viewer, isometric three-quarter view from above, Township style",
+   "size": [
+    376,
+    1024
+   ]
+  },
+  "Farm/Ch1/Junk/JunkPile": {
+   "kind": "junk",
+   "prompt": "a pile of old farm junk: broken crates, an old tire, a rusty bucket, rotten boards, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    392
+   ]
+  },
+  "Farm/Ch1/Junk/JunkHeap": {
+   "kind": "junk",
+   "prompt": "a heap of rubbish: an old broken chair, scrap metal, a torn sack, a cracked barrel, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    408
+   ]
+  },
+  "Farm/Ch1/Before/FenceBroken": {
+   "kind": "before",
+   "prompt": "a short section of a broken old wooden fence, leaning and missing boards, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    216
+   ]
+  },
+  "Farm/Ch1/Looks/FenceWood": {
+   "kind": "look",
+   "prompt": "a short straight section of a neat wooden plank fence with posts, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    216
+   ]
+  },
+  "Farm/Ch1/Looks/FenceWattle": {
+   "kind": "look",
+   "prompt": "a short straight section of a woven wicker wattle fence with stakes, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    216
+   ]
+  },
+  "Farm/Ch1/Looks/FencePicket": {
+   "kind": "look",
+   "prompt": "a short straight section of a white picket fence with pointed tops, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    216
+   ]
+  },
+  "Farm/Ch1/Objects/Bench": {
+   "kind": "object",
+   "prompt": "a cozy wooden garden bench with a curved back, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    352
+   ]
+  },
+  "Farm/Ch1/Objects/Doghouse": {
+   "kind": "object",
+   "prompt": "a small wooden dog kennel with a red pitched roof and a round door, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    480
+   ]
+  },
+  "Farm/Ch1/Objects/Sharik": {
+   "kind": "object",
+   "prompt": "a cute shaggy friendly brown farm dog sitting, wagging its tail, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    480
+   ]
+  },
+  "Farm/Ch1/Objects/Lamp": {
+   "kind": "object",
+   "prompt": "an old-fashioned iron lantern on a tall wooden post, warm light inside, isometric three-quarter view from above, Township style",
+   "size": [
+    192,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/FlowerBed": {
+   "kind": "object",
+   "prompt": "a long low flower bed full of colorful blooming flowers: daisies, tulips and marigolds, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    184
+   ]
+  },
+  "Farm/Ch1/Backgrounds/House": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a grassy plot with a flat bare dirt clearing in the middle where a farmhouse would stand, a small wooden veranda floor area to the right, a dirt path coming in from the bottom center, overgrown edges, nothing built, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Before/HouseOld": {
+   "kind": "before",
+   "prompt": "an old abandoned wooden farmhouse with a sagging roof full of holes, broken boarded windows, peeling paint, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    888
+   ]
+  },
+  "Farm/Ch1/Looks/HouseRoofRed": {
+   "kind": "look",
+   "prompt": "a cozy restored wooden farmhouse with a red tiled roof, white window frames, a chimney, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    888
+   ]
+  },
+  "Farm/Ch1/Looks/HouseRoofGreen": {
+   "kind": "look",
+   "prompt": "a cozy restored wooden farmhouse with a green metal sheet roof, white window frames, a chimney, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    888
+   ]
+  },
+  "Farm/Ch1/Looks/HouseRoofThatch": {
+   "kind": "look",
+   "prompt": "a cozy restored wooden farmhouse with a golden thatched straw roof, white window frames, a chimney, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    888
+   ]
+  },
+  "Farm/Ch1/Junk/Cobwebs": {
+   "kind": "junk",
+   "prompt": "big grey dusty cobwebs and a cloud of dust, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    312
+   ]
+  },
+  "Farm/Ch1/Before/WindowBoarded": {
+   "kind": "before",
+   "prompt": "a broken house window boarded up with crossed planks, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Window": {
+   "kind": "object",
+   "prompt": "a clean house window with shiny glass panes and a white wooden frame, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Curtains": {
+   "kind": "object",
+   "prompt": "pretty red and white checkered curtains tied at the sides of a window, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Door": {
+   "kind": "object",
+   "prompt": "a new green wooden front door with a brass handle and a small window, isometric three-quarter view from above, Township style",
+   "size": [
+    336,
+    512
+   ]
+  },
+  "Farm/Ch1/Before/PorchBroken": {
+   "kind": "before",
+   "prompt": "broken rotten wooden porch steps with missing boards, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    240
+   ]
+  },
+  "Farm/Ch1/Looks/PorchWood": {
+   "kind": "look",
+   "prompt": "wooden porch steps with a little railing, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    280
+   ]
+  },
+  "Farm/Ch1/Looks/PorchStone": {
+   "kind": "look",
+   "prompt": "stone porch steps with a low stone railing, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    280
+   ]
+  },
+  "Farm/Ch1/Looks/PorchFlowers": {
+   "kind": "look",
+   "prompt": "wooden porch steps with flower pots and climbing roses on the railing, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    280
+   ]
+  },
+  "Farm/Ch1/Fx/ChimneySmoke": {
+   "kind": "object",
+   "prompt": "a soft puff of white smoke rising in a curl, isometric three-quarter view from above, Township style",
+   "size": [
+    488,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/GrandmaChest": {
+   "kind": "object",
+   "prompt": "an old open wooden chest bound with iron, with a notebook, a shawl and seed bags inside, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    400
+   ]
+  },
+  "Farm/Ch1/Objects/VerandaTable": {
+   "kind": "object",
+   "prompt": "a wooden table covered with an embroidered tablecloth, a samovar, cups and a plate of pies, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    376
+   ]
+  },
+  "Farm/Ch1/Looks/SignCarved": {
+   "kind": "look",
+   "prompt": "a carved wooden farm signboard on two posts, blank, decorated with a sun, isometric three-quarter view from above, Township style",
+   "size": [
+    480,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/SignPainted": {
+   "kind": "look",
+   "prompt": "a brightly painted wooden farm signboard on two posts, blank, with painted flowers, isometric three-quarter view from above, Township style",
+   "size": [
+    480,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/SignForged": {
+   "kind": "look",
+   "prompt": "a wrought iron farm sign with curls hanging from a post, blank board, isometric three-quarter view from above, Township style",
+   "size": [
+    480,
+    512
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Garden": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a large flat field of bare brown earth surrounded by grass, a small trodden path along the right edge, nothing planted, empty ground, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Objects/BedsDug": {
+   "kind": "object",
+   "prompt": "several long rows of freshly dug dark garden soil, empty garden beds, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    568
+   ]
+  },
+  "Farm/Ch1/Looks/BedBordersPine": {
+   "kind": "look",
+   "prompt": "garden beds framed with neat pine board borders, empty soil, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    584
+   ]
+  },
+  "Farm/Ch1/Looks/BedBordersStone": {
+   "kind": "look",
+   "prompt": "garden beds framed with borders of round field stones, empty soil, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    584
+   ]
+  },
+  "Farm/Ch1/Looks/BedBordersWattle": {
+   "kind": "look",
+   "prompt": "garden beds framed with low woven wicker borders, empty soil, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    584
+   ]
+  },
+  "Farm/Ch1/Objects/WheatSprouts": {
+   "kind": "object",
+   "prompt": "rows of young green wheat sprouts growing in garden beds, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    560
+   ]
+  },
+  "Farm/Ch1/Junk/WeedsGarden": {
+   "kind": "junk",
+   "prompt": "a dense patch of overgrown garden weeds, dandelions and couch grass, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    328
+   ]
+  },
+  "Farm/Ch1/Objects/Compost": {
+   "kind": "object",
+   "prompt": "a wooden compost box full of leaves and grass clippings, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    408
+   ]
+  },
+  "Farm/Ch1/Before/BarrelBroken": {
+   "kind": "before",
+   "prompt": "an old broken wooden rain barrel with fallen hoops and loose staves, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/RainBarrel": {
+   "kind": "object",
+   "prompt": "a wooden rain barrel full of water with a tap and a watering can beside it, isometric three-quarter view from above, Township style",
+   "size": [
+    472,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/SeedBox": {
+   "kind": "object",
+   "prompt": "a small wooden box of paper seed packets, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    384
+   ]
+  },
+  "Farm/Ch1/Looks/ScarecrowHat": {
+   "kind": "look",
+   "prompt": "a friendly garden scarecrow in a straw hat and a patched shirt on a pole, isometric three-quarter view from above, Township style",
+   "size": [
+    304,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/ScarecrowScarf": {
+   "kind": "look",
+   "prompt": "a friendly garden scarecrow wearing a flowery headscarf and an apron on a pole, isometric three-quarter view from above, Township style",
+   "size": [
+    304,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/ScarecrowBucket": {
+   "kind": "look",
+   "prompt": "a funny garden scarecrow with a tin bucket on its head on a pole, isometric three-quarter view from above, Township style",
+   "size": [
+    304,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Greenhouse": {
+   "kind": "object",
+   "prompt": "a small greenhouse made of glass panes in a white wooden frame, with seedlings inside, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    448
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Orchard": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "the grassy ground of an old orchard with fallen leaves and a few fallen apples, dappled shade, no trees, empty ground, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Objects/Trail": {
+   "kind": "object",
+   "prompt": "a winding dirt garden trail edged with small stones, isometric three-quarter view from above, Township style",
+   "size": [
+    432,
+    1024
+   ]
+  },
+  "Farm/Ch1/Junk/Thicket": {
+   "kind": "junk",
+   "prompt": "a dense tangled thicket of wild shrubs, brambles and dry branches, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    624
+   ]
+  },
+  "Farm/Ch1/Before/AppleTreeDry": {
+   "kind": "before",
+   "prompt": "an old gnarled apple tree with many dry dead branches and few leaves, isometric three-quarter view from above, Township style",
+   "size": [
+    448,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/AppleTree": {
+   "kind": "object",
+   "prompt": "a neatly pruned old apple tree with a round green crown, isometric three-quarter view from above, Township style",
+   "size": [
+    448,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/AppleTreeWhite": {
+   "kind": "object",
+   "prompt": "a neat old apple tree with a round green crown and a whitewashed trunk, isometric three-quarter view from above, Township style",
+   "size": [
+    448,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/AppleTreeBloom": {
+   "kind": "object",
+   "prompt": "an old apple tree in full bloom covered with pink and white blossoms, whitewashed trunk, isometric three-quarter view from above, Township style",
+   "size": [
+    448,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/SwingBoard": {
+   "kind": "look",
+   "prompt": "a simple wooden board swing hanging on two ropes from a branch, isometric three-quarter view from above, Township style",
+   "size": [
+    344,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/SwingTire": {
+   "kind": "look",
+   "prompt": "an old tire swing hanging on a rope from a branch, isometric three-quarter view from above, Township style",
+   "size": [
+    344,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/SwingChair": {
+   "kind": "look",
+   "prompt": "a woven wicker chair swing hanging on ropes from a branch, isometric three-quarter view from above, Township style",
+   "size": [
+    344,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Beehive": {
+   "kind": "object",
+   "prompt": "an old wooden beehive box on legs with a few bees around, isometric three-quarter view from above, Township style",
+   "size": [
+    464,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/YoungAppleTrees": {
+   "kind": "object",
+   "prompt": "a row of three young apple saplings tied to wooden stakes, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    312
+   ]
+  },
+  "Farm/Ch1/Looks/GazeboWood": {
+   "kind": "look",
+   "prompt": "an open hexagonal wooden garden gazebo with benches inside and a shingle roof, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/GazeboGrape": {
+   "kind": "look",
+   "prompt": "an open wooden garden gazebo overgrown with green grape vines and bunches of grapes, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Looks/GazeboColumns": {
+   "kind": "look",
+   "prompt": "an elegant round garden gazebo with white columns and a domed roof, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Wattle": {
+   "kind": "object",
+   "prompt": "a short straight section of a rustic woven wattle fence with clay pots on the stakes, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    360
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Pond": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a grassy shore around a large oval pond of clear blue water in the middle of the picture, sandy edges, a few stones, nothing built, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Junk/Reeds": {
+   "kind": "junk",
+   "prompt": "a dense overgrown clump of tall brown cattail reeds and sedge, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    408
+   ]
+  },
+  "Farm/Ch1/Junk/PondTrash": {
+   "kind": "junk",
+   "prompt": "floating rubbish in water: an old tire, plastic bottles, a broken crate and a boot, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    272
+   ]
+  },
+  "Farm/Ch1/Before/BridgeBroken": {
+   "kind": "before",
+   "prompt": "a small broken wooden footbridge with missing planks and a fallen railing, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    320
+   ]
+  },
+  "Farm/Ch1/Looks/BridgeWood": {
+   "kind": "look",
+   "prompt": "a small arched wooden footbridge with railings, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    328
+   ]
+  },
+  "Farm/Ch1/Looks/BridgeStone": {
+   "kind": "look",
+   "prompt": "a small humpbacked stone arch footbridge, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    328
+   ]
+  },
+  "Farm/Ch1/Looks/BridgeRope": {
+   "kind": "look",
+   "prompt": "a small rope suspension footbridge with wooden planks, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    328
+   ]
+  },
+  "Farm/Ch1/Objects/Ducks": {
+   "kind": "object",
+   "prompt": "a family of three white ducks swimming, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    312
+   ]
+  },
+  "Farm/Ch1/Objects/Pier": {
+   "kind": "object",
+   "prompt": "a small wooden fishing pier on posts with a fishing rod and a bucket, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    336
+   ]
+  },
+  "Farm/Ch1/Objects/WaterLilies": {
+   "kind": "object",
+   "prompt": "floating green water lily pads with pink lotus flowers, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    256
+   ]
+  },
+  "Farm/Ch1/Before/BoatOld": {
+   "kind": "before",
+   "prompt": "an old wooden rowing boat with cracked peeling paint lying on the shore, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    304
+   ]
+  },
+  "Farm/Ch1/Looks/BoatBlue": {
+   "kind": "look",
+   "prompt": "a freshly tarred wooden rowing boat painted bright blue with oars, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    304
+   ]
+  },
+  "Farm/Ch1/Looks/BoatRed": {
+   "kind": "look",
+   "prompt": "a freshly tarred wooden rowing boat painted bright red with oars, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    304
+   ]
+  },
+  "Farm/Ch1/Looks/BoatGreen": {
+   "kind": "look",
+   "prompt": "a freshly tarred wooden rowing boat painted bright green with oars, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    304
+   ]
+  },
+  "Farm/Ch1/Objects/ShoreLantern": {
+   "kind": "object",
+   "prompt": "a small paper lantern on a short wooden pole, glowing warm, isometric three-quarter view from above, Township style",
+   "size": [
+    240,
+    512
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Barn": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a wide flat farmyard of packed earth with scattered straw where a big barn would stand, grass around the edges, nothing built, empty ground, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Before/BarnOld": {
+   "kind": "before",
+   "prompt": "an old big weathered grey wooden barn with a holey roof, faded boards, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    880
+   ]
+  },
+  "Farm/Ch1/Looks/BarnRed": {
+   "kind": "look",
+   "prompt": "a big classic farm barn painted bright red with white trim and a hay loft door, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    880
+   ]
+  },
+  "Farm/Ch1/Looks/BarnYellow": {
+   "kind": "look",
+   "prompt": "a big classic farm barn painted sunny yellow with white trim and a hay loft door, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    880
+   ]
+  },
+  "Farm/Ch1/Looks/BarnBlue": {
+   "kind": "look",
+   "prompt": "a big classic farm barn painted sky blue with white trim and a hay loft door, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    880
+   ]
+  },
+  "Farm/Ch1/Before/BarnDoorsStuck": {
+   "kind": "before",
+   "prompt": "big closed wooden barn doors jammed shut with planks nailed across, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/BarnDoorsOpen": {
+   "kind": "object",
+   "prompt": "big wooden barn doors swung wide open with hay visible inside, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    464
+   ]
+  },
+  "Farm/Ch1/Objects/RoofPatches": {
+   "kind": "object",
+   "prompt": "fresh wooden shingle patches on a roof, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    200
+   ]
+  },
+  "Farm/Ch1/Objects/Planks": {
+   "kind": "object",
+   "prompt": "a neat stack of fresh new wooden floor planks, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    320
+   ]
+  },
+  "Farm/Ch1/Objects/Shelves": {
+   "kind": "object",
+   "prompt": "rustic wooden shelves with jars of pickles, jam and tools, isometric three-quarter view from above, Township style",
+   "size": [
+    440,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/Scales": {
+   "kind": "object",
+   "prompt": "old cast iron farm weighing scales with weights, isometric three-quarter view from above, Township style",
+   "size": [
+    472,
+    512
+   ]
+  },
+  "Farm/Ch1/Objects/OwlHouse": {
+   "kind": "object",
+   "prompt": "a small wooden owl nesting box with a cute brown owl peeking out, isometric three-quarter view from above, Township style",
+   "size": [
+    416,
+    512
+   ]
+  },
+  "Farm/Ch1/Before/CartBroken": {
+   "kind": "before",
+   "prompt": "an old broken wooden farm cart with a missing wheel tipped on its side, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    344
+   ]
+  },
+  "Farm/Ch1/Objects/Cart": {
+   "kind": "object",
+   "prompt": "a repaired wooden farm cart with big spoked wheels and fresh hay inside, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    360
+   ]
+  },
+  "Farm/Ch1/Objects/HarvestPile": {
+   "kind": "object",
+   "prompt": "a pile of harvest: burlap sacks of grain, crates of vegetables and golden hay bales, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    344
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Coop": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a small grassy plot with a sandy patch of bare ground in the middle, a few pecked seeds, nothing built, empty ground, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Before/CoopRuined": {
+   "kind": "before",
+   "prompt": "a crooked tumbledown old wooden chicken coop with broken walls and a collapsed roof, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    896
+   ]
+  },
+  "Farm/Ch1/Objects/CoopWalls": {
+   "kind": "object",
+   "prompt": "a small repaired wooden chicken coop with sturdy plank walls and a ramp, no roof, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    832
+   ]
+  },
+  "Farm/Ch1/Looks/CoopRoofRed": {
+   "kind": "look",
+   "prompt": "a cozy wooden chicken coop with a red pitched roof and a little ramp, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    960
+   ]
+  },
+  "Farm/Ch1/Looks/CoopRoofStriped": {
+   "kind": "look",
+   "prompt": "a cozy wooden chicken coop with a red and white striped pitched roof and a little ramp, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    960
+   ]
+  },
+  "Farm/Ch1/Looks/CoopRoofVane": {
+   "kind": "look",
+   "prompt": "a cozy wooden chicken coop with a pitched roof topped by a rooster weather vane, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    960
+   ]
+  },
+  "Farm/Ch1/Junk/CoopJunk": {
+   "kind": "junk",
+   "prompt": "a heap of dirty old straw, broken boards and feathers, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    328
+   ]
+  },
+  "Farm/Ch1/Objects/StrawNests": {
+   "kind": "object",
+   "prompt": "three round straw nests in a wooden box, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    344
+   ]
+  },
+  "Farm/Ch1/Objects/ChickenRun": {
+   "kind": "object",
+   "prompt": "a low wooden fence of a chicken run enclosure seen from the front, a little gate, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    280
+   ]
+  },
+  "Farm/Ch1/Objects/Hens": {
+   "kind": "object",
+   "prompt": "two plump brown and white hens pecking, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    408
+   ]
+  },
+  "Farm/Ch1/Objects/Feeder": {
+   "kind": "object",
+   "prompt": "a wooden chicken feeder trough with grain and a tin water dish, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    376
+   ]
+  },
+  "Farm/Ch1/Objects/EggBasket": {
+   "kind": "object",
+   "prompt": "a small wicker basket with fresh brown eggs on straw, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    400
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Mill": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a gentle green hill with a dirt road winding up from the bottom to a flat grassy top in the middle, wildflowers, nothing built, empty ground, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Junk/RoadDebris": {
+   "kind": "junk",
+   "prompt": "fallen logs, broken branches and big stones blocking a dirt road, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    296
+   ]
+  },
+  "Farm/Ch1/Before/MillBoarded": {
+   "kind": "before",
+   "prompt": "an old abandoned stone windmill tower with a boarded up door and cracked walls, no sails, isometric three-quarter view from above, Township style",
+   "size": [
+    928,
+    1024
+   ]
+  },
+  "Farm/Ch1/Objects/MillTower": {
+   "kind": "object",
+   "prompt": "a restored white stone windmill tower with a wooden cap roof and an open door, no sails, isometric three-quarter view from above, Township style",
+   "size": [
+    928,
+    1024
+   ]
+  },
+  "Farm/Ch1/Before/SailsBroken": {
+   "kind": "before",
+   "prompt": "broken torn windmill sails, a wooden cross frame with missing slats, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    840
+   ]
+  },
+  "Farm/Ch1/Looks/SailsWhite": {
+   "kind": "look",
+   "prompt": "four windmill sails of white canvas on a wooden cross frame, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    840
+   ]
+  },
+  "Farm/Ch1/Looks/SailsLattice": {
+   "kind": "look",
+   "prompt": "four windmill sails of open wooden lattice on a cross frame, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    840
+   ]
+  },
+  "Farm/Ch1/Looks/SailsRibbons": {
+   "kind": "look",
+   "prompt": "four windmill sails on a wooden cross frame decorated with colorful ribbons, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    840
+   ]
+  },
+  "Farm/Ch1/Objects/Millstones": {
+   "kind": "object",
+   "prompt": "two big round grey millstones leaning together, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    392
+   ]
+  },
+  "Farm/Ch1/Objects/Gears": {
+   "kind": "object",
+   "prompt": "big wooden mill gears and an oil can, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    424
+   ]
+  },
+  "Farm/Ch1/Before/Bulldozer": {
+   "kind": "before",
+   "prompt": "a big yellow bulldozer with a scoop parked menacingly, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    376
+   ]
+  },
+  "Farm/Ch1/Objects/EmptySacks": {
+   "kind": "object",
+   "prompt": "a neat stack of new empty folded burlap sacks, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    328
+   ]
+  },
+  "Farm/Ch1/Objects/FlourSacks": {
+   "kind": "object",
+   "prompt": "a pile of full white flour sacks with flour dust and a fresh loaf of bread, isometric three-quarter view from above, Township style",
+   "size": [
+    512,
+    384
+   ]
+  },
+  "Farm/Ch1/Looks/FestivalGarlands": {
+   "kind": "look",
+   "prompt": "festive garlands of flowers and leaves strung between two tall wooden poles, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    440
+   ]
+  },
+  "Farm/Ch1/Looks/FestivalFlags": {
+   "kind": "look",
+   "prompt": "strings of colorful triangle bunting flags strung between two tall wooden poles, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    440
+   ]
+  },
+  "Farm/Ch1/Looks/FestivalLanterns": {
+   "kind": "look",
+   "prompt": "strings of glowing paper lanterns strung between two tall wooden poles, isometric three-quarter view from above, Township style",
+   "size": [
+    1024,
+    440
+   ]
+  },
+  "Farm/Ch1/Backgrounds/Meadow": {
+   "kind": "background",
+   "opaque": true,
+   "prompt": "a sunny green meadow with wildflowers, two golden haystacks and a few round trees at the edges, a distant forest, isometric three-quarter view from above, Township style, seen from above at 30 degrees, wide landscape, full picture",
+   "size": [
+    1600,
+    1200
+   ]
+  },
+  "Farm/Ch1/Fx/Dust": {
+   "kind": "fx",
+   "prompt": "a round puff of light brown dust cloud, cartoon smoke puff",
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Farm/Ch1/Fx/Sparkle": {
+   "kind": "fx",
+   "prompt": "a bright golden four-pointed sparkle star",
+   "size": [
+    128,
+    128
+   ]
+  },
+  "Farm/Ch1/Fog/Cloud1": {
+   "kind": "fx",
+   "prompt": "a big soft fluffy white cloud, cartoon",
+   "size": [
+    512,
+    320
+   ]
+  },
+  "Farm/Ch1/Fog/Cloud2": {
+   "kind": "fx",
+   "prompt": "a long soft fluffy white cloud bank, cartoon",
+   "size": [
+    512,
+    256
+   ]
+  },
+  "Farm/Ch1/Portraits/Anya": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a cheerful young woman of 25 with a long chestnut braid, freckles, a straw hat and denim overalls, warm smile"
+  },
+  "Farm/Ch1/Portraits/Matvey": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a kind old farmer of 75 with a white beard, a flat cap, a checked shirt and a twinkle in his eyes"
+  },
+  "Farm/Ch1/Portraits/Vera": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a jolly plump middle-aged village woman with rosy cheeks, a flowery headscarf and an apron, laughing"
+  },
+  "Farm/Ch1/Portraits/Grachev": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a slick middle-aged property developer with slicked back hair, a grey suit, a gold watch and a smug grin"
+  },
+  "Farm/Ch1/Portraits/Sharik": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a shaggy friendly brown mongrel dog with floppy ears and a happy open mouth"
+  },
+  "Farm/Ch1/Portraits/Pasha": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: an energetic ten year old boy with messy blond hair, a cap on backwards and a gap-toothed grin"
+  },
+  "Farm/Ch1/Portraits/Nina": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a dignified woman of 60, head of the village council, short grey hair, glasses and a cardigan, friendly"
+  },
+  "Farm/Ch1/Portraits/Fedot": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a strong bearded carpenter of 45 with a pencil behind his ear, a work apron and rolled-up sleeves, smiling"
+  },
+  "Farm/Ch1/Portraits/Lida": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: a lively young postwoman with curly red hair, a blue cap and a mail bag, waving"
+  },
+  "Farm/Ch1/Portraits/Diary": {
+   "kind": "portrait",
+   "size": [
+    512,
+    512
+   ],
+   "prompt": "a friendly cartoon character bust portrait, head and shoulders, looking at the viewer: an old grandmother's notebook with a checkered cover, a pressed flower and a ribbon bookmark, slightly open"
+  }
+ }
+}
