@@ -1,97 +1,159 @@
 using System;
+using System.IO;
+using SunnyValley.Core.Meta;
 using SunnyValley.Layout;
 using UnityEngine;
 
 namespace SunnyValley.Game
 {
     /// <summary>
-    /// The player's progress as the interface shell needs it: currencies, lives with their timer, the level reached,
-    /// boosters and settings, kept in PlayerPrefs. The data hook for Core/Meta: when the meta (GDD §5–7) lands, its
-    /// save replaces this class and ToFarmHud/ToLevelStart read from it; the screens do not change.
+    /// The player's progress: the real meta game (Core/Meta MetaGame — currencies, lives, chapter 1, the farm) saved
+    /// as a file in Application.persistentDataPath, plus the device settings (music, sounds, vibration) in PlayerPrefs.
+    /// The save is written to a temporary file and moved over the old one, the previous save kept as .bak, so a
+    /// phone switched off mid-write never loses the farm. The screens read what they show through ToFarmHud and the
+    /// helpers below; every rule lives in MetaGame.
     /// </summary>
-    [Serializable]
     public sealed class GameState
     {
-        public const int MaxLives = 5;
-        public const long LifeSeconds = 30 * 60; // GDD §4.6
-        static readonly int[] MovePrices = { 900, 1900, 2900 }; // GDD §4.7
-        const string Key = "sunnyvalley.state.v1";
+        const string SettingsKey = "sunnyvalley.settings.v1";
+        public const string SaveFile = "sunnyvalley_save.json";
 
-        public long coins = 1000;
-        public long stars = 0;
-        public long crystals = 20;
-        public int lives = MaxLives;
-        /// <summary>Unix seconds when the next life was started counting (meaningful below MaxLives).</summary>
-        public long lifeClock;
-        public int level = 1;
-        /// <summary>In-level boosters: Лопата, Грабли, Лейка, Перемешать (generous at the start, GDD §2.4).</summary>
-        public int[] boosters = { 3, 3, 3, 2 };
-        /// <summary>Pre-level boosters: Вилы, Бомба, Радуга.</summary>
-        public int[] preBoosters = { 2, 2, 1 };
+        public readonly MetaGame Meta;
+        public MetaData Data => Meta.Data;
+
         public bool music = true;
         public bool sounds = true;
         public bool vibration = true;
 
+        GameState(MetaGame meta) => Meta = meta;
+
+        /// <summary>Seconds of the wall clock: the meta never reads the time itself.</summary>
         public static long Now => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+        public static string SavePath => Path.Combine(Application.persistentDataPath, SaveFile);
+
+        static MetaData data;
+
+        /// <summary>The game data (balance + chapter 1) from Resources/Meta, parsed once.</summary>
+        public static MetaData LoadData()
+        {
+            if (data != null)
+                return data;
+            var balance = Resources.Load<TextAsset>(MetaData.BalanceResource);
+            var chapter = Resources.Load<TextAsset>(MetaData.ChapterResource);
+            if (balance == null || chapter == null)
+                throw new InvalidOperationException("Нет данных игры в Resources/Meta (balance.json, chapter1.json)");
+            data = MetaData.Parse(balance.text, chapter.text);
+            return data;
+        }
+
+        /// <summary>The saved game, the backup if the save is broken, or a new game.</summary>
         public static GameState Load()
         {
-            try
+            var d = LoadData();
+            MetaGame meta = null;
+            foreach (string path in new[] { SavePath, SavePath + ".bak" })
             {
-                string json = PlayerPrefs.GetString(Key, "");
-                if (!string.IsNullOrEmpty(json))
-                    return JsonUtility.FromJson<GameState>(json) ?? new GameState();
+                try
+                {
+                    if (File.Exists(path))
+                        meta = MetaGame.Load(d, File.ReadAllText(path));
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("Сохранение не читается (" + path + "): " + e.Message);
+                }
+                if (meta != null)
+                    break;
             }
-            catch (Exception e)
+            if (meta == null)
             {
-                Debug.LogWarning("Сохранение не читается, начинаем заново: " + e.Message);
+                int offset = (int)Math.Round(TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).TotalMinutes);
+                ulong seed = (ulong)DateTime.UtcNow.Ticks ^ 0x9E3779B97F4A7C15UL;
+                meta = MetaGame.NewGame(d, Now, seed, offset);
             }
-            return new GameState();
+            var state = new GameState(meta);
+            state.LoadSettings();
+            return state;
+        }
+
+        void LoadSettings()
+        {
+            string s = PlayerPrefs.GetString(SettingsKey, "111");
+            music = s.Length > 0 && s[0] == '1';
+            sounds = s.Length > 1 && s[1] == '1';
+            vibration = s.Length > 2 && s[2] == '1';
         }
 
         public void Save()
         {
-            PlayerPrefs.SetString(Key, JsonUtility.ToJson(this));
+            PlayerPrefs.SetString(SettingsKey, (music ? "1" : "0") + (sounds ? "1" : "0") + (vibration ? "1" : "0"));
             PlayerPrefs.Save();
-        }
-
-        /// <summary>Gives back the lives that have grown since lifeClock.</summary>
-        public void UpdateLives(long now)
-        {
-            if (lives >= MaxLives)
+            try
             {
-                lifeClock = now;
-                return;
+                string path = SavePath, tmp = path + ".tmp";
+                File.WriteAllText(tmp, Meta.Save());
+                if (File.Exists(path))
+                {
+                    File.Copy(path, path + ".bak", true);
+                    File.Delete(path);
+                }
+                File.Move(tmp, path);
             }
-            long grown = (now - lifeClock) / LifeSeconds;
-            if (grown > 0)
+            catch (Exception e)
             {
-                lives = (int)Math.Min(MaxLives, lives + grown);
-                lifeClock += grown * LifeSeconds;
-                if (lives >= MaxLives)
-                    lifeClock = now;
+                Debug.LogWarning("Не удалось сохранить игру: " + e.Message);
             }
         }
 
-        public long NextLifeIn(long now) => lives >= MaxLives ? 0 : Math.Max(0, LifeSeconds - (now - lifeClock));
+        // ------------------------------------------------------------------ what the screens show
 
-        public void LoseLife(long now)
+        public int MaxLives => Data.Balance.Lives.Max;
+
+        /// <summary>Pre-level boosters in the order of the start popup: Вилы (Line), Бомба, Радуга.</summary>
+        public int[] PreBoosters()
         {
-            UpdateLives(now);
-            if (lives >= MaxLives)
-                lifeClock = now;
-            lives = Math.Max(0, lives - 1);
+            var r = new int[Boosters.PreLevel.Length];
+            for (int i = 0; i < r.Length; i++)
+                r[i] = Meta.BoosterCount(Boosters.PreLevel[i]);
+            return r;
         }
 
-        public static int MovesPrice(int bought) => MovePrices[Math.Min(bought, MovePrices.Length - 1)];
+        /// <summary>In-level boosters in the order of the level screen: Лопата, Грабли, Лейка, Перемешать.</summary>
+        public int[] InLevelBoosters()
+        {
+            var r = new int[Boosters.InLevel.Length];
+            for (int i = 0; i < r.Length; i++)
+                r[i] = Meta.BoosterCount(Boosters.InLevel[i]);
+            return r;
+        }
+
+        /// <summary>Restoration tasks the stars on hand pay for right now (the red dot on «Задания»).</summary>
+        public int AffordableTasks()
+        {
+            if (Meta.ChapterFinished)
+                return 0;
+            int n = 0;
+            foreach (var t in Meta.AvailableTasks())
+            {
+                if (t.Stars <= Meta.Stars)
+                    n++;
+            }
+            return n;
+        }
 
         public FarmHud ToFarmHud(long now)
         {
-            UpdateLives(now);
+            bool infinite = Meta.InfiniteLives(now);
+            int lives = Meta.Lives(now);
             return new FarmHud
             {
-                Coins = coins, Stars = stars, Crystals = crystals, Lives = lives, MaxLives = MaxLives,
-                NextLifeSeconds = NextLifeIn(now), Level = level, TasksBadge = stars > 0 ? 1 : 0, EventsBadge = 1,
+                Coins = Meta.Coins, Stars = Meta.Stars, Crystals = Meta.Crystals,
+                Lives = infinite ? MaxLives : lives, MaxLives = MaxLives,
+                NextLifeSeconds = infinite ? Meta.InfiniteLivesLeft(now) : Meta.NextLifeIn(now),
+                InfiniteLives = infinite,
+                Level = Meta.NextLevel, TasksBadge = AffordableTasks(), EventsBadge = 0,
+                OrdersBadge = 0,
             };
         }
     }
