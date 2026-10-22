@@ -164,7 +164,7 @@ namespace SunnyValley.Core.Match3
             Board.BlockerLayers[i] = harvest ? 0 : after;
             if (_log != null)
                 AddEvent(new ObstacleHitEvent { Cell = Topo.PosOf(i), Obstacle = ObstacleKind.Bed, LayersBefore = before, LayersAfter = harvest ? 0 : after, Harvested = harvest, Source = src, CauseId = causeId });
-            if (harvest) Progress(GoalType.Crop, TileColor.None, i);
+            if (harvest) { CropsHarvested++; Progress(GoalType.Crop, TileColor.None, i); }
         }
 
         void DamageGrass(int i, HitSource src, int causeId)
@@ -192,6 +192,9 @@ namespace SunnyValley.Core.Match3
                 default: return GoalType.Collect;
             }
         }
+
+        /// <summary>Crops harvested from garden beds in this attempt (goal or not): the meta stores them.</summary>
+        public int CropsHarvested { get; private set; }
 
         /// <summary>Total of all goal counters (bots use it as a progress measure).</summary>
         public int GoalProgressTotal { get; private set; }

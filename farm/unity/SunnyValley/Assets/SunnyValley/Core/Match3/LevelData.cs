@@ -48,6 +48,9 @@ namespace SunnyValley.Core.Match3
         [JsonProperty("chicks", NullValueHandling = NullValueHandling.Ignore)] public ChickRules Chicks;
 
         [JsonProperty("goals")] public List<GoalData> Goals;
+        /// <summary>Farm item id the garden beds grow (reported to the meta as harvest). Default "carrot".</summary>
+        [JsonProperty("bedCrop", NullValueHandling = NullValueHandling.Ignore)] public string BedCrop;
+        public const string DefaultBedCrop = "carrot";
         /// <summary>Moves left needed for 2 and 3 stars. Default: 10% and 25% of the moves.</summary>
         [JsonProperty("stars", NullValueHandling = NullValueHandling.Ignore)] public int[] Stars;
 

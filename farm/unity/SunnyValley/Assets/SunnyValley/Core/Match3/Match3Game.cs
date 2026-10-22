@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SunnyValley.Core.Match3
 {
-    public sealed class Goal
+    public sealed class LevelGoal
     {
         public GoalType Type;
         /// <summary>Only for <see cref="GoalType.Collect"/>.</summary>
@@ -14,7 +14,7 @@ namespace SunnyValley.Core.Match3
         public bool Done => Current >= Target;
         public int Remaining => Math.Max(0, Target - Current);
 
-        public Goal Clone() => (Goal)MemberwiseClone();
+        public LevelGoal Clone() => (LevelGoal)MemberwiseClone();
         public override string ToString() => LevelLoader.GoalName(Type) + (Color != TileColor.None ? ":" + TileColors.Name(Color) : "") + " " + Current + "/" + Target;
     }
 
@@ -45,7 +45,7 @@ namespace SunnyValley.Core.Match3
         public BoardTopology Topo { get; private set; }
         public Board Board { get; private set; }
         public Rng Rng { get; private set; }
-        public List<Goal> Goals { get; private set; }
+        public List<LevelGoal> Goals { get; private set; }
         public int Colors { get; private set; }
         public int MovesLeft { get; private set; }
         public int MovesUsed { get; private set; }
@@ -100,11 +100,11 @@ namespace SunnyValley.Core.Match3
             if (level.Stars != null && level.Stars.Length == 2) g._star = new[] { level.Stars[0], level.Stars[1] };
             else g._star = new[] { Math.Max(1, (int)Math.Ceiling(level.Moves * 0.10)), Math.Max(2, (int)Math.Ceiling(level.Moves * 0.25)) };
 
-            g.Goals = new List<Goal>();
+            g.Goals = new List<LevelGoal>();
             foreach (var gd in level.Goals)
             {
                 var type = LevelLoader.ParseGoalType(gd.Type);
-                var goal = new Goal { Type = type, Target = gd.Count };
+                var goal = new LevelGoal { Type = type, Target = gd.Count };
                 if (type == GoalType.Collect) goal.Color = TileColors.Parse(gd.Color);
                 if (goal.Target <= 0)
                 {
@@ -139,7 +139,7 @@ namespace SunnyValley.Core.Match3
             var g = (Match3Game)MemberwiseClone();
             g.Board = Board.Clone();
             g.Rng = reseed.HasValue ? new Rng(reseed.Value) : Rng.Clone();
-            g.Goals = new List<Goal>(Goals.Count);
+            g.Goals = new List<LevelGoal>(Goals.Count);
             foreach (var goal in Goals) g.Goals.Add(goal.Clone());
             g.InitialEvents = new List<StepEvent>();
             g.LogEnabled = withLog;
@@ -428,7 +428,7 @@ namespace SunnyValley.Core.Match3
             }
         }
 
-        bool LevelGoalIsAll(Goal goal)
+        bool LevelGoalIsAll(LevelGoal goal)
         {
             foreach (var gd in Level.Goals)
                 if (LevelLoader.ParseGoalType(gd.Type) == goal.Type) return gd.Count <= 0;

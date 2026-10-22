@@ -15,7 +15,7 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Core/Match3/**/*.cs" />
+    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Core/**/*.cs" Exclude="../unity/SunnyValley/Assets/SunnyValley/Core/Tests~/**" />
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
