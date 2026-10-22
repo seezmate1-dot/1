@@ -164,13 +164,15 @@ namespace SunnyValley.Core.Tests
                 LoadTruck(now);
             }
             Buy(now);
-            ManageBarn(now);
-            g.CollectAll(now);
+            ManageBarn(now, 0);
+            // Something ready did not fit: make room for it (sell what nothing asks for) and collect again.
+            for (int round = 0; round < 3 && Blocked(now) > 0; round++)
+            {
+                ManageBarn(now, Blocked(now));
+                g.CollectAll(now);
+            }
             Produce(now, nextPass);
-            // Blocked harvest: something ready that could not go into the barn.
-            bool blocked = g.Plots.Any(p => p.Crop != null && p.ReadyAt <= now) ||
-                           g.State.Farm.Workshops.Any(w => w.Jobs.Count > 0 && w.Jobs[0].EndAt <= now && !Boosters.IsBooster(data.Recipes[w.Jobs[0].Recipe].Output));
-            if (blocked)
+            if (Blocked(now) > 0)
             {
                 BarnBlockedPasses++;
                 barnBlockedStreak++;
@@ -249,17 +251,31 @@ namespace SunnyValley.Core.Tests
                     g.Build(now, d.Id);
         }
 
-        void ManageBarn(long now)
+        /// <summary>Units ready on plots and in workshops that are still waiting for room in the barn.</summary>
+        int Blocked(long now)
         {
             var g = Game;
-            if (g.BarnFree > g.BarnCapacity / 8) return;
+            int n = 0;
+            foreach (var p in g.Plots)
+                if (p.Crop != null && p.ReadyAt <= now) n += data.Crops[p.Crop].Yield;
+            foreach (var w in g.State.Farm.Workshops)
+                foreach (var j in w.Jobs)
+                    if (j.EndAt <= now && !Boosters.IsBooster(data.Recipes[j.Recipe].Output)) n += data.Recipes[j.Recipe].Count;
+            return n;
+        }
+
+        void ManageBarn(long now, int room)
+        {
+            var g = Game;
+            if (g.BarnFree > g.BarnCapacity / 8 + room) return;
             var demand = Demand(now);
             // Sell what nothing asks for, the most abundant first, down to 3/4 of the barn.
             foreach (var kv in g.State.Barn.OrderByDescending(kv => kv.Value - demand.GetValueOrDefault(kv.Key)).ToList())
             {
-                if (g.BarnUsed <= g.BarnCapacity * 3 / 4) break;
+                int target = Math.Max(0, g.BarnCapacity * 3 / 4 - room);
+                if (g.BarnUsed <= target) break;
                 int spare = kv.Value - demand.GetValueOrDefault(kv.Key);
-                int sell = Math.Min(spare, g.BarnUsed - g.BarnCapacity * 3 / 4);
+                int sell = Math.Min(spare, g.BarnUsed - target);
                 if (sell > 0 && g.Sell(now, kv.Key, sell).Ok) Sold += sell;
             }
             // Still full (everything is wanted): sell the cheapest goods anyway — the barn must never block for good.

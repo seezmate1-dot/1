@@ -33,11 +33,17 @@ namespace SunnyValley.Core.Tests
             {
                 int level = kv.Key;
                 double model = kv.Value;
-                if (level == 1 || model > days - 0.5) continue;
+                if (level == 1 || model > days) continue;
                 // Days are counted from the farm's opening, where the farm part of the model starts.
                 double farmModel = model - Pacing.Chapter1Day;
                 double allowed = Math.Max(0.75, tol * farmModel);
-                Assert.That(bot.LevelDay.ContainsKey(level), Is.True, $"level {level} (model day {model:F1}) not reached in {days} days\n{bot.Report()}");
+                if (!bot.LevelDay.ContainsKey(level))
+                {
+                    // Not reached yet: fine only if the run ended inside the allowed window.
+                    double farmEnd = days - bot.ChapterDoneDay.Value;
+                    Assert.That(farmEnd, Is.LessThan(farmModel + allowed), $"level {level} (model day {model:F1}) not reached in {days} days\n{bot.Report()}");
+                    continue;
+                }
                 double farmBot = bot.LevelDay[level] - bot.ChapterDoneDay.Value;
                 Assert.That(farmBot, Is.EqualTo(farmModel).Within(allowed),
                     $"level {level}: bot day {bot.LevelDay[level]:F1}, model {model:F1}\n{bot.Report()}");

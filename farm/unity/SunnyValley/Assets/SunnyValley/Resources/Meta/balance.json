@@ -129,7 +129,7 @@
    "kind": "crop",
    "level": 1,
    "sell": 1,
-   "orderCoins": 3,
+   "orderCoins": 2,
    "xp": 1,
    "work": 1.37
   },
@@ -138,8 +138,8 @@
    "name": "Кукуруза",
    "kind": "crop",
    "level": 1,
-   "sell": 2,
-   "orderCoins": 5,
+   "sell": 1,
+   "orderCoins": 3,
    "xp": 1,
    "work": 2.31
   },
@@ -148,8 +148,8 @@
    "name": "Морковь",
    "kind": "crop",
    "level": 2,
-   "sell": 3,
-   "orderCoins": 8,
+   "sell": 2,
+   "orderCoins": 5,
    "xp": 1,
    "work": 3.65
   },
@@ -158,8 +158,8 @@
    "name": "Подсолнух",
    "kind": "crop",
    "level": 4,
-   "sell": 5,
-   "orderCoins": 13,
+   "sell": 4,
+   "orderCoins": 9,
    "xp": 2,
    "work": 5.99
   },
@@ -168,8 +168,8 @@
    "name": "Клубника",
    "kind": "crop",
    "level": 6,
-   "sell": 12,
-   "orderCoins": 30,
+   "sell": 8,
+   "orderCoins": 21,
    "xp": 5,
    "work": 13.73
   },
@@ -178,8 +178,8 @@
    "name": "Хлопок",
    "kind": "crop",
    "level": 8,
-   "sell": 21,
-   "orderCoins": 52,
+   "sell": 14,
+   "orderCoins": 35,
    "xp": 8,
    "work": 23.53
   },
@@ -188,8 +188,8 @@
    "name": "Свёкла",
    "kind": "crop",
    "level": 10,
-   "sell": 28,
-   "orderCoins": 71,
+   "sell": 20,
+   "orderCoins": 49,
    "xp": 11,
    "work": 32.36
   },
@@ -198,8 +198,8 @@
    "name": "Картофель",
    "kind": "crop",
    "level": 13,
-   "sell": 36,
-   "orderCoins": 89,
+   "sell": 24,
+   "orderCoins": 61,
    "xp": 14,
    "work": 40.6
   },
@@ -208,8 +208,8 @@
    "name": "Тыква",
    "kind": "crop",
    "level": 16,
-   "sell": 62,
-   "orderCoins": 155,
+   "sell": 42,
+   "orderCoins": 105,
    "xp": 25,
    "work": 70.32
   },
@@ -218,8 +218,8 @@
    "name": "Яблоко",
    "kind": "fruit",
    "level": 1,
-   "sell": 10,
-   "orderCoins": 24,
+   "sell": 7,
+   "orderCoins": 17,
    "xp": 4,
    "work": 11.12
   },
@@ -228,8 +228,8 @@
    "name": "Груша",
    "kind": "fruit",
    "level": 9,
-   "sell": 12,
-   "orderCoins": 31,
+   "sell": 8,
+   "orderCoins": 21,
    "xp": 5,
    "work": 13.87
   },
@@ -238,8 +238,8 @@
    "name": "Вишня",
    "kind": "fruit",
    "level": 14,
-   "sell": 14,
-   "orderCoins": 36,
+   "sell": 10,
+   "orderCoins": 25,
    "xp": 6,
    "work": 16.48
   },
@@ -248,8 +248,8 @@
    "name": "Яйцо",
    "kind": "animal",
    "level": 1,
-   "sell": 8,
-   "orderCoins": 21,
+   "sell": 6,
+   "orderCoins": 14,
    "xp": 3,
    "work": 9.48
   },
@@ -258,8 +258,8 @@
    "name": "Молоко",
    "kind": "animal",
    "level": 3,
-   "sell": 18,
-   "orderCoins": 46,
+   "sell": 12,
+   "orderCoins": 31,
    "xp": 7,
    "work": 20.74
   },
@@ -268,8 +268,8 @@
    "name": "Шерсть",
    "kind": "animal",
    "level": 7,
-   "sell": 30,
-   "orderCoins": 75,
+   "sell": 20,
+   "orderCoins": 51,
    "xp": 12,
    "work": 33.9
   },
@@ -278,8 +278,8 @@
    "name": "Мёд",
    "kind": "animal",
    "level": 11,
-   "sell": 24,
-   "orderCoins": 61,
+   "sell": 17,
+   "orderCoins": 42,
    "xp": 10,
    "work": 27.95
   },
@@ -288,8 +288,8 @@
    "name": "Трюфель",
    "kind": "animal",
    "level": 15,
-   "sell": 50,
-   "orderCoins": 125,
+   "sell": 34,
+   "orderCoins": 85,
    "xp": 20,
    "work": 56.96
   },
@@ -299,7 +299,7 @@
    "kind": "feed",
    "level": 1,
    "sell": 2,
-   "orderCoins": 6,
+   "orderCoins": 4,
    "xp": 1,
    "work": 2.89
   },
@@ -308,8 +308,8 @@
    "name": "Корм для коров",
    "kind": "feed",
    "level": 3,
-   "sell": 4,
-   "orderCoins": 11,
+   "sell": 3,
+   "orderCoins": 7,
    "xp": 2,
    "work": 4.86
   },
@@ -318,8 +318,8 @@
    "name": "Корм для овец",
    "kind": "feed",
    "level": 7,
-   "sell": 6,
-   "orderCoins": 14,
+   "sell": 4,
+   "orderCoins": 9,
    "xp": 2,
    "work": 6.26
   },
@@ -328,8 +328,8 @@
    "name": "Корм для свиней",
    "kind": "feed",
    "level": 15,
-   "sell": 16,
-   "orderCoins": 41,
+   "sell": 11,
+   "orderCoins": 28,
    "xp": 7,
    "work": 18.74
   },
@@ -338,8 +338,8 @@
    "name": "Мука",
    "kind": "product",
    "level": 2,
-   "sell": 9,
-   "orderCoins": 23,
+   "sell": 6,
+   "orderCoins": 16,
    "xp": 4,
    "work": 10.42
   },
@@ -348,8 +348,8 @@
    "name": "Хлеб",
    "kind": "product",
    "level": 2,
-   "sell": 26,
-   "orderCoins": 65,
+   "sell": 18,
+   "orderCoins": 44,
    "xp": 10,
    "work": 29.57
   },
@@ -358,8 +358,8 @@
    "name": "Кукурузный хлеб",
    "kind": "product",
    "level": 4,
-   "sell": 28,
-   "orderCoins": 70,
+   "sell": 19,
+   "orderCoins": 47,
    "xp": 11,
    "work": 31.61
   },
@@ -368,8 +368,8 @@
    "name": "Яблочный пирог",
    "kind": "product",
    "level": 6,
-   "sell": 60,
-   "orderCoins": 151,
+   "sell": 41,
+   "orderCoins": 103,
    "xp": 24,
    "work": 68.6
   },
@@ -378,8 +378,8 @@
    "name": "Печенье",
    "kind": "product",
    "level": 11,
-   "sell": 115,
-   "orderCoins": 287,
+   "sell": 78,
+   "orderCoins": 195,
    "xp": 46,
    "work": 130.31
   },
@@ -388,8 +388,8 @@
    "name": "Медовик",
    "kind": "product",
    "level": 13,
-   "sell": 94,
-   "orderCoins": 235,
+   "sell": 64,
+   "orderCoins": 160,
    "xp": 37,
    "work": 106.68
   },
@@ -398,8 +398,8 @@
    "name": "Тыквенный пирог",
    "kind": "product",
    "level": 17,
-   "sell": 120,
-   "orderCoins": 300,
+   "sell": 82,
+   "orderCoins": 204,
    "xp": 48,
    "work": 136.28
   },
@@ -408,8 +408,8 @@
    "name": "Сливки",
    "kind": "product",
    "level": 4,
-   "sell": 28,
-   "orderCoins": 70,
+   "sell": 19,
+   "orderCoins": 48,
    "xp": 11,
    "work": 31.72
   },
@@ -418,8 +418,8 @@
    "name": "Масло",
    "kind": "product",
    "level": 5,
-   "sell": 50,
-   "orderCoins": 125,
+   "sell": 34,
+   "orderCoins": 85,
    "xp": 20,
    "work": 56.67
   },
@@ -428,8 +428,8 @@
    "name": "Сыр",
    "kind": "product",
    "level": 6,
-   "sell": 78,
-   "orderCoins": 195,
+   "sell": 53,
+   "orderCoins": 133,
    "xp": 31,
    "work": 88.66
   },
@@ -438,8 +438,8 @@
    "name": "Клубничное варенье",
    "kind": "product",
    "level": 7,
-   "sell": 60,
-   "orderCoins": 149,
+   "sell": 40,
+   "orderCoins": 101,
    "xp": 24,
    "work": 67.64
   },
@@ -448,8 +448,8 @@
    "name": "Яблочное варенье",
    "kind": "product",
    "level": 7,
-   "sell": 53,
-   "orderCoins": 132,
+   "sell": 36,
+   "orderCoins": 90,
    "xp": 21,
    "work": 59.81
   },
@@ -458,8 +458,8 @@
    "name": "Грушевое варенье",
    "kind": "product",
    "level": 10,
-   "sell": 64,
-   "orderCoins": 161,
+   "sell": 44,
+   "orderCoins": 110,
    "xp": 26,
    "work": 73.23
   },
@@ -468,8 +468,8 @@
    "name": "Вишнёвое варенье",
    "kind": "product",
    "level": 15,
-   "sell": 146,
-   "orderCoins": 365,
+   "sell": 100,
+   "orderCoins": 249,
    "xp": 58,
    "work": 165.94
   },
@@ -478,8 +478,8 @@
    "name": "Ткань",
    "kind": "product",
    "level": 8,
-   "sell": 60,
-   "orderCoins": 150,
+   "sell": 41,
+   "orderCoins": 102,
    "xp": 24,
    "work": 68.08
   },
@@ -488,8 +488,8 @@
    "name": "Пряжа",
    "kind": "product",
    "level": 9,
-   "sell": 76,
-   "orderCoins": 191,
+   "sell": 52,
+   "orderCoins": 130,
    "xp": 30,
    "work": 86.92
   },
@@ -498,8 +498,8 @@
    "name": "Свитер",
    "kind": "product",
    "level": 12,
-   "sell": 254,
-   "orderCoins": 634,
+   "sell": 173,
+   "orderCoins": 432,
    "xp": 101,
    "work": 287.98
   },
@@ -508,8 +508,8 @@
    "name": "Сахар",
    "kind": "product",
    "level": 10,
-   "sell": 70,
-   "orderCoins": 176,
+   "sell": 48,
+   "orderCoins": 120,
    "xp": 28,
    "work": 79.91
   },
@@ -518,8 +518,8 @@
    "name": "Сироп",
    "kind": "product",
    "level": 12,
-   "sell": 92,
-   "orderCoins": 231,
+   "sell": 63,
+   "orderCoins": 157,
    "xp": 37,
    "work": 104.9
   },
@@ -528,8 +528,8 @@
    "name": "Леденцы",
    "kind": "product",
    "level": 14,
-   "sell": 192,
-   "orderCoins": 480,
+   "sell": 131,
+   "orderCoins": 327,
    "xp": 76,
    "work": 217.99
   },
@@ -538,8 +538,8 @@
    "name": "Помидор",
    "kind": "match3",
    "level": 1,
-   "sell": 3,
-   "orderCoins": 7,
+   "sell": 2,
+   "orderCoins": 4,
    "xp": 1,
    "work": 3.0
   },
@@ -548,8 +548,8 @@
    "name": "Баклажан",
    "kind": "match3",
    "level": 1,
-   "sell": 3,
-   "orderCoins": 7,
+   "sell": 2,
+   "orderCoins": 4,
    "xp": 1,
    "work": 3.0
   },
@@ -558,8 +558,8 @@
    "name": "Черника",
    "kind": "match3",
    "level": 1,
-   "sell": 3,
-   "orderCoins": 7,
+   "sell": 2,
+   "orderCoins": 4,
    "xp": 1,
    "work": 3.0
   }
@@ -580,43 +580,43 @@
   {
    "item": "carrot",
    "growSeconds": 600,
-   "seedCoins": 2,
+   "seedCoins": 1,
    "yield": 2
   },
   {
    "item": "sunflower",
    "growSeconds": 1200,
-   "seedCoins": 3,
+   "seedCoins": 2,
    "yield": 2
   },
   {
    "item": "strawberry",
    "growSeconds": 3600,
-   "seedCoins": 8,
+   "seedCoins": 5,
    "yield": 2
   },
   {
    "item": "cotton",
    "growSeconds": 7200,
-   "seedCoins": 13,
+   "seedCoins": 9,
    "yield": 2
   },
   {
    "item": "beet",
    "growSeconds": 10800,
-   "seedCoins": 18,
+   "seedCoins": 12,
    "yield": 2
   },
   {
    "item": "potato",
    "growSeconds": 14400,
-   "seedCoins": 22,
+   "seedCoins": 15,
    "yield": 2
   },
   {
    "item": "pumpkin",
    "growSeconds": 28800,
-   "seedCoins": 39,
+   "seedCoins": 26,
    "yield": 2
   }
  ],
@@ -1693,7 +1693,7 @@
   },
   {
    "level": 2,
-   "xp": 50,
+   "xp": 20,
    "reward": {
     "coins": 80,
     "crystals": 2
@@ -1701,7 +1701,7 @@
   },
   {
    "level": 3,
-   "xp": 150,
+   "xp": 80,
    "reward": {
     "coins": 120,
     "crystals": 2,
@@ -1712,7 +1712,7 @@
   },
   {
    "level": 4,
-   "xp": 460,
+   "xp": 230,
    "reward": {
     "coins": 160,
     "crystals": 2,
@@ -1725,7 +1725,7 @@
   },
   {
    "level": 5,
-   "xp": 700,
+   "xp": 340,
    "reward": {
     "coins": 200,
     "crystals": 5
@@ -1733,7 +1733,7 @@
   },
   {
    "level": 6,
-   "xp": 1000,
+   "xp": 490,
    "reward": {
     "coins": 240,
     "crystals": 2,
@@ -1744,7 +1744,7 @@
   },
   {
    "level": 7,
-   "xp": 1850,
+   "xp": 760,
    "reward": {
     "coins": 280,
     "crystals": 2
@@ -1752,7 +1752,7 @@
   },
   {
    "level": 8,
-   "xp": 2700,
+   "xp": 1100,
    "reward": {
     "coins": 320,
     "crystals": 2,
@@ -1765,7 +1765,7 @@
   },
   {
    "level": 9,
-   "xp": 3800,
+   "xp": 1550,
    "reward": {
     "coins": 360,
     "crystals": 2,
@@ -1776,7 +1776,7 @@
   },
   {
    "level": 10,
-   "xp": 5550,
+   "xp": 2150,
    "reward": {
     "coins": 400,
     "crystals": 5
@@ -1784,7 +1784,7 @@
   },
   {
    "level": 11,
-   "xp": 7900,
+   "xp": 3000,
    "reward": {
     "coins": 440,
     "crystals": 2
@@ -1792,7 +1792,7 @@
   },
   {
    "level": 12,
-   "xp": 10800,
+   "xp": 3900,
    "reward": {
     "coins": 480,
     "crystals": 2,
@@ -1808,7 +1808,7 @@
   },
   {
    "level": 13,
-   "xp": 13800,
+   "xp": 5050,
    "reward": {
     "coins": 520,
     "crystals": 2
@@ -1816,7 +1816,7 @@
   },
   {
    "level": 14,
-   "xp": 17100,
+   "xp": 6150,
    "reward": {
     "coins": 560,
     "crystals": 2
@@ -1824,7 +1824,7 @@
   },
   {
    "level": 15,
-   "xp": 21200,
+   "xp": 7500,
    "reward": {
     "coins": 600,
     "crystals": 5,
@@ -1835,7 +1835,7 @@
   },
   {
    "level": 16,
-   "xp": 26200,
+   "xp": 9000,
    "reward": {
     "coins": 640,
     "crystals": 2,
@@ -1848,7 +1848,7 @@
   },
   {
    "level": 17,
-   "xp": 32000,
+   "xp": 10800,
    "reward": {
     "coins": 680,
     "crystals": 2
@@ -1856,7 +1856,7 @@
   },
   {
    "level": 18,
-   "xp": 38300,
+   "xp": 12700,
    "reward": {
     "coins": 720,
     "crystals": 2,
@@ -1867,7 +1867,7 @@
   },
   {
    "level": 19,
-   "xp": 45100,
+   "xp": 14800,
    "reward": {
     "coins": 760,
     "crystals": 2
@@ -1875,7 +1875,7 @@
   },
   {
    "level": 20,
-   "xp": 52000,
+   "xp": 16800,
    "reward": {
     "coins": 800,
     "crystals": 5,
@@ -1888,7 +1888,7 @@
   },
   {
    "level": 21,
-   "xp": 60200,
+   "xp": 19200,
    "reward": {
     "coins": 840,
     "crystals": 2,
@@ -1899,7 +1899,7 @@
   },
   {
    "level": 22,
-   "xp": 69500,
+   "xp": 21800,
    "reward": {
     "coins": 880,
     "crystals": 2
@@ -1907,7 +1907,7 @@
   },
   {
    "level": 23,
-   "xp": 80400,
+   "xp": 25000,
    "reward": {
     "coins": 920,
     "crystals": 2
@@ -1915,7 +1915,7 @@
   },
   {
    "level": 24,
-   "xp": 92100,
+   "xp": 28200,
    "reward": {
     "coins": 960,
     "crystals": 2,
@@ -1931,7 +1931,7 @@
   },
   {
    "level": 25,
-   "xp": 105200,
+   "xp": 31700,
    "reward": {
     "coins": 1000,
     "crystals": 5
@@ -1939,7 +1939,7 @@
   },
   {
    "level": 26,
-   "xp": 119800,
+   "xp": 35600,
    "reward": {
     "coins": 1040,
     "crystals": 2
@@ -1947,7 +1947,7 @@
   },
   {
    "level": 27,
-   "xp": 136200,
+   "xp": 39500,
    "reward": {
     "coins": 1080,
     "crystals": 2,
@@ -1958,7 +1958,7 @@
   },
   {
    "level": 28,
-   "xp": 154100,
+   "xp": 43800,
    "reward": {
     "coins": 1120,
     "crystals": 2,
@@ -1971,7 +1971,7 @@
   },
   {
    "level": 29,
-   "xp": 173600,
+   "xp": 48500,
    "reward": {
     "coins": 1160,
     "crystals": 2
@@ -1979,7 +1979,7 @@
   },
   {
    "level": 30,
-   "xp": 194700,
+   "xp": 53600,
    "reward": {
     "coins": 1200,
     "crystals": 5,
@@ -2606,32 +2606,32 @@
   "chapter1Day": 4.01,
   "levelDays": {
    "1": 4.01,
-   "2": 4.18,
+   "2": 4.17,
    "3": 4.48,
    "4": 5.18,
    "5": 5.6,
    "6": 6.33,
-   "7": 7.33,
-   "8": 8.33,
-   "9": 9.17,
-   "10": 10.33,
+   "7": 7.17,
+   "8": 8.01,
+   "9": 9.0,
+   "10": 10.17,
    "11": 11.6,
-   "12": 13.33,
-   "13": 15.0,
-   "14": 16.34,
-   "15": 18.18,
+   "12": 13.17,
+   "13": 14.61,
+   "14": 16.33,
+   "15": 18.17,
    "16": 20.17,
    "17": 22.33,
-   "18": 24.48,
-   "19": 27.0,
+   "18": 24.49,
+   "19": 27.01,
    "20": 29.33,
    "21": 32.17,
    "22": 35.33,
-   "23": 39.0,
+   "23": 39.17,
    "24": 43.0,
-   "25": 47.17,
-   "26": 52.0,
-   "27": 57.17
+   "25": 47.33,
+   "26": 52.33,
+   "27": 57.33
   },
   "tolerancePercent": 25
  }

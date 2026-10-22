@@ -14,8 +14,9 @@ What it does:
        farm/docs/ECONOMY.md
 
 The C# player bot (Core/Tests~/MetaBotTests.cs) plays the real rules for 30 days and must land within
-`pacing.tolerancePercent` of the model's days; MODEL_EFFICIENCY below is the share of the production
-capacity the bot actually turns into orders (measured by the bot, see ECONOMY.md).
+`pacing.tolerancePercent` of the model's days; the model's efficiency is the share of the production
+capacity the bot actually turns into orders
+(efficiency(level) below, measured by the bot, see ECONOMY.md).
 
 Run:            python3 farm/tools/economy.py            (writes the files)
 CI consistency: python3 farm/tools/economy.py --check    (fails if the files are stale or a check fails)
@@ -40,7 +41,17 @@ ATTEMPTS_PER_SESSION = 5                         # match-3 attempts per session 
 WIN_RATE = 0.8                                   # share of won attempts (GDD 4.8: early levels ~90%, later waves)
 LEVEL_MINUTES = 2.5                              # one match-3 attempt (GDD 3: 2-4 min, early ones short)
 FIRST_SESSION_HOUR = 8.0                         # install at 8:00 of day 0
-MODEL_EFFICIENCY = 0.42                          # share of production capacity that becomes orders (bot-measured)
+# Share of the production capacity that becomes fulfilled orders (measured by the bot): high while there are
+# few goods (production matches the orders), lower later (more goods and longer chains wait for the right order).
+EFFICIENCY_START = 0.22
+EFFICIENCY_PER_LEVEL = 0.0045
+EFFICIENCY_MIN = 0.10
+
+
+def efficiency(level):
+    return max(EFFICIENCY_MIN, EFFICIENCY_START - EFFICIENCY_PER_LEVEL * level)
+
+
 TOLERANCE_PERCENT = 25                           # allowed bot deviation from the model's days
 
 # ============================================================== currencies, lives, match-3 (GDD 4.6-4.7, 7)
@@ -302,7 +313,7 @@ STEP_EXPONENT = 0.8        # value of a production step: minutes ** 0.8 (long st
 TREE_FACTOR = 0.5          # trees cost nothing to run: their step is worth less
 ANIMAL_FACTOR = 0.6
 XP_PER_WORK = 0.35
-COINS_PER_WORK = 2.2
+COINS_PER_WORK = 1.5
 SELL_SHARE = 0.4
 
 
@@ -537,7 +548,7 @@ def farm_model(start_day, xp_table):
             break
         gap = gaps[i]
         cap = farm.capacity_value(level, gap)
-        made = cap * MODEL_EFFICIENCY
+        made = cap * efficiency(level)
         gained_xp = made * XP_PER_WORK
         gained_coins = made * COINS_PER_WORK
         # match-3 during the session (counted on the first pass of a session)
@@ -857,8 +868,10 @@ def write_doc(items, balance, zones, total_stars, chapter_day, reached, flows, f
         ATTEMPTS_PER_SESSION, LEVEL_MINUTES, WIN_RATE * 100))
     a("- На ферме — два захода за сессию: до уровней и после них (≈%d мин спустя)." % int(ATTEMPTS_PER_SESSION * LEVEL_MINUTES))
     a("- Звёзды тратит сразу на доступные задания; монеты — на мастерские, дома, грядки, животных и деревья.")
-    a("- Эффективность хозяйства %.0f%%: такая доля производственной мощности фермы превращается в "
-      "выполненные заказы (измерено ботом; остальное — простой между сессиями и несовпадение с заказами)." % (MODEL_EFFICIENCY * 100))
+    a("- Эффективность хозяйства: доля производственной мощности фермы, которая превращается в выполненные "
+      "заказы, — %.0f%% на 1 уровне, %.0f%% на 10, %.0f%% на 20 (измерено ботом; остальное — простой между "
+      "сессиями и товары, ждущие своего заказа; чем больше товаров, тем больше ожидания)." % (
+        efficiency(1) * 100, efficiency(10) * 100, efficiency(20) * 100))
     a("")
     a("## Глава 1 «Восстановление»: звёзды по зонам")
     a("")
