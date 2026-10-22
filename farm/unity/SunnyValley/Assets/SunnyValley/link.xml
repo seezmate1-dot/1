@@ -1,0 +1,4 @@
+<!-- IL2CPP (Android, iOS) must not strip the core: saves and level files are read by reflection (Newtonsoft.Json). -->
+<linker>
+  <assembly fullname="SunnyValley.Core" preserve="all" ignoreIfMissing="1" />
+</linker>

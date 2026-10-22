@@ -1,0 +1,20 @@
+{
+    "name": "SunnyValley.Editor",
+    "rootNamespace": "SunnyValley.EditorTools",
+    "references": [
+        "SunnyValley.Game",
+        "SunnyValley.Layout",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
