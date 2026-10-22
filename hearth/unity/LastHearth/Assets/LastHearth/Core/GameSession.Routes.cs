@@ -656,6 +656,11 @@ namespace LastHearth.Core
                 return Fail.NotFound;
             if (!battle.Over)
                 battle.RunToEnd();
+            if (e.Back || RouteWalk(e).IndexOf(node.Id) < e.Passed)
+            {
+                result = string.Format("Отряд уже прошёл «{0}»: всё решили характеристики", node.Name);
+                return Fail.NotRunning;
+            }
             e.Skirmish[node.Id] = battle.Won ? 1 : 0;
             result = battle.Won
                 ? string.Format("Схватка «{0}» выиграна: отряд пройдёт её без потерь{1}", node.Name, Balance.Activities.Routes.SkirmishBonus > 0 ? " и принесёт больше чертежей" : "")

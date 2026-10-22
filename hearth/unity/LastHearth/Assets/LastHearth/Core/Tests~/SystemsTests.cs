@@ -175,6 +175,8 @@ namespace LastHearth.Core.Tests
             Assert.Greater(s.State.Wallet[ResourceType.Blueprints], 0);
             Assert.IsTrue(team.All(id => s.FindDweller(id).RouteId == 0));
             Assert.AreEqual(Fail.None, s.ResolveRouteCard(route.Id, 2, route.End));
+            Assert.AreEqual(1, s.State.Expeditions.Count, "the safe way met people: a second card waits");
+            Assert.AreEqual(Fail.None, s.ResolveRouteCard(route.Id, 2, route.End));
             Assert.IsEmpty(s.State.Expeditions);
         }
 

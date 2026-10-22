@@ -236,7 +236,7 @@ namespace LastHearth.Core.Tests
             double chance = TestData.Balance().Halls.Infirmary.IllnessChance;
             for (int seed = 1; ; seed++)
             {
-                if (new Rng(seed * 31 + 17).Next() < chance)
+                if (new Rng(seed * 31 + 17).Next() < chance * 0.2) // ill even after the best rests on the way
                     return seed;
             }
         }
@@ -262,7 +262,8 @@ namespace LastHearth.Core.Tests
             s.Advance(T0 + 60 + 12 * 3600);
             Assert.IsFalse(s.IsSick(miner.Id, s.State.Time));
             Assert.AreEqual(healthy, WithWorker(s, mine, miner), 1e-6);
-            s.ResolveRouteCard(e.Id, 2, s.State.Time);
+            while (s.State.Expeditions.Contains(e))
+                s.ResolveRouteCard(e.Id, 2, s.State.Time);
             s.Advance(s.State.Time + 1);
             Assert.AreEqual(0, s.State.Halls.RoutesChecked.Count, "the checked list is cleaned");
         }
