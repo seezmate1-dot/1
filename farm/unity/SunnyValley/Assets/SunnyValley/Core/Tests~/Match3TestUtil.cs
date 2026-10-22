@@ -55,6 +55,12 @@ namespace SunnyValley.Core.Tests
             return level;
         }
 
+        public static LevelData WithBaskets(this LevelData level, List<BasketData> baskets)
+        {
+            level.Baskets = baskets;
+            return level;
+        }
+
         public static System.Collections.Generic.HashSet<Pos> Rect(int x0, int y0, int x1, int y1)
         {
             var set = new HashSet<Pos>();

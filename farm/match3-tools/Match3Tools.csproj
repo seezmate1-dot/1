@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Level tools for the match-3 core of «Солнечная долина» (no Unity needed), run from the repository root:
+      dotnet run -c Release (project farm/match3-tools) build  [games N] [from A] [to B]   generate + tune moves
+      dotnet run -c Release (project farm/match3-tools) sim    [games N] [bot average|good]  win rates
+      dotnet run -c Release (project farm/match3-tools) report [games N] [good N]           writes docs/LEVELS.md
+    (options are given with two dashes: games, from, to, bot, good; see README in Program.cs)
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Core/Match3/**/*.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

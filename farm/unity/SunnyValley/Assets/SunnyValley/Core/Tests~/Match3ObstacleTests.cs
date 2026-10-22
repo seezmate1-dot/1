@@ -282,12 +282,16 @@ namespace SunnyValley.Core.Tests
         public void Basket_TakesAdjacentClearedTilesOfItsColourOnly()
         {
             var level = Level(Board((1, 4, '.')), goals: new List<GoalData> { Goal("basket") });
-            level.Baskets = new List<BasketData> { new BasketData { X = 1, Y = 4, Color = "tomato", Count = 3 } };
-            var r = StdMove(level, out var g);
+            level.Baskets = new List<BasketData> { new BasketData { X = 1, Y = 5, Color = "tomato", Count = 5 } };
+            var b = Board((1, 5, '.'));
+            var r = StdMove(Level(b, goals: level.Goals).WithBaskets(level.Baskets), out var g);
+            Assert.IsEmpty(r.OfType<PieceClearedEvent>().Where(e => e.IntoBasket == P(1, 5)), "two rows away: nothing");
+            level = Level(Board((1, 4, '.')), goals: new List<GoalData> { Goal("basket") });
+            level.Baskets = new List<BasketData> { new BasketData { X = 1, Y = 4, Color = "tomato", Count = 5 } };
+            r = StdMove(level, out g);
             var fed = r.OfType<PieceClearedEvent>().Where(e => e.IntoBasket == P(1, 4) && e.Wave == 0).ToList();
-            Assert.AreEqual(1, fed.Count, "only (1,3) touches the basket");
-            Assert.AreEqual(P(1, 3), fed[0].Cell);
-            Assert.AreEqual(2, Hits(r, 1, 4).Single().LayersAfter);
+            CollectionAssert.AreEquivalent(new[] { P(0, 3), P(1, 3), P(2, 3) }, fed.Select(e => e.Cell), "the 8 cells around the basket feed it");
+            Assert.AreEqual(2, Hits(r, 1, 4).Last().LayersAfter);
         }
 
         [Test]

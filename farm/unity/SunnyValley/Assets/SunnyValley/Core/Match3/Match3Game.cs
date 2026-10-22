@@ -387,6 +387,8 @@ namespace SunnyValley.Core.Match3
             }
             if (options.Count == 0) return;
             var (f, t) = options[Rng.Next(options.Count)];
+            var savedPiece = Board.Pieces[t];
+            int logMark = _log?.Count ?? 0;
             var ev = _log != null ? new SpreadEvent { Wave = _wave, Obstacle = kind, From = Topo.PosOf(f), To = Topo.PosOf(t) } : null;
             if (kind == ObstacleKind.Honey)
             {
@@ -401,6 +403,15 @@ namespace SunnyValley.Core.Match3
                 Board.BlockerLayers[t] = 1;
             }
             if (ev != null) _log.Add(ev);
+            // Never let a spread kill the board: if no move is left and a reshuffle cannot make one, undo it.
+            if (!HasValidMove() && !Reshuffle(false))
+            {
+                Board.Pieces[t] = savedPiece;
+                if (kind == ObstacleKind.Honey) { Board.Overlay[t] = ObstacleKind.None; Board.OverlayLayers[t] = 0; }
+                else { Board.Blocker[t] = ObstacleKind.None; Board.BlockerLayers[t] = 0; }
+                if (_log != null) _log.RemoveRange(logMark, _log.Count - logMark);
+                return;
+            }
             // A growing obstacle adds work to an "all of them" goal.
             for (int k = 0; k < Goals.Count; k++)
             {

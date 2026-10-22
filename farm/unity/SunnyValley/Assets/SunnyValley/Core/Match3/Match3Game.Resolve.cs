@@ -36,7 +36,7 @@ namespace SunnyValley.Core.Match3
         ///   overlay (ice/honey: Adjacent or any special/booster hit; chain: Match or any special/booster hit — the
         ///   piece under an overlay is never removed by the hit that damages the overlay);
         ///   blocker (crate/weed: Adjacent or special; stone: special only; bed: Adjacent or special grows it;
-        ///   basket: ignores hits, it is fed by adjacent cleared tiles of its colour);
+        ///   basket: ignores hits, it is fed by cleared tiles of its colour in the 8 cells around it);
         ///   otherwise the piece (Match or special; chicks are immune; specials fire) and the grass under it
         ///   (Match or special hit on the cell, even if it is empty, one layer per hit).
         /// </summary>
@@ -94,19 +94,25 @@ namespace SunnyValley.Core.Match3
                 });
         }
 
-        /// <summary>A side-adjacent basket of this colour that still wants tiles (up, down, left, right), or -1.</summary>
+        /// <summary>
+        /// A basket of this colour that still wants tiles among the 8 cells around (sides first: up, down, left,
+        /// right, then the corners), or -1.
+        /// </summary>
         int FeedBasket(int i, TileColor color)
         {
             int w = Topo.Width, x = i % w, y = i / w;
-            for (int d = 0; d < 4; d++)
+            for (int d = 0; d < 8; d++)
             {
-                int nx = x + Dx[d], ny = y + Dy[d];
+                int nx = x + Dx8[d], ny = y + Dy8[d];
                 if (!Topo.IsCell(nx, ny)) continue;
                 int j = ny * w + nx;
                 if (Board.Blocker[j] == ObstacleKind.Basket && Board.BasketColor[j] == color && Board.BlockerLayers[j] > 0) return j;
             }
             return -1;
         }
+
+        static readonly int[] Dx8 = { 0, 0, -1, 1, -1, 1, -1, 1 };
+        static readonly int[] Dy8 = { -1, 1, 0, 0, -1, -1, 1, 1 };
 
         void BasketTook(int j, HitSource src, int causeId)
         {
