@@ -69,13 +69,14 @@ namespace SunnyValley.Core.Meta
                 if (a.Level < h.Level) p.Add("животное " + a.Id + ": открывается раньше своего дома");
                 if (d.Items.TryGetValue(a.Feed, out var f) && f.Level > a.Level) p.Add("животное " + a.Id + ": корм открывается позже животного");
             }
+            var recipeIds = new HashSet<string>();
             foreach (var w in b.Workshops)
             {
                 if (!Russian(w.Name)) p.Add("мастерская " + w.Id + ": нет названия");
                 if (w.Slots < 1) p.Add("мастерская " + w.Id + ": нет слотов");
                 foreach (var r in w.Recipes)
                 {
-                    Unique(r.Id, "рецепт");
+                    if (string.IsNullOrEmpty(r.Id) || !recipeIds.Add(r.Id)) p.Add("рецепт: пустой или повторный id " + r.Id);
                     if (r.Level < w.Level) p.Add("рецепт " + r.Id + ": открывается раньше мастерской");
                     if (r.Seconds <= 0 || r.Count <= 0 || r.Inputs.Count == 0) p.Add("рецепт " + r.Id + ": данные");
                     if (!d.Items.ContainsKey(r.Output) && !Boosters.IsBooster(r.Output)) p.Add("рецепт " + r.Id + ": неизвестный выход " + r.Output);
