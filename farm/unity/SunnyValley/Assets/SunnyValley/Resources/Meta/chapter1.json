@@ -1,0 +1,1886 @@
+{
+ "id": "chapter1",
+ "title": "Восстановление",
+ "introScene": "arrival",
+ "finaleScene": "festival",
+ "finaleReward": {
+  "coins": 1000,
+  "crystals": 10,
+  "infiniteLivesMinutes": 120
+ },
+ "characters": [
+  {
+   "id": "anya",
+   "name": "Аня",
+   "description": "Внучка бабушки Дуни. Приехала из города, получила ферму в наследство."
+  },
+  {
+   "id": "matvey",
+   "name": "Дед Матвей",
+   "description": "Сосед, старый фермер. Сорок лет дружил с бабушкой, учит Аню хозяйству."
+  },
+  {
+   "id": "vera",
+   "name": "Соседка Вера",
+   "description": "Весёлая соседка, печёт лучшие пироги в долине, держит кур."
+  },
+  {
+   "id": "grachev",
+   "name": "Грачёв",
+   "description": "Застройщик. Скупает долину под коттеджи и хочет бабушкину землю."
+  },
+  {
+   "id": "sharik",
+   "name": "Шарик",
+   "description": "Бабушкин пёс: лохматый, храбрый и всегда голодный."
+  },
+  {
+   "id": "pasha",
+   "name": "Паша",
+   "description": "Внук Веры, неугомонный помощник."
+  },
+  {
+   "id": "nina",
+   "name": "Нина",
+   "description": "Председатель совета долины."
+  },
+  {
+   "id": "fedot",
+   "name": "Федот",
+   "description": "Плотник, золотые руки."
+  },
+  {
+   "id": "lida",
+   "name": "Лида",
+   "description": "Почтальонка, знает все новости долины."
+  },
+  {
+   "id": "diary",
+   "name": "Дневник бабушки Дуни",
+   "description": "Тетрадь в клетку с бабушкиными советами."
+  }
+ ],
+ "zones": [
+  {
+   "id": "yard",
+   "name": "Двор",
+   "description": "Заросший бурьяном двор с упавшими воротами.",
+   "requires": [],
+   "outroScene": "first_evening",
+   "reward": {
+    "coins": 200,
+    "boosters": {
+     "Bomb": 1
+    }
+   }
+  },
+  {
+   "id": "house",
+   "name": "Дом",
+   "description": "Бабушкин дом: выбитые окна, скрипучее крыльцо, пыль.",
+   "requires": [
+    "yard"
+   ],
+   "outroScene": "grachev_offer",
+   "reward": {
+    "coins": 300,
+    "boosters": {
+     "Line": 1,
+     "Shovel": 1
+    },
+    "infiniteLivesMinutes": 30
+   }
+  },
+  {
+   "id": "garden",
+   "name": "Огород",
+   "description": "Заросшие грядки за домом.",
+   "requires": [
+    "house"
+   ],
+   "introScene": "matvey_lesson",
+   "outroScene": "garden_done",
+   "reward": {
+    "coins": 300,
+    "crystals": 3
+   }
+  },
+  {
+   "id": "orchard",
+   "name": "Сад",
+   "description": "Старый яблоневый сад, запущенный и тенистый.",
+   "requires": [
+    "garden"
+   ],
+   "introScene": "orchard_memory",
+   "outroScene": "grachev_threat",
+   "reward": {
+    "coins": 400,
+    "boosters": {
+     "Rainbow": 1
+    }
+   }
+  },
+  {
+   "id": "pond",
+   "name": "Пруд",
+   "description": "Заросший камышом пруд с поломанным мостиком.",
+   "requires": [
+    "orchard"
+   ],
+   "outroScene": "pond_council",
+   "reward": {
+    "coins": 400,
+    "infiniteLivesMinutes": 60
+   }
+  },
+  {
+   "id": "barn",
+   "name": "Амбар",
+   "description": "Большой амбар с заклинившими воротами и дырявой крышей.",
+   "requires": [
+    "pond"
+   ],
+   "outroScene": "barn_night",
+   "reward": {
+    "coins": 500,
+    "boosters": {
+     "Rake": 1,
+     "WateringCan": 1
+    }
+   }
+  },
+  {
+   "id": "coop",
+   "name": "Курятник",
+   "description": "Покосившийся курятник за амбаром.",
+   "requires": [
+    "barn"
+   ],
+   "outroScene": "coop_done",
+   "reward": {
+    "coins": 500,
+    "crystals": 5
+   }
+  },
+  {
+   "id": "mill",
+   "name": "Мельница",
+   "description": "Старая мельница на холме — сердце долины.",
+   "requires": [
+    "coop"
+   ],
+   "introScene": "mill_legend",
+   "reward": {
+    "coins": 600,
+    "boosters": {
+     "Bomb": 1,
+     "Rainbow": 1
+    }
+   }
+  }
+ ],
+ "tasks": [
+  {
+   "id": "yard_gate",
+   "zone": "yard",
+   "title": "Поднять упавшие ворота",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Ну здравствуй, бабушкин дом. Начнём с ворот — хоть войти по-человечески."
+    }
+   ]
+  },
+  {
+   "id": "yard_weeds",
+   "zone": "yard",
+   "title": "Скосить бурьян у дорожки",
+   "stars": 1,
+   "requires": [
+    "yard_gate"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Под бурьяном — бабушкина дорожка! Шарик, ты знал?"
+    },
+    {
+     "who": "sharik",
+     "text": "Гав!"
+    }
+   ]
+  },
+  {
+   "id": "yard_path",
+   "zone": "yard",
+   "title": "Выложить дорожку к дому",
+   "stars": 1,
+   "requires": [
+    "yard_weeds"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Каменная"
+    },
+    {
+     "id": "look2",
+     "name": "Кирпичная"
+    },
+    {
+     "id": "look3",
+     "name": "Из деревянных спилов"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Теперь до крыльца можно дойти, не утонув в лопухах."
+    }
+   ]
+  },
+  {
+   "id": "yard_junk",
+   "zone": "yard",
+   "title": "Вывезти старый хлам",
+   "stars": 1,
+   "requires": [
+    "yard_weeds"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Сколько всего накопилось… Кто бы помог с этим разобраться?"
+    }
+   ],
+   "scene": "matvey_meets"
+  },
+  {
+   "id": "yard_fence",
+   "zone": "yard",
+   "title": "Починить забор",
+   "stars": 2,
+   "requires": [
+    "yard_junk"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Деревянный"
+    },
+    {
+     "id": "look2",
+     "name": "Плетёный"
+    },
+    {
+     "id": "look3",
+     "name": "Белый штакетник"
+    }
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Вот это забор! Дуня бы порадовалась."
+    }
+   ]
+  },
+  {
+   "id": "yard_bench",
+   "zone": "yard",
+   "title": "Поставить скамейку у ворот",
+   "stars": 1,
+   "requires": [
+    "yard_path"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Бабушка сидела тут по вечерам и махала всем, кто проезжал мимо."
+    }
+   ]
+  },
+  {
+   "id": "yard_doghouse",
+   "zone": "yard",
+   "title": "Построить будку для Шарика",
+   "stars": 1,
+   "requires": [
+    "yard_fence"
+   ],
+   "lines": [
+    {
+     "who": "sharik",
+     "text": "Гав-гав! (Шарик тут же забирается внутрь)"
+    }
+   ]
+  },
+  {
+   "id": "yard_lamp",
+   "zone": "yard",
+   "title": "Повесить фонарь над воротами",
+   "stars": 1,
+   "requires": [
+    "yard_gate",
+    "yard_fence"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Пусть светит. Чтобы все видели: на ферме снова живут."
+    }
+   ]
+  },
+  {
+   "id": "yard_flowers",
+   "zone": "yard",
+   "title": "Посадить цветы у забора",
+   "stars": 1,
+   "requires": [
+    "yard_bench",
+    "yard_doghouse",
+    "yard_lamp"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Двор как с открытки! Теперь можно и в дом."
+    }
+   ]
+  },
+  {
+   "id": "house_porch",
+   "zone": "house",
+   "title": "Починить крыльцо",
+   "stars": 1,
+   "requires": [],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Деревянное"
+    },
+    {
+     "id": "look2",
+     "name": "Каменное"
+    },
+    {
+     "id": "look3",
+     "name": "С цветами"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Крыльцо больше не скрипит. Ну, почти."
+    }
+   ]
+  },
+  {
+   "id": "house_door",
+   "zone": "house",
+   "title": "Повесить новую дверь",
+   "stars": 1,
+   "requires": [
+    "house_porch"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Бабушкин ключ подошёл к старому замку. Оставлю его на счастье."
+    }
+   ]
+  },
+  {
+   "id": "house_windows",
+   "zone": "house",
+   "title": "Вставить стёкла в окна",
+   "stars": 1,
+   "requires": [
+    "house_door"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Стекольщик из райцентра — мой кум. Скидку сделал, хе-хе."
+    }
+   ]
+  },
+  {
+   "id": "house_dust",
+   "zone": "house",
+   "title": "Вымести пыль и паутину",
+   "stars": 1,
+   "requires": [
+    "house_door"
+   ],
+   "lines": [
+    {
+     "who": "sharik",
+     "text": "Апчхи! (Шарик чихает и убегает на улицу)"
+    }
+   ]
+  },
+  {
+   "id": "house_stove",
+   "zone": "house",
+   "title": "Прочистить печь",
+   "stars": 2,
+   "requires": [
+    "house_dust"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Печь у Дуни знатная. Затопишь — весь дом оживёт."
+    }
+   ]
+  },
+  {
+   "id": "house_chest",
+   "zone": "house",
+   "title": "Открыть бабушкин сундук",
+   "stars": 1,
+   "requires": [
+    "house_dust"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Тут что-то есть… Тетрадь!"
+    }
+   ],
+   "scene": "diary"
+  },
+  {
+   "id": "house_roof",
+   "zone": "house",
+   "title": "Перекрыть крышу",
+   "stars": 2,
+   "requires": [
+    "house_windows"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Красная черепица"
+    },
+    {
+     "id": "look2",
+     "name": "Зелёная жесть"
+    },
+    {
+     "id": "look3",
+     "name": "Соломенная"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Теперь никакой дождь не страшен."
+    }
+   ]
+  },
+  {
+   "id": "house_curtains",
+   "zone": "house",
+   "title": "Повесить занавески",
+   "stars": 1,
+   "requires": [
+    "house_windows"
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Ситцевые, в горошек! Сама шила, не спорь — это подарок."
+    }
+   ]
+  },
+  {
+   "id": "house_table",
+   "zone": "house",
+   "title": "Накрыть стол на веранде",
+   "stars": 1,
+   "requires": [
+    "house_stove",
+    "house_chest"
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Самовар, варенье, мои пироги — вот теперь это дом!"
+    }
+   ]
+  },
+  {
+   "id": "house_sign",
+   "zone": "house",
+   "title": "Повесить вывеску фермы",
+   "stars": 1,
+   "requires": [
+    "house_roof",
+    "house_curtains",
+    "house_table"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Резная"
+    },
+    {
+     "id": "look2",
+     "name": "Расписная"
+    },
+    {
+     "id": "look3",
+     "name": "Кованая"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Ферма «Солнечная долина». Звучит, правда, Шарик?"
+    },
+    {
+     "who": "sharik",
+     "text": "Гав!"
+    }
+   ]
+  },
+  {
+   "id": "garden_clear",
+   "zone": "garden",
+   "title": "Расчистить огород от сорняков",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Землю сперва освободи. Сорняк — он как долг: не уберёшь — вырастет."
+    }
+   ]
+  },
+  {
+   "id": "garden_dig",
+   "zone": "garden",
+   "title": "Вскопать грядки",
+   "stars": 1,
+   "requires": [
+    "garden_clear"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Руки с непривычки гудят, зато грядки ровные!"
+    }
+   ]
+  },
+  {
+   "id": "garden_compost",
+   "zone": "garden",
+   "title": "Сделать компостную кучу",
+   "stars": 1,
+   "requires": [
+    "garden_clear"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Очистки, листья, навоз — через год будет чёрное золото."
+    }
+   ]
+  },
+  {
+   "id": "garden_water",
+   "zone": "garden",
+   "title": "Починить бочку для полива",
+   "stars": 1,
+   "requires": [
+    "garden_dig"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Бочка снова держит воду. Бабушка писала: «поливай вечером, а не в жару»."
+    }
+   ]
+  },
+  {
+   "id": "garden_beds",
+   "zone": "garden",
+   "title": "Обложить грядки бортиками",
+   "stars": 2,
+   "requires": [
+    "garden_dig"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Сосновые доски"
+    },
+    {
+     "id": "look2",
+     "name": "Камни"
+    },
+    {
+     "id": "look3",
+     "name": "Плетёные бортики"
+    }
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Ишь, как в журнале! Ну, хозяйка."
+    }
+   ]
+  },
+  {
+   "id": "garden_seeds",
+   "zone": "garden",
+   "title": "Найти бабушкины семена",
+   "stars": 1,
+   "requires": [
+    "garden_compost"
+   ],
+   "lines": [
+    {
+     "who": "diary",
+     "text": "Семена пшеницы — в жестяной банке за печкой. Не забудь подписать!"
+    },
+    {
+     "who": "anya",
+     "text": "Нашла! Подписано: «Пшеница, урожай отличный»."
+    }
+   ]
+  },
+  {
+   "id": "garden_scarecrow",
+   "zone": "garden",
+   "title": "Поставить пугало",
+   "stars": 1,
+   "requires": [
+    "garden_beds"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "В шляпе"
+    },
+    {
+     "id": "look2",
+     "name": "В бабушкином платке"
+    },
+    {
+     "id": "look3",
+     "name": "С ведром на голове"
+    }
+   ],
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Ха-ха! Оно похоже на деда Матвея!"
+    },
+    {
+     "who": "matvey",
+     "text": "Ну-ну, не балуй."
+    }
+   ]
+  },
+  {
+   "id": "garden_sow",
+   "zone": "garden",
+   "title": "Посеять первую пшеницу",
+   "stars": 2,
+   "requires": [
+    "garden_seeds",
+    "garden_water",
+    "garden_beds"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Расти, пшеничка. Тебе ещё ферму спасать."
+    }
+   ]
+  },
+  {
+   "id": "garden_greenhouse",
+   "zone": "garden",
+   "title": "Поставить парник",
+   "stars": 1,
+   "requires": [
+    "garden_sow"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "В парнике и огурец зимовать согласится."
+    }
+   ]
+  },
+  {
+   "id": "orchard_trail",
+   "zone": "orchard",
+   "title": "Прорубить тропинку в сад",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Тут же сад! Я совсем маленькой здесь яблоки собирала."
+    }
+   ]
+  },
+  {
+   "id": "orchard_prune",
+   "zone": "orchard",
+   "title": "Обрезать сухие ветки",
+   "stars": 2,
+   "requires": [
+    "orchard_trail"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Старая яблоня живая, только запущенная. Подрежем — ещё внуков твоих накормит."
+    }
+   ]
+  },
+  {
+   "id": "orchard_whitewash",
+   "zone": "orchard",
+   "title": "Побелить стволы",
+   "stars": 1,
+   "requires": [
+    "orchard_prune"
+   ],
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "А зачем деревьям белые носки?"
+    },
+    {
+     "who": "anya",
+     "text": "Чтобы зайцы не грызли и солнце не обжигало!"
+    }
+   ]
+  },
+  {
+   "id": "orchard_swing",
+   "zone": "orchard",
+   "title": "Повесить качели на яблоню",
+   "stars": 1,
+   "requires": [
+    "orchard_prune"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Доска на верёвках"
+    },
+    {
+     "id": "look2",
+     "name": "Шина"
+    },
+    {
+     "id": "look3",
+     "name": "Плетёное кресло"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Бабушка качала меня здесь. Теперь пусть Паша качается."
+    }
+   ]
+  },
+  {
+   "id": "orchard_hive",
+   "zone": "orchard",
+   "title": "Найти старый улей",
+   "stars": 1,
+   "requires": [
+    "orchard_trail"
+   ],
+   "lines": [
+    {
+     "who": "diary",
+     "text": "Пчёлы ушли в тот год, когда я заболела. Вернутся, если сад зацветёт."
+    }
+   ]
+  },
+  {
+   "id": "orchard_graft",
+   "zone": "orchard",
+   "title": "Привить молодые яблоньки",
+   "stars": 1,
+   "requires": [
+    "orchard_whitewash"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Глазок к глазку, обвяжи потуже. Ты способная, вся в Дуню."
+    }
+   ]
+  },
+  {
+   "id": "orchard_gazebo",
+   "zone": "orchard",
+   "title": "Построить беседку",
+   "stars": 1,
+   "requires": [
+    "orchard_swing"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Деревянная"
+    },
+    {
+     "id": "look2",
+     "name": "Увитая виноградом"
+    },
+    {
+     "id": "look3",
+     "name": "С белыми колоннами"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "В беседке будем чай пить! Я уже и скатерть присмотрела."
+    }
+   ]
+  },
+  {
+   "id": "orchard_wattle",
+   "zone": "orchard",
+   "title": "Поставить плетень вокруг сада",
+   "stars": 1,
+   "requires": [
+    "orchard_graft"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Теперь козы деда Матвея не доберутся до яблонь."
+    },
+    {
+     "who": "matvey",
+     "text": "Козы мои приличные! …Но плетень хороший."
+    }
+   ]
+  },
+  {
+   "id": "orchard_bloom",
+   "zone": "orchard",
+   "title": "Дождаться цветения",
+   "stars": 1,
+   "requires": [
+    "orchard_gazebo",
+    "orchard_wattle",
+    "orchard_hive"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Сад цветёт! Весь белый, как в детстве."
+    }
+   ]
+  },
+  {
+   "id": "pond_reeds",
+   "zone": "pond",
+   "title": "Срезать камыш у берега",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "sharik",
+     "text": "Гав! Гав! (Шарик гоняет лягушек)"
+    }
+   ]
+  },
+  {
+   "id": "pond_trash",
+   "zone": "pond",
+   "title": "Вытащить мусор из пруда",
+   "stars": 2,
+   "requires": [
+    "pond_reeds"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Старый велосипед, три сапога и… бабушкина лейка!"
+    }
+   ]
+  },
+  {
+   "id": "pond_bridge",
+   "zone": "pond",
+   "title": "Починить мостик",
+   "stars": 1,
+   "requires": [
+    "pond_trash"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Деревянный"
+    },
+    {
+     "id": "look2",
+     "name": "Каменный горбатый"
+    },
+    {
+     "id": "look3",
+     "name": "Подвесной"
+    }
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "На этом мостике я твоей бабушке предложение делал. Она отказала. Дважды, хе-хе."
+    }
+   ]
+  },
+  {
+   "id": "pond_ducks",
+   "zone": "pond",
+   "title": "Позвать уток",
+   "stars": 1,
+   "requires": [
+    "pond_trash"
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Утки вернулись! Значит, вода чистая."
+    }
+   ]
+  },
+  {
+   "id": "pond_pier",
+   "zone": "pond",
+   "title": "Поставить мостки для рыбалки",
+   "stars": 1,
+   "requires": [
+    "pond_bridge"
+   ],
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Чур, я первый ловлю!"
+    }
+   ]
+  },
+  {
+   "id": "pond_lilies",
+   "zone": "pond",
+   "title": "Посадить кувшинки",
+   "stars": 1,
+   "requires": [
+    "pond_ducks"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Бабушка писала, что кувшинки — это пруд улыбается."
+    }
+   ]
+  },
+  {
+   "id": "pond_boat",
+   "zone": "pond",
+   "title": "Просмолить старую лодку",
+   "stars": 1,
+   "requires": [
+    "pond_pier"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Синяя"
+    },
+    {
+     "id": "look2",
+     "name": "Красная"
+    },
+    {
+     "id": "look3",
+     "name": "Зелёная"
+    }
+   ],
+   "lines": [
+    {
+     "who": "fedot",
+     "text": "Лодка ещё послужит. Дерево хорошее, бабушкина."
+    }
+   ]
+  },
+  {
+   "id": "pond_lights",
+   "zone": "pond",
+   "title": "Поставить фонарики вдоль берега",
+   "stars": 1,
+   "requires": [
+    "pond_lilies",
+    "pond_boat"
+   ],
+   "lines": [
+    {
+     "who": "nina",
+     "text": "Какая красота! Аня, я давно хотела посмотреть, как у вас дела."
+    }
+   ]
+  },
+  {
+   "id": "barn_doors",
+   "zone": "barn",
+   "title": "Открыть ворота амбара",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Ух! Петли проржавели насквозь."
+    },
+    {
+     "who": "fedot",
+     "text": "Дай-ка я смажу. Я Федот, плотник. Дуня мне когда-то крышу спасла — теперь мой черёд."
+    }
+   ]
+  },
+  {
+   "id": "barn_roof",
+   "zone": "barn",
+   "title": "Залатать крышу амбара",
+   "stars": 2,
+   "requires": [
+    "barn_doors"
+   ],
+   "lines": [
+    {
+     "who": "fedot",
+     "text": "Тут доска, там доска — и снова держит."
+    }
+   ]
+  },
+  {
+   "id": "barn_floor",
+   "zone": "barn",
+   "title": "Перестелить пол",
+   "stars": 1,
+   "requires": [
+    "barn_doors"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Под старыми досками нашлась бабушкина копилка! Пустая, зато с запиской."
+    },
+    {
+     "who": "diary",
+     "text": "На чёрный день не копи — копи на праздник."
+    }
+   ]
+  },
+  {
+   "id": "barn_shelves",
+   "zone": "barn",
+   "title": "Сколотить полки",
+   "stars": 1,
+   "requires": [
+    "barn_floor"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Порядок в амбаре — порядок в голове."
+    }
+   ]
+  },
+  {
+   "id": "barn_paint",
+   "zone": "barn",
+   "title": "Покрасить амбар",
+   "stars": 1,
+   "requires": [
+    "barn_roof"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Красный"
+    },
+    {
+     "id": "look2",
+     "name": "Жёлтый"
+    },
+    {
+     "id": "look3",
+     "name": "Голубой"
+    }
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Его теперь с дороги видно! Грачёв, небось, локти кусает."
+    }
+   ]
+  },
+  {
+   "id": "barn_scales",
+   "zone": "barn",
+   "title": "Починить весы",
+   "stars": 1,
+   "requires": [
+    "barn_shelves"
+   ],
+   "lines": [
+    {
+     "who": "lida",
+     "text": "Вам письмо! Ой… от Грачёва. Опять."
+    },
+    {
+     "who": "anya",
+     "text": "Пусть подождёт. У нас весы чинятся."
+    }
+   ]
+  },
+  {
+   "id": "barn_owl",
+   "zone": "barn",
+   "title": "Сделать домик для совы",
+   "stars": 1,
+   "requires": [
+    "barn_paint"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Сова будет ловить мышей. Бабушка говорила: сова — лучший сторож амбара."
+    }
+   ]
+  },
+  {
+   "id": "barn_cart",
+   "zone": "barn",
+   "title": "Отремонтировать телегу",
+   "stars": 1,
+   "requires": [
+    "barn_scales"
+   ],
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Можно я буду возить урожай? Ну пожалуйста!"
+    }
+   ]
+  },
+  {
+   "id": "barn_fill",
+   "zone": "barn",
+   "title": "Заполнить амбар первым урожаем",
+   "stars": 2,
+   "requires": [
+    "barn_owl",
+    "barn_cart"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Полный амбар! Вот теперь видно — ферма живая."
+    }
+   ]
+  },
+  {
+   "id": "coop_clean",
+   "zone": "coop",
+   "title": "Вычистить старый курятник",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Ну и запах… Шарик, не смотри так, сам бы помог."
+    },
+    {
+     "who": "sharik",
+     "text": "Ррр-гав! (Шарик делает вид, что не слышит)"
+    }
+   ]
+  },
+  {
+   "id": "coop_walls",
+   "zone": "coop",
+   "title": "Укрепить стены",
+   "stars": 1,
+   "requires": [
+    "coop_clean"
+   ],
+   "lines": [
+    {
+     "who": "fedot",
+     "text": "Чтоб ни одна лиса не пролезла!"
+    }
+   ]
+  },
+  {
+   "id": "coop_roof",
+   "zone": "coop",
+   "title": "Покрыть крышу курятника",
+   "stars": 1,
+   "requires": [
+    "coop_walls"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Красная"
+    },
+    {
+     "id": "look2",
+     "name": "Полосатая"
+    },
+    {
+     "id": "look3",
+     "name": "С флюгером-петушком"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Курятник как игрушечный!"
+    }
+   ]
+  },
+  {
+   "id": "coop_nests",
+   "zone": "coop",
+   "title": "Сделать гнёзда из соломы",
+   "stars": 1,
+   "requires": [
+    "coop_walls"
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Мягонько! Я бы и сама посидела."
+    }
+   ]
+  },
+  {
+   "id": "coop_yard",
+   "zone": "coop",
+   "title": "Огородить выгул",
+   "stars": 1,
+   "requires": [
+    "coop_roof"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Куры любят гулять. Счастливая курица — вкусное яйцо."
+    }
+   ]
+  },
+  {
+   "id": "coop_hens",
+   "zone": "coop",
+   "title": "Привезти кур от Веры",
+   "stars": 2,
+   "requires": [
+    "coop_nests",
+    "coop_yard"
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Вот тебе три мои лучшие несушки: Пеструшка, Рябушка и Хохлатка!"
+    }
+   ]
+  },
+  {
+   "id": "coop_feeder",
+   "zone": "coop",
+   "title": "Поставить кормушку и поилку",
+   "stars": 1,
+   "requires": [
+    "coop_hens"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Кормушка есть. Осталось придумать, чем кормить… Нужна мельница!"
+    }
+   ]
+  },
+  {
+   "id": "coop_egg",
+   "zone": "coop",
+   "title": "Найти первое яйцо",
+   "stars": 1,
+   "requires": [
+    "coop_feeder"
+   ],
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Яйцо! Тёплое! Можно я его подержу?"
+    }
+   ]
+  },
+  {
+   "id": "mill_road",
+   "zone": "mill",
+   "title": "Расчистить дорогу к мельнице",
+   "stars": 1,
+   "requires": [],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Мельница на холме видна отовсюду. Бабушка писала, что это сердце долины."
+    }
+   ]
+  },
+  {
+   "id": "mill_open",
+   "zone": "mill",
+   "title": "Открыть мельницу",
+   "stars": 1,
+   "requires": [
+    "mill_road"
+   ],
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Последний раз она молола, когда тебя ещё на свете не было."
+    }
+   ]
+  },
+  {
+   "id": "mill_stones",
+   "zone": "mill",
+   "title": "Почистить жернова",
+   "stars": 1,
+   "requires": [
+    "mill_open"
+   ],
+   "lines": [
+    {
+     "who": "fedot",
+     "text": "Камень крепкий, дедовский. Такие сейчас не делают."
+    }
+   ]
+  },
+  {
+   "id": "mill_gears",
+   "zone": "mill",
+   "title": "Смазать шестерни",
+   "stars": 1,
+   "requires": [
+    "mill_open"
+   ],
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Скрипит как дед Матвей по утрам!"
+    },
+    {
+     "who": "matvey",
+     "text": "Пашка!"
+    }
+   ]
+  },
+  {
+   "id": "mill_sails",
+   "zone": "mill",
+   "title": "Починить крылья мельницы",
+   "stars": 2,
+   "requires": [
+    "mill_stones",
+    "mill_gears"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Белые паруса"
+    },
+    {
+     "id": "look2",
+     "name": "Деревянные решётки"
+    },
+    {
+     "id": "look3",
+     "name": "Цветные ленты"
+    }
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Крылья целы! Осталось дождаться ветра."
+    }
+   ]
+  },
+  {
+   "id": "mill_guard",
+   "zone": "mill",
+   "title": "Прогнать людей Грачёва",
+   "stars": 1,
+   "requires": [
+    "mill_sails"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Опять Грачёв? Ну уж нет!"
+    }
+   ],
+   "scene": "grachev_last"
+  },
+  {
+   "id": "mill_sacks",
+   "zone": "mill",
+   "title": "Сшить мешки для муки",
+   "stars": 1,
+   "requires": [
+    "mill_sails"
+   ],
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Из старых занавесок — не пропадать же добру!"
+    }
+   ]
+  },
+  {
+   "id": "mill_flour",
+   "zone": "mill",
+   "title": "Смолоть первую муку",
+   "stars": 2,
+   "requires": [
+    "mill_guard",
+    "mill_sacks"
+   ],
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Мука! Настоящая, наша!"
+    },
+    {
+     "who": "vera",
+     "text": "Испеку из неё праздничный каравай!"
+    }
+   ]
+  },
+  {
+   "id": "mill_festival",
+   "zone": "mill",
+   "title": "Подготовить праздник урожая",
+   "stars": 2,
+   "requires": [
+    "mill_flour"
+   ],
+   "choices": [
+    {
+     "id": "look1",
+     "name": "Гирлянды"
+    },
+    {
+     "id": "look2",
+     "name": "Флажки"
+    },
+    {
+     "id": "look3",
+     "name": "Фонарики"
+    }
+   ],
+   "lines": [
+    {
+     "who": "nina",
+     "text": "Совет долины в сборе. Аня, показывай свою ферму!"
+    }
+   ]
+  }
+ ],
+ "scenes": [
+  {
+   "id": "arrival",
+   "title": "Приезд",
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Солнечная долина… Я не была здесь пятнадцать лет."
+    },
+    {
+     "who": "anya",
+     "text": "Бабушка Дуня оставила мне ферму. Только, похоже, ферма давно осталась одна."
+    },
+    {
+     "who": "sharik",
+     "text": "Гав! (из бурьяна выглядывает лохматая морда)"
+    },
+    {
+     "who": "anya",
+     "text": "Ой! Ты чей? На ошейнике написано: «Шарик». Бабушкин пёс! Ты меня ждал?"
+    },
+    {
+     "who": "anya",
+     "text": "Ну что, Шарик, начнём? Сначала — ворота."
+    }
+   ]
+  },
+  {
+   "id": "matvey_meets",
+   "title": "Сосед через забор",
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Эй, соседка! Хлам на телегу кидай — я на свалку свезу."
+    },
+    {
+     "who": "anya",
+     "text": "Спасибо! А вы…"
+    },
+    {
+     "who": "matvey",
+     "text": "Матвей. Через забор живу, сорок лет с Дуней соседствовал."
+    },
+    {
+     "who": "matvey",
+     "text": "Она про тебя всё рассказывала. Говорила: «Анютка вернётся — ферма оживёт»."
+    },
+    {
+     "who": "anya",
+     "text": "Постараюсь её не подвести."
+    }
+   ]
+  },
+  {
+   "id": "first_evening",
+   "title": "Первый вечер",
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Ау, хозяйка! Я Вера, соседка. С пирогами!"
+    },
+    {
+     "who": "anya",
+     "text": "С капустой? Как у бабушки?"
+    },
+    {
+     "who": "vera",
+     "text": "По её рецепту! Слушай, к тебе может заглянуть один… Грачёв."
+    },
+    {
+     "who": "vera",
+     "text": "Он полдолины скупил, хочет коттеджи строить. На бабушкину землю давно глаз положил."
+    },
+    {
+     "who": "anya",
+     "text": "Пусть приходит. Я никуда не уеду."
+    }
+   ]
+  },
+  {
+   "id": "diary",
+   "title": "Бабушкин дневник",
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Тетрадь в клетку… «Дневник фермы». Бабушкин почерк!"
+    },
+    {
+     "who": "diary",
+     "text": "Анютка, если ты это читаешь — значит, ты приехала. Я знала."
+    },
+    {
+     "who": "diary",
+     "text": "Ферма — это не дом и не поле. Это люди вокруг. Слушай Матвея, дружи с Верой, корми Шарика."
+    },
+    {
+     "who": "diary",
+     "text": "А если придёт Грачёв — не верь ни одному его слову."
+    },
+    {
+     "who": "anya",
+     "text": "Обещаю, бабушка."
+    }
+   ]
+  },
+  {
+   "id": "grachev_offer",
+   "title": "Чёрный джип",
+   "lines": [
+    {
+     "who": "grachev",
+     "text": "Добрый день! Грачёв, «Грачёв-Девелопмент». Какой… милый домик."
+    },
+    {
+     "who": "grachev",
+     "text": "Предлагаю хорошие деньги. Вы городская, зачем вам эти грядки?"
+    },
+    {
+     "who": "anya",
+     "text": "Затем, что это бабушкина ферма. Не продаётся."
+    },
+    {
+     "who": "grachev",
+     "text": "Посмотрим, как вы запоёте, когда пойдут дожди. Я ещё загляну."
+    },
+    {
+     "who": "sharik",
+     "text": "Рррр… (Шарик провожает чёрный джип до самой дороги)"
+    }
+   ]
+  },
+  {
+   "id": "matvey_lesson",
+   "title": "Урок деда Матвея",
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Ну что, хозяйка, огород поднимать будем?"
+    },
+    {
+     "who": "anya",
+     "text": "Я даже не знаю, с чего начать."
+    },
+    {
+     "who": "matvey",
+     "text": "С земли. Земля всё помнит — и лопату, и лень."
+    },
+    {
+     "who": "matvey",
+     "text": "Пшеница растёт быстро, кукуруза — подольше. А на мельнице всё в муку и в корм превратим."
+    },
+    {
+     "who": "anya",
+     "text": "Записываю, учитель!"
+    }
+   ]
+  },
+  {
+   "id": "garden_done",
+   "title": "Помощник",
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Деда Матвей сказал, у тебя первая пшеница взошла!"
+    },
+    {
+     "who": "anya",
+     "text": "Взошла! А ты кто такой?"
+    },
+    {
+     "who": "pasha",
+     "text": "Паша. Бабушка Вера — моя бабушка. Буду у тебя помощником!"
+    },
+    {
+     "who": "anya",
+     "text": "Принят. Зарплата — яблоки, когда сад оживёт."
+    }
+   ]
+  },
+  {
+   "id": "orchard_memory",
+   "title": "Старая яблоня",
+   "lines": [
+    {
+     "who": "anya",
+     "text": "Сад… Я тут пряталась от грозы под старой яблоней."
+    },
+    {
+     "who": "diary",
+     "text": "Яблоню посадил твой дед в год, когда ты родилась. Береги её."
+    },
+    {
+     "who": "anya",
+     "text": "Сберегу, бабушка."
+    }
+   ]
+  },
+  {
+   "id": "grachev_threat",
+   "title": "Закон долины",
+   "lines": [
+    {
+     "who": "grachev",
+     "text": "Красиво цветёт. Жаль, что недолго."
+    },
+    {
+     "who": "anya",
+     "text": "Это угроза?"
+    },
+    {
+     "who": "grachev",
+     "text": "Это закон. Заброшенные участки совет долины отдаёт тому, кто их освоит."
+    },
+    {
+     "who": "grachev",
+     "text": "На празднике урожая совет решит. Если ферма не заработает — земля моя."
+    },
+    {
+     "who": "anya",
+     "text": "Значит, ферма заработает."
+    }
+   ]
+  },
+  {
+   "id": "pond_council",
+   "title": "Совет долины",
+   "lines": [
+    {
+     "who": "nina",
+     "text": "Аня, я Нина, председатель совета долины. Грачёв говорит правду — таков закон."
+    },
+    {
+     "who": "nina",
+     "text": "Но закон говорит и другое: если на празднике урожая ферма будет жить — амбар полон, куры несутся, мельница мелет, — её никто не тронет."
+    },
+    {
+     "who": "matvey",
+     "text": "Амбар, курятник, мельница… Успеем, Анютка?"
+    },
+    {
+     "who": "anya",
+     "text": "Успеем. Вместе — успеем."
+    }
+   ]
+  },
+  {
+   "id": "barn_night",
+   "title": "Ночные гости",
+   "lines": [
+    {
+     "who": "pasha",
+     "text": "Аня! У амбара чужие люди с рулеткой!"
+    },
+    {
+     "who": "anya",
+     "text": "Люди Грачёва? Землю меряют?!"
+    },
+    {
+     "who": "sharik",
+     "text": "ГАВ! ГАВ-ГАВ! (Шарик несётся к ним, как маленький лохматый ураган)"
+    },
+    {
+     "who": "fedot",
+     "text": "Ха! Бегут! Даже рулетку бросили."
+    },
+    {
+     "who": "anya",
+     "text": "Шарик, ты герой. Тебе сегодня двойная порция."
+    }
+   ]
+  },
+  {
+   "id": "coop_done",
+   "title": "Первое яйцо",
+   "lines": [
+    {
+     "who": "vera",
+     "text": "Пеструшка снесла яйцо! Значит, ей тут хорошо."
+    },
+    {
+     "who": "anya",
+     "text": "Осталась мельница. Без муки не будет праздничного каравая."
+    },
+    {
+     "who": "matvey",
+     "text": "Мельницу твой дед строил. Я помогал. Пойдём, покажу."
+    }
+   ]
+  },
+  {
+   "id": "mill_legend",
+   "title": "Сердце долины",
+   "lines": [
+    {
+     "who": "matvey",
+     "text": "Вот она. Сорок лет назад вся долина сюда зерно везла."
+    },
+    {
+     "who": "matvey",
+     "text": "Дед твой говорил: пока мельница крутится — долина жива."
+    },
+    {
+     "who": "anya",
+     "text": "Значит, она снова закрутится."
+    }
+   ]
+  },
+  {
+   "id": "grachev_last",
+   "title": "Последняя попытка",
+   "lines": [
+    {
+     "who": "grachev",
+     "text": "Стоп-стоп-стоп! Эта мельница аварийная. Её надо снести!"
+    },
+    {
+     "who": "fedot",
+     "text": "Аварийная? Я каждую доску сам проверил."
+    },
+    {
+     "who": "nina",
+     "text": "Господин Грачёв, совет проверял — мельница в порядке."
+    },
+    {
+     "who": "vera",
+     "text": "И вообще, не мешайте людям работать!"
+    },
+    {
+     "who": "grachev",
+     "text": "Посмотрим ещё, кто кого… на празднике."
+    },
+    {
+     "who": "anya",
+     "text": "Посмотрим."
+    }
+   ]
+  },
+  {
+   "id": "festival",
+   "title": "Праздник урожая",
+   "lines": [
+    {
+     "who": "nina",
+     "text": "Совет долины открывает праздник урожая!"
+    },
+    {
+     "who": "nina",
+     "text": "Ферма «Солнечная долина»: амбар полон, куры несутся, мельница мелет. Совет решил: ферма живёт, и земля остаётся за хозяйкой!"
+    },
+    {
+     "who": "grachev",
+     "text": "Хм. Вижу, тут мне ловить нечего. Но каравай… каравай у вас отличный."
+    },
+    {
+     "who": "vera",
+     "text": "Бери ещё кусочек, Грачёв, не стесняйся!"
+    },
+    {
+     "who": "matvey",
+     "text": "Дуня бы гордилась тобой, Анютка."
+    },
+    {
+     "who": "anya",
+     "text": "Это не я. Это мы все. Спасибо, соседи!"
+    },
+    {
+     "who": "sharik",
+     "text": "Гав! Гав! (Шарик носится между столами)"
+    },
+    {
+     "who": "anya",
+     "text": "А теперь — за работу! Поля, сад, животные… Солнечная долина только просыпается."
+    }
+   ]
+  }
+ ]
+}

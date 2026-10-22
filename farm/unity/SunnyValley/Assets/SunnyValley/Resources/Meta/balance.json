@@ -1,0 +1,2641 @@
+{
+ "version": 1,
+ "generatedBy": "farm/tools/economy.py",
+ "start": {
+  "coins": 300,
+  "crystals": 20,
+  "stars": 0,
+  "boosters": {
+   "Line": 1,
+   "Bomb": 1,
+   "Rainbow": 1,
+   "Shovel": 2,
+   "Shuffle": 1
+  },
+  "tools": {}
+ },
+ "lives": {
+  "max": 5,
+  "regenSeconds": 1800,
+  "refillCrystals": 12
+ },
+ "match3": {
+  "winCoins": 20,
+  "extraMoves": 5,
+  "extraMovesPrices": [
+   900,
+   1900,
+   2900
+  ],
+  "milestoneEvery": 10,
+  "milestoneReward": {
+   "crystals": 3,
+   "infiniteLivesMinutes": 30
+  },
+  "boosterEvery": 3,
+  "boosterRotation": [
+   "Shovel",
+   "Line",
+   "Rake",
+   "Bomb",
+   "WateringCan",
+   "Shuffle",
+   "Rainbow"
+  ],
+  "toolPercent": 15
+ },
+ "boosters": [
+  {
+   "id": "Line",
+   "name": "Вилы",
+   "kind": "pre",
+   "coins": 500,
+   "description": "Вилы на поле с первого хода"
+  },
+  {
+   "id": "Bomb",
+   "name": "Бочка-бомба",
+   "kind": "pre",
+   "coins": 700,
+   "description": "Бочка-бомба на поле с первого хода"
+  },
+  {
+   "id": "Rainbow",
+   "name": "Радуга-подсолнух",
+   "kind": "pre",
+   "coins": 900,
+   "description": "Радуга-подсолнух на поле с первого хода"
+  },
+  {
+   "id": "Shovel",
+   "name": "Лопата",
+   "kind": "in",
+   "coins": 400,
+   "description": "Убирает одну клетку"
+  },
+  {
+   "id": "Rake",
+   "name": "Грабли",
+   "kind": "in",
+   "coins": 500,
+   "description": "Убирает строку"
+  },
+  {
+   "id": "WateringCan",
+   "name": "Лейка",
+   "kind": "in",
+   "coins": 500,
+   "description": "Убирает столбец"
+  },
+  {
+   "id": "Shuffle",
+   "name": "Перемешать",
+   "kind": "in",
+   "coins": 300,
+   "description": "Перемешивает фишки"
+  }
+ ],
+ "tools": [
+  {
+   "id": "hammer",
+   "name": "Молоток",
+   "kind": "barn"
+  },
+  {
+   "id": "nails",
+   "name": "Гвозди",
+   "kind": "barn"
+  },
+  {
+   "id": "paint",
+   "name": "Краска",
+   "kind": "barn"
+  },
+  {
+   "id": "saw",
+   "name": "Пила",
+   "kind": "land"
+  },
+  {
+   "id": "axe",
+   "name": "Топор",
+   "kind": "land"
+  }
+ ],
+ "items": [
+  {
+   "id": "wheat",
+   "name": "Пшеница",
+   "kind": "crop",
+   "level": 1,
+   "sell": 1,
+   "orderCoins": 2,
+   "xp": 1,
+   "work": 1.37
+  },
+  {
+   "id": "corn",
+   "name": "Кукуруза",
+   "kind": "crop",
+   "level": 1,
+   "sell": 1,
+   "orderCoins": 3,
+   "xp": 1,
+   "work": 2.31
+  },
+  {
+   "id": "carrot",
+   "name": "Морковь",
+   "kind": "crop",
+   "level": 2,
+   "sell": 2,
+   "orderCoins": 5,
+   "xp": 1,
+   "work": 3.65
+  },
+  {
+   "id": "sunflower",
+   "name": "Подсолнух",
+   "kind": "crop",
+   "level": 4,
+   "sell": 4,
+   "orderCoins": 9,
+   "xp": 2,
+   "work": 5.99
+  },
+  {
+   "id": "strawberry",
+   "name": "Клубника",
+   "kind": "crop",
+   "level": 6,
+   "sell": 8,
+   "orderCoins": 21,
+   "xp": 5,
+   "work": 13.73
+  },
+  {
+   "id": "cotton",
+   "name": "Хлопок",
+   "kind": "crop",
+   "level": 8,
+   "sell": 14,
+   "orderCoins": 35,
+   "xp": 8,
+   "work": 23.53
+  },
+  {
+   "id": "beet",
+   "name": "Свёкла",
+   "kind": "crop",
+   "level": 10,
+   "sell": 20,
+   "orderCoins": 49,
+   "xp": 11,
+   "work": 32.36
+  },
+  {
+   "id": "potato",
+   "name": "Картофель",
+   "kind": "crop",
+   "level": 13,
+   "sell": 24,
+   "orderCoins": 61,
+   "xp": 14,
+   "work": 40.6
+  },
+  {
+   "id": "pumpkin",
+   "name": "Тыква",
+   "kind": "crop",
+   "level": 16,
+   "sell": 42,
+   "orderCoins": 105,
+   "xp": 25,
+   "work": 70.32
+  },
+  {
+   "id": "apple",
+   "name": "Яблоко",
+   "kind": "fruit",
+   "level": 1,
+   "sell": 7,
+   "orderCoins": 17,
+   "xp": 4,
+   "work": 11.12
+  },
+  {
+   "id": "pear",
+   "name": "Груша",
+   "kind": "fruit",
+   "level": 9,
+   "sell": 8,
+   "orderCoins": 21,
+   "xp": 5,
+   "work": 13.87
+  },
+  {
+   "id": "cherry",
+   "name": "Вишня",
+   "kind": "fruit",
+   "level": 14,
+   "sell": 10,
+   "orderCoins": 25,
+   "xp": 6,
+   "work": 16.48
+  },
+  {
+   "id": "egg",
+   "name": "Яйцо",
+   "kind": "animal",
+   "level": 1,
+   "sell": 6,
+   "orderCoins": 14,
+   "xp": 3,
+   "work": 9.48
+  },
+  {
+   "id": "milk",
+   "name": "Молоко",
+   "kind": "animal",
+   "level": 3,
+   "sell": 12,
+   "orderCoins": 31,
+   "xp": 7,
+   "work": 20.74
+  },
+  {
+   "id": "wool",
+   "name": "Шерсть",
+   "kind": "animal",
+   "level": 7,
+   "sell": 20,
+   "orderCoins": 51,
+   "xp": 12,
+   "work": 33.9
+  },
+  {
+   "id": "honey",
+   "name": "Мёд",
+   "kind": "animal",
+   "level": 11,
+   "sell": 17,
+   "orderCoins": 42,
+   "xp": 10,
+   "work": 27.95
+  },
+  {
+   "id": "truffle",
+   "name": "Трюфель",
+   "kind": "animal",
+   "level": 15,
+   "sell": 34,
+   "orderCoins": 85,
+   "xp": 20,
+   "work": 56.96
+  },
+  {
+   "id": "chicken_feed",
+   "name": "Корм для кур",
+   "kind": "feed",
+   "level": 1,
+   "sell": 2,
+   "orderCoins": 4,
+   "xp": 1,
+   "work": 2.89
+  },
+  {
+   "id": "cow_feed",
+   "name": "Корм для коров",
+   "kind": "feed",
+   "level": 3,
+   "sell": 3,
+   "orderCoins": 7,
+   "xp": 2,
+   "work": 4.86
+  },
+  {
+   "id": "sheep_feed",
+   "name": "Корм для овец",
+   "kind": "feed",
+   "level": 7,
+   "sell": 4,
+   "orderCoins": 9,
+   "xp": 2,
+   "work": 6.26
+  },
+  {
+   "id": "pig_feed",
+   "name": "Корм для свиней",
+   "kind": "feed",
+   "level": 15,
+   "sell": 11,
+   "orderCoins": 28,
+   "xp": 7,
+   "work": 18.74
+  },
+  {
+   "id": "flour",
+   "name": "Мука",
+   "kind": "product",
+   "level": 2,
+   "sell": 6,
+   "orderCoins": 16,
+   "xp": 4,
+   "work": 10.42
+  },
+  {
+   "id": "bread",
+   "name": "Хлеб",
+   "kind": "product",
+   "level": 2,
+   "sell": 18,
+   "orderCoins": 44,
+   "xp": 10,
+   "work": 29.57
+  },
+  {
+   "id": "corn_bread",
+   "name": "Кукурузный хлеб",
+   "kind": "product",
+   "level": 4,
+   "sell": 19,
+   "orderCoins": 47,
+   "xp": 11,
+   "work": 31.61
+  },
+  {
+   "id": "apple_pie",
+   "name": "Яблочный пирог",
+   "kind": "product",
+   "level": 6,
+   "sell": 41,
+   "orderCoins": 103,
+   "xp": 24,
+   "work": 68.6
+  },
+  {
+   "id": "cookies",
+   "name": "Печенье",
+   "kind": "product",
+   "level": 11,
+   "sell": 78,
+   "orderCoins": 195,
+   "xp": 46,
+   "work": 130.31
+  },
+  {
+   "id": "honey_cake",
+   "name": "Медовик",
+   "kind": "product",
+   "level": 13,
+   "sell": 64,
+   "orderCoins": 160,
+   "xp": 37,
+   "work": 106.68
+  },
+  {
+   "id": "pumpkin_pie",
+   "name": "Тыквенный пирог",
+   "kind": "product",
+   "level": 17,
+   "sell": 82,
+   "orderCoins": 204,
+   "xp": 48,
+   "work": 136.28
+  },
+  {
+   "id": "cream",
+   "name": "Сливки",
+   "kind": "product",
+   "level": 4,
+   "sell": 19,
+   "orderCoins": 48,
+   "xp": 11,
+   "work": 31.72
+  },
+  {
+   "id": "butter",
+   "name": "Масло",
+   "kind": "product",
+   "level": 5,
+   "sell": 34,
+   "orderCoins": 85,
+   "xp": 20,
+   "work": 56.67
+  },
+  {
+   "id": "cheese",
+   "name": "Сыр",
+   "kind": "product",
+   "level": 6,
+   "sell": 53,
+   "orderCoins": 133,
+   "xp": 31,
+   "work": 88.66
+  },
+  {
+   "id": "strawberry_jam",
+   "name": "Клубничное варенье",
+   "kind": "product",
+   "level": 7,
+   "sell": 40,
+   "orderCoins": 101,
+   "xp": 24,
+   "work": 67.64
+  },
+  {
+   "id": "apple_jam",
+   "name": "Яблочное варенье",
+   "kind": "product",
+   "level": 7,
+   "sell": 36,
+   "orderCoins": 90,
+   "xp": 21,
+   "work": 59.81
+  },
+  {
+   "id": "pear_jam",
+   "name": "Грушевое варенье",
+   "kind": "product",
+   "level": 10,
+   "sell": 44,
+   "orderCoins": 110,
+   "xp": 26,
+   "work": 73.23
+  },
+  {
+   "id": "cherry_jam",
+   "name": "Вишнёвое варенье",
+   "kind": "product",
+   "level": 15,
+   "sell": 100,
+   "orderCoins": 249,
+   "xp": 58,
+   "work": 165.94
+  },
+  {
+   "id": "fabric",
+   "name": "Ткань",
+   "kind": "product",
+   "level": 8,
+   "sell": 41,
+   "orderCoins": 102,
+   "xp": 24,
+   "work": 68.08
+  },
+  {
+   "id": "yarn",
+   "name": "Пряжа",
+   "kind": "product",
+   "level": 9,
+   "sell": 52,
+   "orderCoins": 130,
+   "xp": 30,
+   "work": 86.92
+  },
+  {
+   "id": "sweater",
+   "name": "Свитер",
+   "kind": "product",
+   "level": 12,
+   "sell": 173,
+   "orderCoins": 432,
+   "xp": 101,
+   "work": 287.98
+  },
+  {
+   "id": "sugar",
+   "name": "Сахар",
+   "kind": "product",
+   "level": 10,
+   "sell": 48,
+   "orderCoins": 120,
+   "xp": 28,
+   "work": 79.91
+  },
+  {
+   "id": "syrup",
+   "name": "Сироп",
+   "kind": "product",
+   "level": 12,
+   "sell": 63,
+   "orderCoins": 157,
+   "xp": 37,
+   "work": 104.9
+  },
+  {
+   "id": "candy",
+   "name": "Леденцы",
+   "kind": "product",
+   "level": 14,
+   "sell": 131,
+   "orderCoins": 327,
+   "xp": 76,
+   "work": 217.99
+  },
+  {
+   "id": "tomato",
+   "name": "Помидор",
+   "kind": "match3",
+   "level": 1,
+   "sell": 2,
+   "orderCoins": 4,
+   "xp": 1,
+   "work": 3.0
+  },
+  {
+   "id": "eggplant",
+   "name": "Баклажан",
+   "kind": "match3",
+   "level": 1,
+   "sell": 2,
+   "orderCoins": 4,
+   "xp": 1,
+   "work": 3.0
+  },
+  {
+   "id": "blueberry",
+   "name": "Черника",
+   "kind": "match3",
+   "level": 1,
+   "sell": 2,
+   "orderCoins": 4,
+   "xp": 1,
+   "work": 3.0
+  }
+ ],
+ "crops": [
+  {
+   "item": "wheat",
+   "growSeconds": 120,
+   "seedCoins": 1,
+   "yield": 2
+  },
+  {
+   "item": "corn",
+   "growSeconds": 300,
+   "seedCoins": 1,
+   "yield": 2
+  },
+  {
+   "item": "carrot",
+   "growSeconds": 600,
+   "seedCoins": 1,
+   "yield": 2
+  },
+  {
+   "item": "sunflower",
+   "growSeconds": 1200,
+   "seedCoins": 2,
+   "yield": 2
+  },
+  {
+   "item": "strawberry",
+   "growSeconds": 3600,
+   "seedCoins": 5,
+   "yield": 2
+  },
+  {
+   "item": "cotton",
+   "growSeconds": 7200,
+   "seedCoins": 9,
+   "yield": 2
+  },
+  {
+   "item": "beet",
+   "growSeconds": 10800,
+   "seedCoins": 12,
+   "yield": 2
+  },
+  {
+   "item": "potato",
+   "growSeconds": 14400,
+   "seedCoins": 15,
+   "yield": 2
+  },
+  {
+   "item": "pumpkin",
+   "growSeconds": 28800,
+   "seedCoins": 26,
+   "yield": 2
+  }
+ ],
+ "trees": [
+  {
+   "id": "apple_tree",
+   "name": "Яблоня",
+   "item": "apple",
+   "level": 1,
+   "cycleSeconds": 10800,
+   "yield": 3,
+   "costs": [
+    0,
+    0,
+    400,
+    600,
+    800,
+    1000
+   ]
+  },
+  {
+   "id": "pear_tree",
+   "name": "Груша",
+   "item": "pear",
+   "level": 9,
+   "cycleSeconds": 14400,
+   "yield": 3,
+   "costs": [
+    900,
+    1200,
+    1500,
+    1800,
+    2100,
+    2400
+   ]
+  },
+  {
+   "id": "cherry_tree",
+   "name": "Вишня",
+   "item": "cherry",
+   "level": 14,
+   "cycleSeconds": 18000,
+   "yield": 3,
+   "costs": [
+    1600,
+    2000,
+    2400,
+    2800,
+    3200,
+    3600
+   ]
+  }
+ ],
+ "animalHouses": [
+  {
+   "id": "coop",
+   "name": "Курятник",
+   "level": 1,
+   "coins": 0,
+   "population": 0,
+   "capacity": 6
+  },
+  {
+   "id": "cowshed",
+   "name": "Коровник",
+   "level": 3,
+   "coins": 600,
+   "population": 0,
+   "capacity": 6
+  },
+  {
+   "id": "sheepfold",
+   "name": "Овчарня",
+   "level": 7,
+   "coins": 1500,
+   "population": 60,
+   "capacity": 6
+  },
+  {
+   "id": "apiary",
+   "name": "Пасека",
+   "level": 11,
+   "coins": 2800,
+   "population": 120,
+   "capacity": 6
+  },
+  {
+   "id": "pigsty",
+   "name": "Свинарник",
+   "level": 15,
+   "coins": 5000,
+   "population": 200,
+   "capacity": 6
+  }
+ ],
+ "animals": [
+  {
+   "id": "chicken",
+   "name": "Курица",
+   "house": "coop",
+   "product": "egg",
+   "feed": "chicken_feed",
+   "seconds": 1200,
+   "level": 1,
+   "costs": [
+    0,
+    0,
+    0,
+    150,
+    200,
+    260
+   ]
+  },
+  {
+   "id": "cow",
+   "name": "Корова",
+   "house": "cowshed",
+   "product": "milk",
+   "feed": "cow_feed",
+   "seconds": 3600,
+   "level": 3,
+   "costs": [
+    300,
+    350,
+    420,
+    500,
+    600,
+    700
+   ]
+  },
+  {
+   "id": "sheep",
+   "name": "Овца",
+   "house": "sheepfold",
+   "product": "wool",
+   "feed": "sheep_feed",
+   "seconds": 7200,
+   "level": 7,
+   "costs": [
+    700,
+    800,
+    900,
+    1000,
+    1100,
+    1200
+   ]
+  },
+  {
+   "id": "bee",
+   "name": "Улей",
+   "house": "apiary",
+   "product": "honey",
+   "feed": "sunflower",
+   "seconds": 5400,
+   "level": 11,
+   "costs": [
+    1200,
+    1400,
+    1600,
+    1800,
+    2000,
+    2200
+   ]
+  },
+  {
+   "id": "pig",
+   "name": "Свинья",
+   "house": "pigsty",
+   "product": "truffle",
+   "feed": "pig_feed",
+   "seconds": 10800,
+   "level": 15,
+   "costs": [
+    1800,
+    2100,
+    2400,
+    2700,
+    3000,
+    3300
+   ]
+  }
+ ],
+ "workshops": [
+  {
+   "id": "mill",
+   "name": "Мельница",
+   "level": 1,
+   "coins": 0,
+   "population": 0,
+   "slots": 3,
+   "slotCrystals": [
+    8,
+    15,
+    25
+   ],
+   "recipes": [
+    {
+     "id": "chicken_feed",
+     "level": 1,
+     "inputs": {
+      "corn": 1,
+      "wheat": 2
+     },
+     "output": "chicken_feed",
+     "count": 3,
+     "seconds": 300
+    },
+    {
+     "id": "flour",
+     "level": 2,
+     "inputs": {
+      "wheat": 3
+     },
+     "output": "flour",
+     "count": 1,
+     "seconds": 600
+    },
+    {
+     "id": "cow_feed",
+     "level": 3,
+     "inputs": {
+      "carrot": 1,
+      "corn": 2
+     },
+     "output": "cow_feed",
+     "count": 3,
+     "seconds": 600
+    },
+    {
+     "id": "sheep_feed",
+     "level": 7,
+     "inputs": {
+      "carrot": 2,
+      "wheat": 2
+     },
+     "output": "sheep_feed",
+     "count": 3,
+     "seconds": 900
+    },
+    {
+     "id": "pig_feed",
+     "level": 15,
+     "inputs": {
+      "corn": 2,
+      "potato": 1
+     },
+     "output": "pig_feed",
+     "count": 3,
+     "seconds": 1200
+    }
+   ]
+  },
+  {
+   "id": "bakery",
+   "name": "Пекарня",
+   "level": 2,
+   "coins": 300,
+   "population": 0,
+   "slots": 2,
+   "slotCrystals": [
+    8,
+    15,
+    25
+   ],
+   "recipes": [
+    {
+     "id": "bread",
+     "level": 2,
+     "inputs": {
+      "flour": 2
+     },
+     "output": "bread",
+     "count": 1,
+     "seconds": 900
+    },
+    {
+     "id": "corn_bread",
+     "level": 4,
+     "inputs": {
+      "corn": 3,
+      "egg": 1
+     },
+     "output": "corn_bread",
+     "count": 1,
+     "seconds": 1800
+    },
+    {
+     "id": "apple_pie",
+     "level": 6,
+     "inputs": {
+      "apple": 2,
+      "egg": 1,
+      "flour": 1
+     },
+     "output": "apple_pie",
+     "count": 1,
+     "seconds": 3600
+    },
+    {
+     "id": "cookies",
+     "level": 11,
+     "inputs": {
+      "egg": 2,
+      "flour": 1,
+      "sugar": 1
+     },
+     "output": "cookies",
+     "count": 1,
+     "seconds": 2700
+    },
+    {
+     "id": "honey_cake",
+     "level": 13,
+     "inputs": {
+      "cream": 1,
+      "flour": 1,
+      "honey": 1
+     },
+     "output": "honey_cake",
+     "count": 1,
+     "seconds": 5400
+    },
+    {
+     "id": "pumpkin_pie",
+     "level": 17,
+     "inputs": {
+      "egg": 1,
+      "flour": 1,
+      "pumpkin": 1
+     },
+     "output": "pumpkin_pie",
+     "count": 1,
+     "seconds": 7200
+    }
+   ]
+  },
+  {
+   "id": "dairy",
+   "name": "Молочная",
+   "level": 4,
+   "coins": 900,
+   "population": 30,
+   "slots": 2,
+   "slotCrystals": [
+    8,
+    15,
+    25
+   ],
+   "recipes": [
+    {
+     "id": "cream",
+     "level": 4,
+     "inputs": {
+      "milk": 1
+     },
+     "output": "cream",
+     "count": 1,
+     "seconds": 1200
+    },
+    {
+     "id": "butter",
+     "level": 5,
+     "inputs": {
+      "milk": 2
+     },
+     "output": "butter",
+     "count": 1,
+     "seconds": 1800
+    },
+    {
+     "id": "cheese",
+     "level": 6,
+     "inputs": {
+      "milk": 3
+     },
+     "output": "cheese",
+     "count": 1,
+     "seconds": 3600
+    }
+   ]
+  },
+  {
+   "id": "toolshed",
+   "name": "Сарай инструментов",
+   "level": 5,
+   "coins": 1200,
+   "population": 40,
+   "slots": 2,
+   "slotCrystals": [
+    10,
+    20
+   ],
+   "recipes": [
+    {
+     "id": "make_shovel",
+     "level": 5,
+     "inputs": {
+      "bread": 1,
+      "corn": 3
+     },
+     "output": "Shovel",
+     "count": 1,
+     "seconds": 3600
+    },
+    {
+     "id": "make_rake",
+     "level": 6,
+     "inputs": {
+      "carrot": 3,
+      "flour": 2
+     },
+     "output": "Rake",
+     "count": 1,
+     "seconds": 5400
+    },
+    {
+     "id": "make_watering_can",
+     "level": 8,
+     "inputs": {
+      "butter": 1,
+      "wheat": 5
+     },
+     "output": "WateringCan",
+     "count": 1,
+     "seconds": 5400
+    },
+    {
+     "id": "make_shuffle",
+     "level": 9,
+     "inputs": {
+      "apple_jam": 1,
+      "egg": 2
+     },
+     "output": "Shuffle",
+     "count": 1,
+     "seconds": 7200
+    },
+    {
+     "id": "make_line",
+     "level": 11,
+     "inputs": {
+      "cheese": 1,
+      "fabric": 1
+     },
+     "output": "Line",
+     "count": 1,
+     "seconds": 7200
+    },
+    {
+     "id": "make_bomb",
+     "level": 13,
+     "inputs": {
+      "corn_bread": 1,
+      "sweater": 1
+     },
+     "output": "Bomb",
+     "count": 1,
+     "seconds": 10800
+    },
+    {
+     "id": "make_rainbow",
+     "level": 16,
+     "inputs": {
+      "sweater": 1,
+      "syrup": 1
+     },
+     "output": "Rainbow",
+     "count": 1,
+     "seconds": 14400
+    }
+   ]
+  },
+  {
+   "id": "jam",
+   "name": "Джем-цех",
+   "level": 7,
+   "coins": 1800,
+   "population": 60,
+   "slots": 2,
+   "slotCrystals": [
+    8,
+    15,
+    25
+   ],
+   "recipes": [
+    {
+     "id": "strawberry_jam",
+     "level": 7,
+     "inputs": {
+      "strawberry": 3
+     },
+     "output": "strawberry_jam",
+     "count": 1,
+     "seconds": 3600
+    },
+    {
+     "id": "apple_jam",
+     "level": 7,
+     "inputs": {
+      "apple": 3
+     },
+     "output": "apple_jam",
+     "count": 1,
+     "seconds": 3600
+    },
+    {
+     "id": "pear_jam",
+     "level": 10,
+     "inputs": {
+      "pear": 3
+     },
+     "output": "pear_jam",
+     "count": 1,
+     "seconds": 4500
+    },
+    {
+     "id": "cherry_jam",
+     "level": 15,
+     "inputs": {
+      "cherry": 3,
+      "sugar": 1
+     },
+     "output": "cherry_jam",
+     "count": 1,
+     "seconds": 5400
+    }
+   ]
+  },
+  {
+   "id": "textile",
+   "name": "Ткацкая",
+   "level": 8,
+   "coins": 2500,
+   "population": 80,
+   "slots": 2,
+   "slotCrystals": [
+    8,
+    15,
+    25
+   ],
+   "recipes": [
+    {
+     "id": "fabric",
+     "level": 8,
+     "inputs": {
+      "cotton": 2
+     },
+     "output": "fabric",
+     "count": 1,
+     "seconds": 2700
+    },
+    {
+     "id": "yarn",
+     "level": 9,
+     "inputs": {
+      "wool": 2
+     },
+     "output": "yarn",
+     "count": 1,
+     "seconds": 2400
+    },
+    {
+     "id": "sweater",
+     "level": 12,
+     "inputs": {
+      "fabric": 1,
+      "yarn": 2
+     },
+     "output": "sweater",
+     "count": 1,
+     "seconds": 7200
+    }
+   ]
+  },
+  {
+   "id": "sugar_mill",
+   "name": "Сахарная",
+   "level": 10,
+   "coins": 3500,
+   "population": 110,
+   "slots": 2,
+   "slotCrystals": [
+    8,
+    15,
+    25
+   ],
+   "recipes": [
+    {
+     "id": "sugar",
+     "level": 10,
+     "inputs": {
+      "beet": 2
+     },
+     "output": "sugar",
+     "count": 1,
+     "seconds": 1800
+    },
+    {
+     "id": "syrup",
+     "level": 12,
+     "inputs": {
+      "beet": 2,
+      "strawberry": 1
+     },
+     "output": "syrup",
+     "count": 1,
+     "seconds": 3600
+    },
+    {
+     "id": "candy",
+     "level": 14,
+     "inputs": {
+      "cream": 1,
+      "sugar": 2
+     },
+     "output": "candy",
+     "count": 1,
+     "seconds": 3600
+    }
+   ]
+  }
+ ],
+ "barn": {
+  "capacity": 70,
+  "upgrades": [
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 2,
+     "nails": 2,
+     "paint": 2
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 3,
+     "nails": 3,
+     "paint": 3
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 4,
+     "nails": 4,
+     "paint": 4
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 5,
+     "nails": 5,
+     "paint": 5
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 6,
+     "nails": 6,
+     "paint": 6
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 7,
+     "nails": 7,
+     "paint": 7
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 8,
+     "nails": 8,
+     "paint": 8
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 9,
+     "nails": 9,
+     "paint": 9
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 10,
+     "nails": 10,
+     "paint": 10
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 11,
+     "nails": 11,
+     "paint": 11
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   },
+   {
+    "capacity": 25,
+    "tools": {
+     "hammer": 12,
+     "nails": 12,
+     "paint": 12
+    }
+   }
+  ]
+ },
+ "plots": {
+  "start": 6,
+  "offers": [
+   {
+    "level": 1,
+    "coins": 50
+   },
+   {
+    "level": 1,
+    "coins": 80
+   },
+   {
+    "level": 2,
+    "coins": 120
+   },
+   {
+    "level": 2,
+    "coins": 160
+   },
+   {
+    "level": 3,
+    "coins": 220
+   },
+   {
+    "level": 4,
+    "coins": 300
+   },
+   {
+    "level": 5,
+    "coins": 380
+   },
+   {
+    "level": 6,
+    "coins": 470
+   },
+   {
+    "level": 7,
+    "coins": 570
+   },
+   {
+    "level": 8,
+    "coins": 680
+   },
+   {
+    "level": 9,
+    "coins": 800
+   },
+   {
+    "level": 10,
+    "coins": 940
+   },
+   {
+    "level": 11,
+    "coins": 1100
+   },
+   {
+    "level": 12,
+    "coins": 1280
+   },
+   {
+    "level": 13,
+    "coins": 1480
+   },
+   {
+    "level": 14,
+    "coins": 1700
+   },
+   {
+    "level": 15,
+    "coins": 1950
+   },
+   {
+    "level": 16,
+    "coins": 2200
+   },
+   {
+    "level": 18,
+    "coins": 2500
+   },
+   {
+    "level": 20,
+    "coins": 2800
+   },
+   {
+    "level": 22,
+    "coins": 3200
+   },
+   {
+    "level": 24,
+    "coins": 3600
+   },
+   {
+    "level": 26,
+    "coins": 4000
+   },
+   {
+    "level": 28,
+    "coins": 4500
+   }
+  ]
+ },
+ "expansions": [
+  {
+   "id": "land1",
+   "name": "Участок 1",
+   "level": 4,
+   "coins": 300,
+   "tools": {
+    "axe": 1,
+    "saw": 1
+   },
+   "lots": 3
+  },
+  {
+   "id": "land2",
+   "name": "Участок 2",
+   "level": 6,
+   "coins": 600,
+   "tools": {
+    "axe": 2,
+    "saw": 2
+   },
+   "lots": 3
+  },
+  {
+   "id": "land3",
+   "name": "Участок 3",
+   "level": 8,
+   "coins": 1000,
+   "tools": {
+    "axe": 3,
+    "saw": 3
+   },
+   "lots": 3
+  },
+  {
+   "id": "land4",
+   "name": "Участок 4",
+   "level": 10,
+   "coins": 1500,
+   "tools": {
+    "axe": 4,
+    "saw": 4
+   },
+   "lots": 3
+  },
+  {
+   "id": "land5",
+   "name": "Участок 5",
+   "level": 12,
+   "coins": 2200,
+   "tools": {
+    "axe": 5,
+    "saw": 5
+   },
+   "lots": 4
+  },
+  {
+   "id": "land6",
+   "name": "Участок 6",
+   "level": 14,
+   "coins": 3000,
+   "tools": {
+    "axe": 6,
+    "saw": 6
+   },
+   "lots": 4
+  },
+  {
+   "id": "land7",
+   "name": "Участок 7",
+   "level": 16,
+   "coins": 4000,
+   "tools": {
+    "axe": 7,
+    "saw": 7
+   },
+   "lots": 4
+  },
+  {
+   "id": "land8",
+   "name": "Участок 8",
+   "level": 18,
+   "coins": 5200,
+   "tools": {
+    "axe": 8,
+    "saw": 8
+   },
+   "lots": 4
+  },
+  {
+   "id": "land9",
+   "name": "Участок 9",
+   "level": 20,
+   "coins": 6500,
+   "tools": {
+    "axe": 9,
+    "saw": 9
+   },
+   "lots": 5
+  },
+  {
+   "id": "land10",
+   "name": "Участок 10",
+   "level": 22,
+   "coins": 8000,
+   "tools": {
+    "axe": 10,
+    "saw": 10
+   },
+   "lots": 5
+  },
+  {
+   "id": "land11",
+   "name": "Участок 11",
+   "level": 25,
+   "coins": 10000,
+   "tools": {
+    "axe": 11,
+    "saw": 11
+   },
+   "lots": 5
+  },
+  {
+   "id": "land12",
+   "name": "Участок 12",
+   "level": 28,
+   "coins": 12500,
+   "tools": {
+    "axe": 12,
+    "saw": 12
+   },
+   "lots": 5
+  }
+ ],
+ "toolDrops": {
+  "harvestPercent": 3,
+  "orderPercent": 10,
+  "landFromLevel": 5,
+  "landSharePercent": 40
+ },
+ "levels": [
+  {
+   "level": 1,
+   "xp": 0,
+   "reward": {}
+  },
+  {
+   "level": 2,
+   "xp": 20,
+   "reward": {
+    "coins": 80,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 3,
+   "xp": 80,
+   "reward": {
+    "coins": 120,
+    "crystals": 2,
+    "boosters": {
+     "Bomb": 1
+    }
+   }
+  },
+  {
+   "level": 4,
+   "xp": 230,
+   "reward": {
+    "coins": 160,
+    "crystals": 2,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    }
+   }
+  },
+  {
+   "level": 5,
+   "xp": 340,
+   "reward": {
+    "coins": 200,
+    "crystals": 5
+   }
+  },
+  {
+   "level": 6,
+   "xp": 490,
+   "reward": {
+    "coins": 240,
+    "crystals": 2,
+    "boosters": {
+     "Rainbow": 1
+    }
+   }
+  },
+  {
+   "level": 7,
+   "xp": 760,
+   "reward": {
+    "coins": 280,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 8,
+   "xp": 1100,
+   "reward": {
+    "coins": 320,
+    "crystals": 2,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    }
+   }
+  },
+  {
+   "level": 9,
+   "xp": 1550,
+   "reward": {
+    "coins": 360,
+    "crystals": 2,
+    "boosters": {
+     "Rake": 1
+    }
+   }
+  },
+  {
+   "level": 10,
+   "xp": 2150,
+   "reward": {
+    "coins": 400,
+    "crystals": 5
+   }
+  },
+  {
+   "level": 11,
+   "xp": 3000,
+   "reward": {
+    "coins": 440,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 12,
+   "xp": 3900,
+   "reward": {
+    "coins": 480,
+    "crystals": 2,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    },
+    "boosters": {
+     "Shuffle": 1
+    }
+   }
+  },
+  {
+   "level": 13,
+   "xp": 5050,
+   "reward": {
+    "coins": 520,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 14,
+   "xp": 6150,
+   "reward": {
+    "coins": 560,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 15,
+   "xp": 7500,
+   "reward": {
+    "coins": 600,
+    "crystals": 5,
+    "boosters": {
+     "Line": 1
+    }
+   }
+  },
+  {
+   "level": 16,
+   "xp": 9000,
+   "reward": {
+    "coins": 640,
+    "crystals": 2,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    }
+   }
+  },
+  {
+   "level": 17,
+   "xp": 10800,
+   "reward": {
+    "coins": 680,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 18,
+   "xp": 12700,
+   "reward": {
+    "coins": 720,
+    "crystals": 2,
+    "boosters": {
+     "WateringCan": 1
+    }
+   }
+  },
+  {
+   "level": 19,
+   "xp": 14800,
+   "reward": {
+    "coins": 760,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 20,
+   "xp": 16800,
+   "reward": {
+    "coins": 800,
+    "crystals": 5,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    }
+   }
+  },
+  {
+   "level": 21,
+   "xp": 19200,
+   "reward": {
+    "coins": 840,
+    "crystals": 2,
+    "boosters": {
+     "Shovel": 1
+    }
+   }
+  },
+  {
+   "level": 22,
+   "xp": 21800,
+   "reward": {
+    "coins": 880,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 23,
+   "xp": 25000,
+   "reward": {
+    "coins": 920,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 24,
+   "xp": 28200,
+   "reward": {
+    "coins": 960,
+    "crystals": 2,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    },
+    "boosters": {
+     "Bomb": 1
+    }
+   }
+  },
+  {
+   "level": 25,
+   "xp": 31700,
+   "reward": {
+    "coins": 1000,
+    "crystals": 5
+   }
+  },
+  {
+   "level": 26,
+   "xp": 35600,
+   "reward": {
+    "coins": 1040,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 27,
+   "xp": 39500,
+   "reward": {
+    "coins": 1080,
+    "crystals": 2,
+    "boosters": {
+     "Rainbow": 1
+    }
+   }
+  },
+  {
+   "level": 28,
+   "xp": 43800,
+   "reward": {
+    "coins": 1120,
+    "crystals": 2,
+    "tools": {
+     "hammer": 1,
+     "nails": 1,
+     "paint": 1
+    }
+   }
+  },
+  {
+   "level": 29,
+   "xp": 48500,
+   "reward": {
+    "coins": 1160,
+    "crystals": 2
+   }
+  },
+  {
+   "level": 30,
+   "xp": 53700,
+   "reward": {
+    "coins": 1200,
+    "crystals": 5,
+    "boosters": {
+     "Rake": 1
+    }
+   }
+  }
+ ],
+ "orders": {
+  "slots": 9,
+  "fulfillCooldownSeconds": 60,
+  "discardCooldownSeconds": 900,
+  "maxChainMinutes": [
+   30,
+   59,
+   96,
+   141,
+   194,
+   255,
+   324,
+   401,
+   486,
+   579,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600,
+   600
+  ],
+  "maxKinds": [
+   2,
+   2,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3
+  ],
+  "maxWorkMinutes": [
+   24,
+   31,
+   38,
+   46,
+   53,
+   60,
+   67,
+   74,
+   82,
+   89,
+   96,
+   103,
+   110,
+   118,
+   125,
+   132,
+   139,
+   146,
+   154,
+   161,
+   168,
+   175,
+   182,
+   190,
+   197,
+   204,
+   211,
+   218,
+   226,
+   233
+  ],
+  "maxUnits": [
+   3,
+   4,
+   4,
+   5,
+   5,
+   6,
+   6,
+   7,
+   7,
+   8,
+   8,
+   9,
+   9,
+   10,
+   10,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11,
+   11
+  ],
+  "coinPercent": 100,
+  "xpPercent": 100
+ },
+ "truck": {
+  "level": 6,
+  "crates": 3,
+  "unitsPercent": 150,
+  "returnSeconds": 3600,
+  "coinPercent": 130,
+  "xpPercent": 130,
+  "tools": 1
+ },
+ "town": {
+  "baseLots": 6,
+  "basePopulationCap": 30,
+  "houses": [
+   {
+    "id": "cottage",
+    "name": "Домик",
+    "kind": "house",
+    "level": 2,
+    "coins": 150,
+    "population": 10,
+    "xp": 5,
+    "max": 12
+   },
+   {
+    "id": "attic_house",
+    "name": "Дом с мансардой",
+    "kind": "house",
+    "level": 5,
+    "coins": 600,
+    "population": 20,
+    "xp": 15,
+    "max": 12
+   },
+   {
+    "id": "two_storey",
+    "name": "Двухэтажный дом",
+    "kind": "house",
+    "level": 9,
+    "coins": 1500,
+    "population": 35,
+    "xp": 30,
+    "max": 12
+   },
+   {
+    "id": "terem",
+    "name": "Терем",
+    "kind": "house",
+    "level": 14,
+    "coins": 3500,
+    "population": 55,
+    "xp": 60,
+    "max": 12
+   }
+  ],
+  "services": [
+   {
+    "id": "cafe",
+    "name": "Кафе",
+    "kind": "service",
+    "level": 3,
+    "coins": 400,
+    "capacity": 40,
+    "xp": 10,
+    "max": 1
+   },
+   {
+    "id": "post",
+    "name": "Почта",
+    "kind": "service",
+    "level": 5,
+    "coins": 800,
+    "capacity": 50,
+    "xp": 15,
+    "max": 1
+   },
+   {
+    "id": "school",
+    "name": "Школа",
+    "kind": "service",
+    "level": 8,
+    "coins": 1600,
+    "capacity": 70,
+    "xp": 25,
+    "max": 1
+   },
+   {
+    "id": "clinic",
+    "name": "Медпункт",
+    "kind": "service",
+    "level": 10,
+    "coins": 2400,
+    "capacity": 80,
+    "xp": 35,
+    "max": 1
+   },
+   {
+    "id": "library",
+    "name": "Библиотека",
+    "kind": "service",
+    "level": 12,
+    "coins": 3200,
+    "capacity": 90,
+    "xp": 45,
+    "max": 1
+   },
+   {
+    "id": "club",
+    "name": "Клуб",
+    "kind": "service",
+    "level": 14,
+    "coins": 4500,
+    "capacity": 110,
+    "xp": 60,
+    "max": 1
+   },
+   {
+    "id": "market",
+    "name": "Рынок",
+    "kind": "service",
+    "level": 16,
+    "coins": 6000,
+    "capacity": 130,
+    "xp": 80,
+    "max": 1
+   },
+   {
+    "id": "stadium",
+    "name": "Стадион",
+    "kind": "service",
+    "level": 19,
+    "coins": 9000,
+    "capacity": 150,
+    "xp": 110,
+    "max": 1
+   }
+  ],
+  "decorations": [
+   {
+    "id": "bench",
+    "name": "Скамейка",
+    "kind": "decoration",
+    "level": 2,
+    "coins": 50,
+    "stars": 0,
+    "beauty": 1,
+    "xp": 2,
+    "max": 0
+   },
+   {
+    "id": "flowerbed",
+    "name": "Клумба",
+    "kind": "decoration",
+    "level": 3,
+    "coins": 120,
+    "stars": 0,
+    "beauty": 2,
+    "xp": 4,
+    "max": 0
+   },
+   {
+    "id": "lantern",
+    "name": "Фонарь",
+    "kind": "decoration",
+    "level": 4,
+    "coins": 200,
+    "stars": 0,
+    "beauty": 3,
+    "xp": 5,
+    "max": 0
+   },
+   {
+    "id": "scarecrow",
+    "name": "Пугало",
+    "kind": "decoration",
+    "level": 5,
+    "coins": 300,
+    "stars": 0,
+    "beauty": 4,
+    "xp": 8,
+    "max": 4
+   },
+   {
+    "id": "well",
+    "name": "Колодец",
+    "kind": "decoration",
+    "level": 6,
+    "coins": 600,
+    "stars": 0,
+    "beauty": 6,
+    "xp": 12,
+    "max": 1
+   },
+   {
+    "id": "fountain",
+    "name": "Фонтан",
+    "kind": "decoration",
+    "level": 9,
+    "coins": 2000,
+    "stars": 0,
+    "beauty": 12,
+    "xp": 30,
+    "max": 1
+   },
+   {
+    "id": "gazebo",
+    "name": "Беседка",
+    "kind": "decoration",
+    "level": 12,
+    "coins": 3000,
+    "stars": 0,
+    "beauty": 15,
+    "xp": 40,
+    "max": 2
+   },
+   {
+    "id": "swing",
+    "name": "Качели",
+    "kind": "decoration",
+    "level": 1,
+    "coins": 0,
+    "stars": 8,
+    "beauty": 6,
+    "xp": 15,
+    "max": 1
+   },
+   {
+    "id": "weathervane",
+    "name": "Флюгер-петушок",
+    "kind": "decoration",
+    "level": 1,
+    "coins": 0,
+    "stars": 10,
+    "beauty": 8,
+    "xp": 20,
+    "max": 1
+   },
+   {
+    "id": "grandma_statue",
+    "name": "Памятник бабушке Дуне",
+    "kind": "decoration",
+    "level": 1,
+    "coins": 0,
+    "stars": 15,
+    "beauty": 20,
+    "xp": 40,
+    "max": 1
+   },
+   {
+    "id": "bandstand",
+    "name": "Летняя эстрада",
+    "kind": "decoration",
+    "level": 4,
+    "coins": 0,
+    "stars": 20,
+    "beauty": 25,
+    "xp": 60,
+    "max": 1
+   },
+   {
+    "id": "lighthouse",
+    "name": "Маяк у пруда",
+    "kind": "decoration",
+    "level": 8,
+    "coins": 0,
+    "stars": 30,
+    "beauty": 35,
+    "xp": 90,
+    "max": 1
+   }
+  ]
+ },
+ "daily": {
+  "perDay": 3,
+  "tasks": [
+   {
+    "id": "win3",
+    "kind": "win_levels",
+    "target": 3,
+    "text": "Пройти 3 уровня",
+    "farm": false,
+    "reward": {
+     "coins": 150
+    }
+   },
+   {
+    "id": "win6",
+    "kind": "win_levels",
+    "target": 6,
+    "text": "Пройти 6 уровней",
+    "farm": false,
+    "reward": {
+     "coins": 300,
+     "boosters": {
+      "Shovel": 1
+     }
+    }
+   },
+   {
+    "id": "play5",
+    "kind": "play_levels",
+    "target": 5,
+    "text": "Сыграть 5 уровней",
+    "farm": false,
+    "reward": {
+     "coins": 120
+    }
+   },
+   {
+    "id": "stars3",
+    "kind": "spend_stars",
+    "target": 3,
+    "text": "Потратить 3 звезды на ферму",
+    "farm": false,
+    "reward": {
+     "coins": 150
+    }
+   },
+   {
+    "id": "stars6",
+    "kind": "spend_stars",
+    "target": 6,
+    "text": "Потратить 6 звёзд на ферму",
+    "farm": false,
+    "reward": {
+     "boosters": {
+      "Rake": 1
+     }
+    }
+   },
+   {
+    "id": "boost2",
+    "kind": "use_boosters",
+    "target": 2,
+    "text": "Использовать 2 буста",
+    "farm": false,
+    "reward": {
+     "coins": 100
+    }
+   },
+   {
+    "id": "harvest20",
+    "kind": "harvest",
+    "target": 20,
+    "text": "Собрать 20 урожая",
+    "farm": true,
+    "reward": {
+     "coins": 200
+    }
+   },
+   {
+    "id": "harvest40",
+    "kind": "harvest",
+    "target": 40,
+    "text": "Собрать 40 урожая",
+    "farm": true,
+    "reward": {
+     "coins": 350,
+     "boosters": {
+      "WateringCan": 1
+     }
+    }
+   },
+   {
+    "id": "produce5",
+    "kind": "produce",
+    "target": 5,
+    "text": "Произвести 5 товаров",
+    "farm": true,
+    "reward": {
+     "coins": 200
+    }
+   },
+   {
+    "id": "orders3",
+    "kind": "orders",
+    "target": 3,
+    "text": "Выполнить 3 заказа",
+    "farm": true,
+    "reward": {
+     "coins": 250
+    }
+   },
+   {
+    "id": "orders6",
+    "kind": "orders",
+    "target": 6,
+    "text": "Выполнить 6 заказов",
+    "farm": true,
+    "reward": {
+     "coins": 400,
+     "crystals": 1
+    }
+   },
+   {
+    "id": "feed6",
+    "kind": "feed_animals",
+    "target": 6,
+    "text": "Покормить животных 6 раз",
+    "farm": true,
+    "reward": {
+     "coins": 150
+    }
+   }
+  ],
+  "chest": {
+   "crystals": 3,
+   "infiniteLivesMinutes": 30
+  },
+  "login": [
+   {
+    "coins": 100
+   },
+   {
+    "boosters": {
+     "Shovel": 1
+    }
+   },
+   {
+    "coins": 200
+   },
+   {
+    "boosters": {
+     "Bomb": 1
+    }
+   },
+   {
+    "crystals": 3
+   },
+   {
+    "coins": 400
+   },
+   {
+    "crystals": 5,
+    "infiniteLivesMinutes": 60,
+    "boosters": {
+     "Rainbow": 1
+    }
+   }
+  ]
+ },
+ "speedUp": {
+  "secondsPerCrystal": 600,
+  "minCrystals": 1
+ },
+ "farmStart": {
+  "trees": {
+   "apple_tree": 2
+  },
+  "animals": {
+   "chicken": 3
+  },
+  "animalHouses": [
+   "coop"
+  ],
+  "workshops": [
+   "mill"
+  ],
+  "items": {
+   "wheat": 6,
+   "corn": 4,
+   "chicken_feed": 3
+  },
+  "town": {
+   "cottage": 1
+  }
+ },
+ "pacing": {
+  "sessionHours": [
+   8.0,
+   12.0,
+   16.0,
+   19.5,
+   22.5
+  ],
+  "attemptsPerSession": 5,
+  "winRate": 0.8,
+  "levelMinutes": 2.5,
+  "chapter1MinDays": 3.0,
+  "chapter1MaxDays": 5.0,
+  "chapter1Day": 4.01,
+  "levelDays": {
+   "1": 4.01,
+   "2": 4.17,
+   "3": 4.48,
+   "4": 5.18,
+   "5": 5.6,
+   "6": 6.33,
+   "7": 7.17,
+   "8": 8.01,
+   "9": 9.0,
+   "10": 10.17,
+   "11": 11.6,
+   "12": 13.17,
+   "13": 14.61,
+   "14": 16.33,
+   "15": 18.17,
+   "16": 20.17,
+   "17": 22.33,
+   "18": 24.49,
+   "19": 27.01,
+   "20": 29.33,
+   "21": 32.17,
+   "22": 35.33,
+   "23": 39.17,
+   "24": 43.0,
+   "25": 47.33,
+   "26": 52.33,
+   "27": 57.33,
+   "28": 63.17,
+   "29": 69.34,
+   "30": 76.33
+  },
+  "tolerancePercent": 25
+ }
+}

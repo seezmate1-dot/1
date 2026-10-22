@@ -1,8 +1,15 @@
 name: checks
 
 on:
+  # «Солнечная долина» (farm/) has its own checks: farm-checks.yml
   push:
+    paths-ignore:
+      - 'farm/**'
+      - '.github/workflows/farm-*.yml'
   pull_request:
+    paths-ignore:
+      - 'farm/**'
+      - '.github/workflows/farm-*.yml'
 
 jobs:
   rules:

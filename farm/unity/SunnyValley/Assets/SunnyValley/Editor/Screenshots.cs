@@ -1,0 +1,168 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using SunnyValley.Game.Level;
+using SunnyValley.Game.UI;
+using SunnyValley.Layout;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.UI;
+
+namespace SunnyValley.EditorTools
+{
+    /// <summary>
+    /// Pictures of every screen and popup (LayoutCatalog) on every test screen (Devices), rendered by the real uGUI
+    /// objects into a texture of the phone's size, with the parts outside the safe area tinted red.
+    /// Menu «Солнечная долина → Снимки интерфейса», or in batch mode (CI, farm-android.yml)
+    /// <c>-executeMethod SunnyValley.EditorTools.Screenshots.CaptureFromCommandLine [-screenshotsPath dir]</c>.
+    /// Needs a graphics device: under -nographics there is nothing to render with, and the method says so and fails
+    /// (the layout itself is still guarded by farm/ui-tests and their SVG wireframes).
+    /// </summary>
+    public static class Screenshots
+    {
+        [MenuItem("Солнечная долина/Снимки интерфейса")]
+        public static void FromMenu()
+        {
+            int n = Capture("Screenshots", Devices.All);
+            EditorUtility.RevealInFinder(Path.GetFullPath("Screenshots"));
+            Debug.Log($"Снимков: {n}");
+        }
+
+        public static void CaptureFromCommandLine()
+        {
+            string dir = BuildAndroid.Argument("-screenshotsPath");
+            if (dir == null)
+            {
+                // unity-builder passes -customBuildPath build/<target>/<name>: the pictures go next to it
+                string custom = BuildAndroid.Argument("-customBuildPath");
+                dir = custom != null ? Path.Combine(Path.GetDirectoryName(custom) ?? ".", "screens") : "Screenshots";
+            }
+            int n = 0;
+            try
+            {
+                n = Capture(dir, Devices.All);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Снимки не получились: " + e);
+            }
+            Debug.Log($"Снимков: {n} в {Path.GetFullPath(dir)}");
+            EditorApplication.Exit(n > 0 ? 0 : 1);
+        }
+
+        public static int Capture(string dir, IEnumerable<ScreenSpec> devices)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Debug.LogError("Нет графического устройства (Unity запущен с -nographics): снимки делать нечем");
+                return 0;
+            }
+            Directory.CreateDirectory(dir);
+            int count = 0;
+            foreach (var device in devices)
+            {
+                foreach (var (name, build) in LayoutCatalog.All())
+                {
+                    string file = Path.Combine(dir, $"{name}_{Devices.Slug(device)}.png");
+                    Render(device, name, build, file);
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>What a popup is shown over, for context: the level's popups over the level, the rest over the farm.</summary>
+        static Func<CanvasFit, UiLayout> Under(string name)
+        {
+            if (!name.StartsWith("popup") && name != "toast")
+                return null;
+            bool overLevel = name.Contains("win") || name.Contains("lose") || name.Contains("settings");
+            if (overLevel)
+                return f => Screens.Level(f, new LevelHud());
+            return f => Screens.Farm(f, new FarmHud());
+        }
+
+        static void Render(ScreenSpec spec, string name, Func<CanvasFit, UiLayout> build, string file)
+        {
+            var rt = new RenderTexture(spec.Width, spec.Height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+            var camGo = new GameObject("capture camera");
+            var cam = camGo.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            cam.orthographic = true;
+            cam.cullingMask = 1 << 5;
+            cam.targetTexture = rt;
+            cam.enabled = false;
+            var root = UiRoot.CreateForCapture(spec, cam);
+            try
+            {
+                var under = Under(name);
+                if (under != null)
+                    Fill(UiView.Build(under(root.Fit), root.ScreenLayer));
+                bool popup = under != null;
+                var view = UiView.Build(build(root.Fit), popup ? (name == "toast" ? root.OverlayLayer : root.PopupLayer) : root.ScreenLayer);
+                Fill(view);
+                MarkUnsafe(root);
+
+                Canvas.ForceUpdateCanvases();
+                cam.Render();
+                var prev = RenderTexture.active;
+                RenderTexture.active = rt;
+                var tex = new Texture2D(spec.Width, spec.Height, TextureFormat.RGB24, false);
+                tex.ReadPixels(new Rect(0, 0, spec.Width, spec.Height), 0, 0);
+                tex.Apply();
+                RenderTexture.active = prev;
+                File.WriteAllBytes(file, tex.EncodeToPNG());
+                UnityEngine.Object.DestroyImmediate(tex);
+            }
+            finally
+            {
+                cam.targetTexture = null;
+                UnityEngine.Object.DestroyImmediate(root.gameObject);
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+            }
+        }
+
+        /// <summary>Puts pieces on a board, if the view has one.</summary>
+        static void Fill(UiView view)
+        {
+            var board = view.Rect("level.board")?.GetComponent<BoardView>();
+            if (board != null)
+            {
+                var node = view.Node("level.board");
+                board.Show(new DemoLevelSession(1, node.Cols, node.Rows).PieceAt);
+            }
+        }
+
+        /// <summary>Tints what lies outside the safe area (cut-out, status bar, gesture bar) in translucent red.</summary>
+        static void MarkUnsafe(UiRoot root)
+        {
+            var fit = root.Fit;
+            var s = fit.Safe;
+            Band(root.OverlayLayer, 0, s.Y);
+            Band(root.OverlayLayer, s.YMax, fit.Height - s.YMax);
+        }
+
+        static void Band(RectTransform parent, float y, float h)
+        {
+            if (h <= 0.5f)
+                return;
+            var go = new GameObject("unsafe", typeof(RectTransform));
+            go.layer = 5;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(1, 0);
+            rt.pivot = new Vector2(0.5f, 0);
+            rt.offsetMin = new Vector2(0, y);
+            rt.offsetMax = new Vector2(0, y + h);
+            var img = go.AddComponent<Image>();
+            img.color = new Color(1, 0, 0, 0.3f);
+            img.raycastTarget = false;
+        }
+    }
+}

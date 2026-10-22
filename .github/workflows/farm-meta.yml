@@ -1,0 +1,20 @@
+name: farm-meta
+
+# «Солнечная долина»: the economy model. The core tests (with the 30-day player bot) run in farm-checks.yml.
+on:
+  push:
+    paths:
+      - "farm/**"
+      - ".github/workflows/farm-meta.yml"
+  pull_request:
+    paths:
+      - "farm/**"
+      - ".github/workflows/farm-meta.yml"
+
+jobs:
+  economy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Economy model checks; balance.json and ECONOMY.md are generated, not edited by hand
+        run: python3 farm/tools/economy.py --check
