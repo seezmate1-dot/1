@@ -111,24 +111,26 @@ namespace SunnyValley.Core.Match3
         }
 
         /// <summary>Value after playing <paramref name="m"/> on a re-seeded copy (the bot does not see real spawns).</summary>
-        public static double Try(Match3Game g, SwapMove m, Rng rng, out Match3Game after)
+        public static double Try(Match3Game g, SwapMove m, Rng rng, out Match3Game after, bool immediateOnly = false)
         {
             after = g.CloneReseeded(rng.NextULong());
+            after.ImmediateOnly = immediateOnly;
             after.Swap(m.A, m.B);
             return Value(after);
         }
     }
 
     /// <summary>
-    /// «Средний игрок»: looks one move ahead like a person scanning the board, but misjudges (noise on every
-    /// estimate) and sometimes just makes some visible match (<see cref="RandomMoveChance"/>).
+    /// «Средний игрок»: judges each move by what it visibly does (its own matches and specials, not the cascades
+    /// after), misjudges a little (noise on every estimate) and sometimes just makes some match
+    /// (<see cref="RandomMoveChance"/>).
     /// </summary>
     public sealed class AverageBot : IMatch3Bot
     {
         public string Name => "average";
-        public double RandomMoveChance = 0.3;
+        public double RandomMoveChance = 0.25;
         /// <summary>Standard deviation of the misjudgement, in tiles of work.</summary>
-        public double Noise = 3.0;
+        public double Noise = 2.0;
 
         public SwapMove Choose(Match3Game game, Rng rng)
         {
@@ -139,7 +141,7 @@ namespace SunnyValley.Core.Match3
             var choice = moves[0];
             foreach (var m in moves)
             {
-                double v = BotEval.Try(game, m, rng, out _) + Noise * BotEval.Gaussian(rng);
+                double v = BotEval.Try(game, m, rng, out _, immediateOnly: true) + Noise * BotEval.Gaussian(rng);
                 if (v > best) { best = v; choice = m; }
             }
             return choice;

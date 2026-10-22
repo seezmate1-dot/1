@@ -636,6 +636,7 @@ namespace SunnyValley.Core.Match3
         void Cascade()
         {
             Gravity();
+            if (ImmediateOnly) return;
             for (int guard = 0; guard < 200; guard++)
             {
                 _wave++;

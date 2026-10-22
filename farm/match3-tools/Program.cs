@@ -79,6 +79,7 @@ namespace SunnyValley.Tools
             public double Target;
             public bool Hard;
             public double AvgWinRate;
+            public double Scale = 1;
             public Dictionary<int, double> Curve = new Dictionary<int, double>();
         }
 
@@ -87,6 +88,30 @@ namespace SunnyValley.Tools
 
         static void SaveTuning(Dictionary<int, Tuning> t) =>
             File.WriteAllText(TuningFile, JsonConvert.SerializeObject(t.Values.OrderBy(x => x.Id).ToList(), Formatting.Indented));
+
+        static Tuning Tune(Design d, int games)
+        {
+            var t = new Tuning { Id = d.Id, Target = d.Target, Hard = d.Hard, Scale = d.Scale };
+            double Rate(int m)
+            {
+                if (t.Curve.TryGetValue(m, out var r)) return r;
+                r = LevelSimulator.Run(d.ToLevel(m), BotFactory("average"), games, 1).WinRate;
+                t.Curve[m] = r;
+                return r;
+            }
+            // Smallest move count whose win rate reaches the target (win rate grows with moves).
+            int lo = d.MinMoves, hi = d.MaxMoves;
+            if (Rate(hi) < d.Target) lo = hi;
+            else if (Rate(lo) >= d.Target) hi = lo;
+            while (lo < hi)
+            {
+                int mid = (lo + hi) / 2;
+                if (Rate(mid) >= d.Target) hi = mid; else lo = mid + 1;
+            }
+            t.Moves = hi;
+            t.AvgWinRate = Rate(hi);
+            return t;
+        }
 
         static void Build(int from, int to, int games)
         {
@@ -97,31 +122,24 @@ namespace SunnyValley.Tools
                 var sw = Stopwatch.StartNew();
                 var errs = LevelValidator.Validate(d.ToLevel(25));
                 if (errs.Count > 0) { Console.WriteLine("level " + d.Id + " INVALID: " + string.Join("; ", errs)); continue; }
-                var t = new Tuning { Id = d.Id, Target = d.Target, Hard = d.Hard };
-                double Rate(int m)
+                Tuning t = null;
+                for (int attempt = 0; attempt < 6; attempt++)
                 {
-                    if (t.Curve.TryGetValue(m, out var r)) return r;
-                    r = LevelSimulator.Run(d.ToLevel(m), BotFactory("average"), games, 1).WinRate;
-                    t.Curve[m] = r;
-                    return r;
+                    t = Tune(d, games);
+                    bool tooEasy = t.Moves == d.MinMoves && t.AvgWinRate > d.Target + (d.Hard ? 0.08 : 0.04);
+                    bool tooHard = t.AvgWinRate < d.Target;
+                    if (d.Id <= 20) tooEasy = false; // the first levels may be as easy as they like
+                    if (!d.Scalable || (!tooEasy && !tooHard)) break;
+                    if (tooEasy && d.Scale >= 2.4) break;
+                    d.Scale *= tooEasy ? 1.35 : 0.75;
                 }
-                // Smallest move count whose win rate reaches the target (win rate grows with moves).
-                int lo = d.MinMoves, hi = d.MaxMoves;
-                if (Rate(hi) < d.Target) lo = hi;
-                else if (Rate(lo) >= d.Target) hi = lo;
-                while (lo < hi)
-                {
-                    int mid = (lo + hi) / 2;
-                    if (Rate(mid) >= d.Target) hi = mid; else lo = mid + 1;
-                }
-                t.Moves = hi;
-                t.AvgWinRate = Rate(hi);
                 tuning[d.Id] = t;
                 var level = d.ToLevel(t.Moves);
                 File.WriteAllText(Path.Combine(LevelsDir, $"level_{d.Id:000}.json"), LevelLoader.ToJson(level));
                 string flag = t.AvgWinRate < d.Target ? "  << below target even at max moves" :
-                    (t.Moves == d.MinMoves && t.AvgWinRate > d.Target + 0.06 ? "  << easy even at min moves" : "");
-                Console.WriteLine($"level {d.Id,2} {d.Name,-24} moves {t.Moves,2}  avg {t.AvgWinRate * 100,5:0.0}%  target {d.Target * 100:0}%  [{sw.ElapsedMilliseconds / 1000.0:0.0}s]{flag}");
+                    (t.Moves == d.MinMoves && t.AvgWinRate > d.Target + 0.06 ? "  << easy even at min moves" : "") +
+                    (d.Hard && t.AvgWinRate > 0.5 ? "  << hard level above 50%" : "");
+                Console.WriteLine($"level {d.Id,2} {d.Name,-24} moves {t.Moves,2}  avg {t.AvgWinRate * 100,5:0.0}%  target {d.Target * 100:0}%  scale {d.Scale:0.00}  [{sw.ElapsedMilliseconds / 1000.0:0.0}s]{flag}");
                 SaveTuning(tuning);
             }
         }

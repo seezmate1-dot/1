@@ -35,7 +35,10 @@ namespace SunnyValley.Tools
         public double Target;
         /// <summary>Hard levels aim at a band (35–50%) instead of "at least".</summary>
         public bool Hard;
-        public int MinMoves = 15, MaxMoves = 40;
+        public int MinMoves = 18, MaxMoves = 40;
+        /// <summary>Multiplier the tuner applies to collect and crop counts (bigger = more work).</summary>
+        public double Scale = 1;
+        public bool Scalable => Goals.Exists(g => g.Type == "collect" || g.Type == "crop");
         public long Seed;
 
         public Design Collect(string color, int n) { Goals.Add(new GoalData { Type = "collect", Color = color, Count = n }); return this; }
@@ -116,7 +119,11 @@ namespace SunnyValley.Tools
                 Spawners = Spawners,
                 Chicks = Chicks,
                 Specials = Specials,
-                Goals = Goals,
+                Goals = Goals.ConvertAll(g => new GoalData
+                {
+                    Type = g.Type, Color = g.Color,
+                    Count = g.Type == "collect" || g.Type == "crop" ? Math.Max(1, (int)Math.Round(g.Count * Scale)) : g.Count,
+                }),
             };
         }
     }

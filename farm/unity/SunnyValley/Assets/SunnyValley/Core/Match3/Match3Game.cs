@@ -61,6 +61,12 @@ namespace SunnyValley.Core.Match3
         /// <summary>Set false for bots: the engine then skips building the step log (much faster).</summary>
         public bool LogEnabled = true;
 
+        /// <summary>
+        /// Bot evaluation only: resolve just what the action itself does (its matches/specials and one refill),
+        /// not the cascades after it — what a person sees when judging a move. Leaves the board unsettled.
+        /// </summary>
+        public bool ImmediateOnly;
+
         int _nextPieceId = 1;
         int _chicksToSpawn;
         int _chickMaxOnBoard;
