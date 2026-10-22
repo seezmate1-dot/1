@@ -230,7 +230,10 @@ namespace LastHearth.Core
             State.Wallet.Subtract(cost);
             hired = AddDweller(r.Name, r.Stats, r.Sex);
             if (r.Rarity != Rarity.Common)
+            {
                 Halls.Rarity[hired.Id] = r.Rarity;
+                GiveTrait(hired); // the rarity decides how likely the trait is a good one (GameSession.People.cs)
+            }
             r.Hired = true;
             Halls.Tavern.Hired++;
             return Fail.None;
@@ -313,7 +316,7 @@ namespace LastHearth.Core
                 double rest = RouteRestGuard(e); // rest points on the way (GameSession.Routes.cs)
                 foreach (int id in e.Team)
                 {
-                    if (rng.Next() >= chance * rest || FindDweller(id) == null)
+                    if (rng.Next() >= chance * rest * IllnessMult(id) || FindDweller(id) == null)
                         continue;
                     long until = e.End + (long)Math.Round(m.IllnessHours * 3600);
                     if (until > SickUntil(id))
@@ -772,12 +775,13 @@ namespace LastHearth.Core
                 h.AttackMult *= attack * rank;
                 h.HpMult *= hp * rank;
             }
+            ApplyTraits(setup); // brave and cowardly heroes (GameSession.People.cs)
         }
 
         /// <summary>Attack and health of a hero ×these from the halls (for the hero screen).</summary>
         public (double attack, double hp) HallsHeroMult(int heroId) =>
-            ((1 + ResearchValue(ResearchEffect.Attack) + SpecSum(SpecEffect.SquadAttack)) * AscensionMult(heroId),
-             (1 + ResearchValue(ResearchEffect.Health) + SpecSum(SpecEffect.SquadHp)) * AscensionMult(heroId));
+            ((1 + ResearchValue(ResearchEffect.Attack) + SpecSum(SpecEffect.SquadAttack)) * AscensionMult(heroId) * TraitBattleMult(FindDweller(heroId)),
+             (1 + ResearchValue(ResearchEffect.Health) + SpecSum(SpecEffect.SquadHp)) * AscensionMult(heroId) * TraitBattleMult(FindDweller(heroId)));
 
         // ------------------------------------------------------------------ archive
 

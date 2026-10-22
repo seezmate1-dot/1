@@ -147,8 +147,8 @@ namespace LastHearth.Core
                 Stats = (int[])d.Stats.Clone(),
                 Gear = HeroGear(d),
             });
-            f.Attack *= setup.PetAttack;
-            f.MaxHp *= setup.PetHp;
+            f.Attack *= setup.PetAttack * TraitBattleMult(d); // brave and cowardly heroes (GameSession.People.cs)
+            f.MaxHp *= setup.PetHp * TraitBattleMult(d);
             f.Hp = f.MaxHp;
             f.Companion = CompanionSetupFor(d);
             return f;

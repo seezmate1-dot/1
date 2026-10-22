@@ -99,6 +99,34 @@ namespace LastHearth.Core.Tests
             Shop(now);
             Kennel(now);
             Halls(now);
+            Spirit(now);
+        }
+
+        // ------------------------------------------------------------------ the spirit of the fortress (GDD 7, GameSession.People.cs)
+
+        public int HungryTurns, BlazingTurns, Recalls;
+        public double LowestSpirit = 100;
+
+        /// <summary>
+        /// Keeps the spirit healthy: when it sinks below calm, the hearth blazes (+10) while there is coal for a day of
+        /// it; back to steady once it is calm again. Deserters are called back when the spirit allows.
+        /// </summary>
+        void Spirit(long now)
+        {
+            double spirit = S.Morale;
+            LowestSpirit = Math.Min(LowestSpirit, spirit);
+            if (S.FoodReserve() < 1)
+                HungryTurns++;
+            var calm = S.Balance.People.Morale.RecallMorale;
+            double dayOfBlaze = Formulas.CoalBurnPerHour(S.Balance, S.State.HearthLevel, HearthMode.Blazing) * 24;
+            if (spirit < calm && S.State.Mode != HearthMode.Blazing && S.State.Wallet[ResourceType.Coal] >= dayOfBlaze)
+                S.SetMode(HearthMode.Blazing);
+            else if (S.State.Mode == HearthMode.Blazing && (spirit >= calm + 10 || S.State.Wallet[ResourceType.Coal] < dayOfBlaze / 4))
+                S.SetMode(HearthMode.Steady);
+            if (S.State.Mode == HearthMode.Blazing)
+                BlazingTurns++;
+            while (S.Deserters.Count > 0 && S.Recall(0, now, out _) == Fail.None)
+                Recalls++;
         }
 
         // ------------------------------------------------------------------ equipment (GDD 8)
@@ -900,6 +928,9 @@ namespace LastHearth.Core.Tests
                 ArenaWins, ArenaFights, S.State.ArenaRating, Raids, S.State.Wallet[ResourceType.Glory]) +
                 string.Format(" | halls: hired {0} (let go {1}), research {2}, trained {3}, ascended {4}, gifts {5}, records {6}",
                     Hires, Dismissals, S.ResearchCount, S.PointsTrained, Ascensions, Gifts, S.State.Halls.Read.Count) +
+                string.Format(" | spirit {0:0} {1} (target {2:0}), levels {3:0.0} avg {4} max, squad {5:0.0}, deserted {6}",
+                    S.Morale, S.MoraleBand().Name, S.MoraleTarget(S.State.Time), S.State.Dwellers.Average(d => d.Level), S.State.Dwellers.Max(d => d.Level),
+                    squad.Count == 0 ? 0 : squad.Average(d => d.Level), S.State.People.DesertedTotal) +
                 string.Format(" | gear {0} (worn {1}, bag {2}, crafted {3}, +{4}, scrap {5})", squad.Sum(S.HeroGearPower),
                     S.Gear.Items.Count(i => i.HeroId != 0), S.Bag().Count, Crafted, Upgraded, S.Gear.Scrap);
         }

@@ -67,6 +67,7 @@ namespace LastHearth.Game
             ("Герои", AdminHeroes),
             ("Залы", AdminHalls), // GameRunner.Rooms.cs
             ("Вылазки", AdminRoutes), // GameRunner.Routes.cs
+            ("Жители", AdminPeople), // GameRunner.People.cs
             ("Предметы", AdminItems), // GameRunner.Gear.cs
             ("Сохранение", AdminSave),
             ("Арт", AdminArt),

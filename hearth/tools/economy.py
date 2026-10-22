@@ -1152,7 +1152,9 @@ def report(result):
     out += retention
     out += halls_report(result)
     out += items_report(result)
-    return "\n".join(out) + "\n", problems + retention_problems
+    people, people_problems = people_report(result)
+    out += people
+    return "\n".join(out) + "\n", problems + retention_problems + people_problems
 
 
 # ---------------------------------------------------------------- export for the game (Unity)
@@ -1383,6 +1385,7 @@ def export_balance(result):
         },
         **kennel_export(result),  # pets, companions and shops (section "pets, companions and shops" below)
         "halls": halls_export(result),  # the work of the halls (section "the work of the halls" below)
+        "people": people_export(result),  # dwellers and the spirit of the fortress (section "dwellers and the spirit" below)
         "items": items_export(),  # equipment (section "equipment" below)
         "activities": {
             "essenceByLevel": [int(round(essence_income_per_day(lv))) for lv in range(1, 31)],
@@ -2206,7 +2209,8 @@ def halls_export(result):
     """balance.json: "halls" — the work of the rooms that produce nothing (GDD 6)."""
     return {
         "tavern": {"board": TAVERN_BOARD, "boardExtraAt": list(TAVERN_BOARD_EXTRA_AT), "boardHours": TAVERN_BOARD_HOURS,
-                   "rarities": [{"id": i, "name": n, "statBonus": sb, "capBonus": cb, "weight": wt, "hireHours": hh}
+                   "rarities": [{"id": i, "name": n, "statBonus": sb, "capBonus": cb, "weight": wt, "hireHours": hh,
+                                 "growth": RARITY_GROWTH[i][0], "goodTrait": RARITY_GROWTH[i][1]}
                                 for i, n, sb, cb, wt, hh in RARITIES],
                    "luckShift": list(RARITY_LUCK_SHIFT), "minCommon": RARITY_MIN_COMMON,
                    "luckPerLevel": TAVERN_LUCK_PER_LEVEL, "luckPerSpirit": TAVERN_LUCK_PER_SPIRIT,
@@ -2343,6 +2347,219 @@ def halls_report(result):
     w("Модель года (разделы 1–13) не учитывает бонусы исследований и возвышения: они растут вместе с тратами "
       "(исследования и тренировка — доли трат раздела 4) и не больше точности попадания в целевые дни.")
     return out
+
+# ---------------------------------------------------------------- dwellers and the spirit of the fortress (GDD 7-8)
+# Every dweller has a trait of character, a rarity (the tavern's, section 16) and a level up to 60 that grows
+# from work, training and battles; a level-up may add a point to the stat the dweller uses (more often for a
+# rarer one). The fortress has a spirit («Дух крепости», 0-100) that follows food, warmth, comfort, the sick and
+# the news of the day; its band changes the output of the rooms by up to +-15%, and in despair the newcomers
+# desert (Core/GameSession.People.cs, docs/ECONOMY.md section 18).
+DWELLER_MAX_LEVEL = 60
+XP_TO_NEXT = (2.0, 1.25)          # experience to go from level L to L + 1: 2 x L^1.25
+XP_WORK_PER_HOUR = 1.0            # an hour of work in a room with a stat
+XP_TRAINING_MULT = 2.0            # an hour in the training hall counts double
+XP_SICK_MULT = 0.5                # a sick dweller works and learns at half strength
+XP_BATTLE = (0.5, 0.25, 0.25)     # every hero of the squad: a won battle, a lost one, an auto repeat of a mission
+SECOND_TRAIT_LEVEL = 30           # at level 30 experience gives a second, good trait
+# rarity: (a stat point per level, chance that the trait is a good one)
+RARITY_GROWTH = {"Common": (0.25, 0.5), "Seasoned": (0.4, 0.65), "Rare": (0.55, 0.8), "Legendary": (0.8, 1.0)}
+# trait: (id, name, good, work output +, battle attack and health +, spirit of the fortress +, experience +,
+#         output in a frozen room (0: as everyone), illness chance x, text)
+TRAITS = [
+    ("Hardworking", "Трудяга", True, 0.10, 0, 0, 0, 0, 1, "+10% выработки"),
+    ("Brave", "Храбрец", True, 0, 0.05, 0, 0, 0, 1, "+5% атаки и здоровья в бою"),
+    ("Cheerful", "Весельчак", True, 0, 0, 2, 0, 0, 1, "+2 к духу крепости"),
+    ("Hardy", "Закалённый", True, 0, 0, 0, 0, 0.8, 1, "в промёрзшем зале работает на 80%, а не на 50%"),
+    ("Keeper", "Помнит Стражей", True, 0, 0, 0, 0.25, 0, 1, "+25% опыта; помнит старые предания"),
+    ("Lazy", "Лентяй", False, -0.10, 0, 0, 0, 0, 1, "−10% выработки"),
+    ("Coward", "Трус", False, 0.10, -0.05, 0, 0, 0, 1, "−5% в бою, зато +10% выработки в тылу"),
+    ("Gloomy", "Нытик", False, 0, 0, -2, 0, 0, 1, "−2 к духу крепости"),
+    ("Sickly", "Хворый", False, 0, 0, 0, 0, 0, 2, "туманная хворь цепляется вдвое чаще"),
+]
+TRAIT_MORALE_CAP = 6              # the cheerful and the gloomy together move the spirit by at most +-6
+
+MORALE_BASE = 50
+MORALE_HOURS = 3.0                # the spirit moves towards its target: 63% of the way in 3 hours
+MORALE_FOOD_HOURS = 12            # food for 12 hours of eating (the store and the kitchens' stock): «Сыты»
+MORALE_FED = 10
+MORALE_HUNGER = -35               # no food at all: «Голод»
+MORALE_NO_COAL = -20              # the hearth is out of coal
+MORALE_FROZEN = -15               # x the share of the workers in frozen rooms
+MORALE_MODE = {"Smoldering": -5, "Steady": 0, "Blazing": 10}   # GDD 7: the blazing hearth +10
+MORALE_DECOR = (1, 8)             # +1 for every decorated room (any decoration counts the same), at most +8
+MORALE_CHAPEL = (2, 6)            # the chapel: +2 + level / 6
+BEDS = (6, 2)                     # beds in a cell of the living quarters: 6 + 2 x (level - 1)
+MORALE_CROWD = (-2, -16)          # -2 for every dweller without a bed, at most -16
+MORALE_PATIENT = (-2, -10)        # -2 for every injured or sick dweller, at most -10
+# news: (id, name, spirit, hours); a new one of the same kind replaces the old
+MORALE_NEWS = [
+    ("SurgeWon", "Наплыв отбит", 4, 12),
+    ("SurgeLost", "Наплыв прорвался", -10, 12),
+    ("Birth", "В покоях родился ребёнок", 3, 12),
+    ("HearthUp", "Очаг вырос", 5, 12),
+    ("Desertion", "Житель ушёл в туман", -5, 24),
+]
+# bands: (from, name, output)
+MORALE_BANDS = [(0, "Отчаяние", -0.15), (20, "Уныние", -0.08), (40, "Спокойствие", 0.0), (80, "Бодрость", 0.08),
+                (90, "Воодушевление", 0.15)]
+DESERT_BELOW = 20                 # in despair ...
+DESERT_HOURS = 8                  # ... for 8 hours in a row the newest (lowest level) dweller leaves, a warning first
+DESERTERS_KEPT = 3                # they wait in the fog for 3 days and can be called back
+DESERTER_DAYS = 3
+RECALL_MORALE = 40                # when the spirit is calm again, for the price of hiring them in the tavern
+
+
+def xp_to_next(level):
+    return XP_TO_NEXT[0] * level ** XP_TO_NEXT[1]
+
+
+def xp_total(level):
+    return sum(xp_to_next(k) for k in range(1, level))
+
+
+def level_after_hours(hours):
+    level = 1
+    while level < DWELLER_MAX_LEVEL and xp_total(level + 1) <= hours * XP_WORK_PER_HOUR:
+        level += 1
+    return level
+
+
+def signed(x):
+    return ("+%d" % x) if x > 0 else ("−%d" % -x) if x < 0 else "0"
+
+
+def beds(level, cells=1):
+    return cells * (BEDS[0] + BEDS[1] * (level - 1))
+
+
+def chapel_morale(level):
+    return 0 if level < 1 else MORALE_CHAPEL[0] + level // MORALE_CHAPEL[1]
+
+
+def typical_morale(level):
+    """The free player of the model: fed, a steady hearth, the living quarters at the hearth's level, two patients,
+    the chapel from its level, no decorations, every other Surge's news still fresh."""
+    chapel = level if level >= ROOM_UNLOCK["Chapel"] else 0
+    crowd = max(MORALE_CROWD[1], MORALE_CROWD[0] * max(0, dweller_cap(level) - beds(level)))
+    return MORALE_BASE + MORALE_FED + chapel_morale(chapel) + crowd + 2 * MORALE_PATIENT[0] + MORALE_NEWS[0][2] / 2
+
+
+def good_news():
+    return sum(v for i, n, v, h in MORALE_NEWS if v > 0 and i != "Desertion")
+
+
+def people_export(result):
+    """balance.json: "people" — traits, levels and the spirit of the fortress (GDD 7-8)."""
+    return {
+        "maxLevel": DWELLER_MAX_LEVEL, "xpBase": XP_TO_NEXT[0], "xpGrowth": XP_TO_NEXT[1],
+        "xpWork": XP_WORK_PER_HOUR, "xpTraining": XP_TRAINING_MULT, "xpSick": XP_SICK_MULT,
+        "xpWin": XP_BATTLE[0], "xpLoss": XP_BATTLE[1], "xpRepeat": XP_BATTLE[2], "secondTraitLevel": SECOND_TRAIT_LEVEL,
+        "traits": [{"id": i, "name": n, "good": g, "work": wk, "battle": bt, "morale": mo, "xp": xp, "cold": cd,
+                    "illness": il, "text": tx} for i, n, g, wk, bt, mo, xp, cd, il, tx in TRAITS],
+        "traitMoraleCap": TRAIT_MORALE_CAP,
+        "morale": {
+            "base": MORALE_BASE, "hours": MORALE_HOURS, "foodHours": MORALE_FOOD_HOURS, "fed": MORALE_FED,
+            "hunger": MORALE_HUNGER, "noCoal": MORALE_NO_COAL, "frozen": MORALE_FROZEN,
+            "modes": [{"mode": k, "value": v} for k, v in MORALE_MODE.items()],
+            "decor": MORALE_DECOR[0], "decorMax": MORALE_DECOR[1], "chapelBase": MORALE_CHAPEL[0],
+            "chapelLevels": MORALE_CHAPEL[1], "bedsBase": BEDS[0], "bedsPerLevel": BEDS[1],
+            "crowd": MORALE_CROWD[0], "crowdMax": MORALE_CROWD[1], "patient": MORALE_PATIENT[0],
+            "patientMax": MORALE_PATIENT[1],
+            "news": [{"id": i, "name": n, "value": v, "hours": h} for i, n, v, h in MORALE_NEWS],
+            "bands": [{"from": f, "name": n, "output": o} for f, n, o in MORALE_BANDS],
+            "desertBelow": DESERT_BELOW, "desertHours": DESERT_HOURS, "desertersKept": DESERTERS_KEPT,
+            "deserterDays": DESERTER_DAYS, "recallMorale": RECALL_MORALE,
+        },
+    }
+
+
+def people_report(result):
+    """ECONOMY.md, section 18: dwellers (traits, rarity, levels) and the spirit of the fortress."""
+    out, problems = [], []
+    w = out.append
+    month, year = level_after_hours(30 * 24), level_after_hours(365 * 24)
+    if not 15 <= month <= 25:
+        problems.append("жители: за месяц работы уровень %d, а не 15–25" % month)
+    if not 55 <= year <= DWELLER_MAX_LEVEL:
+        problems.append("жители: за год работы уровень %d, а не 55–60" % year)
+    typical = {lv: typical_morale(lv) for lv in range(1, 31)}
+    calm = [b for b in MORALE_BANDS if b[2] == 0][0]
+    above = MORALE_BANDS[MORALE_BANDS.index(calm) + 1][0]
+    off = [lv for lv, m in typical.items() if not calm[0] <= m - MORALE_NEWS[0][2] / 2 + good_news() < above]
+    if off:
+        problems.append("дух: у обычного игрока не «%s» на уровнях очага %s" % (calm[1], off))
+    if MORALE_BASE + MORALE_HUNGER >= DESERT_BELOW:
+        problems.append("дух: голод сам по себе не доводит до отчаяния")
+    if MORALE_BASE + MORALE_FED + MORALE_MODE["Blazing"] + MORALE_DECOR[1] + chapel_morale(ROOM_UNLOCK["Chapel"]) < above:
+        problems.append("дух: «Пылающий» очаг, украшения и часовня не дают бодрости")
+    w("")
+    w("## 18. Жители и дух крепости")
+    w("")
+    w("У каждого жителя есть черта характера, редкость (та же, что у найма в таверне, раздел 16) и уровень до %d "
+      "(`Core/GameSession.People.cs`). Опыт идёт от работы (%s в час в зале с характеристикой, в тренировочном зале ×%s, "
+      "больной — ×%s) и от боёв (каждому герою отряда: победа %s, поражение %s, автоповтор кампании %s). "
+      "До следующего уровня нужно `%s × уровень^%s` опыта: житель, работающий без перерыва, получает %d-й уровень за месяц "
+      "и %d-й за год. На %d-м уровне опыт даёт вторую, хорошую черту." % (
+          DWELLER_MAX_LEVEL, dec(XP_WORK_PER_HOUR), dec(XP_TRAINING_MULT), dec(XP_SICK_MULT), dec(XP_BATTLE[0]),
+          dec(XP_BATTLE[1]), dec(XP_BATTLE[2]), dec(XP_TO_NEXT[0]), dec(XP_TO_NEXT[1], 2), month, year, SECOND_TRAIT_LEVEL))
+    w("")
+    w("Каждый новый уровень может добавить очко к характеристике, которой житель работает: чем реже житель, тем чаще; "
+      "редкость решает и то, хорошая ли ему досталась черта. Герой тоже растёт уровнем и получает вторую черту, но "
+      "очков характеристик опыт ему не даёт: сила героя — его уровень героя за эссенцию и снаряжение, так что кампания "
+      "и защита от раша (разделы 6, 7, 11) идут в своём темпе.")
+    w("")
+    w("| Редкость | Очков характеристики к %d-му уровню | Хорошая черта |" % DWELLER_MAX_LEVEL)
+    w("|---|---|---|")
+    for i, n, *_ in RARITIES:
+        g, good = RARITY_GROWTH[i]
+        w("| %s | %d | %d%% |" % (n, int(DWELLER_MAX_LEVEL * g), round(good * 100)))
+    w("")
+    w("| Черта | Какая | Что даёт |")
+    w("|---|---|---|")
+    for t in TRAITS:
+        w("| %s | %s | %s |" % (t[1], "хорошая" if t[2] else "плохая", t[-1]))
+    w("")
+    w("**Дух крепости** (0–100) тянется к своей цели: %d%% пути за %s часа. Цель — %d плюс:" % (
+        round((1 - math.exp(-1)) * 100), dec(MORALE_HOURS), MORALE_BASE))
+    w("")
+    w("| Что | Дух |")
+    w("|---|---|")
+    w("| Еды на %d часов и больше, в кладовой и на кухнях («Сыты») | +%d |" % (MORALE_FOOD_HOURS, MORALE_FED))
+    w("| Еды нет ни в кладовой, ни на кухнях («Голод») | %s |" % signed(MORALE_HUNGER))
+    w("| Очаг без угля | %s |" % signed(MORALE_NO_COAL))
+    w("| Работники в промёрзших залах | %s × доля |" % signed(MORALE_FROZEN))
+    w("| Очаг «Тлеющий» / «Пылающий» | %s / %s |" % (signed(MORALE_MODE["Smoldering"]), signed(MORALE_MODE["Blazing"])))
+    w("| Украшенный зал (любое украшение одинаково) | +%d, не больше +%d |" % MORALE_DECOR)
+    w("| Часовня Угля | +%d + уровень / %d |" % MORALE_CHAPEL)
+    w("| Житель без кровати (в клетке покоев `%d + %d × (уровень − 1)` кроватей) | %s, не больше %s |" % (
+        BEDS[0], BEDS[1], signed(MORALE_CROWD[0]), signed(MORALE_CROWD[1])))
+    w("| Раненый или больной | %s, не больше %s |" % (signed(MORALE_PATIENT[0]), signed(MORALE_PATIENT[1])))
+    w("| Весельчаки и нытики | ±2 каждый, вместе не больше ±%d |" % TRAIT_MORALE_CAP)
+    for i, n, v, h in MORALE_NEWS:
+        w("| %s (на %d ч) | %s |" % (n, h, signed(v)))
+    w("")
+    w("| Дух | %s |" % " | ".join("%d+: %s" % (f, n) for f, n, o in MORALE_BANDS))
+    w("|---|%s" % ("---|" * len(MORALE_BANDS)))
+    w("| Выработка | %s |" % " | ".join(("+%d%%" % round(o * 100)) if o > 0 else ("−%d%%" % round(-o * 100)) if o else "—"
+                                       for f, n, o in MORALE_BANDS))
+    w("")
+    w("В отчаянии (дух ниже %d) крепость сначала предупреждает, а через %d часов подряд уходит самый новый житель "
+      "(наименьшего уровня, не герой). Ушедшие ждут в тумане %d дня (не больше %d); когда дух снова не ниже %d, "
+      "их можно вернуть за цену найма в таверне. Голод сам по себе опускает дух до %d — до отчаяния." % (
+          DESERT_BELOW, DESERT_HOURS, DESERTER_DAYS, DESERTERS_KEPT, RECALL_MORALE, MORALE_BASE + MORALE_HUNGER))
+    w("")
+    w("| Очаг | 1 | 5 | 10 | 12 | 15 | 20 | 25 | 30 |")
+    w("|---|---|---|---|---|---|---|---|---|")
+    w("| Дух обычного игрока | %s |" % " | ".join(dec(typical[lv], 1).replace(",0", "") for lv in (1, 5, 10, 12, 15, 20, 25, 30)))
+    w("")
+    w("Обычный игрок модели (сыт, очаг «Ровный», покои уровня очага, двое на лечении, часовня с её уровня, без украшений) "
+      "всегда в полосе «%s», даже когда все добрые вести свежи, поэтому модель года (разделы 1–13) не меняет выработку на дух. Бодрость — награда за заботу "
+      "(«Пылающий» очаг стоит вдвое больше угля, украшения и часовня), а голод и холод отнимают до 15%%. Очки опыта растят "
+      "характеристики работников, как тренировки и найм, в пределах `5 + 2 × уровень очага` модели (раздел 16)." % calm[1])
+    for p in problems:
+        w("")
+        w("- **Проблема:** %s" % p)
+    return out, problems
 
 
 def main():

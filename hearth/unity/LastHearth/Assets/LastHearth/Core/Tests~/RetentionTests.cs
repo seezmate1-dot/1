@@ -213,7 +213,9 @@ namespace LastHearth.Core.Tests
             var s = Heroes(8);
             s.Advance(T0);
             var room = s.State.Rooms.First(r => r.Type == RoomType.CoalMine);
-            s.Assign(s.AddDweller("Тим", new[] { 9, 9, 9, 9, 9 }).Id, room.Id);
+            var tim = s.AddDweller("Тим", new[] { 9, 9, 9, 9, 9 });
+            tim.Level = s.MaxDwellerLevel; // a veteran: a week of work raises no stat meanwhile (GameSession.People.cs)
+            s.Assign(tim.Id, room.Id);
             double plain = s.RoomOutputPerHour(room);
             long evening = T0 + 11 * Hour;
             for (int day = 0; day < 7; day++)

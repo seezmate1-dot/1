@@ -709,10 +709,10 @@ namespace LastHearth.Core.Tests
                 var cls = c.Class(d.HeroClass);
                 // the gear of before: attack and health x1.05^(hearth - 1)
                 double before = cls.Attack * Math.Pow(c.LevelGrowth, d.HeroLevel - 1) * Math.Pow(c.GearGrowth, 11) *
-                                (1 + d.Stats[(int)cls.MainStat] * c.StatBonus);
+                                (1 + d.Stats[(int)cls.MainStat] * c.StatBonus) * old.TraitBattleMult(d); // and the hero's trait (GameSession.People.cs)
                 Assert.AreEqual(before, f.Attack, before * 0.01, d.HeroClass + ": the same attack as before items");
                 Assert.GreaterOrEqual(f.Attack, before, "not less");
-                double hp = cls.Hp * Math.Pow(c.LevelGrowth, d.HeroLevel - 1) * Math.Pow(c.GearGrowth, 11);
+                double hp = cls.Hp * Math.Pow(c.LevelGrowth, d.HeroLevel - 1) * Math.Pow(c.GearGrowth, 11) * old.TraitBattleMult(d);
                 Assert.AreEqual(hp, f.MaxHp, hp * 0.01);
             }
             Assert.IsEmpty(old.Bag());

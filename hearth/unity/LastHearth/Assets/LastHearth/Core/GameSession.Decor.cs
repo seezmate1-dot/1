@@ -16,8 +16,9 @@ namespace LastHearth.Core
     }
 
     /// <summary>
-    /// Decorations for the rooms, like in Hustle Castle: purely cosmetic (no bonus for money, the
-    /// "Honesty" pillar of the GDD). One stands in a room; an owned one can be moved or put away.
+    /// Decorations for the rooms, like in Hustle Castle: cosmetic, except that any decorated room adds the same +1 to the
+    /// spirit of the fortress (GameSession.People.cs), so money buys no bonus (the "Honesty" pillar of the GDD). One
+    /// stands in a room; an owned one can be moved or put away.
     /// </summary>
     public sealed partial class GameSession
     {

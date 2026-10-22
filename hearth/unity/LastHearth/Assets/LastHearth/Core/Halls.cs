@@ -100,6 +100,10 @@ namespace LastHearth.Core
         public double Weight;
         /// <summary>Silver price in hours of the material income.</summary>
         public double HireHours;
+        /// <summary>Stat points a dweller level brings (GameSession.People.cs): the whole part of level × Growth grows.</summary>
+        public double Growth;
+        /// <summary>Chance that the dweller's trait is a good one.</summary>
+        public double GoodTrait = 0.5;
     }
 
     public sealed class TavernData
