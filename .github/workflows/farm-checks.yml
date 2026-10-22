@@ -30,6 +30,9 @@ jobs:
           UI_PREVIEW_DIR: ${{ github.workspace }}/layout-previews
         run: dotnet test farm/ui-tests --logger "console;verbosity=normal"
 
+      - name: Chapter 1 art manifest and farm placement are up to date
+        run: python3 farm/tools/art/chapter1_art.py --check
+
       - name: The font metrics match the font
         run: |
           pip install -q fonttools
