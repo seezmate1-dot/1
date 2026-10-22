@@ -115,13 +115,13 @@ jobs:
         with:
           path: painted
           pattern: painted-*
-          merge-multiple: true
       - name: Commit the pictures
         run: |
           [ -d painted ] || { echo "nothing painted"; exit 0; }
-          # into a staging folder: the pictures are looked over and fitted into the game by hand
+          # into a staging folder: the pictures are looked over and fitted into the game by hand;
+          # one artifact after another (copies of one picture unpacked together corrupted the file)
           mkdir -p hearth/tools/art/ai/sd
-          cp -r painted/. hearth/tools/art/ai/sd/
+          for a in painted/*/; do cp -r "$a." hearth/tools/art/ai/sd/; done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add hearth/tools/art/ai/sd
