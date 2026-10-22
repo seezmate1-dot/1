@@ -123,14 +123,14 @@ namespace SunnyValley.Tools
                 var errs = LevelValidator.Validate(d.ToLevel(25));
                 if (errs.Count > 0) { Console.WriteLine("level " + d.Id + " INVALID: " + string.Join("; ", errs)); continue; }
                 Tuning t = null;
-                for (int attempt = 0; attempt < 6; attempt++)
+                for (int attempt = 0; attempt < 8; attempt++)
                 {
                     t = Tune(d, games);
                     bool tooEasy = t.Moves == d.MinMoves && t.AvgWinRate > d.Target + (d.Hard ? 0.08 : 0.04);
                     bool tooHard = t.AvgWinRate < d.Target;
-                    if (d.Id <= 20) tooEasy = false; // the first levels may be as easy as they like
+                    if (d.Id <= 20 || d.Target >= 0.88) tooEasy = false; // first levels and "easy after hard" may be as easy as they like
                     if (!d.Scalable || (!tooEasy && !tooHard)) break;
-                    if (tooEasy && d.Scale >= 2.4) break;
+                    if (tooEasy && d.Scale >= 3.4) break;
                     d.Scale *= tooEasy ? 1.35 : 0.75;
                 }
                 tuning[d.Id] = t;

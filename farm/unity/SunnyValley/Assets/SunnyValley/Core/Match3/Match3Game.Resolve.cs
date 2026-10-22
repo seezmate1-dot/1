@@ -354,6 +354,9 @@ namespace SunnyValley.Core.Match3
                     case GoalType.Crop:
                         if (bl == ObstacleKind.Bed) score += 50 + 10 * Board.BlockerLayers[i];
                         break;
+                    case GoalType.Basket:
+                        if (p.IsTile && ov == ObstacleKind.None && bl == ObstacleKind.None && p.Color != TileColor.None && FeedBasket(i, p.Color) >= 0) score += 45;
+                        break;
                     case GoalType.Chick:
                     {
                         // Clearing the cell under a chick lets it fall.

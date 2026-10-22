@@ -2,7 +2,7 @@
   "id": 22,
   "name": "Корзины",
   "intro": "basket",
-  "moves": 40,
+  "moves": 33,
   "colors": 5,
   "seed": 1814,
   "grid": [
@@ -21,13 +21,13 @@
       "x": 2,
       "y": 4,
       "color": "tomato",
-      "count": 10
+      "count": 6
     },
     {
       "x": 6,
       "y": 4,
       "color": "corn",
-      "count": 10
+      "count": 6
     }
   ],
   "goals": [

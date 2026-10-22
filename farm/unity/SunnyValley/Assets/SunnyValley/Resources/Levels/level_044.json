@@ -1,7 +1,7 @@
 {
   "id": 44,
   "name": "Корзины в ящиках",
-  "moves": 40,
+  "moves": 27,
   "colors": 5,
   "seed": 2628,
   "grid": [
@@ -33,13 +33,13 @@
       "x": 2,
       "y": 3,
       "color": "eggplant",
-      "count": 10
+      "count": 6
     },
     {
       "x": 6,
       "y": 3,
       "color": "carrot",
-      "count": 10
+      "count": 6
     }
   ],
   "goals": [

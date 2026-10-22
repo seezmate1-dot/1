@@ -19,12 +19,12 @@
     {
       "type": "collect",
       "color": "apple",
-      "count": 49
+      "count": 20
     },
     {
       "type": "collect",
       "color": "tomato",
-      "count": 49
+      "count": 20
     }
   ]
 }

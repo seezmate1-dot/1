@@ -1,8 +1,8 @@
 {
   "id": 46,
   "name": "Сорняк у грядок",
-  "moves": 18,
-  "colors": 5,
+  "moves": 19,
+  "colors": 6,
   "seed": 2702,
   "grid": [
     "#########",
@@ -42,7 +42,7 @@
   "goals": [
     {
       "type": "crop",
-      "count": 10
+      "count": 7
     },
     {
       "type": "weed",
