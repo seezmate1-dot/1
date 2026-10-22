@@ -1,0 +1,54 @@
+# Checks of «Солнечная долина» without Unity: the core's tests and the interface layout on eleven screens
+# (inside the safe area, no overlapping buttons, 44 pt touch targets, text that fits). The layout wireframes of every
+# screen on every device are uploaded as an artifact (SVG and PNG). Runs only when farm/ changes.
+name: Farm checks
+
+on:
+  push:
+    paths:
+      - 'farm/**'
+      - '.github/workflows/farm-checks.yml'
+  pull_request:
+    paths:
+      - 'farm/**'
+      - '.github/workflows/farm-checks.yml'
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Core tests (the same C# that Unity compiles)
+        run: dotnet test farm/core-tests
+
+      - name: Layout tests (every screen and popup on 11 phones and tablets)
+        env:
+          UI_PREVIEW_DIR: ${{ github.workspace }}/layout-previews
+        run: dotnet test farm/ui-tests --logger "console;verbosity=normal"
+
+      - name: The font metrics match the font
+        run: |
+          pip install -q fonttools
+          python3 farm/tools/font_metrics.py
+          git diff --exit-code farm/unity/SunnyValley/Assets/SunnyValley/Game/Layout/FontMetrics.Nunito.cs
+
+      - name: Wireframes to PNG (in the game's font)
+        if: always()
+        run: |
+          sudo apt-get install -y -q librsvg2-bin > /dev/null
+          mkdir -p ~/.local/share/fonts
+          cp farm/unity/SunnyValley/Assets/SunnyValley/Resources/Fonts/Nunito-ExtraBold.ttf ~/.local/share/fonts/
+          fc-cache -f > /dev/null
+          for f in layout-previews/*.svg; do rsvg-convert "$f" -o "${f%.svg}.png"; done
+          ls layout-previews | wc -l
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: farm-layout-previews
+          path: layout-previews
+          if-no-files-found: warn
