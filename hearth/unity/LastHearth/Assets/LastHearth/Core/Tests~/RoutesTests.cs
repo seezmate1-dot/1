@@ -141,6 +141,7 @@ namespace LastHearth.Core.Tests
                 Assert.IsNull(s.NextSkirmish(e), "one try per fight");
                 battle.Brain = i % 2 == 0 ? Brains.Careful() : Brains.AutoBattle();
                 battle.RunToEnd();
+                TestContext.WriteLine((i % 2 == 0 ? "careful " : "auto ") + battle.Won + " in " + battle.Tick * 0.1 + " s");
                 Assert.LessOrEqual(battle.Tick, 300);
                 if (battle.Won)
                 {
@@ -221,9 +222,11 @@ namespace LastHearth.Core.Tests
         {
             var s = Fortress(16);
             s.State.MapFragments = 5;
+            s.State.EventsSeen.AddRange(s.Balance.Activities.Events.Select(x => x.Id)); // no personal runs
+            s.Advance(T0);
+            s.State.Events.RemoveAll(x => x.Id == "Treasure");
             Assert.AreEqual(Fail.NotRunning, s.UseMapFragment(T0), "only while the Treasure hunters are on");
             long t = TreasureDay();
-            s.State.EventsSeen.AddRange(s.Balance.Activities.Events.Select(x => x.Id));
             s.Advance(t + 1);
             var run = s.ActiveRun("Treasure", t + 1);
             Assert.IsNotNull(run);

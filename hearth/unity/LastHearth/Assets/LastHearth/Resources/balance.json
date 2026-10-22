@@ -5074,8 +5074,8 @@
     24727
    ],
    "skirmishSeconds": 30,
-   "skirmishHp": 1.0,
-   "skirmishAttack": 0.8,
+   "skirmishHp": 2.0,
+   "skirmishAttack": 1.0,
    "skirmishBonus": 0.3,
    "noteChance": 0.35,
    "cacheFragmentChance": 0.5,

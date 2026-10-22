@@ -704,7 +704,7 @@ TREASURE_BLUEPRINTS = 10         # Кладоискатели add Чертежи
 # The points of a route (ACTIVITIES.md 4): a fight played by hand lasts 30 seconds against an enemy as strong as
 # the team (its health and attack x the team's own); a win adds a share of the route's Blueprints. The ruins keep
 # notes about the world, the caches and far stores pieces of maps for the Treasure hunters (3 per map at most).
-ROUTE_SKIRMISH = {"seconds": 30, "hp": 1.0, "attack": 0.8, "bonus": 0.3}
+ROUTE_SKIRMISH = {"seconds": 30, "hp": 2.0, "attack": 1.0, "bonus": 0.3}
 ROUTE_NOTE_CHANCE = 0.35
 ROUTE_FRAGMENT_CHANCE = (0.5, 0.25)  # the cache of the risky way, the far stores of the long one
 ROUTE_FRAGMENTS_PER_MAP = 3
