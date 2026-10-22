@@ -757,7 +757,7 @@ namespace LastHearth.Game
                     continue;
                 GUILayout.BeginHorizontal();
                 string stat = data.Stat == null ? "" : string.Format(" · {0} {1}", StatName(data.Stat.Value), d.StatOf(data.Stat.Value));
-                GUILayout.Label(d.Name + (d.IsHero ? " (герой)" : "") + stat);
+                GUILayout.Label(d.Name + (d.IsHero ? " (герой)" : "") + stat + "\n<size=12><color=#c8d8a8>" + GrowthLine(d) + "</color></size>", Rich());
                 if (GUILayout.Button("Снять с работы", GUILayout.Width(170)))
                     session.Unassign(id);
                 GUILayout.EndHorizontal();

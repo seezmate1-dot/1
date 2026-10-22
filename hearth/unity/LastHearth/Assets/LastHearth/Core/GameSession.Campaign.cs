@@ -85,6 +85,7 @@ namespace LastHearth.Core
             int seed = State.PendingMissionSeed;
             State.PendingMission = -1;
             reward = new MissionReward { Stars = battle.Stars };
+            FightXp(battle); // the heroes learn (GameSession.People.cs)
             if (!battle.Won)
                 return Fail.None;
             var m = Mission(index);
@@ -129,6 +130,7 @@ namespace LastHearth.Core
             var battle = new Battle(Combat, MissionSetup(index, seed)) { Brain = Brains.AutoBattle() };
             battle.RunToEnd();
             reward = new MissionReward { Stars = battle.Stars };
+            FightXp(battle, true);
             if (!battle.Won)
                 return Fail.None;
             var m = Mission(index);

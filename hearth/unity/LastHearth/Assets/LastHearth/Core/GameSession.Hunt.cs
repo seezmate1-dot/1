@@ -149,6 +149,7 @@ namespace LastHearth.Core
                 battle.RunToEnd();
             var hunt = State.Hunt;
             State.Hunt = null;
+            FightXp(battle); // the heroes learn (GameSession.People.cs)
             int stars = battle.Stars;
             bool weekly = hunt.Weekly && battle.Won;
             double mult = weekly ? Balance.Activities.Hunt.Weekly.CoreMult : 1;

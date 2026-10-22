@@ -446,6 +446,7 @@ namespace LastHearth.Game
         void DrawDwellers()
         {
             var producers = session.State.Rooms.Where(r => session.Balance.Room(r.Type).Stat != null).ToList();
+            DrawMoralePanel(session.State.Time); // the spirit of the fortress and the deserters (GameRunner.People.cs)
             foreach (var d in session.State.Dwellers.ToList())
             {
                 GUILayout.BeginHorizontal();
@@ -456,8 +457,8 @@ namespace LastHearth.Game
                 string role = d.IsHero ? string.Format("{0}, уровень {1}, умение {2} из {3}", ClassName(d.HeroClass), d.HeroLevel, d.SkillLevel, session.SkillCap(d))
                     : where;
                 var stats = string.Join("  ", Enum.GetValues(typeof(Stat)).Cast<Stat>().Select(st => StatName(st) + " " + d.StatOf(st)));
-                GUILayout.Label(string.Format("<b>{0}</b> ({1}) · {2}\n<size=12><color=#d8c8a8>{3}</color></size>", d.Name,
-                    d.Sex == Sex.Female ? "жен." : "муж.", role, stats), Rich());
+                GUILayout.Label(string.Format("<b>{0}</b> ({1}) · {2}\n<size=12><color=#d8c8a8>{3}</color>\n<color=#c8d8a8>{4}</color></size>", d.Name,
+                    d.Sex == Sex.Female ? "жен." : "муж.", role, stats, GrowthLine(d)), Rich());
                 if (producers.Count > 0 && GUILayout.Button("Перевести", GUILayout.Width(110)))
                 {
                     int index = room == null ? 0 : (producers.IndexOf(room) + 1) % producers.Count;

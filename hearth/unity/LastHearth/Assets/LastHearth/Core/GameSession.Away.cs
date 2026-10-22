@@ -71,7 +71,8 @@ namespace LastHearth.Core
                 rates.TryGetValue(room.Id, out double rate);
                 double got = Math.Max(0, room.Stock - before);
                 sum.Produced[produces.Value] += (long)Math.Floor(got);
-                double cap = RoomOutputPerHour(room) * (Balance.OfflineCapHours + SpecValue(room, SpecEffect.StockHours));
+                // the stock was capped at the rate of its time: workers who grew a level meanwhile raise the cap only now
+                double cap = Math.Min(RoomOutputPerHour(room), rate > 0 ? rate : double.MaxValue) * (Balance.OfflineCapHours + SpecValue(room, SpecEffect.StockHours));
                 if (cap > 0 && room.Stock >= cap - 0.5)
                 {
                     sum.FullRooms++;
