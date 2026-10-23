@@ -281,7 +281,7 @@ namespace SunnyValley.Tools
             L.Add(D(141, "Полевые цветы", 5, M(Diamond, 4, "..ggggg..")).Goal("grass").Collect("tomato", 15));
             L.Add(Teach(D(142, "Медовые корзины", 5, M(Full, 3, "..h...h..", ".huh.huh.", "..h...h..")), "honeyBaskets").Goal("basket").Goal("honey")
                 .Basket("corn", 6).Basket("apple", 6));
-            L.Add(D(143, "Ледяные острова", 5, M(Islands, 1, "iii...iii", ".........", ".........", ".........", "...iii...")).Goal("ice").Collect("corn", 10));
+            L.Add(D(143, "Ледяные острова", 5, M(Islands, 1, "iii...iii", ".........", ".........", ".........", "...iii...")).Goal("ice").Collect("corn", 10).With(d => d.MinMoves = 26));
             L.Add(D(144, "Цепи на мосту", 5, M(Portal3, 1, "lLlLlL...", ".........", ".........", ".........", ".........", ".........", "l.l.l...."))
                 .Goal("chain").Collect("apple", 10).With(d => d.Portals = P3()));
             L.Add(D(145, "Сорняк в траве", 6, M(Oct, 3, "GGGGGGGGG", "GvGGvGGvG", "GGGGGGGGG")).Goal("weed").Goal("grass"));
@@ -356,7 +356,7 @@ namespace SunnyValley.Tools
             L.Add(D(194, "Корзины на мосту", 5, M(Portal3, 3, "...1..1..", ".........", ".........", ".........", ".u..u....")).Goal("basket").Goal("crate")
                 .Basket("corn", 3).Basket("apple", 3).With(d => d.Portals = P3()));
             L.Add(D(195, "Сорная грядка", 6, M(Full, 3, ".b.w.w.b.", ".........", ".........", "....b....")).Goal("crop", 4).Goal("weed"));
-            L.Add(D(196, "Лёд на островах", 5, M(Islands, 2, "Iii...iiI", ".........", ".........", ".........", "...iii...")).Goal("ice").Collect("corn", 10));
+            L.Add(D(196, "Лёд на островах", 5, M(Islands, 1, "iii...iii", "IiI...IiI", ".........", ".........", ".........", "...iIi...", "...iii...")).Goal("ice"));
             L.Add(D(197, "Ящики и цепи", 6, M(Cross, 3, "L2L2L2L2L", ".........", "2L2L2L2L2")).Goal("crate").Goal("chain"));
             L.Add(D(198, "Цыплята-путешественники", 5, M(Portal2, 0, "k...k....", ".........", ".........", ".........", ".........", ".........", ".........", "....1.1.1"))
                 .Goal("chick", 4).Goal("crate").Chicks(2, 3, 2).With(d => { d.Portals = P2(); d.ChickExits = Cells((4, 8), (5, 8), (6, 8), (7, 8), (8, 8)); }));
