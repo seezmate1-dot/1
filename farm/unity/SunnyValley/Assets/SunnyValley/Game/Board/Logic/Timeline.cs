@@ -166,7 +166,7 @@ namespace SunnyValley.Game.Match3View
         public const float RainbowSpan = 0.55f;
         public const float Beam = 0.12f;
         public const float ConvertPause = 0.2f;
-        public const float ConvertFireStep = 0.07f;
+        public const float ConvertFireStep = 0.045f;
         public const float NovaLead = 0.25f;
         public const float NovaStep = 0.05f;
         public const float ShovelLead = 0.28f;
