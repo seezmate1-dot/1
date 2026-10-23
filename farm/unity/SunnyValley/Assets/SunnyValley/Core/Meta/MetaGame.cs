@@ -84,6 +84,20 @@ namespace SunnyValley.Core.Meta
         /// <summary>XP at the start of the current level and needed for the next one (for the progress bar).</summary>
         public long XpForLevel(int level) => Data.LevelDef(level)?.Xp ?? long.MaxValue;
 
+        /// <summary>
+        /// The farm level bar: XP earned since the current level began and the XP between it and the next one
+        /// (need = 0 at the last level, where the bar stays full).
+        /// </summary>
+        public (long have, long need) XpProgress
+        {
+            get
+            {
+                long from = XpForLevel(Level);
+                if (Level >= Data.MaxLevel) return (Math.Max(0, Xp - from), 0);
+                return (Math.Max(0, Xp - from), Math.Max(1, XpForLevel(Level + 1) - from));
+            }
+        }
+
         public int ToolCount(string tool) => Dict.Get(State.Tools, tool);
         public int BoosterCount(string booster) => Dict.Get(State.Boosters, booster);
         public int BarnCount(string item) => Dict.Get(State.Barn, item);

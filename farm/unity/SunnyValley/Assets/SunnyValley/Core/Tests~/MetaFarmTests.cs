@@ -197,6 +197,41 @@ namespace SunnyValley.Core.Tests
         }
 
         [Test]
+        public void TreesSpeedUpForCrystalsToo()
+        {
+            var g = FarmGame();
+            var t = g.State.Farm.Trees[0];
+            var def = Data.Trees[t.Type];
+            Assert.That(g.HarvestTree(T0, t.Uid).Ok, Is.True, "the restored orchard starts ripe");
+            Assert.That(g.HarvestTree(T0 + 60, t.Uid).Error, Is.EqualTo(MetaError.NotReady));
+            int price = g.SpeedUpPrice(def.CycleSeconds - 60);
+            int crystals = g.Crystals;
+            Assert.That(g.SpeedUpTree(T0 + 60, t.Uid).Ok, Is.True);
+            Assert.That(g.Crystals, Is.EqualTo(crystals - price));
+            Assert.That(g.SpeedUpTree(T0 + 60, t.Uid).Error, Is.EqualTo(MetaError.AlreadyDone));
+            Assert.That(g.HarvestTree(T0 + 60, t.Uid).Ok, Is.True);
+            g.State.Wallet.Crystals = 0;
+            Assert.That(g.SpeedUpTree(T0 + 120, t.Uid).Error, Is.EqualTo(MetaError.NotEnoughCrystals));
+            Assert.That(g.SpeedUpTree(T0, 9999).Error, Is.EqualTo(MetaError.UnknownId));
+        }
+
+        [Test]
+        public void TheXpBarCountsFromTheCurrentLevel()
+        {
+            var g = FarmGame();
+            var (have, need) = g.XpProgress;
+            Assert.That(have, Is.EqualTo(g.Xp - g.XpForLevel(g.Level)));
+            Assert.That(need, Is.EqualTo(g.XpForLevel(g.Level + 1) - g.XpForLevel(g.Level)));
+            SetLevel(g, 5, T0);
+            Assert.That(g.XpProgress.have, Is.EqualTo(0), "a level just reached starts the bar empty");
+            g.Grant(T0, new Reward { Xp = 7 });
+            Assert.That(g.XpProgress.have, Is.EqualTo(7));
+            Assert.That(g.XpProgress.need, Is.EqualTo(g.XpForLevel(6) - g.XpForLevel(5)));
+            SetLevel(g, Data.MaxLevel, T0);
+            Assert.That(g.XpProgress.need, Is.EqualTo(0), "the last level has no next one");
+        }
+
+        [Test]
         public void HarvestSometimesFindsTools()
         {
             var g = FarmGame(seed: 7);
