@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The interface layout of «Солнечная долина» checked on many screens without Unity: dotnet test farm/ui-tests
-       Compiles the same plain-C# layout model Unity uses (Assets/SunnyValley/Game/Layout, no UnityEngine in it).
+       Compiles the same plain-C# layout model Unity uses (Assets/SunnyValley/Game/Layout, no UnityEngine in it), and the
+       farm economy's windows (Game/Economy) over the real core, so they are laid out with the real data of balance.json.
        Wireframe previews of every screen land in farm/ui-tests/previews (or $UI_PREVIEW_DIR). -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -12,11 +13,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Game/Layout/**/*.cs" />
+    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Core/**/*.cs" Exclude="../unity/SunnyValley/Assets/SunnyValley/Core/Tests~/**" />
+    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Game/Economy/**/*.cs" />
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 </Project>

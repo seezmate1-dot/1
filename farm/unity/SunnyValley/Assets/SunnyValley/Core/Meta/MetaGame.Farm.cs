@@ -227,6 +227,17 @@ namespace SunnyValley.Core.Meta
             return ActionResult.Success(r);
         }
 
+        /// <summary>Ripens the tree's fruit now for crystals (the same price per minute as fields and animals).</summary>
+        public ActionResult SpeedUpTree(long now, int uid)
+        {
+            var t = Tree(uid);
+            if (t == null) return ActionResult.Fail(MetaError.UnknownId);
+            if (now >= t.ReadyAt) return ActionResult.Fail(MetaError.AlreadyDone);
+            if (!SpendCrystals(SpeedUpPrice(t.ReadyAt - now))) return ActionResult.Fail(MetaError.NotEnoughCrystals);
+            t.ReadyAt = now;
+            return ActionResult.Success();
+        }
+
         // ------------------------------------------------------------------ animals
 
         public bool HasAnimalHouse(string house) => State.Farm.AnimalHouses.Contains(house);

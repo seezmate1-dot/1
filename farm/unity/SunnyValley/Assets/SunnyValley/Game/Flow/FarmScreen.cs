@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using SunnyValley.Core.Meta;
+using SunnyValley.Game.Economy;
 using SunnyValley.Game.UI;
 using SunnyValley.Layout;
 using UnityEngine;
@@ -16,6 +17,9 @@ namespace SunnyValley.Game.Flow
     /// like Gardenscapes: the camera flies to the spot, the stars fly from their plate, a puff of dust, the old thing
     /// goes and the new one pops up, then the replicas, the story scene, the zone and chapter celebrations and the
     /// next zone's fog lifting. A tap on a built object with looks offers «Сменить вид».
+    /// Once chapter 1 is over (MetaGame.FarmOpen) the farm works like Township (GDD 6): the side buttons open the
+    /// fields and orchard, animals, workshops, the barn, the order board and the town (EconomyPopup), and the strip
+    /// over «Играть» shows the farm level and its XP.
     /// </summary>
     public sealed class FarmScreen : GameScreen, IFarmState
     {
@@ -31,11 +35,15 @@ namespace SunnyValley.Game.Flow
 
         FarmHud Hud()
         {
-            var hud = App.State.ToFarmHud(GameState.Now);
-            if (Meta.ChapterFinished)
+            long now = GameState.Now;
+            var hud = App.State.ToFarmHud(now);
+            if (Meta.FarmOpen)
             {
-                hud.ZoneName = "Хозяйство — скоро";
-                hud.ZoneDone = hud.ZoneTotal = 1;
+                EconomyViews.Hud(hud, Meta, now);
+            }
+            else if (Meta.ChapterFinished)
+            {
+                hud.ZoneName = null;
             }
             else
             {
@@ -68,29 +76,38 @@ namespace SunnyValley.Game.Flow
                 if (!busy)
                     App.OpenLevelStart();
             });
-            View.OnClick("farm.tasks", OpenTasks);
+            if (View.Has("farm.tasks"))
+                View.OnClick("farm.tasks", OpenTasks);
             View.OnClick("farm.settings", () => new SettingsPopup(App, false).Open());
             View.OnClick("farm.events", () => Ui.Toast("События недели скоро: «Гонка урожая» и «Тыквенный фестиваль»"));
             View.OnClick("farm.orders", () =>
             {
-                if (Meta.ChapterFinished)
-                    new SoonPopup(App).Open();
+                if (Meta.FarmOpen)
+                    OpenEconomy(EconomyViews.Orders);
                 else
                     Ui.Toast("Заказы соседей откроются, когда ферма будет восстановлена");
             });
             View.OnClick("farm.shop", () => Ui.Toast("Магазин скоро откроется"));
-            View.OnClick("farm.coins", () => Ui.Toast("Монеты дают уровни и заказы"));
-            View.OnClick("farm.stars", () => Ui.Toast("Звёзды тратятся на задания восстановления фермы"));
-            View.OnClick("farm.crystals", () => Ui.Toast("Кристаллы — за уровни-вехи и события"));
+            View.OnClick("farm.coins", () => Ui.Toast(Meta.FarmOpen ? "Монеты дают уровни, заказы и продажа из амбара" : "Монеты дают уровни и заказы"));
+            View.OnClick("farm.stars", () => Ui.Toast(Meta.ChapterFinished
+                ? "Звёзды строят особые украшения городка — их дают уровни"
+                : "Звёзды тратятся на задания восстановления фермы"));
+            View.OnClick("farm.crystals", () => Ui.Toast(Meta.FarmOpen
+                ? "Кристаллы ускоряют урожай и мастерские, покупают места в очереди"
+                : "Кристаллы — за уровни-вехи и события"));
             View.OnClick("farm.lives", LivesInfo);
             if (View.Has("farm.zone"))
-                View.OnClick("farm.zone", () =>
-                {
-                    if (Meta.ChapterFinished)
-                        new SoonPopup(App).Open();
-                    else
-                        world?.Focus(world.ZoneCenter(CurrentZone()), 0.6f, FarmWorld.StartZoom);
-                });
+                View.OnClick("farm.zone", () => world?.Focus(world.ZoneCenter(CurrentZone()), 0.6f, FarmWorld.StartZoom));
+            if (View.Has("farm.fields"))
+            {
+                // chapter 2: the farm economy's windows
+                View.OnClick("farm.fields", () => OpenEconomy(EconomyViews.Fields));
+                View.OnClick("farm.animals", () => OpenEconomy(EconomyViews.Animals));
+                View.OnClick("farm.workshops", () => OpenEconomy(EconomyViews.Workshops));
+                View.OnClick("farm.barn", () => OpenEconomy(EconomyViews.Barn));
+                View.OnClick("farm.town", () => OpenEconomy(EconomyViews.Town));
+                View.OnClick("farm.xp", () => Ui.Toast(EconomyViews.LevelHint(Meta)));
+            }
 
             world = View.Rect("farm.world")?.GetComponent<FarmWorld>();
             if (world != null)
@@ -103,6 +120,12 @@ namespace SunnyValley.Game.Flow
             var play = View.Rect("farm.play");
             if (play != null)
                 Tweener.Scale(play, 0.6f, 1f, 0.45f, Easing.Kind.OutBack, null, 0.15f);
+        }
+
+        void OpenEconomy(string window)
+        {
+            if (!busy && App.Popups.Count == 0)
+                new EconomyPopup(App, window).Open();
         }
 
         void LivesInfo()
@@ -141,7 +164,19 @@ namespace SunnyValley.Game.Flow
             View.SetText("farm.play.label", "Играть " + hud.Level);
             View.SetBadge("farm.tasks.badge", hud.TasksBadge);
             View.SetBadge("farm.events.badge", hud.EventsBadge);
-            if (hud.ZoneName != null)
+            View.SetBadge("farm.orders.badge", hud.OrdersBadge);
+            if (hud.Economy)
+            {
+                View.SetText("farm.xp.level", Screens.FarmLevel(hud.FarmLevel));
+                View.SetBar("farm.xp.bar", Screens.XpValue(hud.XpHave, hud.XpNeed));
+                View.SetText("farm.xp.bar.label", Screens.XpText(hud.XpHave, hud.XpNeed));
+                View.SetBadge("farm.fields.badge", hud.FieldsBadge);
+                View.SetBadge("farm.animals.badge", hud.AnimalsBadge);
+                View.SetBadge("farm.workshops.badge", hud.WorkshopsBadge);
+                View.SetBadge("farm.barn.badge", hud.BarnBadge);
+                View.SetBadge("farm.town.badge", hud.TownBadge);
+            }
+            else if (hud.ZoneName != null)
             {
                 View.SetText("farm.zone.name", hud.ZoneName);
                 View.SetBar("farm.zone.bar", hud.ZoneTotal > 0 ? (float)hud.ZoneDone / hud.ZoneTotal : 1);
@@ -183,10 +218,7 @@ namespace SunnyValley.Game.Flow
             if (busy)
                 return;
             if (Meta.ChapterFinished)
-            {
-                new SoonPopup(App).Open();
                 return;
-            }
             new TasksPopup(App, Begin).Open();
         }
 
@@ -293,10 +325,13 @@ namespace SunnyValley.Game.Flow
                 new CelebratePopup(App, new CelebrateInfo
                 {
                     Title = "Ферма спасена!",
-                    Text = "Глава «" + Meta.Data.Chapter.Title + "» пройдена. Скоро откроется хозяйство: поля, животные и заказы соседей.",
+                    Text = "Глава «" + Meta.Data.Chapter.Title + "» пройдена. Открывается хозяйство: поля, животные, мастерские и заказы соседей.",
                     Icon = Icons.Sun, Rewards = CelebratePopup.Items(Meta.Data.Chapter.FinaleReward, Meta.Data), Button = "Ура!",
                 }, () => closed = true).Open();
                 yield return new WaitUntil(() => closed);
+                // the farm works now: the side buttons of chapter 2 and the farm level strip
+                Rebuild();
+                Ui.Toast("Загляните на поля: грядки ждут семян");
             }
             else if (o.ZoneCompleted != null)
             {

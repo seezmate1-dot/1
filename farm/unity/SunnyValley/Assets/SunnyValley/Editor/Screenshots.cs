@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using SunnyValley.Core.Meta;
+using SunnyValley.Game;
+using SunnyValley.Game.Economy;
 using SunnyValley.Game.Match3View;
 using SunnyValley.Game.UI;
 using SunnyValley.Layout;
@@ -14,7 +17,9 @@ namespace SunnyValley.EditorTools
 {
     /// <summary>
     /// Pictures of every screen and popup (LayoutCatalog) on every test screen (Devices), rendered by the real uGUI
-    /// objects into a texture of the phone's size, with the parts outside the safe area tinted red.
+    /// objects into a texture of the phone's size, with the parts outside the safe area tinted red. The farm economy
+    /// of chapter 2 is pictured from a debug save as well (EconomyDebug: chapter 1 restored, fields growing,
+    /// workshops busy, orders on the board): the farm screen and every window over it, filled by the real rules.
     /// Menu «Солнечная долина → Снимки интерфейса», or in batch mode (CI, farm-android.yml)
     /// <c>-executeMethod SunnyValley.EditorTools.Screenshots.CaptureFromCommandLine [-screenshotsPath dir]</c>.
     /// Needs a graphics device: under -nographics there is nothing to render with, and the method says so and fails
@@ -61,6 +66,7 @@ namespace SunnyValley.EditorTools
             }
             Directory.CreateDirectory(dir);
             int count = 0;
+            var economy = EconomyShots().ToList();
             foreach (var device in devices)
             {
                 foreach (var (name, build) in LayoutCatalog.All())
@@ -76,8 +82,67 @@ namespace SunnyValley.EditorTools
                     Render(device, name, null, file, root => BoardCapture.LevelMidGame(root.ScreenLayer, root.Fit, level, moves, into));
                     count++;
                 }
+                // the farm economy from the debug save: the farm, then each window over it
+                foreach (var (name, under, build) in economy)
+                {
+                    string file = Path.Combine(dir, $"{name}_{Devices.Slug(device)}.png");
+                    Render(device, name, null, file, root =>
+                    {
+                        var farm = UiView.Build(under(root.Fit), root.ScreenLayer);
+                        return build == null ? farm : UiView.Build(build(root.Fit), root.PopupLayer);
+                    });
+                    count++;
+                }
             }
             return count;
+        }
+
+        /// <summary>The moment the debug save is pictured at: fixed, so the timers read the same on every run.</summary>
+        const long EconomyNow = 1_800_000_000;
+
+        /// <summary>
+        /// The farm economy's pictures: the farm screen with its level strip and badges, every window of the debug save
+        /// (the crop picker for an empty plot, the mill and the bakery, the order board with a card picked), a speed-up
+        /// question and «Пока вас не было» with «Собрать всё». Popups lie over the farm screen (build), the farm alone
+        /// has none.
+        /// </summary>
+        static IEnumerable<(string name, Func<CanvasFit, UiLayout> under, Func<CanvasFit, UiLayout> build)> EconomyShots()
+        {
+            var data = GameState.LoadData();
+            long now = EconomyNow;
+            var game = EconomyDebug.Game(data, now);
+            var away = game.BuildAwaySummary(now);
+            var hud = EconomyViews.Hud(new FarmHud
+            {
+                Coins = game.Coins, Stars = game.Stars, Crystals = game.Crystals, Lives = game.Lives(now), MaxLives = data.Balance.Lives.Max,
+                NextLifeSeconds = game.NextLifeIn(now), Level = game.NextLevel,
+            }, game, now);
+            Func<CanvasFit, UiLayout> farm = f => Screens.Farm(f, hud);
+            yield return ("economy_farm", farm, null);
+
+            var views = new List<EconomyView>();
+            int empty = game.Plots.ToList().FindIndex(p => p.Crop == null);
+            foreach (var (window, arg) in new[]
+                     {
+                         (EconomyViews.Fields, null), (EconomyViews.Crops, Math.Max(0, empty).ToString()), (EconomyViews.Animals, null),
+                         (EconomyViews.Workshops, null), (EconomyViews.Workshop, "mill"), (EconomyViews.Workshop, "bakery"), (EconomyViews.Barn, null),
+                         (EconomyViews.Orders, null), (EconomyViews.Truck, null), (EconomyViews.Town, null),
+                     })
+                views.Add(EconomyViews.Build(window, arg, game, now));
+            foreach (var v in views)
+            {
+                var info = v.Info;
+                string name = "economy_" + v.Window + (v.Window == EconomyViews.Workshop ? "_" + v.Arg : "");
+                yield return (name, farm, f => Popups.Economy(f, info));
+            }
+            var ask = views.SelectMany(v => v.Actions.Values).FirstOrDefault(a => a.Confirm != null);
+            if (ask != null)
+                yield return ("economy_speedup", farm, f => Popups.Confirm(f, ask.Confirm));
+            if (!away.IsEmpty)
+            {
+                var info = new AwayInfo { Away = "Вас не было " + Texts.Duration(away.AwaySeconds), Lines = away.Lines, CollectAll = away.Ready.Count > 0 };
+                yield return ("economy_away", farm, f => Popups.Away(f, info));
+            }
         }
 
         /// <summary>What a popup is shown over, for context: the level's popups over the level, the rest over the farm.</summary>

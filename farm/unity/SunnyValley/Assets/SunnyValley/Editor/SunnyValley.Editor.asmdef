@@ -6,6 +6,7 @@
         "SunnyValley.Core",
         "SunnyValley.BoardLogic",
         "SunnyValley.Layout",
+        "SunnyValley.Economy",
         "UnityEngine.UI"
     ],
     "includePlatforms": [

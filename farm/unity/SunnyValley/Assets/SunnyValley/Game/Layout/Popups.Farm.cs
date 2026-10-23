@@ -5,8 +5,8 @@ namespace SunnyValley.Layout
 {
     /// <summary>
     /// The windows of chapter 1 on the farm (GDD 5): the look picker (three cards), the dialogue of a replica or a
-    /// story scene (portrait, name, text, a tap anywhere goes on), the celebrations of a finished zone and chapter,
-    /// «Пока вас не было» and the «скоро» stub of the farm economy.
+    /// story scene (portrait, name, text, a tap anywhere goes on), the celebrations of a finished zone and chapter and
+    /// «Пока вас не было».
     /// </summary>
     public static partial class Popups
     {
@@ -174,24 +174,21 @@ namespace SunnyValley.Layout
             var well = s.Add(Kit.Panel("away.list", Tokens.WoodInset, Tokens.RadiusMedium), Math.Max(1, lines.Count) * lineH + 32, -1, Tokens.GapBig);
             for (int i = 0; i < lines.Count; i++)
             {
-                well.Add(Kit.Label("away.line" + i, "• " + lines[i], Tokens.FontBody, Tokens.FontBodyMin, Tokens.TextDark, 1, TextAlign.Left))
+                // a line may shrink to the caption's minimum: «Сарай инструментов сделал: Радуга-подсолнух ×1»
+                well.Add(Kit.Label("away.line" + i, "• " + lines[i], Tokens.FontBody, Tokens.FontCaptionMin, Tokens.TextDark, 1, TextAlign.Left))
                     .StretchTop(28, 28, 16 + i * lineH, lineH);
             }
-            s.Add(Kit.Button("away.ok", "Отлично!", Tokens.Green, Tokens.GreenShade, Tokens.ButtonHeight), Tokens.ButtonHeight, 560);
-            return End(L, s);
-        }
-
-        // ------------------------------------------------------------------ «скоро»
-
-        /// <summary>The farm economy of chapter 2 before it is built: a picture, a line, «Хорошо».</summary>
-        public static UiLayout Soon(CanvasFit fit, string title, string text)
-        {
-            var L = Begin("soon", fit, title, true, out var s);
-            var pic = s.Add(Kit.Group("soon.picture"), 220);
-            pic.Add(Kit.Icon("soon.icon", Icons.Sun)).TopCenter(0, 0, 220, 220);
-            s.Add(Kit.Label("soon.text", text, Tokens.FontBody, Tokens.FontBodyMin, Tokens.TextDark, 4), 4 * FontMetrics.LineHeight(Tokens.FontBody) + 8,
-                -1, Tokens.GapBig);
-            s.Add(Kit.Button("soon.ok", "Хорошо", Tokens.Green, Tokens.GreenShade, Tokens.ButtonHeight), Tokens.ButtonHeight, 560);
+            if (info.CollectAll)
+            {
+                // the farm is open and something is ripe: collect it all right here
+                var row = s.Add(Kit.Group("away.buttons"), Tokens.ButtonHeight);
+                Screens.Slice(row.Add(Kit.Button("away.collect", "Собрать всё", Tokens.Yellow, Tokens.YellowShade, Tokens.ButtonHeight)), 0, 2, Tokens.Gap);
+                Screens.Slice(row.Add(Kit.Button("away.ok", "Отлично!", Tokens.Green, Tokens.GreenShade, Tokens.ButtonHeight)), 1, 2, Tokens.Gap);
+            }
+            else
+            {
+                s.Add(Kit.Button("away.ok", "Отлично!", Tokens.Green, Tokens.GreenShade, Tokens.ButtonHeight), Tokens.ButtonHeight, 560);
+            }
             return End(L, s);
         }
     }

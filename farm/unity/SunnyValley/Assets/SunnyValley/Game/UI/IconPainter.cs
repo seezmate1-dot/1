@@ -8,7 +8,7 @@ namespace SunnyValley.Game.UI
     /// darker rim, in the bright cartoon colours of the style (GDD §10). Plain C# (no UnityEngine) so it can be
     /// previewed outside Unity; returns RGBA pixels, row 0 at the bottom like a Unity texture. Coordinates are 0..1, Y up.
     /// </summary>
-    public static class IconPainter
+    public static partial class IconPainter
     {
         public const int Size = 128;
 
@@ -17,6 +17,7 @@ namespace SunnyValley.Game.UI
             "coin", "star", "star.empty", "crystal", "heart", "tasks", "events", "orders", "shop", "settings", "pause", "close",
             "shovel", "rake", "can", "shuffle", "pitchfork", "bomb", "rainbow", "sun", "lock", "check",
             "tomato", "corn", "apple", "carrot", "eggplant", "blueberry",
+            "fields", "animals", "workshop", "barn", "town", "truck", "xp", "people", "lot", "beauty", "soil", "plus", "clock",
         };
 
         delegate float Sdf(float x, float y);
@@ -303,7 +304,9 @@ namespace SunnyValley.Game.UI
                     c.Fill(Ellipse(.36f, .58f, .08f, .05f), Shine);
                     break;
                 default:
-                    // unknown: a grey disc with a question mark-ish dot, visibly a placeholder
+                    // the farm economy's icons (IconPainter.Farm.cs), else a grey disc: visibly a placeholder
+                    if (Economy(c, name))
+                        break;
                     c.Rimmed(Disc(.5f, .5f, .36f), Gray, GrayDark, .03f);
                     c.Fill(Disc(.5f, .5f, .08f), GrayDark);
                     break;

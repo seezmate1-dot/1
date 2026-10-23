@@ -79,11 +79,29 @@ namespace SunnyValley.Layout
             for (int i = 0; i < plates.Length; i++)
                 top.Add(plates[i]).TopLeft(x0 + i * (pw + Tokens.Gap), 0, pw, Tokens.PlateTouch);
 
-            // the side columns under the plates: tasks and events on the left; settings, shop and orders on the right
+            // the side columns under the plates: tasks and events on the left; settings, shop and orders on the right.
+            // Once chapter 1 is over the farm works (GDD 6): fields, animals and workshops on the left, the barn and
+            // the town on the right under the orders.
             float colTop = M + Tokens.PlateTouch + Tokens.Gap;
             float step = Tokens.SideButtonHeight + Tokens.Gap;
-            SideButton(L.Safe, "farm.tasks", Icons.Tasks, Tokens.Green, "Задания", hud.TasksBadge).TopLeft(M, colTop, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
-            SideButton(L.Safe, "farm.events", Icons.Events, Tokens.Purple, "События", hud.EventsBadge).TopLeft(M, colTop + step, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
+            var left = hud.Economy
+                ? new[]
+                {
+                    ("farm.fields", Icons.Fields, Tokens.Green, "Поля", hud.FieldsBadge),
+                    ("farm.animals", Icons.Animals, Tokens.Orange, "Животные", hud.AnimalsBadge),
+                    ("farm.workshops", Icons.Workshop, Tokens.Blue, "Цеха", hud.WorkshopsBadge),
+                    ("farm.events", Icons.Events, Tokens.Purple, "События", hud.EventsBadge),
+                }
+                : new[]
+                {
+                    ("farm.tasks", Icons.Tasks, Tokens.Green, "Задания", hud.TasksBadge),
+                    ("farm.events", Icons.Events, Tokens.Purple, "События", hud.EventsBadge),
+                };
+            for (int i = 0; i < left.Length; i++)
+            {
+                var (id, icon, color, caption, badge) = left[i];
+                SideButton(L.Safe, id, icon, color, caption, badge).TopLeft(M, colTop + i * step, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
+            }
 
             float inset = (Tokens.SideButtonWidth - Tokens.RoundButton) / 2;
             L.Safe.Add(Kit.RoundButton("farm.settings", Icons.Settings, Tokens.Blue, Tokens.BlueShade))
@@ -91,6 +109,13 @@ namespace SunnyValley.Layout
             float rightTop = colTop + Tokens.RoundButton + Tokens.Gap;
             SideButton(L.Safe, "farm.shop", Icons.Shop, Tokens.Orange, "Магазин", hud.ShopBadge).TopRight(M, rightTop, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
             SideButton(L.Safe, "farm.orders", Icons.Orders, Tokens.Soil, "Заказы", hud.OrdersBadge).TopRight(M, rightTop + step, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
+            if (hud.Economy)
+            {
+                SideButton(L.Safe, "farm.barn", Icons.Barn, Tokens.Red, "Амбар", hud.BarnBadge)
+                    .TopRight(M, rightTop + 2 * step, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
+                SideButton(L.Safe, "farm.town", Icons.Town, Tokens.Cyan, "Городок", hud.TownBadge)
+                    .TopRight(M, rightTop + 3 * step, Tokens.SideButtonWidth, Tokens.SideButtonHeight);
+            }
 
             // bottom: the big yellow «Играть N»
             float playW = Math.Min(W - 2 * M, Math.Max(Tokens.PlayMinWidth, Math.Min(Tokens.PlayMaxWidth, W * 0.64f)));
@@ -98,8 +123,23 @@ namespace SunnyValley.Layout
                     fontSize: Tokens.FontPlay, fontMin: Tokens.FontPlayMin))
                 .BottomCenter(0, M + Tokens.Gap, playW, Tokens.PlayHeight);
 
-            // over it: the zone being restored with its progress (a tap shows it on the farm)
-            if (hud.ZoneName != null)
+            // over it: the farm level with its XP once the farm works (a tap tells what the next level opens)
+            if (hud.Economy)
+            {
+                float zw = Math.Min(W - 2 * M, ZoneStripWidth);
+                var xp = L.Safe.Add(new UiNode("farm.xp", NodeKind.Button)
+                {
+                    Shape = Shape.RoundRect, Radius = Tokens.RadiusMedium, Color = Tokens.Plate,
+                });
+                xp.BottomCenter(0, M + Tokens.Gap + Tokens.PlayHeight + Tokens.GapBig, zw, ZoneStripHeight);
+                xp.Add(Kit.Icon("farm.xp.icon", Icons.Xp)).LeftMiddle(16, 0, 108, 108);
+                xp.Add(Kit.Label("farm.xp.level", FarmLevel(hud.FarmLevel), Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextLight, outline: true))
+                    .StretchTop(140, 24, 8, 52);
+                xp.Add(Kit.Bar("farm.xp.bar", XpValue(hud.XpHave, hud.XpNeed), XpText(hud.XpHave, hud.XpNeed)))
+                    .StretchBottom(140, 24, 16, Tokens.ProgressHeight);
+            }
+            // or the zone being restored with its progress (a tap shows it on the farm)
+            else if (hud.ZoneName != null)
             {
                 float zw = Math.Min(W - 2 * M, ZoneStripWidth);
                 var zone = L.Safe.Add(new UiNode("farm.zone", NodeKind.Button)
@@ -120,6 +160,13 @@ namespace SunnyValley.Layout
         public const float ZoneStripHeight = 140;
 
         public static string ZoneProgress(int done, int total) => done + " из " + total;
+
+        public static string FarmLevel(int level) => "Уровень фермы " + level;
+
+        public static float XpValue(long have, long need) => need <= 0 ? 1 : Math.Max(0, Math.Min(1, (float)have / need));
+
+        /// <summary>«1 234 / 5 000» опыта, or «Высший уровень» at the last one.</summary>
+        public static string XpText(long have, long need) => need <= 0 ? "Высший уровень" : Format.Amount(have) + " / " + Format.Amount(need);
 
         static UiNode SideButton(UiNode parent, string id, string icon, uint color, string caption, int badge)
         {
@@ -146,10 +193,16 @@ namespace SunnyValley.Layout
         public static readonly string[] BoosterNames = { "Лопата", "Грабли", "Лейка", "Перемешать" };
         public static readonly uint[] BoosterColors = { Tokens.Soil, Tokens.Green, Tokens.Blue, Tokens.Purple };
 
+        public const string LevelBackground = "Ch1/Backgrounds/Meadow";
+
         public static UiLayout Level(CanvasFit fit, LevelHud hud)
         {
             var L = UiLayout.Begin("level", fit);
-            L.Root.Add(Kit.Panel("level.bg", Tokens.GrassDark, 0)).Stretch().Flags |= NodeFlags.FullBleed;
+            // the meadow picture behind the board, a little darkened so the pieces stand out
+            var bg = L.Root.Add(Kit.Panel("level.bg", Tokens.GrassDark, 0)).Stretch();
+            bg.Flags |= NodeFlags.FullBleed;
+            bg.Icon = LevelBackground;
+            bg.DepthColor = 0xC8D2C8FF;
 
             float W = L.W, H = L.H, M = Tokens.Margin;
             float topH = Tokens.LevelTopHeight;
@@ -168,8 +221,8 @@ namespace SunnyValley.Layout
             float goalsW = rowW - Tokens.RoundButton - movesW - 2 * Tokens.Gap;
             var goals = top.Add(Kit.Panel("level.goals", Tokens.Wood, Tokens.RadiusLarge, 10, Tokens.WoodDark));
             goals.TopLeft(Tokens.RoundButton + Tokens.Gap, 0, goalsW, topH);
-            goals.Add(Kit.Label("level.goals.caption", "Цели", Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextMuted)).StretchTop(12, 12, 14, 50);
-            GoalSlots(goals.Add(Kit.Group("level.goals.slots")).Stretch(12, 12, 62, 18), "level.goal", hud.Goals);
+            goals.Add(Kit.Label("level.goals.caption", "Цели", Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextMuted)).StretchTop(12, 12, 8, 44);
+            GoalSlots(goals.Add(Kit.Group("level.goals.slots")).Stretch(12, 12, 52, 8), "level.goal", hud.Goals);
 
             // bottom: in-level boosters, evenly spread, centred
             var boosters = L.Safe.Add(Kit.Group("level.boosters")).StretchBottom(M, M, M, Tokens.BoosterHeight);
@@ -230,9 +283,9 @@ namespace SunnyValley.Layout
                 var goal = goals != null && i < goals.Count ? goals[i] : new Goal(Icons.Pieces[0], 0);
                 var slot = row.Add(Kit.Group(id + i));
                 Slice(slot, i, n, 8);
-                slot.Add(Kit.Icon(id + i + ".icon", goal.Icon)).TopCenter(0, 0, 66, 66);
+                slot.Add(Kit.Icon(id + i + ".icon", goal.Icon)).TopCenter(0, 0, 84, 84);
                 slot.Add(Kit.Label(id + i + ".count", Math.Max(0, goal.Count).ToString(), Tokens.FontCaption, Tokens.FontCaptionMin,
-                    Tokens.TextDark)).StretchBottom(0, 0, 0, 50);
+                    Tokens.TextDark)).StretchBottom(0, 0, 0, 44);
             }
         }
 
