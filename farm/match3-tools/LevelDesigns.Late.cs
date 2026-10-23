@@ -275,7 +275,7 @@ namespace SunnyValley.Tools
             L.Add(D(157, "Двойные ящики", 6, M(Heart, 2, "l2l2l2l2l", "2l2l2l2l2")).Goal("crate").Goal("chain"));
             L.Add(D(158, "Ледяные грядки", 6, M(Ring, 2, "ggbgjgbgg", ".........", ".........", ".........", "ggbgjgbgg")).Goal("crop", 4).Goal("ice").Goal("grass"));
             L.Add(D(159, "Цыплята на островах", 5, M(Islands, 0, ".k.....k.", ".........", "i.......i")).Goal("chick", 3).Goal("ice").Chicks(1, 2, 3));
-            L.Add(D(160, "Буря", 6, M(Full, 3, "..w...w..", "hh.....hh", ".........", "hh.....hh")).Goal("weed").Goal("honey").Collect("blueberry", 10));
+            L.Add(D(160, "Буря", 6, M(Full, 3, "..w...w..", "hh.....hh", ".........", "hh.....hh")).Goal("weed").Goal("honey").Collect("blueberry", 12));
 
             // ---------------------------------------------------------------- 161–170
             L.Add(D(161, "Вечерняя роса", 6, M(Wide, 3, "...ggg...")).Goal("grass").Collect("apple", 15));
@@ -298,10 +298,10 @@ namespace SunnyValley.Tools
                 .With(d => d.ChickExits = Cells((0, 8), (2, 8), (4, 8), (6, 8), (8, 8))));
             L.Add(D(174, "Каменный мост", 5, M(Portal2, 2, ".S.S.....", ".........", ".........", ".........", ".........", "....s.s.s")).Goal("stone").Collect("eggplant", 10)
                 .With(d => d.Portals = P2()));
-            L.Add(D(175, "Луга на островах", 5, M(Islands, 1, "GGG...GGG", ".........", ".........", ".........", ".........", "...GGG...")).Goal("grass").Collect("apple", 10));
+            L.Add(D(175, "Луг у дороги", 6, M(Tee, 1, "GGGGGGGGG", ".........", "..ggggg..", "..ggggg..")).Goal("grass").Collect("apple", 10));
             L.Add(D(176, "Трава за стеной", 6, M(Full, 3, "GGGGGGGGG", "GGGGGGGGG", "GGGGGGGGG")).Goal("grass").With(d => d.Walls = WallsRight(0, 8, 2, 5)));
             L.Add(D(177, "Ящики и лёд", 6, M(Oct, 3, "I2I2I2I2I", "iiiiiiiii")).Goal("crate").Goal("ice"));
-            L.Add(D(178, "Огород у портала", 6, M(Portal3, 3, "....b..b.", ".........", ".........", ".........", ".b..b....")).Goal("crop", 4).With(d => d.Portals = P3()));
+            L.Add(D(178, "Огород у портала", 5, M(Portal3, 3, "....b..b.", ".........", ".........", ".........", ".b..b....")).Goal("crop", 4).With(d => { d.Portals = P3(); d.MinMoves = 25; }));
             L.Add(D(179, "Сорняк в цепях", 6, M(Ring, 2, "..l.w.l..", "ll.....ll", ".........", "ll.....ll", "..l.w.l..")).Goal("weed").Goal("chain").Collect("apple", 10));
             L.Add(D(180, "Великая уборка", 6, M(Full, 2, "GGGGGGGGG", "g1l1g1l1g", "GGGGGGGGG")).Goal("grass").Goal("crate").Goal("chain").Collect("corn", 10));
 
@@ -311,11 +311,12 @@ namespace SunnyValley.Tools
             L.Add(D(183, "Медовый холм", 6, M(Stairs, 3, "gmggmgg..", ".........", ".........", "ggmgggmgg")).Goal("honey").Goal("grass").Collect("eggplant", 12));
             L.Add(D(184, "Корзины и сорняк", 6, M(Oct, 3, "..u...u..", ".........", ".........", "....w....")).Goal("basket").Goal("weed").Basket("tomato", 6).Basket("eggplant", 6));
             L.Add(D(185, "Каменные острова", 5, M(Islands, 1, ".s.....s.", ".........", ".........", ".........", ".........", "...s.s...")).Goal("stone").Collect("apple", 10));
-            L.Add(D(186, "Цепной мост", 5, M(Portal2, 1, "lLlLl....", ".........", ".........", ".........", ".........", "....IIIII")).Goal("chain").Goal("ice").With(d => d.Portals = P2()));
+            L.Add(D(186, "Цепной мост", 5, M(Portal2, 1, "lLlLl....", ".........", ".........", ".........", ".........", "....IIIII")).Goal("chain").Goal("ice")
+                .With(d => { d.Portals = P2(); d.MinMoves = 21; }));
             L.Add(D(187, "Грядки за стеной", 6, M(Full, 4, ".B..B..B.")).Goal("crop", 3).With(d => d.Walls = WallsRight(0, 8, 2, 5)));
             L.Add(D(188, "Двойные подарки", 6, M(Heart, 3, "IIIIIIIII", "iiiiiiiii")).Goal("ice").Collect("blueberry", 10)
                 .With(d => d.Specials = new List<SpecialData> { Sp(2, 3, "lineH", "corn"), Sp(6, 3, "lineV", "apple") }));
-            L.Add(D(189, "Ящики на островах", 5, M(Islands, 2, "1.1...1.1", ".........", ".........", ".........", "...222...")).Goal("crate"));
+            L.Add(D(189, "Ящики у реки", 6, M(Twin, 2, "22.2.2.22", ".........", ".........", ".........", ".333.333.")).Goal("crate").Collect("eggplant", 10));
             L.Add(D(190, "Ледяной шторм", 6, M(Oct, 2, "iiiiiiiii", "lsl.S.lsl", "iiiiiiiii")).Goal("ice").Goal("chain").Goal("stone"));
 
             // ---------------------------------------------------------------- 191–200
