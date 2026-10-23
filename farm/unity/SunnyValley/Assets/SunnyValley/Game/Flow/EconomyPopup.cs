@@ -201,11 +201,9 @@ namespace SunnyValley.Game.Flow
                 Ui.Toast(text);
             App.AnnounceEvents();
             (App.Current as FarmScreen)?.Refresh();
+            // the crop picker goes back to the fields; the windows still open show what changed
             if (a.Close)
-            {
                 Close();
-                return;
-            }
             foreach (var p in App.Popups.ToArray())
                 (p as EconomyPopup)?.Refresh();
         }
