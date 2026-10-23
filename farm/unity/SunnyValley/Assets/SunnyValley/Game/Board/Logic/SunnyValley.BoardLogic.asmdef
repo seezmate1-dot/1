@@ -1,6 +1,6 @@
 {
     "name": "SunnyValley.BoardLogic",
-    "rootNamespace": "SunnyValley.Game.Board",
+    "rootNamespace": "SunnyValley.Game.Match3View",
     "references": [
         "SunnyValley.Core"
     ],

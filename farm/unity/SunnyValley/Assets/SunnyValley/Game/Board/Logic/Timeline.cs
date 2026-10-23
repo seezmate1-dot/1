@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using SunnyValley.Core.Match3;
 
-namespace SunnyValley.Game.Board
+namespace SunnyValley.Game.Match3View
 {
     /// <summary>What the board view does at a moment of a timeline. Each cue names a piece and/or cells.</summary>
     public enum CueKind : byte
@@ -103,10 +103,13 @@ namespace SunnyValley.Game.Board
         public float Duration;
         /// <summary>The pieces are still: the player may move again.</summary>
         public float BoardTime;
+        /// <summary>Moves the builder had to postpone because the piece was still busy (0 for a consistent log).</summary>
+        public int Delayed;
 
         public void Clear()
         {
             Cues.Clear();
+            Delayed = 0;
             Duration = 0;
             BoardTime = 0;
         }

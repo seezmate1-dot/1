@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The board view's timing without Unity: dotnet test farm/board-tests
+       Compiles the match-3 core and the pure-C# part of the board view (Game/Board/Logic: step log → timed cues,
+       bonus moves) and checks the timelines of real levels: engine order, waves one after another, no piece in two
+       moves at once, hits after their cause, snappy durations. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Unity 6 compiles C# 9: keep the same language level so nothing breaks in the editor. -->
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Core/**/*.cs" Exclude="../unity/SunnyValley/Assets/SunnyValley/Core/Tests~/**" />
+    <Compile Include="../unity/SunnyValley/Assets/SunnyValley/Game/Board/Logic/**/*.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>
