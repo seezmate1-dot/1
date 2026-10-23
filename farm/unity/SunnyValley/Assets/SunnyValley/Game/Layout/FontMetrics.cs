@@ -70,15 +70,37 @@ namespace SunnyValley.Layout
                         line.Clear().Append(candidate);
                         continue;
                     }
-                    if (line.Length > 0)
+                    // a compound word may end this line after its hyphen: «С флюгером-» / «петушком»
+                    string rest = word;
+                    for (int h = word.Length > 2 ? word.LastIndexOf('-', word.Length - 2) : -1; h > 0; h = word.LastIndexOf('-', h - 1))
+                    {
+                        string head = (line.Length == 0 ? "" : line + " ") + word.Substring(0, h + 1);
+                        if (LineWidth(head, size, scale) <= width)
+                        {
+                            lines.Add(head);
+                            line.Clear();
+                            rest = word.Substring(h + 1);
+                            break;
+                        }
+                    }
+                    if (rest == word && line.Length > 0)
                     {
                         lines.Add(line.ToString());
                         line.Clear();
                     }
                     // the word alone; break it by characters if it still does not fit
-                    string rest = word;
                     while (LineWidth(rest, size, scale) > width && rest.Length > 1)
                     {
+                        // a compound word breaks after its hyphen first: «флюгером-» / «петушком»
+                        int hyphen = rest.LastIndexOf('-', rest.Length - 2);
+                        while (hyphen > 0 && LineWidth(rest.Substring(0, hyphen + 1), size, scale) > width)
+                            hyphen = rest.LastIndexOf('-', hyphen - 1);
+                        if (hyphen > 0)
+                        {
+                            lines.Add(rest.Substring(0, hyphen + 1));
+                            rest = rest.Substring(hyphen + 1);
+                            continue;
+                        }
                         int n = rest.Length - 1;
                         while (n > 1 && LineWidth(rest.Substring(0, n), size, scale) > width)
                             n--;

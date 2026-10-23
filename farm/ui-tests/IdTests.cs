@@ -29,7 +29,7 @@ namespace SunnyValley.Ui.Tests
                 ids.Add(n.Id);
 
             var used = new List<(string file, string id)>();
-            var pattern = new Regex("\"((?:farm|level|loading|start|win|lose|settings|tasks|toast)\\.[a-z_0-9.]+)\"");
+            var pattern = new Regex("\"((?:farm|level|loading|start|win|lose|settings|tasks|toast|picker|dialogue|celebrate|away|soon)\\.[a-z_0-9.]+)\"");
             foreach (string file in Directory.GetFiles(Path.Combine(GameDir(), "Flow"), "*.cs")
                          .Concat(Directory.GetFiles(Path.Combine(GameDir(), "UI"), "*.cs")))
             {

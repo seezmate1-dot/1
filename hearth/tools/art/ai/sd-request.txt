@@ -1,3 +1,3 @@
-Farm/Specials/Pitchfork Farm/Obstacles/Chain
+farm-ch1 Farm/Specials/Pitchfork
 0.5
-# a chunkier pitchfork, a plain steel chain
+# «Солнечная долина» chapter 1: zone backgrounds, task objects, looks, broken things, junk, effects, portraits; the pitchfork again

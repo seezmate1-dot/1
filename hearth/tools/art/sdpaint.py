@@ -7,6 +7,9 @@ floor where the dwellers walk and the places on the map stay where the game expe
 
     sdenv/bin/python hearth/tools/art/sdpaint.py [names or groups] [--strength 0.6] [--steps 8] [--out DIR]
 
+«Солнечная долина» chapter 1 (groups farm-ch1, farm-ch1-bg, farm-ch1-objects, farm-ch1-portraits, farm-ch1-fx): the list
+is farm/tools/art/chapter1_art.json; zone backgrounds are opaque .jpg pictures, everything else is cut out.
+
 Transparent pieces (group "pieces": Icons/<Name>, Buttons/<Name>, Decor/<name>, Rooms/Rubble, Rooms/Scaffold)
 are painted from text on a plain white ground and cut out with rembg (pip install "rembg[cpu]"; without
 it, a flood fill of the ground from the borders). Group "items": the icons of the heroes' equipment, Items/<Kind>
@@ -428,7 +431,7 @@ FARM = {
     "Tiles/Carrot": "one bright orange carrot with a green top, diagonal",
     "Tiles/Eggplant": "one glossy deep purple eggplant with a green cap",
     "Tiles/Blueberry": "a cluster of three plump glossy blue blueberries",
-    "Specials/Pitchfork": "a chunky cartoon pitchfork with a thick wooden handle and three big shiny steel tines, diagonal, bold silhouette",
+    "Specials/Pitchfork": "a farm hay fork tool with four long curved steel tines on a thick wooden handle, the whole tool, diagonal, chunky toy-like proportions",
     "Specials/Bee": "a cute chubby striped bumblebee with tiny wings, smiling",
     "Specials/Bomb": "a small round wooden barrel bomb with metal bands and a lit sparkling fuse",
     "Specials/Rainbow": "a magical sunflower with rainbow colored petals and a golden glowing center",
@@ -454,6 +457,38 @@ FARM = {
 }
 
 
+# «Солнечная долина», chapter 1 «Восстановление»: the farm scene. The list is farm/tools/art/chapter1_art.json, written
+# with the placement of every sprite by farm/tools/art/chapter1_art.py. Names Farm/Ch1/<Group>/<Name>: the zone
+# backgrounds (FARM_CH1_BACKGROUNDS) are painted as full opaque pictures and saved as .jpg, never cut out; the rest
+# (FARM_CH1: objects, the three looks of choice tasks, broken "before" pieces, junk the clearing tasks remove, effects,
+# the speakers' portraits) are painted on white and cut out like every piece. Groups: farm-ch1 (all), farm-ch1-bg,
+# farm-ch1-objects, farm-ch1-portraits, farm-ch1-fx.
+FARM_CH1_STYLE = ("bright cheerful 3D cartoon mobile farm game art, Township style, isometric three-quarter view from above, "
+                  "soft warm sunlight from the top left, smooth rounded shapes, thick readable silhouette, polished game asset")
+FARM_CH1_PORTRAIT_STYLE = ("friendly cartoon character portrait for a mobile farm game, Township and Gardenscapes style, bright "
+                           "cheerful colors, soft studio lighting, big expressive eyes, clean rounded shapes, polished game art")
+FARM_CH1_PORTRAIT_NEGATIVE = ("photo, photorealistic, dark, gloomy, creepy, ugly, text, watermark, signature, blurry, lowres, "
+                              "deformed, extra fingers, hands, full body, several characters, cropped head")
+FARM_CH1_BG_NEGATIVE = ("photo, photorealistic, dull colors, dark, gloomy, text, watermark, signature, blurry, lowres, frame, "
+                        "border, vignette, buildings, houses, people, person, animals, vehicles")
+
+
+def _farm_ch1():
+    import json
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    path = os.path.join(root, "farm", "tools", "art", "chapter1_art.json")
+    if not os.path.exists(path):
+        return {}, {}, {}
+    pieces = json.load(open(path, encoding="utf-8"))["pieces"]
+    cut = {n[len("Farm/"):]: v["prompt"] for n, v in pieces.items() if v["kind"] != "background"}
+    bgs = {n[len("Farm/"):]: v["prompt"] for n, v in pieces.items() if v["kind"] == "background"}
+    meta = {n[len("Farm/"):]: (v["kind"], tuple(v["size"])) for n, v in pieces.items()}
+    return cut, bgs, meta
+
+
+FARM_CH1, FARM_CH1_BACKGROUNDS, FARM_CH1_META = _farm_ch1()
+
+
 def _piece_list():
     out = {}
     for n, what in ICONS.items():
@@ -475,6 +510,8 @@ def _piece_list():
                        "a fantasy game map piece", (192, 192))
     for n, what in FARM.items():
         out["Farm/" + n] = (what, (256, 256))
+    for n, what in FARM_CH1.items():
+        out["Farm/" + n] = (what, FARM_CH1_META[n][1])
     for n, what in SCENE.items():
         out["Scene/" + n] = (what + ", three-quarter view from slightly above", (512, 512))
     for kind, what in ITEMS.items():
@@ -548,13 +585,33 @@ def piece(name, args):
     wide = size[0] >= size[1] * 1.6
     gen = (1216, 608) if wide else (1024, 1024)
     farm = name.startswith("Farm/")
-    img = draw(prompt + BACKDROP, gen, steps=args.steps, seed=args.seed,
-               negative=FARM_NEGATIVE if farm else NEGATIVE, style=FARM_STYLE if farm else None)
+    ch1 = FARM_CH1_META.get(name[len("Farm/"):], (None,))[0]
+    style, negative = (FARM_STYLE, FARM_NEGATIVE) if farm else (None, NEGATIVE)
+    if ch1 == "portrait":
+        style, negative = FARM_CH1_PORTRAIT_STYLE, FARM_CH1_PORTRAIT_NEGATIVE
+    elif ch1:
+        style = FARM_CH1_STYLE
+    img = draw(prompt + BACKDROP, gen, steps=args.steps, seed=args.seed, negative=negative, style=style)
     alpha = _matte(img, _ground(img), holes=name.startswith("Rooms/"))
     graded = grade(img)
     out = _unmix(graded, alpha, _ground(graded))
-    out = _place(out, size, pad=0.02 if wide else 0.05, bottom=wide or name.startswith("Scene/"))
+    # the farm's objects stand on the bottom edge of their picture: the game places them by their feet
+    stand = ch1 in ("object", "look", "before", "junk")
+    out = _place(out, size, pad=0.02 if wide else 0.05, bottom=wide or stand or name.startswith("Scene/"))
     _save(out, name + ".png", args)
+
+
+def farm_background(name, args):
+    """A zone of the chapter 1 farm: a full opaque picture (the ground the objects stand on), painted at the model's
+    4:3 size and scaled to the game's 1600×1200, saved as .jpg."""
+    prompt = FARM_CH1_BACKGROUNDS[name[len("Farm/"):]]
+    size = FARM_CH1_META[name[len("Farm/"):]][1]
+    img = draw(prompt, (1152, 864), steps=args.steps, seed=args.seed, negative=FARM_CH1_BG_NEGATIVE, style=FARM_CH1_STYLE)
+    img = grade(img).resize(size, Image.LANCZOS)
+    path = os.path.join(args.out or aigen.ART, name + ".jpg")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path, quality=90)
+    print("background", name, img.size, flush=True)
 
 
 def _save(img, rel, args):
@@ -575,12 +632,19 @@ if __name__ == "__main__":
     groups = {"rooms": aigen.GROUPS["rooms"], "world": aigen.GROUPS["world"], "extras": ["Door", "Ladder", "Stairs", "Rooms/Arch"],
               "tiers": [r + "_" + t for r in aigen.GROUPS["rooms"] if r not in ("Empty", "Hearth") for t in ("2", "3")],
               "pieces": [n for n in PIECES if not n.startswith(("Scene/", "Pets/", "Companions/", "Items/", "Farm/"))],
-              "farm": [n for n in PIECES if n.startswith("Farm/")],
+              "farm": [n for n in PIECES if n.startswith("Farm/") and not n.startswith("Farm/Ch1/")],
+              "farm-ch1": ["Farm/" + n for n in FARM_CH1_META],
+              "farm-ch1-bg": ["Farm/" + n for n in FARM_CH1_BACKGROUNDS],
+              "farm-ch1-objects": ["Farm/" + n for n, (k, _) in FARM_CH1_META.items() if k in ("object", "look", "before", "junk")],
+              "farm-ch1-portraits": ["Farm/" + n for n, (k, _) in FARM_CH1_META.items() if k == "portrait"],
+              "farm-ch1-fx": ["Farm/" + n for n, (k, _) in FARM_CH1_META.items() if k == "fx"],
               "scene": [n for n in PIECES if n.startswith("Scene/")],
               "pets": [n for n in PIECES if n.startswith(("Pets/", "Companions/"))],
               "items": [n for n in PIECES if n.startswith("Items/")]}
     for n in [x for a in args.names for x in groups.get(a, [a])]:
-        if n in PIECES:
+        if n.startswith("Farm/") and n[len("Farm/"):] in FARM_CH1_BACKGROUNDS:
+            farm_background(n, args)
+        elif n in PIECES:
             piece(n, args)
         elif n.partition("_")[0] in aigen.ROOMS:
             room(n, args)

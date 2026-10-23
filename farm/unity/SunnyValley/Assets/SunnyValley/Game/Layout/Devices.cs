@@ -41,6 +41,10 @@ namespace SunnyValley.Layout
     /// </summary>
     public static class LayoutCatalog
     {
+        /// <summary>The longest replica of chapter 1 (farm/ui-tests also fit every one of chapter1.json).</summary>
+        public const string LongestLine =
+            "Но закон говорит и другое: если на празднике урожая ферма будет жить — амбар полон, куры несутся, мельница мелет, — её никто не тронет.";
+
         public static IEnumerable<(string name, Func<CanvasFit, UiLayout> build)> All()
         {
             yield return ("loading", f => Screens.Loading(f, 0.62f));
@@ -73,6 +77,57 @@ namespace SunnyValley.Layout
             yield return ("popup-settings", f => Popups.Settings(f, new SettingsInfo { InLevel = true, Version = "0.1.9999" }));
             yield return ("toast", f => Screens.Toast(f, "Нет жизней. Следующая через 29:59 — а пока загляните на ферму"));
             yield return ("popup-tasks", f => Popups.Tasks(f, Popups.DemoTasks()));
+            yield return ("popup-tasks-empty", f => Popups.Tasks(f, new TasksInfo { ZoneName = "Ферма спасена", ZoneDone = 71, ZoneTotal = 71, Stars = 0 }));
+            yield return ("farm-no-zone", f => Screens.Farm(f, new FarmHud { ZoneName = null, InfiniteLives = true, NextLifeSeconds = 3599 }));
+            yield return ("popup-picker", f => Popups.Picker(f, new PickerInfo
+            {
+                Title = "Выберите вид", Caption = "Подготовить праздник урожая на мельнице у всей долины", Selected = 2,
+                Button = "Построить", Stars = 2,
+                Cards = new List<LookCard>
+                {
+                    new LookCard(Icons.Star, "Деревянные решётки"), new LookCard(Icons.Sun, "Увитая виноградом"),
+                    new LookCard(Icons.Coin, "С флюгером-петушком"),
+                },
+            }));
+            yield return ("popup-picker-change", f => Popups.Picker(f, new PickerInfo
+            {
+                Title = "Сменить вид", Caption = "Крыльцо", Selected = 0, Button = "Сменить",
+                Cards = new List<LookCard> { new LookCard(Icons.Star, "Деревянное"), new LookCard(Icons.Star, "Каменное"), new LookCard(Icons.Star, "С цветами") },
+            }));
+            yield return ("dialogue", f => Popups.Dialogue(f, new DialogueInfo
+            {
+                Name = "Дневник бабушки Дуни", Portrait = "portrait.diary",
+                Text = LongestLine,
+            }));
+            yield return ("dialogue-scene", f => Popups.Dialogue(f, new DialogueInfo
+            {
+                Name = "Дед Матвей", Portrait = "portrait.matvey", Right = true, CanSkip = true, SceneTitle = "Урок деда Матвея у старой мельницы",
+                Text = "Землю, внучка, не обманешь: что посеешь — то и пожнёшь. А бабушка твоя сеяла с душой.",
+            }));
+            yield return ("popup-zone-done", f => Popups.Celebrate(f, new CelebrateInfo
+            {
+                Title = "«Мельница» восстановлена!", Text = "Все задания зоны выполнены. Впереди — новая часть фермы!", Icon = Icons.Star,
+                Rewards = new List<(string icon, string text)>
+                {
+                    (Icons.Coin, "+99 999"), (Icons.Crystal, "+999"), (Icons.Heart, "+60 мин"), (Icons.Pitchfork, "+99"), (Icons.Bomb, "+9"),
+                    (Icons.Rainbow, "+9"),
+                },
+            }));
+            yield return ("popup-chapter-done", f => Popups.Celebrate(f, new CelebrateInfo
+            {
+                Title = "Ферма спасена!", Text = "Глава «Восстановление» пройдена. Открывается хозяйство: поля, животные и заказы соседей.",
+                Icon = Icons.Sun, Rewards = new List<(string icon, string text)> { (Icons.Coin, "+5 000"), (Icons.Crystal, "+50") }, Button = "Ура!",
+            }));
+            yield return ("popup-away", f => Popups.Away(f, new AwayInfo
+            {
+                Away = "Вас не было 1 д 23 ч",
+                Lines = new List<string>
+                {
+                    "Жизни восстановились: +5", "Пшеница ×12 созрела", "Яйца ×3 готовы", "Грузовик вернулся", "Новые заказы: 3",
+                    "Сарай сделал бусты: Лопата ×2", "Молоко ×2 готово",
+                },
+            }));
+            yield return ("popup-soon", f => Popups.Soon(f, "Хозяйство", "Поля, животные, мастерские и заказы соседей откроются в следующем обновлении. Скоро!"));
         }
     }
 }

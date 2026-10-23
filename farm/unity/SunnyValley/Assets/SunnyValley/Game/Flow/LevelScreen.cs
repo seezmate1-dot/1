@@ -63,13 +63,13 @@ namespace SunnyValley.Game.Flow
 
         // ------------------------------------------------------------------ booster stock (the meta's, through the app)
 
-        int BoosterCount(int b) => App.State.boosters[b];
+        int BoosterCount(int b) => App.State.InLevelBoosters()[b];
 
         void SpendBooster(int b)
         {
-            App.State.boosters[b]--;
+            App.State.Meta.UseBooster(GameState.Now, Core.Meta.Boosters.InLevel[b]);
             App.State.Save();
-            View.SetBadge("level.booster" + b + ".badge", App.State.boosters[b]);
+            View.SetBadge("level.booster" + b + ".badge", BoosterCount(b));
         }
 
         // ------------------------------------------------------------------ binding
@@ -378,10 +378,10 @@ namespace SunnyValley.Game.Flow
             }
         }
 
-        /// <summary>After «+5 ходов»: back to playing (the engine may reshuffle — that animates too).</summary>
-        public void Continue()
+        /// <summary>After «+5 ходов» (the meta says how many): back to playing (the engine may reshuffle — that animates too).</summary>
+        public void Continue(int moves = 5)
         {
-            var r = Session.AddMoves(5);
+            var r = Session.AddMoves(moves);
             if (!r.Accepted)
             {
                 AfterMove();

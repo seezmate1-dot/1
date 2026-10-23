@@ -12,7 +12,7 @@ namespace SunnyValley.Game.Level
     /// A real level: Core/Match3's Match3Game over Resources/Levels/level_NNN.json, with the pre-level boosters the
     /// player picked, the in-level boosters, «+5 ходов» and the result for the meta (Match3MetaBridge).
     /// </summary>
-    public sealed class Match3LevelSession : ILevelSession
+    public sealed class Match3LevelSession : ILevelSession, ILevelResultSource
     {
         readonly List<Goal> goals = new List<Goal>();
 
@@ -39,6 +39,9 @@ namespace SunnyValley.Game.Level
         public int StarsEarned => Won ? Game.Stars : 0;
         public LevelResult Result => Match3MetaBridge.ToLevelResult(Game);
 
+        /// <summary>For GameApp.ResultOf → MetaGame.FinishLevel: the board's own report (moves left, stars, crops).</summary>
+        public LevelResult ToLevelResult() => Result;
+
         /// <summary>
         /// Starts level <paramref name="level"/> (any number: after the last designed level they repeat).
         /// <paramref name="preBoosters"/> are flags for Вилы, Бомба, Радуга (the popup's order); <paramref name="seed"/>
@@ -51,6 +54,7 @@ namespace SunnyValley.Game.Level
 
         public Match3LevelSession(LevelData data, int level, IList<BoosterKind> preBoosters, long? seed)
         {
+            BoardSprites.Warm(); // goal icons of obstacles (the painted grass among them) before any popup shows them
             Level = level;
             Game = Match3Game.Create(data, seed ?? DateTime.UtcNow.Ticks ^ level * 7919L, preBoosters);
             foreach (var g in Game.Goals)

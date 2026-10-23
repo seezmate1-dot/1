@@ -71,10 +71,10 @@ namespace SunnyValley.Game.Flow
         public LosePopup(GameApp app, LevelScreen level) : base(app)
         {
             this.level = level;
-            int price = GameState.MovesPrice(app.MovesBought);
+            int price = app.State.Meta.ExtraMovesPrice;
             info = new LoseInfo
             {
-                Level = level.Session.Level, Price = price, CanAfford = app.State.coins >= price,
+                Level = level.Session.Level, Price = price, CanAfford = app.State.Meta.Coins >= price,
                 Left = level.Session.Goals.Where(g => g.Count > 0).Select(g => new Goal(g.Icon, g.Count)).ToList(),
             };
         }
@@ -85,15 +85,14 @@ namespace SunnyValley.Game.Flow
         {
             View.OnClick("lose.more", () =>
             {
-                if (App.State.coins < info.Price)
+                var r = App.State.Meta.BuyExtraMoves(GameState.Now);
+                if (!r.Ok)
                 {
-                    Ui.Toast("Не хватает монет. Их приносят уровни и заказы");
+                    Ui.Toast(r.Error == Core.Meta.MetaError.NotEnoughCoins ? "Не хватает монет. Их приносят уровни и заказы" : r.ErrorText);
                     return;
                 }
-                App.State.coins -= info.Price;
-                App.MovesBought++;
                 App.State.Save();
-                Close(level.Continue);
+                Close(() => level.Continue(App.State.Meta.ExtraMovesCount));
             });
             View.OnClick("lose.give_up", () => Close(App.LevelLost));
         }
@@ -132,39 +131,6 @@ namespace SunnyValley.Game.Flow
             bool on = i == 0 ? s.music = !s.music : i == 1 ? s.sounds = !s.sounds : s.vibration = !s.vibration;
             s.Save();
             View.SetToggle("settings.toggle" + i, on);
-        }
-    }
-
-    /// <summary>The restoration tasks (GDD §5) in a scrolling list; a task costs stars.</summary>
-    public sealed class TasksPopup : GamePopup
-    {
-        readonly List<TaskItem> tasks = Popups.DemoTasks();
-
-        public TasksPopup(GameApp app) : base(app)
-        {
-        }
-
-        protected override UiLayout Layout(CanvasFit fit) => Popups.Tasks(fit, tasks);
-
-        protected override void Bind()
-        {
-            View.OnClick("tasks.panel.close", () => Close());
-            for (int i = 0; i < tasks.Count; i++)
-            {
-                var task = tasks[i];
-                View.OnClick("tasks.row" + i + ".do", () =>
-                {
-                    if (App.State.stars < task.Stars)
-                    {
-                        Ui.Toast("Не хватает звёзд — пройдите уровень, каждый даёт звезду");
-                        return;
-                    }
-                    App.State.stars -= task.Stars;
-                    App.State.Save();
-                    Ui.Toast($"Готово: {task.Title}");
-                    Close();
-                });
-            }
         }
     }
 }
