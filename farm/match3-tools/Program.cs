@@ -41,7 +41,7 @@ namespace SunnyValley.Tools
         public static int Main(string[] args)
         {
             string cmd = args.Length > 0 ? args[0] : "help";
-            int from = Arg(args, "--from", 1), to = Arg(args, "--to", 60);
+            int from = Arg(args, "--from", 1), to = Arg(args, "--to", LevelDesigns.All().Max(d => d.Id));
             switch (cmd)
             {
                 case "build": Build(from, to, Arg(args, "--games", 160)); return 0;
@@ -108,6 +108,8 @@ namespace SunnyValley.Tools
                 int mid = (lo + hi) / 2;
                 if (Rate(mid) >= d.Target) hi = mid; else lo = mid + 1;
             }
+            // A hard level aims at a band (35–50%): one move less may land closer to the middle of it.
+            if (d.Hard && hi > d.MinMoves && Rate(hi) > 0.50 && Rate(hi - 1) >= 0.35) hi--;
             t.Moves = hi;
             t.AvgWinRate = Rate(hi);
             return t;
@@ -169,8 +171,8 @@ namespace SunnyValley.Tools
 
         static void Report(int games, int goodGames)
         {
-            var levels = LoadLevels(1, 60);
             var designs = LevelDesigns.All().ToDictionary(d => d.Id);
+            var levels = LoadLevels(1, designs.Keys.Max());
             var sb = new StringBuilder();
             sb.AppendLine($"Доля побед: «средний игрок» — {games} попыток на уровень (сиды 1…{games}), «хороший игрок» (Монте-Карло) — {goodGames} попыток.");
             sb.AppendLine();
@@ -201,6 +203,14 @@ namespace SunnyValley.Tools
             sb.AppendLine("- трудные: " + string.Join(", ", hard.Select(kv => $"{kv.Key} — {kv.Value * 100:0}%")) + " (цель 35–50%);");
             var after = avgRates.Where(kv => kv.Key > 20 && kv.Key % 10 == 1).ToList();
             sb.AppendLine("- лёгкие после трудных: " + string.Join(", ", after.Select(kv => $"{kv.Key} — {kv.Value * 100:0}%")) + ";");
+            // The middle of a wave: its levels 2…9 (not the easy one after a hard level, not the hard one).
+            var waves = avgRates.Where(kv => kv.Key > 20 && kv.Key % 10 >= 2).GroupBy(kv => (kv.Key - 1) / 10).OrderBy(g => g.Key).ToList();
+            sb.AppendLine("- середина волны (уровни …2–…9, среднее у среднего игрока): " +
+                string.Join(", ", waves.Select(g => $"{g.Key * 10 + 1}–{g.Key * 10 + 10} — {g.Average(kv => kv.Value) * 100:0}%")) + ";");
+            int lastId = avgRates.Keys.DefaultIfEmpty(0).Max();
+            var lastWave = waves.LastOrDefault();
+            if (lastWave != null)
+                sb.AppendLine($"- к уровню {lastId} середина волны — {lastWave.Average(kv => kv.Value) * 100:0}% (цель кривой ~55% к 200);");
             sb.AppendLine($"- «хороший игрок» выигрывает каждый уровень не реже чем в {goodRates.Values.DefaultIfEmpty(0).Min() * 100:0}% попыток.");
 
             string path = Path.Combine(Root, "farm", "docs", "LEVELS.md");
@@ -269,6 +279,23 @@ namespace SunnyValley.Tools
                 case "weed": return "сорняк";
                 case "portal": return "порталы";
                 case "colors6": return "6 культур";
+                case "portal3": return "три яруса порталов";
+                case "honeyGrass": return "мёд на траве";
+                case "weedGrass": return "сорняк на траве";
+                case "basketsRow": return "ряд корзин";
+                case "chickExit": return "гнёзда цыплят";
+                case "bed3": return "тугие грядки (3 удара)";
+                case "stoneGrass": return "камни на траве";
+                case "chainedSpecials": return "спецфишки в цепях";
+                case "mixed4": return "четыре цели";
+                case "spawners": return "мало генераторов";
+                case "portalWalls": return "порталы и стенки";
+                case "honeyWeed": return "мёд и сорняк";
+                case "islands": return "острова";
+                case "iceSpecial": return "спецфишки во льду";
+                case "stoneMaze": return "каменный лабиринт";
+                case "honeyBaskets": return "корзины в мёду";
+                case "chickBeds": return "цыплята и грядки";
                 default: return intro;
             }
         }

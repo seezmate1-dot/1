@@ -4,19 +4,21 @@ using SunnyValley.Core.Match3;
 namespace SunnyValley.Tools
 {
     /// <summary>
-    /// The first 60 levels: shapes, obstacles and goals by hand; the move counts are found by the tuner
+    /// The 200 levels: shapes, obstacles and goals by hand; the move counts are found by the tuner
     /// (Program "build") so that the average bot wins at the target rate. Mechanics come one at a time:
     /// match → grass → pitchfork → bee → crates → bomb → rainbow → ice → chicks → chains → beds (1–20),
-    /// honey → baskets → stones → walls → weed (21–25), portals (32), 6 crops (36).
-    /// Waves after 20: every 10th level is hard (35–50%), the one after it is easy.
+    /// honey → baskets → stones → walls → weed (21–25), portals (32), 6 crops (36); later variants of them
+    /// from 62 on (see LevelDesigns.Late.cs). Waves after 20: every 10th level is hard (35–50%), the one
+    /// after it is easy; the middle of a wave drifts from ~70% (21–60) to ~55% (191–199).
     /// </summary>
-    public static class LevelDesigns
+    public static partial class LevelDesigns
     {
         static double TargetFor(int id)
         {
             if (id <= 20) return 0.93;
             if (id % 10 == 0) return 0.42;
             int k = id % 10; // 1..9 within the wave
+            if (id > 60) return LateTarget(id);
             double start = id < 30 ? 0.86 : id < 40 ? 0.84 : id < 50 ? 0.82 : 0.80;
             double end = id < 30 ? 0.64 : id < 40 ? 0.62 : id < 50 ? 0.60 : 0.57;
             if (k == 1 && id > 21) return 0.90; // easy level right after a hard one
@@ -25,7 +27,9 @@ namespace SunnyValley.Tools
 
         static Design D(int id, string name, int colors, params string[] map)
         {
-            return new Design { Id = id, Name = name, Colors = colors, Map = map, Target = TargetFor(id), Hard = id > 20 && id % 10 == 0 };
+            var d = new Design { Id = id, Name = name, Colors = colors, Map = map, Target = TargetFor(id), Hard = id > 20 && id % 10 == 0 };
+            if (id > 60) { d.MinMoves = 20; d.MaxMoves = 35; }
+            return d;
         }
 
         static SpecialData Sp(int x, int y, string kind, string color = null) => new SpecialData { X = x, Y = y, Kind = kind, Color = color };
@@ -213,6 +217,7 @@ namespace SunnyValley.Tools
             L.Add(D(60, "Праздник урожая", 6,
                 "#########", "#########", "GGGGGGGGG", "G2nb2bn2G", "GGGGGGGGG", "#########", "#########", "#########", "#########").Goal("grass").Goal("crate").Goal("crop", 4));
 
+            AddLate(L);
             return L;
         }
     }

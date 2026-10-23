@@ -14,6 +14,8 @@ namespace SunnyValley.Tools
     ///   'i' ice 1   'I' ice 2   'j' ice 1 on grass 1
     ///   'l' chain 1 'L' chain 2 'n' chain 1 on grass 1
     ///   'h' honey   's' stone 1 'S' stone 2   'w' weed
+    ///   'm' honey on grass 1   'v' weed on grass 1   't' stone 1 on grass 1   'T' stone 2 on grass 1
+    ///   'N' chain 2 on grass 1
     ///   'b' bed (2 hits per crop)   'B' bed (3 hits per crop)
     ///   'k' chick (on a plain cell)  'u' basket (colours/counts from <see cref="Baskets"/> in reading order)
     /// </summary>
@@ -29,6 +31,7 @@ namespace SunnyValley.Tools
         public List<PortalData> Portals;
         public List<WallData> Walls;
         public List<int[]> Spawners;
+        public List<int[]> ChickExits;
         public ChickRules Chicks;
         public List<SpecialData> Specials;
         /// <summary>Target win rate of the average bot.</summary>
@@ -88,6 +91,11 @@ namespace SunnyValley.Tools
                         case 's': L("stone")[y][x] = '1'; break;
                         case 'S': L("stone")[y][x] = '2'; break;
                         case 'w': L("weed")[y][x] = '1'; break;
+                        case 'm': L("honey")[y][x] = '1'; L("grass")[y][x] = '1'; break;
+                        case 'v': L("weed")[y][x] = '1'; L("grass")[y][x] = '1'; break;
+                        case 't': L("stone")[y][x] = '1'; L("grass")[y][x] = '1'; break;
+                        case 'T': L("stone")[y][x] = '2'; L("grass")[y][x] = '1'; break;
+                        case 'N': L("chain")[y][x] = '2'; L("grass")[y][x] = '1'; break;
                         case 'b': L("bed")[y][x] = '2'; break;
                         case 'B': L("bed")[y][x] = '3'; break;
                         case 'k': pieces[y][x] = 'C'; anyPiece = true; break;
@@ -117,6 +125,7 @@ namespace SunnyValley.Tools
                 Walls = Walls,
                 Portals = Portals,
                 Spawners = Spawners,
+                ChickExits = ChickExits,
                 Chicks = Chicks,
                 Specials = Specials,
                 Goals = Goals.ConvertAll(g => new GoalData
