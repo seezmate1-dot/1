@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using SunnyValley.Core.Match3;
 using SunnyValley.Game.UI;
 using UnityEngine;
@@ -16,6 +17,7 @@ namespace SunnyValley.Game.Match3View
         public Vector2 At;
         float size;
         RectTransform under, over;
+        readonly List<GameObject> owned;
 
         public int Grass;
         public ObstacleKind Blocker;
@@ -34,8 +36,10 @@ namespace SunnyValley.Game.Match3View
 
         public bool Animating => punchT0 >= 0;
 
-        public CellVisual(Pos cell, Vector2 at, float size, RectTransform under, RectTransform over)
+        /// <param name="owned">Every object the cell makes is added here (the board destroys them when it is drawn anew).</param>
+        public CellVisual(Pos cell, Vector2 at, float size, RectTransform under, RectTransform over, List<GameObject> owned)
         {
+            this.owned = owned;
             Cell = cell;
             At = at;
             this.size = size;
@@ -47,6 +51,7 @@ namespace SunnyValley.Game.Match3View
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.layer = parent.gameObject.layer;
+            owned?.Add(go);
             var rt = (RectTransform)go.transform;
             rt.SetParent(parent, false);
             rt.anchorMin = rt.anchorMax = Vector2.zero;
@@ -134,6 +139,7 @@ namespace SunnyValley.Game.Match3View
                 {
                     var go = new GameObject("count", typeof(RectTransform));
                     go.layer = under.gameObject.layer;
+                    owned?.Add(go);
                     var rt = (RectTransform)go.transform;
                     rt.SetParent(under, false);
                     rt.anchorMin = rt.anchorMax = Vector2.zero;

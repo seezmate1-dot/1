@@ -262,7 +262,7 @@ namespace SunnyValley.Game.Match3View
                 tile.color = (p.X + p.Y) % 2 == 0 ? TileLight : TileDark;
                 tile.rectTransform.anchoredPosition = At(p);
                 statics.Add(tile.gameObject);
-                var c = new CellVisual(p, At(p), cell, underRt, overRt) { Crop = cropSprite };
+                var c = new CellVisual(p, At(p), cell, underRt, overRt, statics) { Crop = cropSprite };
                 c.Read(g.Board, i);
                 cells[i] = c;
             }

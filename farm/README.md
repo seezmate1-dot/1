@@ -14,6 +14,8 @@
   уровня и отчёт по сложности — `docs/LEVELS.md`; уровни — `Resources/Levels/level_001…060.json`, их делает и
   настраивает ботом `match3-tools` (`dotnet run -c Release --project farm/match3-tools -- build|sim|report`).
 - `core-tests` — тесты ядра без Unity: `dotnet test farm/core-tests`.
+- `board-tests` — анимация поля без Unity: лог шагов настоящих уровней → таймлайн (порядок, волны, темп):
+  `dotnet test farm/board-tests`.
 - `ui-tests` — вёрстка интерфейса на 11 экранах (безопасная зона, кнопки не пересекаются, 44 pt, текст влезает)
   без Unity: `dotnet test farm/ui-tests`; схемы экранов — в `farm/ui-tests/previews`. Подробнее: `unity/README.md`.
 - APK: `.github/workflows/farm-android.yml` (Releases, теги `farm-apk-N`); проверки: `farm-checks.yml`.
