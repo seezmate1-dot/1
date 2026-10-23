@@ -24,6 +24,15 @@ namespace SunnyValley.Layout
         public string ZoneName = "Двор";
         public int ZoneDone = 3;
         public int ZoneTotal = 9;
+
+        /// <summary>Chapter 1 is over: the side buttons open the farm economy and the strip shows the farm level.</summary>
+        public bool Economy;
+        public int FarmLevel = 1;
+        /// <summary>XP into the current farm level and the XP it takes (0 at the last level: the bar stays full).</summary>
+        public long XpHave;
+        public long XpNeed = 1;
+        /// <summary>Red dots: ready harvests, animals ready or hungry with feed at hand, finished jobs, orders to hand in.</summary>
+        public int FieldsBadge, AnimalsBadge, WorkshopsBadge, BarnBadge, TownBadge;
     }
 
     /// <summary>One goal of a level: a piece or obstacle icon and how many are left.</summary>
@@ -175,5 +184,7 @@ namespace SunnyValley.Layout
     {
         public string Away = "Вас не было 2 ч";
         public List<string> Lines = new List<string>();
+        /// <summary>Something is ready on the open farm: «Собрать всё» beside «Отлично!».</summary>
+        public bool CollectAll;
     }
 }

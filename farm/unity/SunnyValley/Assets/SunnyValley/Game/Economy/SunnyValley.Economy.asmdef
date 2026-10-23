@@ -1,0 +1,17 @@
+{
+    "name": "SunnyValley.Economy",
+    "rootNamespace": "SunnyValley.Game.Economy",
+    "references": [
+        "SunnyValley.Core",
+        "SunnyValley.Layout"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

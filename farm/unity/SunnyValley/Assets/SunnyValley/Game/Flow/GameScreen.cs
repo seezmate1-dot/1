@@ -57,6 +57,11 @@ namespace SunnyValley.Game.Flow
 
         protected abstract void Bind();
 
+        /// <summary>Every frame while open (timers of the farm economy's windows).</summary>
+        public virtual void Tick(float dt)
+        {
+        }
+
         public void Open(bool animate = true)
         {
             View = Ui.ShowPopup(Layout(Ui.Fit), animate);

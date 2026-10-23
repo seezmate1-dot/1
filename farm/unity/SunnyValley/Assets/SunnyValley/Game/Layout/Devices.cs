@@ -127,7 +127,30 @@ namespace SunnyValley.Layout
                     "Сарай сделал бусты: Лопата ×2", "Молоко ×2 готово",
                 },
             }));
-            yield return ("popup-soon", f => Popups.Soon(f, "Хозяйство", "Поля, животные, мастерские и заказы соседей откроются в следующем обновлении. Скоро!"));
+            yield return ("popup-away-collect", f => Popups.Away(f, new AwayInfo
+            {
+                Away = "Вас не было 7 ч 59 мин", CollectAll = true,
+                Lines = new List<string>
+                {
+                    "Клубничное варенье ×12 — готово", "Тыквенный пирог ×9 — готово", "Корм для свиней ×6 — готово",
+                    "Сарай инструментов сделал: Радуга-подсолнух ×1", "Новых заказов на доске: 9.", "Грузовик вернулся и ждёт груз.",
+                },
+            }));
+            // the farm economy (chapter 2)
+            yield return ("farm-economy", f => Screens.Farm(f, new FarmHud { Economy = true, FarmLevel = 3, XpHave = 120, XpNeed = 300 }));
+            yield return ("farm-economy-max", f => Screens.Farm(f, EconomyDemo.Hud()));
+            yield return ("farm-economy-top", f => Screens.Farm(f, new FarmHud { Economy = true, FarmLevel = 30, XpHave = 99_999, XpNeed = 0 }));
+            yield return ("popup-fields", f => Popups.Economy(f, EconomyDemo.Fields()));
+            yield return ("popup-crops", f => Popups.Economy(f, EconomyDemo.Crops()));
+            yield return ("popup-animals", f => Popups.Economy(f, EconomyDemo.Animals()));
+            yield return ("popup-workshops", f => Popups.Economy(f, EconomyDemo.Workshops()));
+            yield return ("popup-workshop", f => Popups.Economy(f, EconomyDemo.Workshop()));
+            yield return ("popup-barn", f => Popups.Economy(f, EconomyDemo.Barn()));
+            yield return ("popup-orders", f => Popups.Economy(f, EconomyDemo.Orders()));
+            yield return ("popup-truck", f => Popups.Economy(f, EconomyDemo.Truck()));
+            yield return ("popup-truck-away", f => Popups.Economy(f, EconomyDemo.TruckAway()));
+            yield return ("popup-town", f => Popups.Economy(f, EconomyDemo.Town()));
+            yield return ("popup-speedup", f => Popups.Confirm(f, EconomyDemo.SpeedUp()));
         }
     }
 }

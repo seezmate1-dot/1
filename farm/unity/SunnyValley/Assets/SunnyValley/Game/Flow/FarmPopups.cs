@@ -257,7 +257,10 @@ namespace SunnyValley.Game.Flow
         }
     }
 
-    /// <summary>«Пока вас не было»: what grew, came back and got made while the game was closed (GDD 8).</summary>
+    /// <summary>
+    /// «Пока вас не было»: what grew, came back and got made while the game was closed (GDD 8). On the working farm,
+    /// with something ripe, «Собрать всё» collects every field, tree, animal and workshop at once (MetaGame.CollectAll).
+    /// </summary>
     public sealed class AwayPopup : GamePopup
     {
         readonly AwayInfo info;
@@ -265,29 +268,30 @@ namespace SunnyValley.Game.Flow
 
         public AwayPopup(GameApp app, AwaySummary summary, Action done) : base(app)
         {
-            info = new AwayInfo { Away = "Вас не было " + Texts.Duration(summary.AwaySeconds), Lines = new List<string>(summary.Lines) };
+            info = new AwayInfo
+            {
+                Away = "Вас не было " + Texts.Duration(summary.AwaySeconds), Lines = new List<string>(summary.Lines),
+                CollectAll = app.State.Meta.FarmOpen && (summary.Ready.Count > 0 || summary.Boosters.Count > 0),
+            };
             this.done = done;
         }
 
         protected override UiLayout Layout(CanvasFit fit) => Popups.Away(fit, info);
 
-        protected override void Bind() => View.OnClick("away.ok", () => Close(done));
-    }
-
-    /// <summary>The farm economy of chapter 2 before it is built.</summary>
-    public sealed class SoonPopup : GamePopup
-    {
-        public SoonPopup(GameApp app) : base(app)
-        {
-        }
-
-        protected override UiLayout Layout(CanvasFit fit) => Popups.Soon(fit, "Хозяйство",
-            "Ферма спасена! Поля, животные, мастерские и заказы соседей откроются в следующем обновлении. Скоро!");
-
         protected override void Bind()
         {
-            View.OnClick("soon.panel.close", () => Close());
-            View.OnClick("soon.ok", () => Close());
+            View.OnClick("away.ok", () => Close(done));
+            if (info.CollectAll)
+                View.OnClick("away.collect", Collect);
+        }
+
+        void Collect()
+        {
+            var meta = App.State.Meta;
+            var r = meta.CollectAll(GameState.Now);
+            App.State.Save();
+            Ui.Toast(r.IsEmpty ? Texts.Error(MetaError.BarnFull) : "Собрано: " + r.Describe(meta.Data));
+            Close(done);
         }
     }
 }

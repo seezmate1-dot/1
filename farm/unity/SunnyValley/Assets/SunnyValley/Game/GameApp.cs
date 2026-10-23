@@ -130,6 +130,8 @@ namespace SunnyValley.Game
         void Update()
         {
             Current?.Tick(Time.unscaledDeltaTime);
+            foreach (var p in Popups.ToArray())
+                p.Tick(Time.unscaledDeltaTime);
             // queued toasts, one every 2.6 s
             toastClock -= Time.unscaledDeltaTime;
             if (toasts.Count > 0 && toastClock <= 0)

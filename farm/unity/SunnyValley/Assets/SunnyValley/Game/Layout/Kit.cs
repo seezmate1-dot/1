@@ -183,6 +183,27 @@ namespace SunnyValley.Layout
         public const string Lock = "lock";
         public const string Check = "check";
 
+        // the farm economy (chapter 2)
+        public const string Fields = "fields";
+        public const string Animals = "animals";
+        public const string Workshop = "workshop";
+        public const string Barn = "barn";
+        public const string Town = "town";
+        public const string Truck = "truck";
+        public const string Xp = "xp";
+        public const string People = "people";
+        public const string Lot = "lot";
+        public const string Beauty = "beauty";
+        public const string Soil = "soil";
+        public const string Plus = "plus";
+        public const string Clock = "clock";
+
+        /// <summary>A good of the barn by its id: the board's own pieces keep their icons, the rest are «item.&lt;id&gt;».</summary>
+        public static string Item(string id) => Array.IndexOf(Pieces, id) >= 0 ? id : "item." + id;
+
+        /// <summary>A tool (hammer, nails, paint, saw, axe).</summary>
+        public static string Tool(string id) => "tool." + id;
+
         /// <summary>The six pieces of the board (GDD §4.1), also goal icons.</summary>
         public static readonly string[] Pieces = { "tomato", "corn", "apple", "carrot", "eggplant", "blueberry" };
     }
