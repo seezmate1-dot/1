@@ -84,7 +84,7 @@ namespace SunnyValley.Game.Level
         public MoveResult AddMoves(int n) => Game.ContinueWithExtraMoves(n);
     }
 
-    /// <summary>The designed levels in Resources/Levels; beyond the last one the later levels come round again.</summary>
+    /// <summary>The designed levels in Resources/Levels (1–200); only beyond the last one do the later levels (21…) come round again.</summary>
     public static class LevelLibrary
     {
         /// <summary>The first level that is repeated after the last designed one (the tutorials are not).</summary>

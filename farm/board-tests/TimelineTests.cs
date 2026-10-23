@@ -188,7 +188,8 @@ namespace SunnyValley.BoardTests
             var plainTimes = new List<float>();
             var allTimes = new List<float>();
             int timelines = 0;
-            for (int id = 1; id <= 60; id++)
+            int levels = Directory.GetFiles(LevelsDir(), "level_*.json").Length;
+            for (int id = 1; id <= levels; id++)
             {
                 var level = Load(id);
                 var pre = id % 7 == 0 ? new[] { BoosterKind.PreLine, BoosterKind.PreBomb, BoosterKind.PreRainbow } : null;

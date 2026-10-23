@@ -28,13 +28,17 @@ namespace SunnyValley.Core.Tests
 
         static LevelData Load(int id) => LevelLoader.FromJson(File.ReadAllText(Path.Combine(LevelsDir(), $"level_{id:000}.json")));
 
-        static IEnumerable<int> AllIds() => Enumerable.Range(1, 60);
+        /// <summary>How many levels ship (level_001 … level_200); past the last one the game repeats 21… (LevelLibrary).</summary>
+        const int LevelCount = 200;
+
+        static IEnumerable<int> AllIds() => Enumerable.Range(1, LevelCount);
 
         [Test]
-        public void SixtyLevelsShip()
+        public void TwoHundredLevelsShip_WithoutGaps()
         {
-            for (int id = 1; id <= 60; id++)
+            for (int id = 1; id <= LevelCount; id++)
                 Assert.IsTrue(File.Exists(Path.Combine(LevelsDir(), $"level_{id:000}.json")), "level " + id);
+            Assert.IsFalse(File.Exists(Path.Combine(LevelsDir(), $"level_{LevelCount + 1:000}.json")), "update LevelCount");
         }
 
         [TestCaseSource(nameof(AllIds))]
@@ -44,6 +48,7 @@ namespace SunnyValley.Core.Tests
             Assert.AreEqual(id, level.Id);
             CollectionAssert.IsEmpty(LevelValidator.Validate(level));
             Assert.That(level.Moves, Is.InRange(15, 40));
+            if (id > 60) Assert.That(level.Moves, Is.InRange(20, 35), "levels after 60 give 20–35 moves");
             Assert.IsFalse(string.IsNullOrEmpty(level.Name));
             // Round trip keeps it the same.
             Assert.AreEqual(LevelLoader.ToJson(level), LevelLoader.ToJson(LevelLoader.FromJson(LevelLoader.ToJson(level))));
@@ -69,13 +74,56 @@ namespace SunnyValley.Core.Tests
         [Test]
         public void HardLevels_AreHardForTheAverageBot_EasyAfterHard()
         {
-            foreach (var id in new[] { 30, 40, 50, 60 })
+            for (int id = 30; id <= LevelCount; id += 10)
             {
                 var r = LevelSimulator.Run(Load(id), () => new AverageBot(), 60, 9000);
                 Assert.That(r.WinRate, Is.InRange(0.25, 0.62), r.ToString());
-                var next = id < 60 ? LevelSimulator.Run(Load(id + 1), () => new AverageBot(), 40, 9000) : null;
+                var next = id < LevelCount ? LevelSimulator.Run(Load(id + 1), () => new AverageBot(), 40, 9000) : null;
                 if (next != null) Assert.GreaterOrEqual(next.WinRate, 0.8, next.ToString());
             }
+        }
+
+        static double WaveMiddle(int wave) =>
+            Enumerable.Range(wave * 10 + 2, 8).Average(id => LevelSimulator.Run(Load(id), () => new AverageBot(), 40, 11000).WinRate);
+
+        [Test]
+        public void Curve_MiddleOfTheWaveDriftsDownToAbout55Percent()
+        {
+            double early = WaveMiddle(2), late = WaveMiddle(19);
+            Assert.That(late, Is.InRange(0.45, 0.65), "191–199");
+            Assert.Greater(early, late + 0.08, "21–29 vs 191–199");
+        }
+
+        [Test]
+        public void Levels_NoTwoInARowWithTheSameBoardAndGoals()
+        {
+            string Key(LevelData l) => LevelLoader.ToJson(new LevelData
+            {
+                Grid = l.Grid, Layers = l.Layers, Pieces = l.Pieces, Specials = l.Specials, Baskets = l.Baskets, Walls = l.Walls,
+                Portals = l.Portals, Spawners = l.Spawners, ChickExits = l.ChickExits, Chicks = l.Chicks, Colors = l.Colors,
+                Goals = l.Goals.Select(g => new GoalData { Type = g.Type, Color = g.Color }).ToList(),
+            });
+            var prev = Key(Load(1));
+            for (int id = 2; id <= LevelCount; id++)
+            {
+                var key = Key(Load(id));
+                Assert.AreNotEqual(prev, key, "levels " + (id - 1) + " and " + id);
+                prev = key;
+            }
+        }
+
+        [Test]
+        public void Levels_NamesAreUnique_IntrosComeOnce_MostLateLevelsHaveSixCrops()
+        {
+            var levels = AllIds().Select(Load).ToList();
+            CollectionAssert.AllItemsAreUnique(levels.Select(l => l.Name));
+            CollectionAssert.AllItemsAreUnique(levels.Where(l => l.Intro != null).Select(l => l.Intro));
+            var late = levels.Where(l => l.Id > 60).ToList();
+            Assert.GreaterOrEqual(late.Count(l => l.Colors == 6), late.Count * 2 / 3, "6 crops on most levels after 60");
+            // A new idea every 5–10 levels until 150: no long stretch without one.
+            var intros = levels.Where(l => l.Intro != null && l.Id > 60).Select(l => l.Id).ToList();
+            Assert.GreaterOrEqual(intros.Count, 15);
+            for (int i = 1; i < intros.Count; i++) Assert.LessOrEqual(intros[i] - intros[i - 1], 10, "levels " + intros[i - 1] + "…" + intros[i]);
         }
 
         [Test]
