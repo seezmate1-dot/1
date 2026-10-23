@@ -112,6 +112,29 @@ namespace SunnyValley.Core.Tests
             }
         }
 
+        [TestCaseSource(nameof(AllIds))]
+        public void ShippedLevel_NoRowIsAWallOfPiecesThatCannotMove(int id)
+        {
+            var level = Load(id);
+            int w = level.Width, h = level.Height;
+            var stuck = new bool[w * h];
+            if (level.Layers != null)
+                foreach (var kv in level.Layers)
+                {
+                    if (kv.Key == "grass") continue;
+                    for (int y = 0; y < h; y++)
+                        for (int x = 0; x < w; x++)
+                            if (kv.Value[y][x] != '.' && kv.Value[y][x] != '0') stuck[y * w + x] = true;
+                }
+            if (level.Baskets != null)
+                foreach (var b in level.Baskets) stuck[b.Y * w + b.X] = true;
+            for (int y = 0; y < h; y++)
+            {
+                var cells = Enumerable.Range(0, w).Where(x => level.Grid[y][x] == '#').ToList();
+                Assert.IsFalse(cells.Count > 0 && cells.All(x => stuck[y * w + x]), "level " + id + " row " + y + " blocks every column");
+            }
+        }
+
         [Test]
         public void Levels_NamesAreUnique_IntrosComeOnce_MostLateLevelsHaveSixCrops()
         {
