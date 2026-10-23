@@ -179,6 +179,8 @@ namespace SunnyValley.Game.Match3View
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = Vector2.zero;
             rt.SetAsLastSibling();
+            // its own canvas: the flying ghosts re-batch only themselves, not the HUD under them
+            go.AddComponent<Canvas>();
             fly = new FxPool(rt);
             fly.Ended = OnFlyEnded;
             flyRoot = rt;

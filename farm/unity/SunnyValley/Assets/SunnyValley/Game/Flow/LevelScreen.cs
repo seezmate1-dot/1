@@ -329,6 +329,7 @@ namespace SunnyValley.Game.Flow
                 else if (movesText.color != movesColor)
                 {
                     movesText.color = movesColor;
+                    movesRt.localScale = Vector3.one;
                 }
             }
 
