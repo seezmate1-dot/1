@@ -193,10 +193,16 @@ namespace SunnyValley.Layout
         public static readonly string[] BoosterNames = { "Лопата", "Грабли", "Лейка", "Перемешать" };
         public static readonly uint[] BoosterColors = { Tokens.Soil, Tokens.Green, Tokens.Blue, Tokens.Purple };
 
+        public const string LevelBackground = "Ch1/Backgrounds/Meadow";
+
         public static UiLayout Level(CanvasFit fit, LevelHud hud)
         {
             var L = UiLayout.Begin("level", fit);
-            L.Root.Add(Kit.Panel("level.bg", Tokens.GrassDark, 0)).Stretch().Flags |= NodeFlags.FullBleed;
+            // the meadow picture behind the board, a little darkened so the pieces stand out
+            var bg = L.Root.Add(Kit.Panel("level.bg", Tokens.GrassDark, 0)).Stretch();
+            bg.Flags |= NodeFlags.FullBleed;
+            bg.Icon = LevelBackground;
+            bg.DepthColor = 0xC8D2C8FF;
 
             float W = L.W, H = L.H, M = Tokens.Margin;
             float topH = Tokens.LevelTopHeight;
@@ -215,8 +221,8 @@ namespace SunnyValley.Layout
             float goalsW = rowW - Tokens.RoundButton - movesW - 2 * Tokens.Gap;
             var goals = top.Add(Kit.Panel("level.goals", Tokens.Wood, Tokens.RadiusLarge, 10, Tokens.WoodDark));
             goals.TopLeft(Tokens.RoundButton + Tokens.Gap, 0, goalsW, topH);
-            goals.Add(Kit.Label("level.goals.caption", "Цели", Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextMuted)).StretchTop(12, 12, 14, 50);
-            GoalSlots(goals.Add(Kit.Group("level.goals.slots")).Stretch(12, 12, 62, 18), "level.goal", hud.Goals);
+            goals.Add(Kit.Label("level.goals.caption", "Цели", Tokens.FontCaption, Tokens.FontCaptionMin, Tokens.TextMuted)).StretchTop(12, 12, 8, 44);
+            GoalSlots(goals.Add(Kit.Group("level.goals.slots")).Stretch(12, 12, 52, 8), "level.goal", hud.Goals);
 
             // bottom: in-level boosters, evenly spread, centred
             var boosters = L.Safe.Add(Kit.Group("level.boosters")).StretchBottom(M, M, M, Tokens.BoosterHeight);
@@ -277,9 +283,9 @@ namespace SunnyValley.Layout
                 var goal = goals != null && i < goals.Count ? goals[i] : new Goal(Icons.Pieces[0], 0);
                 var slot = row.Add(Kit.Group(id + i));
                 Slice(slot, i, n, 8);
-                slot.Add(Kit.Icon(id + i + ".icon", goal.Icon)).TopCenter(0, 0, 66, 66);
+                slot.Add(Kit.Icon(id + i + ".icon", goal.Icon)).TopCenter(0, 0, 84, 84);
                 slot.Add(Kit.Label(id + i + ".count", Math.Max(0, goal.Count).ToString(), Tokens.FontCaption, Tokens.FontCaptionMin,
-                    Tokens.TextDark)).StretchBottom(0, 0, 0, 50);
+                    Tokens.TextDark)).StretchBottom(0, 0, 0, 44);
             }
         }
 

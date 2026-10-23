@@ -126,6 +126,8 @@ namespace SunnyValley.Game.UI
                 default:
                     if (n.Shape != LShape.None)
                         face = MakeShape(rt, n);
+                    else if (n.Kind == NodeKind.Panel)
+                        face = MakeBackdrop(rt, n);
                     break;
             }
             if (face != null)
@@ -147,6 +149,28 @@ namespace SunnyValley.Game.UI
             }
             if (n.Kind == NodeKind.Board)
                 rt.gameObject.AddComponent<Match3View.BoardView>().Build(n);
+        }
+
+        /// <summary>A square-cornered panel (a screen's background): its colour, and the painted picture named by Icon
+        /// (Resources/Art/…) over it if there is one, scaled to cover the whole rectangle and tinted by the colour.</summary>
+        static Image MakeBackdrop(RectTransform rt, UiNode n)
+        {
+            var face = rt.gameObject.AddComponent<Image>();
+            face.color = ToColor(n.Color);
+            face.raycastTarget = false;
+            var art = string.IsNullOrEmpty(n.Icon) ? null : Resources.Load<Sprite>("Art/" + n.Icon);
+            if (art == null)
+                return face;
+            face.color = ToColor(n.Color | 0xFF);
+            var pic = NewRect("picture", rt);
+            var img = pic.gameObject.AddComponent<Image>();
+            img.sprite = art;
+            img.color = ToColor(n.DepthColor);
+            img.raycastTarget = false;
+            var fit = pic.gameObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fit.aspectRatio = art.rect.width / art.rect.height;
+            return face;
         }
 
         /// <summary>A rounded shape: an optional darker band offset down by Depth, then the face over the whole rectangle.</summary>

@@ -1,3 +1,3 @@
-farm-ch1 Farm/Specials/Pitchfork
+Farm/Ch1/Looks/PathStone Farm/Ch1/Looks/PathBrick Farm/Ch1/Looks/PathWood Farm/Ch1/Looks/FenceWattle Farm/Ch1/Looks/SignCarved Farm/Ch1/Looks/SignPainted Farm/Ch1/Looks/SignForged Farm/Ch1/Looks/ScarecrowHat Farm/Ch1/Looks/ScarecrowScarf Farm/Ch1/Looks/ScarecrowBucket Farm/Ch1/Looks/BridgeStone Farm/Ch1/Looks/SailsWhite Farm/Ch1/Looks/SailsLattice Farm/Ch1/Looks/SailsRibbons Farm/Ch1/Looks/FestivalGarlands Farm/Ch1/Objects/BedsDug Farm/Ch1/Objects/WheatSprouts Farm/Ch1/Objects/Trail Farm/Ch1/Objects/Pier Farm/Ch1/Objects/RoofPatches Farm/Ch1/Objects/Planks Farm/Ch1/Objects/ChickenRun Farm/Ch1/Junk/Cobwebs Farm/Ch1/Junk/Thicket Farm/Ch1/Junk/RoadDebris Farm/Ch1/Before/AppleTreeDry Farm/Ch1/Before/BarrelBroken Farm/Ch1/Fx/ChimneySmoke Farm/Ch1/Fog/Cloud1 Farm/Ch1/Fog/Cloud2 Farm/Specials/Pitchfork
 0.5
-# «Солнечная долина» chapter 1: zone backgrounds, task objects, looks, broken things, junk, effects, portraits; the pitchfork again
+# «Солнечная долина» chapter 1: redo of 31 pictures that came out wrong (empty paths, scarecrows as people, letters on signs, clouds on islands), the pitchfork once more
