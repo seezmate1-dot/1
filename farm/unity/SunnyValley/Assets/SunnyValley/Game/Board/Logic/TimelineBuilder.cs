@@ -90,10 +90,13 @@ namespace SunnyValley.Game.Match3View
         void StartWave(int w)
         {
             wave = w;
-            cursor = Math.Max(cursor, Math.Max(busy, hitEnd)) + Timings.WaveGap;
+            cursor = Math.Max(cursor, Math.Max(busy, hitEnd)) + Timings.WaveGap * Tempo;
             matchTime = cursor;
             hitEnd = busy = cursor;
         }
+
+        /// <summary>Long cascades speed up, as in the genre: from the third wave on everything plays a bit faster.</summary>
+        float Tempo => wave <= 1 ? 1f : Math.Max(Timings.MinTempo, 1f - Timings.TempoStep * (wave - 1));
 
         Cue NewCue(CueKind kind, float time, float duration, int pieceId = -1)
         {
@@ -211,7 +214,7 @@ namespace SunnyValley.Game.Match3View
                 }
                 case SpecialCreatedEvent sc:
                 {
-                    float t = (causes.TryGetValue(sc.CauseId, out var cause) ? cause.Start : matchTime) + Timings.Merge;
+                    float t = (causes.TryGetValue(sc.CauseId, out var cause) ? cause.Start : matchTime) + Timings.Merge * Tempo;
                     var c = NewCue(CueKind.SpecialAppear, t, Timings.Appear, sc.PieceId);
                     c.To = sc.Cell;
                     c.Value = (int)sc.Special;
@@ -337,13 +340,13 @@ namespace SunnyValley.Game.Match3View
             }
             else if (createdBy.TryGetValue(pc.CauseId, out var sc) && Contains(sc.From, pc.Cell))
             {
-                c = NewCue(CueKind.Merge, t, Timings.Merge, pc.PieceId);
+                c = NewCue(CueKind.Merge, t, Timings.Merge * Tempo, pc.PieceId);
                 c.To = sc.Cell;
-                busy = Math.Max(busy, t + Timings.Merge);
+                busy = Math.Max(busy, t + c.Duration);
             }
             else
             {
-                c = NewCue(CueKind.Pop, t, Timings.Pop, pc.PieceId);
+                c = NewCue(CueKind.Pop, t, Timings.Pop * Tempo, pc.PieceId);
             }
             c.From = pc.Cell;
             c.Value = (int)pc.Color;
@@ -518,7 +521,8 @@ namespace SunnyValley.Game.Match3View
         /// <summary>The refill of this wave: by ticks that get shorter (the pieces accelerate), a bounce on landing.</summary>
         void FlushRefill()
         {
-            float start = Math.Max(cursor, Math.Max(busy, hitEnd > 0 ? hitEnd + Timings.RefillDelay : 0));
+            float tempo = Tempo;
+            float start = Math.Max(cursor, Math.Max(busy, hitEnd > 0 ? hitEnd + Timings.RefillDelay * tempo : 0));
             int maxTick = 0;
             foreach (var e in refill)
             {
@@ -529,7 +533,12 @@ namespace SunnyValley.Game.Match3View
             }
             var tickStart = new float[maxTick + 2];
             tickStart[0] = start;
-            for (int k = 0; k <= maxTick; k++) tickStart[k + 1] = tickStart[k] + Timings.TickDuration(k);
+            var tickDur = new float[maxTick + 1];
+            for (int k = 0; k <= maxTick; k++)
+            {
+                tickDur[k] = Timings.TickDuration(k) * tempo;
+                tickStart[k + 1] = tickStart[k] + tickDur[k];
+            }
 
             float end = start;
             foreach (var e in refill)
@@ -538,7 +547,7 @@ namespace SunnyValley.Game.Match3View
                 {
                     case SpawnEvent sp:
                     {
-                        var c = NewCue(CueKind.Spawn, tickStart[sp.Tick], Timings.TickDuration(sp.Tick), sp.PieceId);
+                        var c = NewCue(CueKind.Spawn, tickStart[sp.Tick], tickDur[sp.Tick], sp.PieceId);
                         c.To = sp.Cell;
                         c.Value = (int)sp.Color;
                         c.Event = e;
@@ -549,7 +558,7 @@ namespace SunnyValley.Game.Match3View
                     case FallEvent f:
                         foreach (var s in f.Segments)
                         {
-                            var c = NewCue(CueKind.Fall, tickStart[s.Tick], Timings.TickDuration(s.Tick), f.PieceId);
+                            var c = NewCue(CueKind.Fall, tickStart[s.Tick], tickDur[s.Tick], f.PieceId);
                             c.From = s.From;
                             c.To = s.To;
                             c.Value = (int)s.Kind;

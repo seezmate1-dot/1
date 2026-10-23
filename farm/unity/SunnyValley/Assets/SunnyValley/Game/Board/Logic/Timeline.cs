@@ -185,6 +185,9 @@ namespace SunnyValley.Game.Match3View
         public const float Spread = 0.35f;
         public const float Shuffle = 0.55f;
         public const float GoalFly = 0.55f;
+        /// <summary>Each cascade wave after the second plays this much faster, down to MinTempo.</summary>
+        public const float TempoStep = 0.08f;
+        public const float MinTempo = 0.6f;
         public const float BonusSpacing = 0.11f;
         public const float BonusSpark = 0.3f;
         public const float BonusFireSpacing = 0.14f;

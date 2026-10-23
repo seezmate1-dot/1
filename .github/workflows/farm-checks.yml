@@ -25,6 +25,9 @@ jobs:
       - name: Core tests (the same C# that Unity compiles)
         run: dotnet test farm/core-tests
 
+      - name: Board timeline tests (step log → animation cues on real levels)
+        run: dotnet test farm/board-tests
+
       - name: Layout tests (every screen and popup on 11 phones and tablets)
         env:
           UI_PREVIEW_DIR: ${{ github.workspace }}/layout-previews

@@ -222,6 +222,9 @@ namespace SunnyValley.BoardTests
                     timelines++;
                     if (!result.Accepted) continue;
                     allTimes.Add(tl.BoardTime);
+                    if (tl.BoardTime > 4)
+                        TestContext.WriteLine($"long: level {id} move {move}: {tl.BoardTime:0.00} s, waves {result.Waves}, activations {result.OfType<ActivationEvent>().Count()}, " +
+                                              $"bees {result.OfType<BeeFlightEvent>().Count()}, max generation {result.OfType<ActivationEvent>().Select(a => a.Generation).DefaultIfEmpty(0).Max()}");
                     bool plain = result.Waves <= 1 && !result.OfType<ActivationEvent>().Any() && !result.OfType<ShuffleEvent>().Any() &&
                                  !result.OfType<SpreadEvent>().Any() && result.OfType<SwapEvent>().Any();
                     if (plain) plainTimes.Add(tl.BoardTime);
@@ -242,6 +245,8 @@ namespace SunnyValley.BoardTests
             Assert.LessOrEqual(plainTimes.Last(), 1.05f, "a plain move resolves in about a second");
             Assert.GreaterOrEqual(plainTimes.First(), 0.3f, "…but is still visible");
             Assert.LessOrEqual(median, 1.5f, "a typical move resolves in 1–1.5 s");
+            Assert.LessOrEqual(allTimes[allTimes.Count * 9 / 10], 3f, "nine moves in ten are over within 3 s");
+            Assert.LessOrEqual(allTimes.Last(), 10f, "even a dozen cascade waves speed up enough");
         }
 
         // ------------------------------------------------------------------ hand-made boards
