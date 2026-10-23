@@ -64,6 +64,10 @@ namespace SunnyValley.Game.UI
             { "pitchfork", "Art/Specials/Pitchfork" }, { "bomb", "Art/Specials/Bomb" }, { "rainbow", "Art/Specials/Rainbow" },
             { "shovel", "Art/Boosters/Shovel" }, { "rake", "Art/Boosters/Rake" }, { "can", "Art/Boosters/WateringCan" },
             { "shuffle", "Art/Boosters/Shuffle" },
+            { "crate", "Art/Obstacles/Crate1" }, { "ice", "Art/Obstacles/Ice" }, { "chain", "Art/Obstacles/Chain" },
+            { "honey", "Art/Obstacles/Honey" }, { "stone", "Art/Obstacles/Stone" }, { "weed", "Art/Obstacles/Weed" },
+            { "bed", "Art/Obstacles/Bed" }, { "basket", "Art/Obstacles/Basket" }, { "chick", "Art/Obstacles/Chick" },
+            { "bee", "Art/Specials/Bee" },
         };
 
         /// <summary>The icon by name: painted art if there is any, else a placeholder painted in code.</summary>
@@ -77,6 +81,13 @@ namespace SunnyValley.Game.UI
             var sprite = art != null ? art : PaintIcon(name);
             icons[name] = sprite;
             return sprite;
+        }
+
+        /// <summary>Puts a sprite made elsewhere (the board's painted grass) under an icon name.</summary>
+        public static void Register(string name, Sprite sprite)
+        {
+            if (!string.IsNullOrEmpty(name) && sprite != null)
+                icons[name] = sprite;
         }
 
         static Sprite LoadArt(string path)

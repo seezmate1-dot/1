@@ -105,11 +105,10 @@ namespace SunnyValley.Game
 
         public void OpenLevelStart()
         {
-            var session = new DemoLevelSession(State.level);
             new LevelStartPopup(this, new LevelStartInfo
             {
                 Level = State.level,
-                Goals = session.Goals.Select(g => new Goal(g.Icon, g.Count)).ToList(),
+                Goals = Match3LevelSession.PreviewGoals(State.level),
                 Boosters = State.preBoosters.ToArray(),
                 Picked = new bool[3],
             }).Open();
@@ -130,8 +129,8 @@ namespace SunnyValley.Game
             }
             State.Save();
             MovesBought = 0;
-            // pre-level boosters go onto the board when Core's board can take them (GDD §4.5)
-            var session = new DemoLevelSession(State.level);
+            // the picked pre-level boosters go onto the board at the start (GDD §4.5)
+            var session = new Match3LevelSession(State.level, info.Picked);
             Ui.FadeThrough(() => Switch(new LevelScreen(this, session)));
         }
 
