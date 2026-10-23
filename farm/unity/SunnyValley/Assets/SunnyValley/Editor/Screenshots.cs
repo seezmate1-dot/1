@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using SunnyValley.Game.Level;
+using SunnyValley.Game.Match3View;
 using SunnyValley.Game.UI;
 using SunnyValley.Layout;
 using UnityEditor;
@@ -69,6 +69,13 @@ namespace SunnyValley.EditorTools
                     Render(device, name, build, file);
                     count++;
                 }
+                // real levels in the middle of a game, one move caught mid-animation (pops, streaks, falls)
+                foreach (var (name, level, moves, into) in MidGame)
+                {
+                    string file = Path.Combine(dir, $"{name}_{Devices.Slug(device)}.png");
+                    Render(device, name, null, file, root => BoardCapture.LevelMidGame(root.ScreenLayer, root.Fit, level, moves, into));
+                    count++;
+                }
             }
             return count;
         }
@@ -84,7 +91,13 @@ namespace SunnyValley.EditorTools
             return f => Screens.Farm(f, new FarmHud());
         }
 
-        static void Render(ScreenSpec spec, string name, Func<CanvasFit, UiLayout> build, string file)
+        /// <summary>Level screens with real levels: crates (7), chicks (13), honey and baskets (34), portals (37).</summary>
+        static readonly (string name, int level, int moves, float into)[] MidGame =
+        {
+            ("level_007_play", 7, 4, 0.3f), ("level_013_play", 13, 6, 0.55f), ("level_034_play", 34, 5, 0.25f), ("level_037_play", 37, 3, 0f),
+        };
+
+        static void Render(ScreenSpec spec, string name, Func<CanvasFit, UiLayout> build, string file, Func<UiRoot, UiView> custom = null)
         {
             var rt = new RenderTexture(spec.Width, spec.Height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
             var camGo = new GameObject("capture camera");
@@ -98,11 +111,12 @@ namespace SunnyValley.EditorTools
             var root = UiRoot.CreateForCapture(spec, cam);
             try
             {
-                var under = Under(name);
+                var under = custom == null ? Under(name) : null;
                 if (under != null)
                     Fill(UiView.Build(under(root.Fit), root.ScreenLayer));
                 bool popup = under != null;
-                var view = UiView.Build(build(root.Fit), popup ? (name == "toast" ? root.OverlayLayer : root.PopupLayer) : root.ScreenLayer);
+                var view = custom != null ? custom(root)
+                    : UiView.Build(build(root.Fit), popup ? (name == "toast" ? root.OverlayLayer : root.PopupLayer) : root.ScreenLayer);
                 Fill(view);
                 MarkUnsafe(root);
 
@@ -127,15 +141,12 @@ namespace SunnyValley.EditorTools
             }
         }
 
-        /// <summary>Puts pieces on a board, if the view has one.</summary>
+        /// <summary>Puts a real level's pieces on a board, if the view has one and it is still empty.</summary>
         static void Fill(UiView view)
         {
             var board = view.Rect("level.board")?.GetComponent<BoardView>();
-            if (board != null)
-            {
-                var node = view.Node("level.board");
-                board.Show(new DemoLevelSession(1, node.Cols, node.Rows).PieceAt);
-            }
+            if (board != null && !board.HasGame)
+                BoardCapture.Fill(view);
         }
 
         /// <summary>Tints what lies outside the safe area (cut-out, status bar, gesture bar) in translucent red.</summary>

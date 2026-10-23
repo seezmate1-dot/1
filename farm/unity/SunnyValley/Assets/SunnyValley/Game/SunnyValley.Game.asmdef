@@ -3,6 +3,7 @@
     "rootNamespace": "SunnyValley.Game",
     "references": [
         "SunnyValley.Core",
+        "SunnyValley.BoardLogic",
         "SunnyValley.Layout",
         "UnityEngine.UI"
     ],

@@ -3,6 +3,8 @@
     "rootNamespace": "SunnyValley.EditorTools",
     "references": [
         "SunnyValley.Game",
+        "SunnyValley.Core",
+        "SunnyValley.BoardLogic",
         "SunnyValley.Layout",
         "UnityEngine.UI"
     ],

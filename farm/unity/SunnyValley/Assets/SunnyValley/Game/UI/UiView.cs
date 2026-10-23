@@ -146,7 +146,7 @@ namespace SunnyValley.Game.UI
                 scroll.content = rects[n.Children[0].Id];
             }
             if (n.Kind == NodeKind.Board)
-                rt.gameObject.AddComponent<BoardView>().Build(n);
+                rt.gameObject.AddComponent<Match3View.BoardView>().Build(n);
         }
 
         /// <summary>A rounded shape: an optional darker band offset down by Depth, then the face over the whole rectangle.</summary>
