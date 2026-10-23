@@ -2,8 +2,8 @@
   "id": 106,
   "name": "Узкий жёлоб",
   "intro": "spawners",
-  "moves": 26,
-  "colors": 5,
+  "moves": 27,
+  "colors": 6,
   "seed": 4922,
   "grid": [
     ".#..#..#.",
@@ -51,7 +51,7 @@
     {
       "type": "collect",
       "color": "corn",
-      "count": 67
+      "count": 15
     }
   ]
 }

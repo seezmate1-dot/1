@@ -2,8 +2,8 @@
   "id": 102,
   "name": "Четыре дела",
   "intro": "mixed4",
-  "moves": 20,
-  "colors": 5,
+  "moves": 25,
+  "colors": 6,
   "seed": 4774,
   "grid": [
     "#########",
@@ -67,7 +67,7 @@
     {
       "type": "collect",
       "color": "apple",
-      "count": 33
+      "count": 10
     }
   ]
 }

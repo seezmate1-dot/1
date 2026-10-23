@@ -2,8 +2,8 @@
   "id": 126,
   "name": "Подарки во льду",
   "intro": "iceSpecial",
-  "moves": 22,
-  "colors": 5,
+  "moves": 24,
+  "colors": 6,
   "seed": 5662,
   "grid": [
     "#########",
@@ -56,7 +56,7 @@
     {
       "type": "collect",
       "color": "corn",
-      "count": 54
+      "count": 12
     }
   ]
 }

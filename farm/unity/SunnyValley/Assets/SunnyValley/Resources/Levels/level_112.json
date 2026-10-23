@@ -2,8 +2,8 @@
   "id": 112,
   "name": "Мост с перилами",
   "intro": "portalWalls",
-  "moves": 23,
-  "colors": 5,
+  "moves": 25,
+  "colors": 6,
   "seed": 5144,
   "grid": [
     "#####....",

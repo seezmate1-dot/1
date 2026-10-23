@@ -236,7 +236,7 @@ namespace SunnyValley.Tools
 
             // ---------------------------------------------------------------- 131–140
             L.Add(D(131, "Пикник", 5, Tee).Collect("apple", 18).Collect("tomato", 18));
-            L.Add(Teach(D(132, "Каменный лабиринт", 6, M(Full, 2, "..S...S..", "..s...s..", "..S...S..", "..s...s..", "....s....")), "stoneMaze").Goal("stone"));
+            L.Add(Teach(D(132, "Каменный лабиринт", 5, M(Full, 2, "..S...S..", "..s...s..", "..S...S..", "..s...s..", "....s....")), "stoneMaze").Goal("stone"));
             L.Add(D(133, "Мёд в загонах", 6, M(Full, 4, ".h..h..h.")).Goal("honey").Collect("blueberry", 12).With(d => d.Walls = WallsRight(0, 8, 2, 5)));
             L.Add(D(134, "Цыплята у гнёзд", 6, M(Full, 0, ".k..k..k.", ".........", ".........", ".........", ".........", "1.1...1.1")).Goal("chick", 4).Goal("crate").Chicks(1, 3, 3)
                 .With(d => d.ChickExits = Cells((1, 8), (4, 8), (7, 8))));
@@ -250,7 +250,7 @@ namespace SunnyValley.Tools
 
             // ---------------------------------------------------------------- 141–150
             L.Add(D(141, "Полевые цветы", 5, M(Diamond, 4, "..ggggg..")).Goal("grass").Collect("tomato", 15));
-            L.Add(Teach(D(142, "Медовые корзины", 6, M(Full, 3, "..h...h..", ".huh.huh.", "..h...h..")), "honeyBaskets").Goal("basket").Goal("honey")
+            L.Add(Teach(D(142, "Медовые корзины", 5, M(Full, 3, "..h...h..", ".huh.huh.", "..h...h..")), "honeyBaskets").Goal("basket").Goal("honey")
                 .Basket("corn", 6).Basket("apple", 6));
             L.Add(D(143, "Ледяные острова", 5, M(Islands, 1, "iii...iii", ".........", ".........", ".........", "...iii...")).Goal("ice").Collect("corn", 10));
             L.Add(D(144, "Цепи на мосту", 5, M(Portal3, 1, "lLlLlL...", ".........", ".........", ".........", ".........", ".........", "l.l.l...."))
@@ -281,7 +281,7 @@ namespace SunnyValley.Tools
             L.Add(D(161, "Вечерняя роса", 6, M(Wide, 3, "...ggg...")).Goal("grass").Collect("apple", 15));
             L.Add(D(162, "Длинный спуск", 5, M(Portal3, 0, "GGGGGG...", "gggggg...", ".........", "...1.1.1.")).Goal("grass").Goal("crate").With(d => d.Portals = P3()));
             L.Add(D(163, "Медовые острова", 5, M(Islands, 6, "....h....")).Goal("honey").Collect("corn", 10));
-            L.Add(D(164, "Каменные корзины", 6, M(Full, 4, "..u...u..", ".........", "..s...s..")).Goal("basket").Goal("stone").Basket("carrot", 6).Basket("blueberry", 6));
+            L.Add(D(164, "Каменные корзины", 6, M(Full, 4, "..u...u..", ".........", "..s...s..")).Goal("basket").Goal("stone").Basket("carrot", 5).Basket("blueberry", 5));
             L.Add(D(165, "Цыплята в лабиринте", 6, M(Full, 0, "k...k...k")).Goal("chick", 3)
                 .With(d => d.Walls = WallsRight(3, 6, 2, 5)));
             L.Add(D(166, "Скованный огород", 6, M(Diamond, 3, ".lbl.lbl.", ".........", "..llbll..")).Goal("crop", 4).Goal("chain"));
@@ -294,8 +294,8 @@ namespace SunnyValley.Tools
             // ---------------------------------------------------------------- 171–180
             L.Add(D(171, "Ясный день", 6, Diamond).Collect("corn", 15).Collect("apple", 15));
             L.Add(D(172, "Узкие жёлобы", 6, M(Funnel, 5, "iiiiiiiii", "iiiiiiiii")).Goal("ice").Collect("tomato", 10).With(d => d.Spawners = FunnelSpawners()));
-            L.Add(D(173, "Мёд у гнёзд", 6, M(Full, 0, "k...k...k", ".........", ".........", ".........", ".........", "..h......")).Goal("chick", 3).Goal("honey")
-                .With(d => d.ChickExits = Cells((0, 8), (4, 8), (8, 8))));
+            L.Add(D(173, "Мёд у гнёзд", 5, M(Full, 0, "k...k...k", ".........", ".........", ".........", ".........", "..h...h..")).Goal("chick", 3).Goal("honey")
+                .With(d => d.ChickExits = Cells((0, 8), (2, 8), (4, 8), (6, 8), (8, 8))));
             L.Add(D(174, "Каменный мост", 5, M(Portal2, 2, ".S.S.....", ".........", ".........", ".........", ".........", "....s.s.s")).Goal("stone").Collect("eggplant", 10)
                 .With(d => d.Portals = P2()));
             L.Add(D(175, "Луга на островах", 5, M(Islands, 1, "GGG...GGG", ".........", ".........", ".........", ".........", "...GGG...")).Goal("grass").Collect("apple", 10));
@@ -321,7 +321,7 @@ namespace SunnyValley.Tools
             // ---------------------------------------------------------------- 191–200
             L.Add(D(191, "Перед праздником", 6, Tee).Collect("tomato", 15).Collect("carrot", 15));
             L.Add(D(192, "Медовые гнёзда", 6, M(Full, 0, "..k...k..", ".........", ".........", ".........", ".........", ".........", "m.......m")).Goal("chick", 3).Goal("honey").Goal("grass")
-                .Chicks(1, 3, 2).With(d => d.ChickExits = Cells((2, 8), (6, 8))));
+                .Chicks(1, 3, 2).With(d => d.ChickExits = Cells((1, 8), (2, 8), (6, 8), (7, 8))));
             L.Add(D(193, "Каменный сад", 6, M(Diamond, 3, ".gtgggtg.", "gggtgtggg", ".gtgggtg.")).Goal("stone").Goal("grass"));
             L.Add(D(194, "Корзины на мосту", 5, M(Portal3, 3, "...1..1..", ".........", ".........", ".........", ".u..u....")).Goal("basket").Goal("crate")
                 .Basket("corn", 3).Basket("apple", 3).With(d => d.Portals = P3()));
