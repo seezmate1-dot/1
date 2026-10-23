@@ -82,24 +82,6 @@ namespace SunnyValley.Game.Level
         public MoveResult UseBooster(int booster, Pos target) => Game.UseBooster(InLevelBooster(booster), target);
 
         public MoveResult AddMoves(int n) => Game.ContinueWithExtraMoves(n);
-
-        /// <summary>The goals of a level for the popup before it, without starting it.</summary>
-        public static List<Goal> PreviewGoals(int level)
-        {
-            var list = new List<Goal>();
-            BoardSprites.Warm(); // the goal icons of obstacles (painted grass among them)
-            try
-            {
-                var game = Match3Game.Create(LevelLibrary.Load(level), 1);
-                foreach (var g in game.Goals)
-                    list.Add(new Goal(GoalIcons.For(g), g.Remaining));
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning("Уровень " + level + " не читается: " + e.Message);
-            }
-            return list;
-        }
     }
 
     /// <summary>The designed levels in Resources/Levels; beyond the last one the later levels come round again.</summary>

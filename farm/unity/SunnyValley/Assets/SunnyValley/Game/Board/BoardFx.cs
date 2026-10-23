@@ -207,6 +207,9 @@ namespace SunnyValley.Game.Match3View
         /// <summary>A burst of sparkles and dots in a colour.</summary>
         public void Burst(Vector2 at, Color color, float cell, float t0, int count, float speed = 1, Sprite sprite = null)
         {
+            // a board-wide combo pops dozens of pieces at once: keep the sprite count (and the re-batching) sane
+            if (live.Count > 240)
+                count = Mathf.Min(count, 2);
             for (int i = 0; i < count; i++)
             {
                 float ang = (i + 0.37f * (i % 3)) / count * Mathf.PI * 2;
