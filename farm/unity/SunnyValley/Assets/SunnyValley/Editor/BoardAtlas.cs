@@ -13,8 +13,10 @@ namespace SunnyValley.EditorTools
     /// Boosters, Currency — not the farm's large chapter pictures) into one sprite atlas, so the board and the HUD draw in a few batches
     /// instead of one per picture. Sprites keep loading by path (Resources.Load); the build swaps in the atlas.
     /// A packing problem only warns: the game works without the atlas, just with more draw calls.
+    /// NOT run before builds for now: packing crashed the Unity 6.3 editor in batch mode on CI (SIGFPE in
+    /// GetRowSize inside PackSpriteAtlases), which no try/catch can stop — only from the menu.
     /// </summary>
-    public sealed class BoardAtlas : IPreprocessBuildWithReport
+    public sealed class BoardAtlas
     {
         const string AtlasPath = "Assets/SunnyValley/Art.spriteatlas";
         static readonly string[] Folders =
@@ -22,20 +24,6 @@ namespace SunnyValley.EditorTools
             "Assets/SunnyValley/Resources/Art/Tiles", "Assets/SunnyValley/Resources/Art/Specials", "Assets/SunnyValley/Resources/Art/Obstacles",
             "Assets/SunnyValley/Resources/Art/Boosters", "Assets/SunnyValley/Resources/Art/Currency",
         };
-
-        public int callbackOrder => 0;
-
-        public void OnPreprocessBuild(BuildReport report)
-        {
-            try
-            {
-                Ensure(report.summary.platform);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning("Атлас картинок не собран (игра работает и без него): " + e.Message);
-            }
-        }
 
         [MenuItem("Солнечная долина/Собрать атлас картинок")]
         public static void FromMenu() => Ensure(EditorUserBuildSettings.activeBuildTarget);
