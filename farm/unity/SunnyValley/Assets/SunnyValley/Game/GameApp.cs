@@ -70,6 +70,7 @@ namespace SunnyValley.Game
             Switch(loading);
             yield return null;
             // paint every icon now, not in the middle of the first level
+            UiSkin.Warm();
             var icons = ShapeSprites.KnownIcons().ToList();
             for (int i = 0; i < icons.Count; i++)
             {

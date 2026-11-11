@@ -176,6 +176,9 @@ namespace SunnyValley.Game.UI
         /// <summary>A rounded shape: an optional darker band offset down by Depth, then the face over the whole rectangle.</summary>
         static Image MakeShape(RectTransform rt, UiNode n)
         {
+            var skinned = MakeSkinned(rt, n);
+            if (skinned != null)
+                return skinned;
             if (n.Depth > 0)
             {
                 var depth = NewRect("depth", rt);
@@ -207,6 +210,47 @@ namespace SunnyValley.Game.UI
             return face;
         }
 
+        /// <summary>
+        /// The painted skin for the node's role (UiSkin): one picture over the rectangle, reaching down by the lower
+        /// edge it has painted in (instead of the separate «depth» band), and white highlights over it. Null when the
+        /// skin has nothing for this node: then the plain shapes above are drawn.
+        /// </summary>
+        static Image MakeSkinned(RectTransform rt, UiNode n)
+        {
+            var look = UiSkin.For(n);
+            if (look.Base == null)
+                return null;
+            var faceRect = NewRect("face", rt);
+            faceRect.offsetMin = new Vector2(0, -look.Drop);
+            var face = faceRect.gameObject.AddComponent<Image>();
+            SetSkin(face, look.Base, look.Sliced, n.Radius);
+            face.color = look.Tint ? (Color)ToColor(n.Color) : Color.white;
+            face.raycastTarget = false;
+            if (look.Gloss != null)
+            {
+                var gloss = NewRect("gloss", faceRect).gameObject.AddComponent<Image>();
+                SetSkin(gloss, look.Gloss, look.Sliced, n.Radius);
+                gloss.raycastTarget = false;
+            }
+            return face;
+        }
+
+        static void SetSkin(Image img, Sprite sprite, bool sliced, float radius)
+        {
+            img.sprite = sprite;
+            if (sliced)
+            {
+                img.type = Image.Type.Sliced;
+                img.fillCenter = true;
+                img.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(1, radius);
+            }
+            else
+            {
+                img.type = Image.Type.Simple;
+                img.preserveAspect = false;
+            }
+        }
+
         static void SetShape(Image img, UiNode n)
         {
             if (n.Shape == LShape.Circle)
@@ -230,9 +274,25 @@ namespace SunnyValley.Game.UI
             var fill = NewRect("fill", rt);
             fill.SetSiblingIndex(rt.childCount - 1);
             var img = fill.gameObject.AddComponent<Image>();
-            img.sprite = ShapeSprites.RoundRect;
-            img.type = Image.Type.Sliced;
-            img.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(1, n.Radius);
+            var skin = UiSkin.Get("BarFill");
+            if (skin != null)
+            {
+                // the painted fill sits inside the track's rim, with a highlight along its top
+                SetSkin(img, skin, true, n.Radius);
+                var gloss = UiSkin.Get("BarGloss");
+                if (gloss != null)
+                {
+                    var gi = NewRect("gloss", fill).gameObject.AddComponent<Image>();
+                    SetSkin(gi, gloss, true, n.Radius);
+                    gi.raycastTarget = false;
+                }
+            }
+            else
+            {
+                img.sprite = ShapeSprites.RoundRect;
+                img.type = Image.Type.Sliced;
+                img.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(1, n.Radius);
+            }
             img.color = ToColor(n.DepthColor);
             img.raycastTarget = false;
             SetFill(fill, n.Value, n.Rect.H, n.Rect.W);
