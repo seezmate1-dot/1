@@ -251,6 +251,19 @@ namespace SunnyValley.Game.Match3View
             return f;
         }
 
+        /// <summary>A painted picture that swells out of a point and fades (an explosion, a rainbow ring), in its own colours.</summary>
+        public FxItem Pop(Sprite sprite, Vector2 at, float size, float t0, float duration, float spin = 0)
+        {
+            var f = Get(sprite, at, size, Color.white, t0, duration);
+            f.S0 = 0.3f;
+            f.S1 = 1;
+            f.Ease = Easing.Kind.OutCubic;
+            f.Spin = spin;
+            f.A0 = 1;
+            f.A1 = 0;
+            return f;
+        }
+
         public FxItem StreakLine(Vector2 from, Vector2 to, Color color, float width, float t0, float duration)
         {
             var f = Get(BoardSprites.Streak, from, width, color, t0, duration);

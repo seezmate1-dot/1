@@ -7,7 +7,9 @@ namespace SunnyValley.Game.Match3View
 {
     /// <summary>
     /// Every picture the board uses: the painted art (Resources/Art: tiles, specials, obstacles) and a few shapes
-    /// painted in code once (soft glow, sparkle, ring, streak, grass, chevron). Cached; built on first use.
+    /// painted in code once (soft glow, sparkle, ring, streak, grass, chevron); the painted effects of the special
+    /// pieces (Resources/Art/Fx: aura, sparkle, streak, burst, rainbow ring, pollen) replace or join the code ones
+    /// when the files are there. Cached; built on first use.
     /// </summary>
     public static class BoardSprites
     {
@@ -16,6 +18,8 @@ namespace SunnyValley.Game.Match3View
         static Sprite ice, chain, honey, stone, weed, bed, basket;
         static readonly Sprite[] crates = new Sprite[3];
         static Sprite glow, spark, ring, streak, grass, chevron, dot;
+        static Sprite aura, sparkArt, streakArt, burst, rainbowRing, pollen;
+        static bool auraTried, sparkTried, streakTried, burstTried, rainbowRingTried, pollenTried;
 
         /// <summary>Colours of the crops for particles, glows and beams (tomato, corn, apple, carrot, eggplant, blueberry).</summary>
         public static readonly Color[] CropColors =
@@ -48,6 +52,42 @@ namespace SunnyValley.Game.Match3View
                 slot = Dot;
             return slot;
         }
+
+        /// <summary>A painted effect picture (Resources/Art/Fx), looked for once; null when the file is not there.</summary>
+        static Sprite Fx(ref Sprite slot, ref bool tried, string name)
+        {
+            if (tried)
+                return slot;
+            tried = true;
+            string path = "Art/Fx/" + name;
+            slot = Resources.Load<Sprite>(path);
+            if (slot == null)
+            {
+                var tex = Resources.Load<Texture2D>(path);
+                if (tex != null)
+                    slot = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect);
+            }
+            return slot;
+        }
+
+        /// <summary>The light behind a special piece: a soft disc with rays (white, tinted by the piece's colour); the plain glow without the art.</summary>
+        public static Sprite Aura
+        {
+            get
+            {
+                var art = Fx(ref aura, ref auraTried, "Aura");
+                return art != null ? art : Glow;
+            }
+        }
+
+        /// <summary>A cartoon explosion (its own colours, drawn untinted), or null without the art.</summary>
+        public static Sprite Burst => Fx(ref burst, ref burstTried, "Burst");
+
+        /// <summary>A rainbow-coloured ring (drawn untinted), or null without the art.</summary>
+        public static Sprite RainbowRing => Fx(ref rainbowRing, ref rainbowRingTried, "RainbowRing");
+
+        /// <summary>A golden puff with a tiny star: the bee's trail (drawn untinted), or null without the art.</summary>
+        public static Sprite Pollen => Fx(ref pollen, ref pollenTried, "Pollen");
 
         public static Sprite Tile(TileColor c)
         {
@@ -124,7 +164,16 @@ namespace SunnyValley.Game.Match3View
         });
 
         /// <summary>A four-pointed sparkle.</summary>
-        public static Sprite Spark => spark != null ? spark : spark = Paint(64, 64, (x, y) =>
+        public static Sprite Spark
+        {
+            get
+            {
+                var art = Fx(ref sparkArt, ref sparkTried, "Sparkle");
+                return art != null ? art : PaintedSpark;
+            }
+        }
+
+        static Sprite PaintedSpark => spark != null ? spark : spark = Paint(64, 64, (x, y) =>
         {
             float ax = Mathf.Abs(x), ay = Mathf.Abs(y);
             float star = Mathf.Clamp01(1 - (Mathf.Sqrt(ax) + Mathf.Sqrt(ay)) * 0.95f);
@@ -142,7 +191,16 @@ namespace SunnyValley.Game.Match3View
         });
 
         /// <summary>A horizontal streak: bright core, soft ends (pitchfork trails, beams).</summary>
-        public static Sprite Streak => streak != null ? streak : streak = Paint(128, 32, (x, y) =>
+        public static Sprite Streak
+        {
+            get
+            {
+                var art = Fx(ref streakArt, ref streakTried, "Streak");
+                return art != null ? art : PaintedStreak;
+            }
+        }
+
+        static Sprite PaintedStreak => streak != null ? streak : streak = Paint(128, 32, (x, y) =>
         {
             float across = Mathf.Clamp01(1 - Mathf.Abs(y));
             float along = Mathf.Clamp01((1 - Mathf.Abs(x)) * 4f);
@@ -206,6 +264,10 @@ namespace SunnyValley.Game.Match3View
         {
             ShapeSprites.Register("grass", Grass);
             _ = Glow;
+            _ = Aura;
+            _ = Burst;
+            _ = RainbowRing;
+            _ = Pollen;
             _ = Spark;
             _ = Ring;
             _ = Streak;

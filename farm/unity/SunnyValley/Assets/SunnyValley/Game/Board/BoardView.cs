@@ -21,9 +21,11 @@ namespace SunnyValley.Game.Match3View
     /// </summary>
     public sealed partial class BoardView : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IBeginDragHandler, IEndDragHandler
     {
-        static readonly Color FrameColor = new Color32(0x3B, 0x6B, 0x26, 0xFF);
-        static readonly Color TileLight = new Color32(0xDC, 0xF0, 0xAE, 0xFF);
-        static readonly Color TileDark = new Color32(0xC6, 0xE3, 0x92, 0xFF);
+        // a wooden frame with a dark outline around light cells: the look of the painted skin (Resources/Art/UI)
+        static readonly Color FrameOutline = new Color32(0x4A, 0x26, 0x08, 0xFF);
+        static readonly Color FrameColor = new Color32(0xA0, 0x6A, 0x34, 0xFF);
+        static readonly Color TileLight = new Color32(0xF9, 0xE9, 0xC2, 0xFF);
+        static readonly Color TileDark = new Color32(0xEE, 0xDA, 0xA9, 0xFF);
 
         int cols, rows, nodeCols, nodeRows;
         float cell;
@@ -240,28 +242,40 @@ namespace SunnyValley.Game.Match3View
 
             var topo = g.Topo;
             // the frame first (each cell's slightly larger dark square: together they outline the board's shape)
+            // twice: a slightly larger dark one under the wooden one, which gives the frame its outline
             float pad = Mathf.Max(3, cell * 0.07f);
-            for (int i = 0; i < topo.Count; i++)
+            float line = Mathf.Max(2, cell * 0.035f);
+            for (int pass = 0; pass < 2; pass++)
             {
-                if (!topo.Exists[i])
-                    continue;
-                var p = topo.PosOf(i);
-                var frame = MakeImage("frame", tilesRt, ShapeSprites.RoundRect, cell + 2 * pad);
-                frame.type = Image.Type.Sliced;
-                frame.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, cell * 0.22f);
-                frame.color = FrameColor;
-                frame.rectTransform.anchoredPosition = At(p);
-                statics.Add(frame.gameObject);
+                float grow = pass == 0 ? pad + line : pad;
+                for (int i = 0; i < topo.Count; i++)
+                {
+                    if (!topo.Exists[i])
+                        continue;
+                    var p = topo.PosOf(i);
+                    var frame = MakeImage("frame", tilesRt, ShapeSprites.RoundRect, cell + 2 * grow);
+                    frame.type = Image.Type.Sliced;
+                    frame.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, cell * 0.22f + grow - pad);
+                    frame.color = pass == 0 ? FrameOutline : FrameColor;
+                    frame.rectTransform.anchoredPosition = At(p);
+                    statics.Add(frame.gameObject);
+                }
             }
+            Sprite cellLight = UiSkin.Get("CellLight"), cellDark = UiSkin.Get("CellDark");
             for (int i = 0; i < topo.Count; i++)
             {
                 if (!topo.Exists[i])
                     continue;
                 var p = topo.PosOf(i);
-                var tile = MakeImage("tile", tilesRt, ShapeSprites.RoundRect, cell - 2);
-                tile.type = Image.Type.Sliced;
-                tile.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, cell * 0.14f);
-                tile.color = (p.X + p.Y) % 2 == 0 ? TileLight : TileDark;
+                bool light = (p.X + p.Y) % 2 == 0;
+                var painted = light ? cellLight : cellDark;
+                var tile = MakeImage("tile", tilesRt, painted != null ? painted : ShapeSprites.RoundRect, cell - 2);
+                if (painted == null)
+                {
+                    tile.type = Image.Type.Sliced;
+                    tile.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, cell * 0.14f);
+                    tile.color = light ? TileLight : TileDark;
+                }
                 tile.rectTransform.anchoredPosition = At(p);
                 statics.Add(tile.gameObject);
                 var c = new CellVisual(p, At(p), cell, underRt, overRt, statics) { Crop = cropSprite };
@@ -378,7 +392,7 @@ namespace SunnyValley.Game.Match3View
                 rt.anchorMin = rt.anchorMax = Vector2.zero;
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.sizeDelta = new Vector2(cell, cell);
-                var back = MakeImage("glow", rt, BoardSprites.Glow, cell);
+                var back = MakeImage("glow", rt, BoardSprites.Aura, cell);
                 back.rectTransform.anchorMin = back.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 back.rectTransform.anchoredPosition = Vector2.zero;
                 var icon = MakeImage("icon", rt, null, cell * 0.86f);
@@ -490,6 +504,8 @@ namespace SunnyValley.Game.Match3View
             for (int i = live.Count - 1; i >= 0; i--)
             {
                 var p = live[i];
+                if (p.Special != SpecialKind.None)
+                    p.IdleGlow(now);
                 if (!p.Active)
                     continue;
                 if (!p.Tick(now))

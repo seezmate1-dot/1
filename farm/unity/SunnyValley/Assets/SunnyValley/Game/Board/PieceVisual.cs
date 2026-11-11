@@ -115,10 +115,26 @@ namespace SunnyValley.Game.Match3View
             Back.enabled = glow;
             if (glow)
             {
-                var c = BoardSprites.ColorOf(special == SpecialKind.Rainbow ? TileColor.None : color);
+                // the rainbow has no crop colour: a violet light, visible on the light cells
+                var c = special == SpecialKind.Rainbow ? RainbowAura : BoardSprites.ColorOf(color);
                 Back.color = new Color(c.r, c.g, c.b, 0.9f);
                 Back.rectTransform.sizeDelta = new Vector2(cellSize * 1.25f, cellSize * 1.25f);
             }
+            Back.rectTransform.localRotation = Quaternion.identity;
+            Back.rectTransform.localScale = Vector3.one;
+        }
+
+        static readonly Color RainbowAura = new Color(0.85f, 0.5f, 1f);
+
+        /// <summary>A special piece is alive even when nothing happens: the light behind it turns slowly and breathes.</summary>
+        public void IdleGlow(float now)
+        {
+            if (!Back.enabled)
+                return;
+            var rt = Back.rectTransform;
+            rt.localRotation = Quaternion.Euler(0, 0, now * 24f + Id * 37f);
+            float s = 1 + 0.07f * Mathf.Sin(now * 3.2f + Id);
+            rt.localScale = new Vector3(s, s, 1);
         }
 
         void SetAlpha(float a)

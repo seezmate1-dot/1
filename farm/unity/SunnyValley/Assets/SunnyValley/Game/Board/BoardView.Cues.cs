@@ -243,6 +243,8 @@ namespace SunnyValley.Game.Match3View
                     var at = At(c.From);
                     float size = cell * (2 * Mathf.Min(c.Value, 5) + 1);
                     fx.Flash(at, new Color(1f, 0.75f, 0.3f, 0.95f), size * 1.1f, t, 0.35f);
+                    if (BoardSprites.Burst != null)
+                        fx.Pop(BoardSprites.Burst, at, size * 0.95f, t, Mathf.Max(d, 0.32f));
                     fx.RingOut(at, new Color(1f, 0.9f, 0.6f, 1f), cell * 0.6f, size * 1.25f, t, d);
                     fx.Burst(at, new Color(1f, 0.55f, 0.15f), cell, t, 14, 1.5f + 0.3f * c.Value);
                     break;
@@ -257,6 +259,19 @@ namespace SunnyValley.Game.Match3View
                     bee.S0 = 1.1f;
                     bee.S1 = 0.85f;
                     bee.Spin = 0;
+                    if (BoardSprites.Pollen != null)
+                    {
+                        // pollen along the same path, a little behind the bee, thinning out
+                        for (int i = 1; i <= 5; i++)
+                        {
+                            var puff = fx.Fly(BoardSprites.Pollen, from, to, cell * 0.34f, arc, t + i * 0.045f, d, Easing.Kind.InOutQuad);
+                            puff.S0 = 1f - 0.1f * i;
+                            puff.S1 = 0.3f;
+                            puff.A0 = 0.9f;
+                            puff.A1 = 0;
+                            puff.Spin = 0;
+                        }
+                    }
                     if (c.Value != 0)
                     {
                         var carried = fx.Fly(BoardSprites.Special((SpecialKind)c.Value), from + new Vector2(0, -cell * 0.25f), to, cell * 0.55f, arc, t, d, Easing.Kind.InOutQuad);
@@ -275,6 +290,8 @@ namespace SunnyValley.Game.Match3View
                     glow.S1 = 1.1f;
                     glow.Spin = 180;
                     fx.RingOut(at, new Color(1, 1, 1, 0.9f), cell * 2.4f, cell * 0.6f, t, d);
+                    if (BoardSprites.RainbowRing != null)
+                        fx.Pop(BoardSprites.RainbowRing, at, cell * 3.2f, t, d + 0.2f, 200);
                     break;
                 }
 
