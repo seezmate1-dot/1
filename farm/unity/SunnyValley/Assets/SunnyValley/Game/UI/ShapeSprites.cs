@@ -58,7 +58,7 @@ namespace SunnyValley.Game.UI
         public static readonly Dictionary<string, string> ArtPaths = new Dictionary<string, string>
         {
             { "coin", "Art/Currency/Coin" }, { "star", "Art/Currency/Star" }, { "crystal", "Art/Currency/Crystal" },
-            { "heart", "Art/Currency/Heart" },
+            { "heart", "Art/Currency/Heart" }, { "star.empty", "Art/Currency/StarEmpty" },
             { "tomato", "Art/Tiles/Tomato" }, { "corn", "Art/Tiles/Corn" }, { "apple", "Art/Tiles/Apple" },
             { "carrot", "Art/Tiles/Carrot" }, { "eggplant", "Art/Tiles/Eggplant" }, { "blueberry", "Art/Tiles/Blueberry" },
             { "pitchfork", "Art/Specials/Pitchfork" }, { "bomb", "Art/Specials/Bomb" }, { "rainbow", "Art/Specials/Rainbow" },

@@ -3,16 +3,18 @@ using UnityEditor;
 namespace SunnyValley.EditorTools
 {
     /// <summary>
-    /// Imports the painted pictures (Assets/SunnyValley/Resources/Art) as UI sprites: no mipmaps, clean transparency,
-    /// at most 512 pixels — so a fresh checkout without .meta files builds the same everywhere.
+    /// Imports the painted pictures (Assets/SunnyValley/Resources/Art, and the HUD icons in Resources/Icons) as UI
+    /// sprites: no mipmaps, clean transparency, at most 512 pixels — so a fresh checkout without .meta files builds
+    /// the same everywhere.
     /// </summary>
     public sealed class ArtImport : AssetPostprocessor
     {
         const string Root = "Assets/SunnyValley/Resources/Art/";
+        const string Icons = "Assets/SunnyValley/Resources/Icons/";
 
         void OnPreprocessTexture()
         {
-            if (!assetPath.StartsWith(Root))
+            if (!assetPath.StartsWith(Root) && !assetPath.StartsWith(Icons))
                 return;
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;
