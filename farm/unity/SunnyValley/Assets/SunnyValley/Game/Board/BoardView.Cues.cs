@@ -170,7 +170,8 @@ namespace SunnyValley.Game.Match3View
                     var at = p != null ? p.Rt.anchoredPosition : At(c.From);
                     if (p != null)
                     {
-                        p.Effect(ScaleFx.Fire, t, d);
+                        // a bomb winds up like a spring before it goes
+                        p.Effect(p.Special == SpecialKind.Bomb ? ScaleFx.WindUp : ScaleFx.Fire, t, d);
                         Retire(p, t + d);
                     }
                     var col = ColorOf(c.Value);
@@ -224,7 +225,17 @@ namespace SunnyValley.Game.Match3View
                     cv?.Apply(h, t);
                     var col = CellVisual.Debris(h.Obstacle);
                     int n = h.Removed || h.Harvested ? 10 : 6;
-                    fx.Burst(At(h.Cell), col, cell, t, n, 1.1f, h.Obstacle == ObstacleKind.Crate || h.Obstacle == ObstacleKind.Stone ? BoardSprites.Dot : null);
+                    var chunk = h.Obstacle == ObstacleKind.Crate || h.Obstacle == ObstacleKind.Stone ? BoardSprites.Dot : null;
+                    var chunkColor = col;
+                    if (h.Obstacle == ObstacleKind.Grass && BoardSprites.Turf != null)
+                    {
+                        // a turf plate breaks: clods of soil with grass fly out over a puff of dust
+                        chunk = BoardSprites.Turf;
+                        chunkColor = Color.white;
+                        n = 7;
+                        fx.Flash(At(h.Cell), new Color(0.62f, 0.46f, 0.3f, 0.55f), cell * 1.3f, t, 0.3f);
+                    }
+                    fx.Burst(At(h.Cell), chunkColor, cell, t, n, 1.1f, chunk, chunk == BoardSprites.Turf ? 0.34f : 0);
                     if (h.Removed || h.Harvested)
                         fx.RingOut(At(h.Cell), new Color(col.r, col.g, col.b, 0.8f), cell * 0.4f, cell * 1.8f, t, 0.35f);
                     break;
@@ -247,6 +258,8 @@ namespace SunnyValley.Game.Match3View
                         fx.Pop(BoardSprites.Burst, at, size * 0.95f, t, Mathf.Max(d, 0.32f));
                     fx.RingOut(at, new Color(1f, 0.9f, 0.6f, 1f), cell * 0.6f, size * 1.25f, t, d);
                     fx.Burst(at, new Color(1f, 0.55f, 0.15f), cell, t, 14, 1.5f + 0.3f * c.Value);
+                    // dark debris thrown out with the sparks
+                    fx.Burst(at, new Color(0.36f, 0.22f, 0.1f), cell, t, 8, 1.1f + 0.3f * c.Value, BoardSprites.Dot);
                     break;
                 }
 
@@ -277,6 +290,13 @@ namespace SunnyValley.Game.Match3View
                         var carried = fx.Fly(BoardSprites.Special((SpecialKind)c.Value), from + new Vector2(0, -cell * 0.25f), to, cell * 0.55f, arc, t, d, Easing.Kind.InOutQuad);
                         carried.Spin = 0;
                     }
+                    // a little spin where it lands
+                    var hit = fx.Get(BoardSprites.Bee, to, cell * 0.85f, Color.white, t + d, 0.24f);
+                    hit.Spin = -900;
+                    hit.S0 = 1;
+                    hit.S1 = 0.35f;
+                    hit.A0 = 1;
+                    hit.A1 = 0;
                     fx.Burst(to, new Color(1f, 0.85f, 0.2f), cell, t + d, 6, 0.8f);
                     break;
                 }
@@ -292,6 +312,8 @@ namespace SunnyValley.Game.Match3View
                     fx.RingOut(at, new Color(1, 1, 1, 0.9f), cell * 2.4f, cell * 0.6f, t, d);
                     if (BoardSprites.RainbowRing != null)
                         fx.Pop(BoardSprites.RainbowRing, at, cell * 3.2f, t, d + 0.2f, 200);
+                    if (BoardSprites.Petal != null)
+                        fx.Petals(at, cell, t, BoardSprites.Petal, BoardSprites.CropColors);
                     break;
                 }
 
@@ -299,6 +321,12 @@ namespace SunnyValley.Game.Match3View
                 {
                     var col = c.Event is ActivationEvent a && a.TargetColor != TileColor.None ? BoardSprites.ColorOf(a.TargetColor) : Gold;
                     fx.StreakLine(At(c.From), At(c.To), Color.Lerp(col, Color.white, 0.45f), cell * 0.32f, t, d);
+                    // a sparkle in the target's colour flies along the beam and bursts on the piece
+                    var bright = Color.Lerp(col, Color.white, 0.3f);
+                    var star = fx.Fly(BoardSprites.Spark, At(c.From), At(c.To), cell * 0.55f, cell * 0.4f, t, d, Easing.Kind.InOutQuad);
+                    star.Color = bright;
+                    star.Spin = 360;
+                    fx.Burst(At(c.To), col, cell, t + d, 4, 0.7f);
                     break;
                 }
 

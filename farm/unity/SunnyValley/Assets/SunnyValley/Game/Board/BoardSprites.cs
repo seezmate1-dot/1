@@ -8,7 +8,7 @@ namespace SunnyValley.Game.Match3View
     /// <summary>
     /// Every picture the board uses: the painted art (Resources/Art: tiles, specials, obstacles) and a few shapes
     /// painted in code once (soft glow, sparkle, ring, streak, grass, chevron); the painted effects of the special
-    /// pieces (Resources/Art/Fx: aura, sparkle, streak, burst, rainbow ring, pollen) replace or join the code ones
+    /// pieces (Resources/Art/Fx: sparkle, streak, burst, rainbow ring, petal, pollen, the bee's wings, turf clods) replace or join the code ones
     /// when the files are there. Cached; built on first use.
     /// </summary>
     public static class BoardSprites
@@ -18,8 +18,10 @@ namespace SunnyValley.Game.Match3View
         static Sprite ice, chain, honey, stone, weed, bed, basket;
         static readonly Sprite[] crates = new Sprite[3];
         static Sprite glow, spark, ring, streak, grass, chevron, dot;
-        static Sprite aura, sparkArt, streakArt, burst, rainbowRing, pollen;
-        static bool auraTried, sparkTried, streakTried, burstTried, rainbowRingTried, pollenTried;
+        static Sprite sparkArt, streakArt, burst, rainbowRing, pollen, petal, beeBody, beeWings, turf;
+        static bool sparkTried, streakTried, burstTried, rainbowRingTried, pollenTried, petalTried, beeBodyTried, beeWingsTried, turfTried;
+        static readonly Sprite[] grassPlates = new Sprite[2];
+        static readonly bool[] grassPlatesTried = new bool[2];
 
         /// <summary>Colours of the crops for particles, glows and beams (tomato, corn, apple, carrot, eggplant, blueberry).</summary>
         public static readonly Color[] CropColors =
@@ -54,12 +56,12 @@ namespace SunnyValley.Game.Match3View
         }
 
         /// <summary>A painted effect picture (Resources/Art/Fx), looked for once; null when the file is not there.</summary>
-        static Sprite Fx(ref Sprite slot, ref bool tried, string name)
+        static Sprite Fx(ref Sprite slot, ref bool tried, string name, string folder = "Art/Fx/")
         {
             if (tried)
                 return slot;
             tried = true;
-            string path = "Art/Fx/" + name;
+            string path = folder + name;
             slot = Resources.Load<Sprite>(path);
             if (slot == null)
             {
@@ -70,16 +72,6 @@ namespace SunnyValley.Game.Match3View
             return slot;
         }
 
-        /// <summary>The light behind a special piece: a soft disc with rays (white, tinted by the piece's colour); the plain glow without the art.</summary>
-        public static Sprite Aura
-        {
-            get
-            {
-                var art = Fx(ref aura, ref auraTried, "Aura");
-                return art != null ? art : Glow;
-            }
-        }
-
         /// <summary>A cartoon explosion (its own colours, drawn untinted), or null without the art.</summary>
         public static Sprite Burst => Fx(ref burst, ref burstTried, "Burst");
 
@@ -88,6 +80,26 @@ namespace SunnyValley.Game.Match3View
 
         /// <summary>A golden puff with a tiny star: the bee's trail (drawn untinted), or null without the art.</summary>
         public static Sprite Pollen => Fx(ref pollen, ref pollenTried, "Pollen");
+
+        /// <summary>One white petal (tinted): the rainbow throws a ring of them; null without the art.</summary>
+        public static Sprite Petal => Fx(ref petal, ref petalTried, "Petal");
+
+        /// <summary>The bee without its wings and the wings alone, on the bee's own canvas (the wings flap under the body); null without the art.</summary>
+        public static Sprite BeeBody => Fx(ref beeBody, ref beeBodyTried, "BeeBody");
+        public static Sprite BeeWings => Fx(ref beeWings, ref beeWingsTried, "BeeWings");
+
+        /// <summary>A clod of soil with grass (the debris of a broken turf plate, drawn untinted); null without the art.</summary>
+        public static Sprite Turf => Fx(ref turf, ref turfTried, "Turf");
+
+        /// <summary>
+        /// The breakable layer under a piece as a raised plate: turf on a soil edge for one layer, a darker, thicker
+        /// turf in a wooden rim for two. Null without the art (then the code-painted lawn is tinted instead).
+        /// </summary>
+        public static Sprite GrassPlate(int layers)
+        {
+            int i = Mathf.Clamp(layers, 1, 2) - 1;
+            return Fx(ref grassPlates[i], ref grassPlatesTried[i], "Grass" + (i + 1), "Art/Obstacles/");
+        }
 
         public static Sprite Tile(TileColor c)
         {
@@ -262,9 +274,14 @@ namespace SunnyValley.Game.Match3View
         /// <summary>Paints everything now (during loading, not in the middle of the first move).</summary>
         public static void Warm()
         {
-            ShapeSprites.Register("grass", Grass);
+            // the goal icon of the turf layer: the painted plate when it is there
+            ShapeSprites.Register("grass", GrassPlate(1) != null ? GrassPlate(1) : Grass);
+            GrassPlate(2);
             _ = Glow;
-            _ = Aura;
+            _ = Petal;
+            _ = BeeBody;
+            _ = BeeWings;
+            _ = Turf;
             _ = Burst;
             _ = RainbowRing;
             _ = Pollen;

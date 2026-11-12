@@ -94,8 +94,9 @@ namespace SunnyValley.Game.Match3View
                 grass.rectTransform.SetAsFirstSibling();
             }
             grass.enabled = true;
-            grass.sprite = BoardSprites.Grass;
-            grass.color = layers >= 2 ? new Color(0.72f, 0.86f, 0.62f) : Color.white;
+            var plate = BoardSprites.GrassPlate(layers);
+            grass.sprite = plate != null ? plate : BoardSprites.Grass;
+            grass.color = plate == null && layers >= 2 ? new Color(0.72f, 0.86f, 0.62f) : Color.white;
         }
 
         public void SetBlocker(ObstacleKind kind, int layers)

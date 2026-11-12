@@ -205,7 +205,8 @@ namespace SunnyValley.Game.Match3View
         // ------------------------------------------------------------------ ready-made effects
 
         /// <summary>A burst of sparkles and dots in a colour.</summary>
-        public void Burst(Vector2 at, Color color, float cell, float t0, int count, float speed = 1, Sprite sprite = null)
+        /// <param name="size">The size of a piece of <paramref name="sprite"/> in cells; 0: small debris.</param>
+        public void Burst(Vector2 at, Color color, float cell, float t0, int count, float speed = 1, Sprite sprite = null, float size = 0)
         {
             // a board-wide combo pops dozens of pieces at once: keep the sprite count (and the re-batching) sane
             if (live.Count > 240)
@@ -215,7 +216,8 @@ namespace SunnyValley.Game.Match3View
                 float ang = (i + 0.37f * (i % 3)) / count * Mathf.PI * 2;
                 float v = cell * (2.2f + 1.6f * Frac(i * 0.618f)) * speed;
                 bool sparkle = sprite == null && i % 2 == 0;
-                var f = Get(sprite ?? (sparkle ? BoardSprites.Spark : BoardSprites.Dot), at, cell * (sparkle ? 0.34f : 0.16f + 0.08f * Frac(i * 0.37f)),
+                float piece = sparkle ? 0.34f : size > 0 ? size * (0.8f + 0.4f * Frac(i * 0.37f)) : 0.16f + 0.08f * Frac(i * 0.37f);
+                var f = Get(sprite ?? (sparkle ? BoardSprites.Spark : BoardSprites.Dot), at, cell * piece,
                     sparkle ? Color.Lerp(color, Color.white, 0.55f) : color, t0, 0.42f + 0.12f * Frac(i * 0.29f));
                 f.Motion = FxMotion.Ballistic;
                 f.Vel = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang) + 0.6f) * v;
@@ -262,6 +264,27 @@ namespace SunnyValley.Game.Match3View
             f.A0 = 1;
             f.A1 = 0;
             return f;
+        }
+
+        /// <summary>A ring of petals thrown outwards, each in its own colour, turning as they fly and fade.</summary>
+        public void Petals(Vector2 at, float cell, float t0, Sprite petal, Color[] colors)
+        {
+            const int count = 10;
+            for (int i = 0; i < count; i++)
+            {
+                float ang = (i + 0.5f) / count * Mathf.PI * 2;
+                var dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+                var f = Get(petal, at + dir * cell * 0.25f, cell * 0.42f, colors[i % colors.Length], t0, 0.55f);
+                f.Motion = FxMotion.Ballistic;
+                f.Vel = dir * cell * 3.4f;
+                f.Gravity = cell * 3f;
+                f.Rot = ang * Mathf.Rad2Deg - 90;
+                f.Spin = 200 * (i % 2 == 0 ? 1 : -1);
+                f.S0 = 1;
+                f.S1 = 0.5f;
+                f.A0 = 1;
+                f.A1 = 0;
+            }
         }
 
         public FxItem StreakLine(Vector2 from, Vector2 to, Color color, float width, float t0, float duration)

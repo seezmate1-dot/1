@@ -1,7 +1,8 @@
-"""Board effect sprites (Resources/Art/Fx). White ones (Aura, Sparkle, Streak) are tinted by the game;
+"""Board effect sprites (Resources/Art/Fx). White ones (Sparkle, Streak, Petal) are tinted by the game;
 Burst, RainbowRing and Pollen carry their own colours and are drawn untinted."""
 import colorsys
 from lib import *
+from lib import _bbox as lib_bbox
 
 def out(name, svg, w=256, h=256, ss=3):
     d = os.path.join(HERE, 'Fx'); os.makedirs(d, exist_ok=True)
@@ -12,20 +13,6 @@ def out(name, svg, w=256, h=256, ss=3):
 
 def doc(body, defs='', w=256, h=256):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><defs>{FILTERS}{defs}</defs>{body}</svg>')
-
-def aura():
-    """The glow behind a special piece: a soft disc with twelve light rays, alternating long and short."""
-    g, d1 = rg([(0, '#fff', 1), (.5, '#fff', .92), (.78, '#fff', .4), (1, '#fff', 0)], cx=.5, cy=.5, r=.5)
-    g2, d2 = rg([(0, '#fff', 1), (.7, '#fff', .85), (1, '#fff', 0)], cx=.5, cy=.5, r=.5)
-    rays = ''
-    for k in range(12):
-        L = 124 if k % 2 == 0 else 96
-        w = 15 if k % 2 == 0 else 11
-        rays += f'<path d="M128 128 L{128-w} {128-L*.55} L128 {128-L} L{128+w} {128-L*.55}Z" transform="rotate({k*30} 128 128)" fill="{g2}"/>'
-    body = f'<g filter="url(#b1)">{rays}</g><circle cx="128" cy="128" r="104" fill="{g}"/>'
-    # userSpace gradient for rays so they fade towards the tips
-    d2 = d2.replace('cx="0.5" cy="0.5" r="0.5"', 'cx="128" cy="128" r="126" gradientUnits="userSpaceOnUse"')
-    out('Aura', doc(body, d1 + d2))
 
 def sparkle():
     g, d1 = rg([(0, '#fff', 1), (.5, '#fff', .55), (1, '#fff', 0)], cx=.5, cy=.5, r=.5)
@@ -83,5 +70,25 @@ def pollen():
     body = f'<circle cx="64" cy="64" r="60" fill="{g}"/><path d="{star(64, 64, 4, 34, 9)}" fill="#fff" opacity=".95"/>'
     out('Pollen', doc(body, d1, 128, 128), 128, 128)
 
+def petal():
+    """One white petal (tinted): the rainbow throws a ring of them when it fires."""
+    g, d1 = lg([(0, '#fff'), (1, '#d8d8d8')])
+    body = (f'<path d="M64 120 C 30 92, 30 36, 64 8 C 98 36, 98 92, 64 120Z" fill="{g}" stroke="#8a8a8a" stroke-width="6" stroke-linejoin="round"/>'
+            + el(54, 48, 7, 16, '#fff', .9, 2, 10))
+    out('Petal', doc(body, d1, 128, 128), 128, 128)
+
+def bee_parts():
+    """The bee in two layers on the same canvas as Specials/Bee: the wings alone and the body without them,
+    so the board can flap the wings under the body."""
+    import specials
+    full = specials.bee_variant(specials.BEST_BEE)
+    x0, y0, x1, y1 = lib_bbox(full)
+    k = (256 - 2 * PAD) / max(x1 - x0, y1 - y0)
+    tr = f'translate({128 - k * (x0 + x1) / 2:.2f} {128 - k * (y0 + y1) / 2:.2f}) scale({k:.4f})'
+    for name, keep in (('BeeWings', lambda i: i < 2), ('BeeBody', lambda i: i >= 2)):
+        s = specials.bee_variant(specials.BEST_BEE)
+        s.body = [b for i, b in enumerate(s.body) if keep(i)]
+        out(name, s.svg(tr))
+
 if __name__ == '__main__':
-    aura(); sparkle(); burst(); streak(); rainbow_ring(); pollen()
+    sparkle(); petal(); bee_parts(); burst(); streak(); rainbow_ring(); pollen()

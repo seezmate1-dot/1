@@ -24,8 +24,10 @@ namespace SunnyValley.Game.Match3View
         // a wooden frame with a dark outline around light cells: the look of the painted skin (Resources/Art/UI)
         static readonly Color FrameOutline = new Color32(0x4A, 0x26, 0x08, 0xFF);
         static readonly Color FrameColor = new Color32(0xA0, 0x6A, 0x34, 0xFF);
-        static readonly Color TileLight = new Color32(0xF9, 0xE9, 0xC2, 0xFF);
-        static readonly Color TileDark = new Color32(0xEE, 0xDA, 0xA9, 0xFF);
+        static readonly Color Seam = new Color32(0xC4, 0xBC, 0xAD, 0xFF);
+        // calm and neutral: the pieces and the turf plates carry the colour, not the board
+        static readonly Color TileLight = new Color32(0xE8, 0xE2, 0xD8, 0xFF);
+        static readonly Color TileDark = new Color32(0xDD, 0xD7, 0xCA, 0xFF);
 
         int cols, rows, nodeCols, nodeRows;
         float cell;
@@ -245,9 +247,10 @@ namespace SunnyValley.Game.Match3View
             // twice: a slightly larger dark one under the wooden one, which gives the frame its outline
             float pad = Mathf.Max(3, cell * 0.07f);
             float line = Mathf.Max(2, cell * 0.035f);
-            for (int pass = 0; pass < 2; pass++)
+            // and a third, neutral one just under the cells: the seams between cells stay calm, wood shows only around the board
+            for (int pass = 0; pass < 3; pass++)
             {
-                float grow = pass == 0 ? pad + line : pad;
+                float grow = pass == 0 ? pad + line : pass == 1 ? pad : 1;
                 for (int i = 0; i < topo.Count; i++)
                 {
                     if (!topo.Exists[i])
@@ -256,7 +259,7 @@ namespace SunnyValley.Game.Match3View
                     var frame = MakeImage("frame", tilesRt, ShapeSprites.RoundRect, cell + 2 * grow);
                     frame.type = Image.Type.Sliced;
                     frame.pixelsPerUnitMultiplier = ShapeSprites.SliceRadius / Mathf.Max(4, cell * 0.22f + grow - pad);
-                    frame.color = pass == 0 ? FrameOutline : FrameColor;
+                    frame.color = pass == 0 ? FrameOutline : pass == 1 ? FrameColor : Seam;
                     frame.rectTransform.anchoredPosition = At(p);
                     statics.Add(frame.gameObject);
                 }
@@ -392,14 +395,19 @@ namespace SunnyValley.Game.Match3View
                 rt.anchorMin = rt.anchorMax = Vector2.zero;
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.sizeDelta = new Vector2(cell, cell);
-                var back = MakeImage("glow", rt, BoardSprites.Aura, cell);
+                var back = MakeImage("glow", rt, BoardSprites.Glow, cell);
                 back.rectTransform.anchorMin = back.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 back.rectTransform.anchoredPosition = Vector2.zero;
+                // a moving part of a special piece (the bee's wings, the bomb's spark, the pitchfork's glint)
+                var part = MakeImage("part", rt, null, cell * 0.3f);
+                part.rectTransform.anchorMin = part.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                part.rectTransform.anchoredPosition = Vector2.zero;
+                part.enabled = false;
                 var icon = MakeImage("icon", rt, null, cell * 0.86f);
                 icon.preserveAspect = true;
                 icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 icon.rectTransform.anchoredPosition = Vector2.zero;
-                p = new PieceVisual { Rt = rt, Back = back, Icon = icon, IconRt = icon.rectTransform };
+                p = new PieceVisual { Rt = rt, Back = back, Icon = icon, IconRt = icon.rectTransform, Part = part, PartRt = part.rectTransform };
             }
             p.Setup(id, kind, color, special, at, At(at), cell);
             byId[id] = p;
@@ -505,7 +513,7 @@ namespace SunnyValley.Game.Match3View
             {
                 var p = live[i];
                 if (p.Special != SpecialKind.None)
-                    p.IdleGlow(now);
+                    p.Idle(now);
                 if (!p.Active)
                     continue;
                 if (!p.Tick(now))

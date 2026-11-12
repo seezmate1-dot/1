@@ -35,10 +35,12 @@ namespace SunnyValley.Game.Match3View
         Fire,
         /// <summary>Jumps off the board (a rescued chick).</summary>
         Hop,
+        /// <summary>Squashes down like a spring, then bursts out and is gone (a bomb goes off).</summary>
+        WindUp,
     }
 
     /// <summary>
-    /// One piece on the board: a glow disc behind (specials, selection) and the picture. Its animations are plain
+    /// One piece on the board: the picture, and for a special piece one moving part (wings, spark, glint). Its animations are plain
     /// fields (a move, a size effect, a release time) advanced by the board each frame — no allocations, no tween
     /// objects — so a hundred pieces can fall at once on a phone.
     /// </summary>
@@ -48,6 +50,9 @@ namespace SunnyValley.Game.Match3View
         public Image Back;
         public Image Icon;
         public RectTransform IconRt;
+        /// <summary>A moving part of a special piece (wings, spark, glint); off for plain pieces.</summary>
+        public Image Part;
+        public RectTransform PartRt;
 
         public int Id;
         public PieceKind Kind;
@@ -109,44 +114,170 @@ namespace SunnyValley.Game.Match3View
             Special = special;
             Icon.sprite = BoardSprites.Piece(kind, color, special);
             IconRt.localRotation = special == SpecialKind.LineH ? Quaternion.Euler(0, 0, -90) : Quaternion.identity;
-            float s = kind == PieceKind.Chick ? 0.92f : special == SpecialKind.None ? 0.86f : 0.8f;
+            float s = kind == PieceKind.Chick ? 0.92f : special == SpecialKind.None ? 0.86f : 0.92f;
             IconRt.sizeDelta = new Vector2(cellSize * s, cellSize * s);
-            bool glow = kind == PieceKind.Tile && special != SpecialKind.None;
-            Back.enabled = glow;
-            if (glow)
-            {
-                // the rainbow has no crop colour: a violet light, visible on the light cells
-                var c = special == SpecialKind.Rainbow ? RainbowAura : BoardSprites.ColorOf(color);
-                Back.color = new Color(c.r, c.g, c.b, 0.9f);
-                Back.rectTransform.sizeDelta = new Vector2(cellSize * 1.25f, cellSize * 1.25f);
-            }
-            Back.rectTransform.localRotation = Quaternion.identity;
-            Back.rectTransform.localScale = Vector3.one;
+            // no light behind a special piece: it is alive through its own motion (Idle)
+            Back.enabled = false;
+            IconRt.localScale = Vector3.one;
+            IconRt.anchoredPosition = Vector2.zero;
+            SetPart(kind == PieceKind.Tile ? special : SpecialKind.None, cellSize * s);
         }
 
-        static readonly Color RainbowAura = new Color(0.85f, 0.5f, 1f);
-
-        /// <summary>A special piece is alive even when nothing happens: the light behind it turns slowly and breathes.</summary>
-        public void IdleGlow(float now)
+        /// <summary>The moving part of a special piece: the bee's wings under the body, the bomb's fuse spark, the pitchfork's glint.</summary>
+        void SetPart(SpecialKind special, float iconSize)
         {
-            if (!Back.enabled)
+            if (Part == null)
                 return;
-            var rt = Back.rectTransform;
-            rt.localRotation = Quaternion.Euler(0, 0, now * 24f + Id * 37f);
-            float s = 1 + 0.07f * Mathf.Sin(now * 3.2f + Id);
-            rt.localScale = new Vector3(s, s, 1);
+            Part.enabled = false;
+            PartRt.localScale = Vector3.one;
+            PartRt.localRotation = Quaternion.identity;
+            PartRt.pivot = new Vector2(0.5f, 0.5f);
+            partBase = Vector2.zero;
+            idleLive = false;
+            switch (special)
+            {
+                case SpecialKind.Bee:
+                    if (BoardSprites.BeeBody == null || BoardSprites.BeeWings == null)
+                        break;
+                    Icon.sprite = BoardSprites.BeeBody;
+                    Part.sprite = BoardSprites.BeeWings;
+                    Part.color = UnityEngine.Color.white;
+                    Part.enabled = true;
+                    PartRt.SetSiblingIndex(IconRt.GetSiblingIndex()); // under the body
+                    PartRt.sizeDelta = new Vector2(iconSize, iconSize);
+                    // the wings fold about their roots, a little under the middle of the picture
+                    PartRt.pivot = new Vector2(0.5f, WingRoot);
+                    partBase = new Vector2(0, (WingRoot - 0.5f) * iconSize);
+                    break;
+                case SpecialKind.Bomb:
+                    Part.sprite = BoardSprites.Spark;
+                    Part.color = new Color(1f, 0.92f, 0.55f, 1f);
+                    Part.enabled = true;
+                    PartRt.SetAsLastSibling();
+                    PartRt.sizeDelta = new Vector2(iconSize * 0.42f, iconSize * 0.42f);
+                    partBase = new Vector2(FuseTip.x * iconSize, FuseTip.y * iconSize);
+                    break;
+                case SpecialKind.LineH:
+                case SpecialKind.LineV:
+                    Part.sprite = BoardSprites.Spark;
+                    Part.color = new Color(1, 1, 1, 0);
+                    Part.enabled = true;
+                    PartRt.SetAsLastSibling();
+                    PartRt.sizeDelta = new Vector2(iconSize * 0.4f, iconSize * 0.4f);
+                    break;
+            }
+            PartRt.anchoredPosition = partBase;
+        }
+
+        /// <summary>Where the wings join the body in the bee's picture (0 bottom, 1 top).</summary>
+        const float WingRoot = 0.42f;
+        /// <summary>The fuse's spark in the bomb's picture, from its centre, in shares of its size.</summary>
+        static readonly Vector2 FuseTip = new Vector2(0.175f, 0.31f);
+
+        Vector2 partBase;
+        bool idleLive;
+        float alpha = 1;
+
+        /// <summary>
+        /// A special piece is alive when nothing happens, each in its own way and out of step with the others (the
+        /// phase comes from the piece's id): the bomb ticks (squash and stretch) and its fuse sputters, the pitchfork
+        /// shakes now and then while a glint runs over the tines, the rainbow turns slowly and breathes, the bee bobs
+        /// and beats its wings. Only the picture inside the piece moves, so moves and pops are not disturbed.
+        /// </summary>
+        public void Idle(float now)
+        {
+            if (Kind != PieceKind.Tile)
+                return;
+            float ph = Id * 1.713f;
+            switch (Special)
+            {
+                case SpecialKind.Bomb:
+                {
+                    // two quick beats, a pause
+                    float c = Mathf.Repeat(now * 1.1f + ph, 1f);
+                    float beat = c < 0.36f ? Mathf.Sin(c / 0.18f * Mathf.PI) : 0;
+                    float q = 0.06f * beat;
+                    IconRt.localScale = new Vector3(1 + q, 1 - q, 1);
+                    if (Part.enabled)
+                    {
+                        float f = 0.7f + 0.45f * Mathf.Abs(Mathf.Sin(now * 17f + ph)) * (0.65f + 0.35f * Mathf.Sin(now * 7.3f + ph * 2));
+                        PartRt.localScale = new Vector3(f, f, 1);
+                        PartRt.localRotation = Quaternion.Euler(0, 0, now * 260f + ph * 50f);
+                        PartRt.anchoredPosition = new Vector2(partBase.x * (1 + q), partBase.y * (1 - q));
+                    }
+                    break;
+                }
+                case SpecialKind.LineH:
+                case SpecialKind.LineV:
+                {
+                    float baseRot = Special == SpecialKind.LineH ? -90 : 0;
+                    float c = Mathf.Repeat(now + ph, 3.4f);
+                    if (c > 1.05f)
+                    {
+                        // at rest: touch nothing (the canvas is not rebuilt for a still pitchfork)
+                        if (idleLive)
+                        {
+                            idleLive = false;
+                            IconRt.localRotation = Quaternion.Euler(0, 0, baseRot);
+                            SetPartAlpha(0);
+                        }
+                        break;
+                    }
+                    idleLive = true;
+                    float w = c < 0.5f ? Mathf.Sin(c / 0.5f * Mathf.PI * 3) * (1 - c / 0.5f) * 9f : 0;
+                    IconRt.localRotation = Quaternion.Euler(0, 0, baseRot + w);
+                    if (Part.enabled)
+                    {
+                        // the glint runs across the tines right after the shake
+                        float g = Mathf.Clamp01((c - 0.45f) / 0.6f);
+                        float size = IconRt.sizeDelta.x;
+                        var local = new Vector2(Mathf.Lerp(-0.2f, 0.2f, g) * size, 0.2f * size);
+                        PartRt.anchoredPosition = Special == SpecialKind.LineH ? new Vector2(local.y, -local.x) : local;
+                        PartRt.localRotation = Quaternion.Euler(0, 0, g * 120f);
+                        SetPartAlpha(Mathf.Sin(g * Mathf.PI));
+                    }
+                    break;
+                }
+                case SpecialKind.Rainbow:
+                {
+                    IconRt.localRotation = Quaternion.Euler(0, 0, -(now * 30f + ph * 40f));
+                    float s = 1 + 0.05f * Mathf.Sin(now * 2.6f + ph);
+                    IconRt.localScale = new Vector3(s, s, 1);
+                    break;
+                }
+                case SpecialKind.Bee:
+                {
+                    var bob = new Vector2(0, cellSize * 0.035f * Mathf.Sin(now * 4.2f + ph));
+                    IconRt.anchoredPosition = bob;
+                    if (Part.enabled)
+                    {
+                        PartRt.anchoredPosition = partBase + bob;
+                        PartRt.localScale = new Vector3(1, 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(now * 34f + ph)), 1);
+                    }
+                    break;
+                }
+            }
+        }
+
+        void SetPartAlpha(float a)
+        {
+            var c = Part.color;
+            c.a = a * alpha;
+            Part.color = c;
         }
 
         void SetAlpha(float a)
         {
+            alpha = a;
             var c = Icon.color;
             c.a = a;
             Icon.color = c;
-            if (Back.enabled)
+            // the glint keeps its own fading; the wings and the spark follow the piece
+            if (Part != null && Part.enabled && Special != SpecialKind.LineH && Special != SpecialKind.LineV)
             {
-                var b = Back.color;
-                b.a = 0.9f * a;
-                Back.color = b;
+                var b = Part.color;
+                b.a = a;
+                Part.color = b;
             }
         }
 
@@ -303,6 +434,20 @@ namespace SunnyValley.Game.Match3View
                         s = Vector3.one * (1 + 0.5f * k);
                         SetAlpha(1 - k);
                         break;
+                    case ScaleFx.WindUp:
+                        if (k < 0.45f)
+                        {
+                            float q = k / 0.45f;
+                            s = new Vector3(1 + 0.22f * q, 1 - 0.26f * q, 1);
+                        }
+                        else
+                        {
+                            float q = (k - 0.45f) / 0.55f;
+                            float g = 0.8f + 0.9f * q;
+                            s = new Vector3(g, g, 1);
+                            SetAlpha(1 - q * q);
+                        }
+                        break;
                     case ScaleFx.Hop:
                         s = Vector3.one * (1 + 0.25f * Mathf.Sin(k * Mathf.PI));
                         SetAlpha(1 - Mathf.Clamp01((k - 0.5f) * 2));
@@ -311,7 +456,7 @@ namespace SunnyValley.Game.Match3View
                 Rt.localScale = s;
                 if (k >= 1)
                 {
-                    bool gone = fx == ScaleFx.Pop || fx == ScaleFx.Shrink || fx == ScaleFx.Fire || fx == ScaleFx.Hop;
+                    bool gone = fx == ScaleFx.Pop || fx == ScaleFx.Shrink || fx == ScaleFx.Fire || fx == ScaleFx.Hop || fx == ScaleFx.WindUp;
                     fx = ScaleFx.None;
                     if (!gone)
                         Rt.localScale = Vector3.one;
