@@ -545,7 +545,7 @@ namespace SunnyValley.Ui.Tests
                     var menu = FarmMenus.For(site, g0, T0);
                     Assert.That(menu.Items.Count, Is.LessThanOrEqualTo(FarmMenus.MaxItems), site.Id);
                     Assert.That(menu.Title, Is.Not.Empty, site.Id);
-                    if (FarmMenus.Primary(site, g0, T0) == null && site.Kind != SiteKind.Pen)
+                    if (FarmMenus.Primary(site, g0, T0) == null && site.Kind != SiteKind.Pen && site.Kind != SiteKind.Nursery)
                         Assert.That(menu.Items.Count, Is.GreaterThan(0), site.Id + ": a tap must offer something");
                     for (int i = 0; i < menu.Items.Count; i++)
                     {

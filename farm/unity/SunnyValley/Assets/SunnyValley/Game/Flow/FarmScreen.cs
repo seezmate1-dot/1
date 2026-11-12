@@ -17,15 +17,21 @@ namespace SunnyValley.Game.Flow
     /// like Gardenscapes: the camera flies to the spot, the stars fly from their plate, a puff of dust, the old thing
     /// goes and the new one pops up, then the replicas, the story scene, the zone and chapter celebrations and the
     /// next zone's fog lifting. A tap on a built object with looks offers «Сменить вид».
-    /// Once chapter 1 is over (MetaGame.FarmOpen) the farm works like Township (GDD 6): the side buttons open the
-    /// fields and orchard, animals, workshops, the barn, the order board and the town (EconomyPopup), and the strip
-    /// over «Играть» shows the farm level and its XP.
+    /// Once chapter 1 is over (MetaGame.FarmOpen) the farm works like Township (GDD 6), on the map itself
+    /// (FarmInteraction, docs/FARM_UX.md): plots, trees, animals and workshops stand on the farm and are tapped and
+    /// swept with tools; «Поля», «Животные» and «Цеха» fly the camera to them. The barn, the order board and the town
+    /// stay windows (EconomyPopup), and the strip over «Играть» shows the farm level and its XP.
     /// </summary>
     public sealed class FarmScreen : GameScreen, IFarmState
     {
         float clock;
         FarmWorld world;
+        FarmInteraction farm;
         bool busy;
+        readonly Dictionary<string, long> shown = new Dictionary<string, long>();
+
+        /// <summary>A task's show is playing: the farm does not take taps.</summary>
+        public bool Busy => busy;
 
         public FarmScreen(GameApp app) : base(app)
         {
@@ -66,6 +72,10 @@ namespace SunnyValley.Game.Flow
         protected override UiLayout Layout(CanvasFit fit)
         {
             FarmWorld.Source = this;
+            // the working farm has live hens in the run instead of the painted ones
+            FarmWorld.HiddenArt.Clear();
+            if (Meta.FarmOpen)
+                FarmWorld.HiddenArt.Add("Ch1/Objects/Hens");
             return Screens.Farm(fit, Hud());
         }
 
@@ -100,21 +110,29 @@ namespace SunnyValley.Game.Flow
                 View.OnClick("farm.zone", () => world?.Focus(world.ZoneCenter(CurrentZone()), 0.6f, FarmWorld.StartZoom));
             if (View.Has("farm.fields"))
             {
-                // chapter 2: the farm economy's windows
-                View.OnClick("farm.fields", () => OpenEconomy(EconomyViews.Fields));
-                View.OnClick("farm.animals", () => OpenEconomy(EconomyViews.Animals));
-                View.OnClick("farm.workshops", () => OpenEconomy(EconomyViews.Workshops));
+                // chapter 2: fields, animals and workshops are on the map — the buttons fly the camera there;
+                // the barn and the town are windows
+                View.OnClick("farm.fields", () => GoTo(EconomyViews.Fields));
+                View.OnClick("farm.animals", () => GoTo(EconomyViews.Animals));
+                View.OnClick("farm.workshops", () => GoTo(EconomyViews.Workshops));
                 View.OnClick("farm.barn", () => OpenEconomy(EconomyViews.Barn));
                 View.OnClick("farm.town", () => OpenEconomy(EconomyViews.Town));
                 View.OnClick("farm.xp", () => Ui.Toast(EconomyViews.LevelHint(Meta)));
             }
 
             world = View.Rect("farm.world")?.GetComponent<FarmWorld>();
+            farm = null;
+            shown.Clear();
+            counting.Clear();
             if (world != null)
             {
                 world.ObjectTapped += OnObjectTapped;
                 world.LockedTapped += zone => Ui.Toast("«" + ZoneName(zone) + "» — " + LockText(zone).ToLowerInvariant());
+                SetInsets();
+                if (Meta.FarmOpen)
+                    farm = new FarmInteraction(App, this, world);
             }
+            Remember();
 
             // the play button breathes a little, so the eye finds it
             var play = View.Rect("farm.play");
@@ -124,9 +142,46 @@ namespace SunnyValley.Game.Flow
 
         void OpenEconomy(string window)
         {
-            if (!busy && App.Popups.Count == 0)
-                new EconomyPopup(App, window).Open();
+            if (busy || App.Popups.Count > 0)
+                return;
+            farm?.CloseMenu();
+            new EconomyPopup(App, window).Open();
         }
+
+        /// <summary>«Поля», «Животные», «Цеха»: to that part of the farm; without the map's sites, the old window.</summary>
+        void GoTo(string what)
+        {
+            if (farm != null)
+                farm.GoTo(what);
+            else
+                OpenEconomy(what);
+        }
+
+        /// <summary>
+        /// Tells the camera what the HUD covers: the plates on top, the level strip and «Играть» at the bottom. The
+        /// map may slide out from under them, and a camera flight ends in the middle of what is left.
+        /// </summary>
+        void SetInsets()
+        {
+            var w = (RectTransform)world.transform;
+            float top = 0, bottom = 0;
+            var corners = new Vector3[4];
+            var plates = View.Rect("farm.top");
+            if (plates != null)
+            {
+                plates.GetWorldCorners(corners);
+                top = w.rect.yMax - w.InverseTransformPoint(corners[0]).y;
+            }
+            var strip = View.Rect("farm.xp") ?? View.Rect("farm.zone") ?? View.Rect("farm.play");
+            if (strip != null)
+            {
+                strip.GetWorldCorners(corners);
+                bottom = w.InverseTransformPoint(corners[1]).y - w.rect.yMin;
+            }
+            world.SetInsets(0, 0, top + Tokens.Gap, bottom + Tokens.Gap);
+        }
+
+        public RectTransform RectOf(string id) => View?.Rect(id);
 
         void LivesInfo()
         {
@@ -144,21 +199,32 @@ namespace SunnyValley.Game.Flow
         {
             if (View == null)
                 return;
+            farm?.Tick(dt);
             clock += dt;
             if (clock < 0.5f)
                 return;
             clock = 0;
-            Refresh();
+            Refresh(false);
         }
 
-        public void Refresh()
+        /// <summary>The numbers of the HUD as they are; and, unless told not to, the farm's sites on the map.</summary>
+        public void Refresh() => Refresh(true);
+
+        public void Refresh(bool sites)
         {
             if (View == null)
                 return;
+            if (sites)
+                farm?.Sync();
             var hud = Hud();
-            View.SetText("farm.coins.value", Format.Amount(hud.Coins));
+            // a counter that is ticking towards its number (Count) is left to finish
+            if (!counting.Contains("farm.coins"))
+                View.SetText("farm.coins.value", Format.Amount(hud.Coins));
             View.SetText("farm.stars.value", Format.Amount(hud.Stars));
-            View.SetText("farm.crystals.value", Format.Amount(hud.Crystals));
+            if (!counting.Contains("farm.crystals"))
+                View.SetText("farm.crystals.value", Format.Amount(hud.Crystals));
+            if (counting.Count == 0)
+                Remember();
             View.SetText("farm.lives.count", hud.Lives.ToString());
             View.SetText("farm.lives.value", hud.Lives >= hud.MaxLives && !hud.InfiniteLives ? "Полные" : Format.Timer(hud.NextLifeSeconds));
             View.SetText("farm.play.label", "Играть " + hud.Level);
@@ -182,6 +248,62 @@ namespace SunnyValley.Game.Flow
                 View.SetBar("farm.zone.bar", hud.ZoneTotal > 0 ? (float)hud.ZoneDone / hud.ZoneTotal : 1);
                 View.SetText("farm.zone.bar.label", Screens.ZoneProgress(hud.ZoneDone, hud.ZoneTotal));
             }
+        }
+
+        readonly HashSet<string> counting = new HashSet<string>();
+
+        long Amount(string plate) => plate == "farm.coins" ? Meta.Coins : plate == "farm.crystals" ? Meta.Crystals : 0;
+
+        void Remember()
+        {
+            shown["farm.coins"] = Meta.Coins;
+            shown["farm.crystals"] = Meta.Crystals;
+        }
+
+        /// <summary>
+        /// A currency plate's number runs from what it showed to what it is now, and its icon bumps (coins spent on
+        /// seeds, coins that flew in). Other plates just bump.
+        /// </summary>
+        public void Count(string plate)
+        {
+            if (View == null)
+                return;
+            var icon = View.Rect(plate + ".icon") ?? View.Rect(plate);
+            if (icon != null)
+                FarmFx.Squash(icon, 0.2f);
+            if (plate != "farm.coins" && plate != "farm.crystals")
+                return;
+            var owner = View.Rect(plate);
+            if (owner == null)
+                return;
+            long to = Amount(plate);
+            long from = shown.TryGetValue(plate, out long was) ? was : to;
+            shown[plate] = to;
+            if (from == to)
+            {
+                View.SetText(plate + ".value", Format.Amount(to));
+                return;
+            }
+            counting.Add(plate);
+            var view = View;
+            Tweener.Run(owner, "count", 0.45f, Easing.Kind.OutCubic, k =>
+            {
+                if (View == view)
+                    view.SetText(plate + ".value", Format.Amount((long)Mathf.Round(Mathf.Lerp(from, to, k))));
+            }, () => counting.Remove(plate));
+        }
+
+        /// <summary>A HUD button answers what happened on the farm: a bump when it took something in, a shake for «no».</summary>
+        public void Nudge(string id, bool no)
+        {
+            var rt = View?.Rect(id);
+            if (rt == null)
+                return;
+            if (no)
+                FarmFx.Shake(rt);
+            else
+                FarmFx.Squash(View.Rect(id + ".disc") ?? rt, 0.18f);
+            Refresh(false);
         }
 
         /// <summary>A currency counter bumps when it grows (after a won level).</summary>
@@ -350,6 +472,9 @@ namespace SunnyValley.Game.Flow
             App.AnnounceEvents();
             Refresh();
             busy = false;
+            // the farm works now: show where
+            if (o.ChapterCompleted)
+                farm?.GoTo(EconomyViews.Fields);
         }
 
         /// <summary>Scenes waiting to be seen: the chapter's opening on the first launch, a new zone's opening.</summary>

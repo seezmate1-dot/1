@@ -289,6 +289,21 @@ namespace SunnyValley.Game.Farm
                     }
                     break;
 
+                case SiteKind.Nursery:
+                    foreach (var def in data.Balance.Trees)
+                    {
+                        string type = def.Id;
+                        int price = g.NextTreePrice(type);
+                        if (price < 0)
+                            continue;
+                        if (def.Level > g.Level)
+                            m.Add(LockedItem(Icons.Item(def.Item), def.Name, def.Level));
+                        else
+                            m.Add(Buy(g, Icons.Item(def.Item), def.Name, price, t => g.BuyTree(t, type), def.Name + " посажена в саду"));
+                    }
+                    m.Sub = m.Items.Count == 0 ? "Сад полон" : "Посадить дерево";
+                    break;
+
                 case SiteKind.Animal:
                     if (st.Phase == SitePhase.Hungry)
                     {

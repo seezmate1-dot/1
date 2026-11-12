@@ -18,6 +18,8 @@ namespace SunnyValley.Game.Farm
         Workshop,
         Barn,
         Orders,
+        /// <summary>The sign in the orchard: buy the next fruit tree.</summary>
+        Nursery,
     }
 
     /// <summary>
@@ -215,9 +217,11 @@ namespace SunnyValley.Game.Farm
                 map.Add(new FarmSite
                 {
                     Id = "tree." + t.Uid, Kind = SiteKind.Tree, Index = t.Uid, Ref = t.Type,
-                    X = ox + 270 + col * 212 + (row % 2) * 60, Y = oy + 330 - row * 130, W = TreeW, H = TreeH,
+                    X = ox + 270 + col * 212 + (row % 2) * 60, Y = oy + 380 - row * 125, W = TreeW, H = TreeH,
                 });
             }
+
+            map.Add(new FarmSite { Id = "nursery", Kind = SiteKind.Nursery, X = ox + 1480, Y = oy + 150, W = PenSignW, H = PenSignH });
 
             // animal houses: the sign, and the animals of a built one around its middle (3 × 2)
             foreach (var house in data.Balance.AnimalHouses)
@@ -497,6 +501,7 @@ namespace SunnyValley.Game.Farm
                 case SiteKind.Pen: return data.AnimalHouses.TryGetValue(s.Ref ?? "", out var h) ? h.Name : "Загон";
                 case SiteKind.Workshop: return data.Workshops.TryGetValue(s.Ref ?? "", out var w) ? w.Name : "Мастерская";
                 case SiteKind.Barn: return "Амбар";
+                case SiteKind.Nursery: return "Саженцы";
                 default: return "Заказы";
             }
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SunnyValley.Core.Meta;
+using SunnyValley.Game.Farm;
 using SunnyValley.Layout;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,18 +24,23 @@ namespace SunnyValley.Game.UI
 
     /// <summary>
     /// The chapter 1 farm under the interface, Gardenscapes-style: a big map of the eight zones (Resources/Meta/
-    /// chapter1_layout.json) moved with one finger and zoomed with two (or the mouse wheel), never past its edges.
+    /// chapter1_layout.json) moved with one finger and zoomed with two (or the mouse wheel). The fingers are read by
+    /// TouchGestures and the map is moved by FarmCamera (Game/Economy/Farm, plain C#, docs/FARM_UX.md §3): a tap is
+    /// told from a drag by a 10 dp slop, a flick glides, the edges are rubber, the zoom is clamped, a double tap
+    /// zooms in and back. A tap goes first to the working farm's sites (plots, animals, workshops: Sites), then to
+    /// the chapter's objects with looks and the fog.
     /// Each zone is its background picture with the objects standing on it in draw order: what the finished tasks
     /// built (the chosen look), the broken things and junk of the tasks not done yet. Closed zones lie under fog and
     /// overgrowth with a sign saying what opens them. FarmScreen drives the show of a task: the camera flies to the
     /// spot, a puff of dust, the old thing goes and the new one pops up; a tap on an object with looks offers
     /// «Сменить вид». Pictures come from FarmArt: painted art when it exists, placeholders until then.
     /// </summary>
-    public sealed class FarmWorld : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IEndDragHandler, IScrollHandler
+    public sealed class FarmWorld : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IInitializePotentialDragHandler, IDragHandler,
+        IEndDragHandler, IScrollHandler
     {
-        public const float MinZoom = 0.35f;
-        public const float MaxZoom = 1.6f;
-        public const float StartZoom = 0.8f;
+        public const float MinZoom = FarmCamera.MinZoom;
+        public const float MaxZoom = FarmCamera.MaxZoom;
+        public const float StartZoom = FarmCamera.StartZoom;
 
         /// <summary>Set by the farm screen before the layout is built.</summary>
         public static IFarmState Source;
@@ -45,11 +51,36 @@ namespace SunnyValley.Game.UI
         /// <summary>A tap on a closed zone's fog.</summary>
         public event Action<string> LockedTapped;
 
+        /// <summary>The working farm's sites (chapter 2), or null: a finger finds them before anything else.</summary>
+        public FarmSiteMap Sites;
+
+        /// <summary>A tap on a site.</summary>
+        public event Action<FarmSite> SiteTapped;
+
+        /// <summary>A finger went down on a site (it shows itself pressed) and left it without a tap or with one.</summary>
+        public event Action<FarmSite> SitePressed;
+        public event Action<FarmSite> SiteReleased;
+
+        /// <summary>A tap on nothing, or the map was grabbed: an open menu closes.</summary>
+        public event Action GroundTouched;
+
+        /// <summary>Art of the chapter that the working farm replaces with live things (the painted hens).</summary>
+        public static readonly HashSet<string> HiddenArt = new HashSet<string>();
+
         RectTransform content;
         RectTransform view;
         Vector2 mapSize;
-        readonly Dictionary<int, Vector2> pointers = new Dictionary<int, Vector2>();
+        FarmCamera cam;
+        readonly TouchGestures gestures = new TouchGestures();
+        FarmTap pressedTap;
+        FarmSite pressedSite;
         float zoom = StartZoom;
+
+        /// <summary>The map itself: what stands on it is its child, in map units from its lower left corner.</summary>
+        public RectTransform Content => content;
+        public Vector2 MapSize => mapSize;
+        public FarmCamera Cam => cam;
+        public float Zoom => zoom;
 
         sealed class Placed
         {
@@ -74,12 +105,14 @@ namespace SunnyValley.Game.UI
         {
             view = (RectTransform)transform;
             var bg = gameObject.AddComponent<Image>();
-            bg.color = UiView.ToColor(node.Color);
+            // the grass of the map goes on past its edges (the camera's insets let the map out from under the HUD)
+            bg.color = FarmArt.Color(Layout.Map.Ground);
             bg.raycastTarget = true; // drags on empty farm pan it; buttons above get their taps first
             gameObject.AddComponent<RectMask2D>();
 
             var map = Layout.Map;
             mapSize = new Vector2(map.W, map.H);
+            cam = new FarmCamera(map.W, map.H);
             content = Rect("map", view, 0, 0, map.W, map.H);
             content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 0.5f);
             var ground = content.gameObject.AddComponent<Image>();
@@ -95,16 +128,36 @@ namespace SunnyValley.Game.UI
                 BuildFog(z);
             Refresh();
 
+            var size = view.rect.size;
+            cam.ViewW = size.x;
+            cam.ViewH = size.y;
             if (hasCamera)
             {
-                zoom = savedZoom;
-                content.anchoredPosition = savedPosition;
+                cam.Zoom = savedZoom;
+                cam.Position = new P2(savedPosition.x, savedPosition.y);
             }
             else
             {
-                zoom = StartZoom;
-                content.anchoredPosition = CameraFor(ZoneCenter(Source?.CurrentZone()), zoom);
+                cam.Zoom = StartZoom;
+                cam.Position = cam.Target(ToP(ZoneCenter(Source?.CurrentZone())), StartZoom);
             }
+            Apply();
+        }
+
+        static P2 ToP(Vector2 v) => new P2(v.x, v.y);
+
+        static Vector2 ToV(P2 p) => new Vector2(p.X, p.Y);
+
+        /// <summary>
+        /// The parts of the view the HUD covers (canvas units from each edge): the map may slide out from under
+        /// them, and a camera flight ends in the middle of what is left.
+        /// </summary>
+        public void SetInsets(float left, float right, float top, float bottom)
+        {
+            cam.InsetLeft = Mathf.Max(0, left);
+            cam.InsetRight = Mathf.Max(0, right);
+            cam.InsetTop = Mathf.Max(0, top);
+            cam.InsetBottom = Mathf.Max(0, bottom);
             Apply();
         }
 
@@ -241,7 +294,7 @@ namespace SunnyValley.Game.UI
 
         // ------------------------------------------------------------------ state
 
-        bool Visible(SpriteDef s) => Source == null ? !s.IsBefore : s.Visible(Source.Done);
+        bool Visible(SpriteDef s) => (s.Art == null || !HiddenArt.Contains(s.Art)) && (Source == null ? !s.IsBefore : s.Visible(Source.Done));
 
         string ArtOf(SpriteDef s) => s.ArtFor(Source?.Choice(s.Task));
 
@@ -293,19 +346,65 @@ namespace SunnyValley.Game.UI
         /// <summary>A map point in world space (where a flying star aims).</summary>
         public Vector3 WorldPoint(Vector2 map) => content.TransformPoint(map - mapSize / 2);
 
-        Vector2 CameraFor(Vector2 map, float z) => -(map - mapSize / 2) * z;
-
-        /// <summary>Flies the camera to a map point (and a zoom), then calls done.</summary>
+        /// <summary>Flies the camera to a map point (and a zoom), then calls done. The point ends in the middle of what the HUD leaves free.</summary>
         public void Focus(Vector2 map, float duration = 0.5f, float targetZoom = -1, Action done = null)
         {
-            float z0 = zoom, z1 = targetZoom > 0 ? targetZoom : Mathf.Max(zoom, 0.75f);
-            Vector2 from = content.anchoredPosition;
+            float z1 = cam.ClampZoom(targetZoom > 0 ? targetZoom : Mathf.Max(cam.Zoom, 0.75f));
+            FlyTo(cam.Target(ToP(map), z1), z1, duration, done);
+        }
+
+        void FlyTo(P2 to, float z1, float duration, Action done = null)
+        {
+            cam.Grab();
+            float z0 = cam.Zoom;
+            P2 from = cam.Position;
+            // the map point in the middle of the free part travels in a straight line while the zoom changes
+            P2 centre = cam.FreeCentre;
+            P2 m0 = cam.ViewToMap(centre);
+            cam.Position = to;
+            cam.Zoom = z1;
+            P2 m1 = cam.ViewToMap(centre);
+            cam.Position = from;
+            cam.Zoom = z0;
             Tweener.Run(content, "focus", duration, Easing.Kind.OutCubic, k =>
             {
-                zoom = Mathf.Lerp(z0, z1, k);
-                content.anchoredPosition = Vector2.Lerp(from, CameraFor(map, zoom), k);
+                cam.Zoom = Mathf.Lerp(z0, z1, k);
+                cam.Position = cam.PositionFor(m0 + (m1 - m0) * k, cam.Zoom, centre);
+                if (k >= 1)
+                    cam.Position = to;
                 Apply();
             }, done);
+        }
+
+        /// <summary>
+        /// Brings a map point into the comfortable middle of the view if it is near an edge or under the HUD (a
+        /// tapped thing whose menu would not fit); does nothing when it already is. The zoom stays.
+        /// </summary>
+        public void Reveal(Vector2 map, float margin = 260, float duration = 0.35f)
+        {
+            P2 v = cam.MapToView(ToP(map));
+            float l = -cam.ViewW / 2 + cam.InsetLeft + margin, r = cam.ViewW / 2 - cam.InsetRight - margin;
+            float b = -cam.ViewH / 2 + cam.InsetBottom + margin, t = cam.ViewH / 2 - cam.InsetTop - margin * 1.6f;
+            float dx = v.X < l ? l - v.X : v.X > r ? r - v.X : 0, dy = v.Y < b ? b - v.Y : v.Y > t ? t - v.Y : 0;
+            if (Mathf.Abs(dx) < 1 && Mathf.Abs(dy) < 1)
+                return;
+            FlyTo(cam.ClampPosition(cam.Position + new P2(dx, dy), cam.Zoom), cam.Zoom, duration);
+        }
+
+        /// <summary>A screen point on the map (map units from its lower left corner).</summary>
+        public Vector2 ScreenToMap(Vector2 screen) => ToV(cam.ViewToMap(ViewPoint(screen)));
+
+        /// <summary>A map point in the view (canvas units from the view's centre).</summary>
+        public Vector2 MapToView(Vector2 map) => ToV(cam.MapToView(ToP(map)));
+
+        /// <summary>A screen point in the view (canvas units from the view's centre).</summary>
+        public Vector2 ScreenToView(Vector2 screen) => ToV(ViewPoint(screen));
+
+        /// <summary>Slides the map by a view delta inside its limits (a dragged tool near the edge).</summary>
+        public void Slide(Vector2 delta)
+        {
+            cam.Slide(ToP(delta));
+            Apply();
         }
 
         /// <summary>The show of a finished task: dust puffs where its objects stand, the old ones shrink away, the new pop up.</summary>
@@ -399,55 +498,182 @@ namespace SunnyValley.Game.UI
 
         // ------------------------------------------------------------------ fingers
 
-        public void OnPointerDown(PointerEventData e) => pointers[e.pointerId] = e.position;
+        /// <summary>A finger on the view, in canvas units from the view's centre (what TouchGestures and FarmCamera count in).</summary>
+        P2 ViewPoint(Vector2 screen)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(view, screen, Camera(), out var local);
+            local -= view.rect.center;
+            return new P2(local.x, local.y);
+        }
 
-        public void OnPointerUp(PointerEventData e) => pointers.Remove(e.pointerId);
+        static bool Counts(PointerEventData e) => e.pointerId >= 0 || e.button == PointerEventData.InputButton.Left;
 
-        public void OnEndDrag(PointerEventData e) => pointers.Remove(e.pointerId);
+        public void OnPointerDown(PointerEventData e) => Down(e, null);
+
+        /// <summary>A press that landed on one of the farm's own tap targets (FarmTap hands it over).</summary>
+        public void Down(PointerEventData e, FarmTap target)
+        {
+            if (content == null || !Counts(e))
+                return;
+            if (gestures.Fingers == 0)
+                pressedTap = target;
+            gestures.UnitsPerDp = UnitsPerDp();
+            Handle(gestures.Down(e.pointerId, ViewPoint(e.position), Time.unscaledTime));
+        }
+
+        public void OnPointerUp(PointerEventData e)
+        {
+            if (content != null && Counts(e))
+                Handle(gestures.Up(e.pointerId, ViewPoint(e.position), Time.unscaledTime));
+        }
+
+        /// <summary>The slop is ours (10 dp, TouchGestures), not the event system's few pixels.</summary>
+        public void OnInitializePotentialDrag(PointerEventData e) => e.useDragThreshold = false;
 
         public void OnDrag(PointerEventData e)
+        {
+            if (content != null && Counts(e))
+                Handle(gestures.Move(e.pointerId, ViewPoint(e.position), Time.unscaledTime));
+        }
+
+        public void OnEndDrag(PointerEventData e)
+        {
+            // normally the release came first and this finds nothing; a drag ended any other way lifts the finger here
+            if (content != null && Counts(e))
+                Handle(gestures.Up(e.pointerId, ViewPoint(e.position), Time.unscaledTime));
+        }
+
+        public void OnScroll(PointerEventData e)
         {
             if (content == null)
                 return;
             Tweener.Stop(content, "focus");
-            float scale = CanvasScale();
-            if (pointers.Count >= 2 && pointers.ContainsKey(e.pointerId))
-            {
-                // pinch: the distance between two fingers zooms around their midpoint
-                Vector2 other = Vector2.zero;
-                foreach (var kv in pointers)
-                {
-                    if (kv.Key != e.pointerId)
-                    {
-                        other = kv.Value;
-                        break;
-                    }
-                }
-                Vector2 before = pointers[e.pointerId];
-                float d0 = Vector2.Distance(before, other), d1 = Vector2.Distance(e.position, other);
-                pointers[e.pointerId] = e.position;
-                if (d0 > 10)
-                    ZoomAt((e.position + other) / 2, d1 / d0);
-                return;
-            }
-            pointers[e.pointerId] = e.position;
-            content.anchoredPosition += e.delta / scale;
+            cam.ZoomAbout(ViewPoint(e.position), 1 + e.scrollDelta.y * 0.1f, false);
             Apply();
         }
 
-        public void OnScroll(PointerEventData e) => ZoomAt(e.position, 1 + e.scrollDelta.y * 0.1f);
-
-        void ZoomAt(Vector2 screenPoint, float factor)
+        /// <summary>Canvas units in a dp: the slop is a physical distance, the same on every screen.</summary>
+        float UnitsPerDp()
         {
-            float next = Mathf.Clamp(zoom * factor, MinZoom, MaxZoom);
-            if (Mathf.Approximately(next, zoom))
+            float dpi = Screen.dpi > 1 ? Screen.dpi : 480;
+            return Mathf.Clamp(dpi / 160f / Mathf.Max(0.01f, CanvasScale()), 1.5f, 6f);
+        }
+
+        void Handle(IReadOnlyList<Gesture> events)
+        {
+            for (int i = 0; i < events.Count; i++)
+            {
+                var g = events[i];
+                switch (g.Kind)
+                {
+                    case GestureKind.Press:
+                        Tweener.Stop(content, "focus");
+                        cam.Grab();
+                        pressedSite = Sites?.At(cam.ViewToMap(g.Point), cam.Zoom);
+                        if (pressedSite != null)
+                            SitePressed?.Invoke(pressedSite);
+                        break;
+                    case GestureKind.PressEnd:
+                        Unpress();
+                        break;
+                    case GestureKind.Tap:
+                        // a map caught on its way back from past an edge goes on home
+                        cam.Release(new P2(0, 0));
+                        Tap(g.Point);
+                        break;
+                    case GestureKind.LongPress:
+                        cam.Release(new P2(0, 0));
+                        break;
+                    case GestureKind.DoubleTap:
+                    {
+                        Unpress();
+                        cam.DoubleTapTarget(g.Point, out var to, out float z);
+                        FlyTo(to, z, 0.3f);
+                        break;
+                    }
+                    case GestureKind.PanStart:
+                    case GestureKind.PinchStart:
+                        Tweener.Stop(content, "focus");
+                        cam.Grab();
+                        GroundTouched?.Invoke();
+                        break;
+                    case GestureKind.Pan:
+                        cam.DragBy(g.Delta);
+                        Apply(false);
+                        break;
+                    case GestureKind.Pinch:
+                        cam.DragBy(g.Delta);
+                        cam.ZoomAbout(g.Point, g.Scale);
+                        Apply(false);
+                        break;
+                    case GestureKind.PanEnd:
+                        cam.Release(g.Delta);
+                        break;
+                    case GestureKind.PinchEnd:
+                        cam.Release(new P2(0, 0));
+                        break;
+                }
+            }
+        }
+
+        void Unpress()
+        {
+            if (pressedSite != null)
+                SiteReleased?.Invoke(pressedSite);
+            pressedSite = null;
+        }
+
+        void Tap(P2 at)
+        {
+            var site = Sites?.At(cam.ViewToMap(at), cam.Zoom);
+            var tap = pressedTap;
+            pressedTap = null;
+            Unpress();
+            if (site != null)
+            {
+                // the tap did something: the next one is not the second half of a double tap
+                gestures.ForgetTap();
+                SiteTapped?.Invoke(site);
+            }
+            else if (tap != null && tap.Tapped != null)
+            {
+                gestures.ForgetTap();
+                GroundTouched?.Invoke();
+                tap.Tapped();
+            }
+            else
+            {
+                GroundTouched?.Invoke();
+            }
+        }
+
+        void Update()
+        {
+            if (content == null)
                 return;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(view, screenPoint, Camera(), out var local);
-            // keep the point under the fingers where it is
-            Vector2 p = content.anchoredPosition;
-            content.anchoredPosition = local + (p - local) * (next / zoom);
-            zoom = next;
-            Apply();
+            Handle(gestures.Tick(Time.unscaledTime));
+            if (gestures.Fingers == 0 && cam.Moving)
+            {
+                cam.Step(Mathf.Min(0.05f, Time.unscaledDeltaTime));
+                Apply(false);
+            }
+        }
+
+        void OnDisable()
+        {
+            gestures.Reset();
+            pressedTap = null;
+            pressedSite = null;
+        }
+
+        void OnApplicationFocus(bool focus)
+        {
+            // the system took the fingers away (a call, the notification shade): nothing is tapped, nothing glides
+            if (!focus)
+            {
+                gestures.Reset();
+                Unpress();
+            }
         }
 
         float CanvasScale()
@@ -462,19 +688,23 @@ namespace SunnyValley.Game.UI
             return canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
         }
 
-        /// <summary>Applies the zoom and keeps the map covering the whole view.</summary>
-        void Apply()
+        /// <summary>
+        /// Shows the camera: the map's place and size. With clamp, inside the hard limits (a flight, a rebuild); a
+        /// finger or a glide may hold the map a little past an edge.
+        /// </summary>
+        void Apply(bool clamp = true)
         {
             var size = view.rect.size;
-            float minZoom = Mathf.Max(size.x / mapSize.x, size.y / mapSize.y);
-            zoom = Mathf.Clamp(zoom, Mathf.Max(MinZoom, minZoom), MaxZoom);
+            cam.ViewW = size.x;
+            cam.ViewH = size.y;
+            if (clamp)
+                cam.Clamp();
+            zoom = cam.Zoom;
             content.localScale = Vector3.one * zoom;
-            float mx = Mathf.Max(0, (mapSize.x * zoom - size.x) / 2), my = Mathf.Max(0, (mapSize.y * zoom - size.y) / 2);
-            var p = content.anchoredPosition;
-            content.anchoredPosition = new Vector2(Mathf.Clamp(p.x, -mx, mx), Mathf.Clamp(p.y, -my, my));
+            content.anchoredPosition = new Vector2(cam.Position.X, cam.Position.Y);
             hasCamera = true;
-            savedPosition = content.anchoredPosition;
-            savedZoom = zoom;
+            savedPosition = ToV(cam.ClampPosition(cam.Position, cam.ClampZoom(cam.Zoom)));
+            savedZoom = cam.ClampZoom(cam.Zoom);
         }
 
         void OnRectTransformDimensionsChange()
@@ -485,23 +715,17 @@ namespace SunnyValley.Game.UI
     }
 
     /// <summary>
-    /// A tap on something on the farm (an object with looks, a closed zone). It takes the press itself, so a click
-    /// reaches it on every uGUI version, and hands the press and release to the farm, so a drag that starts on it
-    /// still pans the map (a drag cancels the click).
+    /// A tap on something on the farm (an object with looks, a closed zone). It takes the press itself and hands the
+    /// press and release to the farm, which tells a tap from a drag (TouchGestures): a drag that starts on it pans
+    /// the map, a tap comes back as Tapped — unless a site of the working farm stands under the finger.
     /// </summary>
-    public sealed class FarmTap : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
+    public sealed class FarmTap : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
         public FarmWorld World;
         public Action Tapped;
 
-        public void OnPointerDown(PointerEventData e) => World?.OnPointerDown(e);
+        public void OnPointerDown(PointerEventData e) => World?.Down(e, this);
 
         public void OnPointerUp(PointerEventData e) => World?.OnPointerUp(e);
-
-        public void OnPointerClick(PointerEventData e)
-        {
-            if (!e.dragging)
-                Tapped?.Invoke();
-        }
     }
 }
