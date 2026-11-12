@@ -18,7 +18,7 @@ def bed_art(h=PH):
 def bed(a, wet=False):
     """Tilled soil: a low raised bed with furrows, a soft rim and grass at its foot."""
     m = .035
-    a.poly([(m, m - .06), (1 - m + .16, m - .1), (1 - m + .16, 1 - m - .1), (m + .02, 1 - m)], '#1c2a10', op=.28, flt=a.blur(3.5))
+    a.poly([(m, m - .05), (1 - m + .13, m - .09), (1 - m + .13, 1 - m - .09), (m + .02, 1 - m)], '#0e2010', op=.34, flt=a.blur(2.2))
     side_l, side_r = '#7a4c2a', '#5a361e'
     z = 7
     a.poly([(m, m, 0), (1 - m, m, 0), (1 - m, m, z), (m, m, z)], a.lg([(0, side_r), (1, dark(side_r, .25))]), None)
@@ -37,6 +37,19 @@ def bed(a, wet=False):
     for _ in range(26):
         x, y = a.p(m + .08 + r.random() * (1 - 2 * m - .16), m + .08 + r.random() * (1 - 2 * m - .16), z)
         a.ell(x, y, 1.3 + r.random(), .8 + r.random() * .5, r.choice([SOIL_L, SOIL_D, '#c08a56']), .7)
+    # clods of turned earth, each with a lit side and a shadow, and a few stones
+    for _ in range(34):
+        u, v = m + .07 + r.random() * (1 - 2 * m - .14), m + .07 + r.random() * (1 - 2 * m - .14)
+        x, y = a.p(u, v, z)
+        rr = 1.6 + r.random() * 2.2
+        a.ell(x + rr * .5, y + rr * .35, rr, rr * .55, '#3a2010', .7)
+        a.path('M%.1f %.1f l%.1f %.1f l%.1f %.1f l%.1f %.1f Z' % (x - rr, y, rr * .7, -rr * .7, rr * 1.1, rr * .25, -rr * .6, rr * .7), r.choice(['#9a6a40', '#8a5a34', '#a87a4a']))
+        a.path('M%.1f %.1f l%.1f %.1f' % (x - rr, y, rr * .7, -rr * .7), stroke='#d0a070', sw=.5)
+    for _ in range(5):
+        x, y = a.p(m + .1 + r.random() * .7, m + .1 + r.random() * .7, z)
+        a.ell(x + .6, y + .6, 2.2, 1.3, '#3a2010', .7)
+        a.ell(x, y, 2.2, 1.3, '#b0a89c')
+        a.ell(x - .6, y - .4, .9, .5, '#e0dcd4')
     # the rim catches the light on the left
     a.line(a.p(m, m, z), a.p(m, 1 - m, z), '#d09a62', 1.6, .7)
     a.line(a.p(m, 1 - m, z), a.p(1 - m, 1 - m, z), '#c48e58', 1.2, .45)

@@ -210,7 +210,7 @@ def paint_site(p, s, press=None, selected=False, squash=1.0, bob=0.0, show_bubbl
         ic = icon("apple") if k == "Nursery" else icon("animal." + {"coop": "chicken", "cowshed": "cow", "sheepfold": "sheep", "apiary": "bee", "pigsty": "pig"}.get(s["ref"], "chicken"))
         p.fit(ic, x - 1, y - 9 + 120 * .69, 46)
     elif k == "Workshop" and s["ref"] != "mill":
-        p.put(art("Farm/Workshop_" + s["ref"]), x - 154, y - 22, 344, 300, .45 if locked else .7 if offer else 1, sx, sy)
+        p.put(art("Farm/Workshop_" + s["ref"]), x - 154, y - 22, 344, 320, .45 if locked else .7 if offer else 1, sx, sy)
 
     if s["phase"] == "Growing":
         p.bar(x, y + (-4 if k == "Plot" else -10), min(120, w * .7), s["progress"])

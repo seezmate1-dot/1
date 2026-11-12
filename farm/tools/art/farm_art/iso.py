@@ -49,10 +49,11 @@ def _noise(rng, w, h, cell):
     return np.asarray(im).astype(np.float32) / 127.5 - 1
 
 
-def painterly(im, seed=1, grain=.07, volume=.24, rim=.4, contrast=1.14, sat=1.18):
-    """The painted look of the zone backgrounds, over a clean vector render: uneven brushy tone instead of flat
-    fills, the whole thing lighter towards the light (top left) and darker away from it, a dark turn of the form
-    along the edges that look away from the light and a warm lit edge on the side that faces it."""
+def painterly(im, seed=1, grain=.045, volume=.2, rim=0, contrast=1.12, sat=1.16, px=4.0):
+    """The tone of the zone backgrounds over a clean, sharp vector render: a fine uneven grain in the colour (not
+    a blur — every edge stays as drawn), the whole thing a little lighter towards the light (top left) and darker
+    away from it, and the saturation and contrast of the painted map. px: pixels per map unit, so the grain is the
+    same size on the map whatever the picture's resolution."""
     a = np.asarray(im).astype(np.float32) / 255
     rgb, al = a[..., :3].copy(), a[..., 3]
     h, w = al.shape
@@ -60,33 +61,18 @@ def painterly(im, seed=1, grain=.07, volume=.24, rim=.4, contrast=1.14, sat=1.18
     if len(xs) == 0:
         return im
     rng = np.random.default_rng(seed)
-    n = .5 * _noise(rng, w, h, 26) + .3 * _noise(rng, w, h, 9) + .2 * _noise(rng, w, h, 3)
+    k = max(1.0, px / 2)
+    n = .45 * _noise(rng, w, h, int(22 * k)) + .3 * _noise(rng, w, h, int(7 * k)) + .25 * _noise(rng, w, h, max(2, int(2 * k)))
     rgb *= (1 + grain * n)[..., None]
-    # a little warm–cool drift, as paint has
-    t = _noise(rng, w, h, 40) * .022
+    t = _noise(rng, w, h, int(36 * k)) * .018
     rgb[..., 0] += t
     rgb[..., 2] -= t
-    x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
-    u = (np.arange(w, dtype=np.float32) - x0) / max(1, x1 - x0)
-    v = (np.arange(h, dtype=np.float32) - y0) / max(1, y1 - y0)
-    g = 1 + volume * .5 - volume * (.45 * u[None, :] + .55 * v[:, None])
-    rgb *= g[..., None]
-    # the form turns away at the lower right edge and catches the light at the upper left one
-    d = max(2, int(min(w, h) * .018))
-    A = Image.fromarray((al * 255).astype(np.uint8))
-
-    def shifted(dx, dy):
-        out = Image.new('L', A.size, 0)
-        out.paste(A, (dx, dy))
-        return np.asarray(out).astype(np.float32) / 255
-
-    away = np.clip(al - shifted(-d, -d), 0, 1)
-    lit = np.clip(al - shifted(d, d), 0, 1)
-    blur = lambda m: np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(d * .9))).astype(np.float32) / 255
-    away, lit = blur(away), blur(lit)
-    rgb *= (1 - rim * away)[..., None]
-    rgb += (np.array([1.0, .96, .8], dtype=np.float32)[None, None, :] - rgb) * (rim * .55 * lit)[..., None]
-    # the backgrounds are saturated and contrasty
+    if volume:
+        x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+        u = (np.arange(w, dtype=np.float32) - x0) / max(1, x1 - x0)
+        v = (np.arange(h, dtype=np.float32) - y0) / max(1, y1 - y0)
+        g = 1 + volume * .5 - volume * (.45 * u[None, :] + .55 * v[:, None])
+        rgb *= g[..., None]
     grey = rgb.mean(axis=2, keepdims=True)
     rgb = grey + (rgb - grey) * sat
     rgb = (rgb - .5) * contrast + .5
@@ -97,7 +83,7 @@ def painterly(im, seed=1, grain=.07, volume=.24, rim=.4, contrast=1.14, sat=1.18
 class Art:
     """One sprite: a canvas in map units with an origin on the ground (the footprint's nearest corner)."""
 
-    def __init__(self, w, h, ox=None, oy=None, scale=2.0):
+    def __init__(self, w, h, ox=None, oy=None, scale=4.0):
         self.w, self.h = w, h
         self.ox = w / 2 if ox is None else ox
         self.oy = h - 8 if oy is None else oy
@@ -190,49 +176,79 @@ class Art:
         self.ell(x + r * A * .25, y + 2, r * A, r * A * squash, '#1c2a10', op, self.blur(sd))
 
     def face(self, side, u, v, z0, length, height, tex, col, seed=0):
-        """Material on a wall (length along it × height, map units): 'planks', 'plaster', 'brick', 'stone'; and the
-        dark where it meets the ground."""
+        """Material on a wall (length along it × height, map units), drawn crisp: 'planks' (boards with grain and
+        nails), 'plaster' (fine speckle, hairline cracks), 'timber' (plaster in a dark timber frame), 'brick',
+        'stone' (courses of cut stones with mortar); and the shade where the wall meets the ground."""
         r = rnd(seed + int(u * 97) + int(v * 53) + (7 if side == 'l' else 0))
         s = ''
         if tex == 'planks':
             x = 0
             while x < length:
-                bw = 7 + r.random() * 4
-                tone = r.choice([lite(col, .12), dark(col, .1), dark(col, .2), col, lite(col, .05)])
-                s += rect(x, -height, min(bw, length - x), height, tone, None, 0, 0, .55)
-                s += '<line x1="%.1f" y1="%.1f" x2="%.1f" y2="0" stroke="%s" stroke-width=".9" opacity=".55"/>' % (x, -height, x, dark(col, .5))
-                for _ in range(2):
-                    gx, gy = x + 1.5 + r.random() * (bw - 3), -r.random() * height
-                    s += '<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width=".6" opacity=".4"/>' % (gx, gy, gx + r.random() - .5, gy - 6 - r.random() * 10, dark(col, .4))
+                bw = 6.5 + r.random() * 3
+                w = min(bw, length - x)
+                tone = r.choice([lite(col, .14), lite(col, .06), col, dark(col, .08), dark(col, .16)])
+                s += rect(x, -height, w, height, tone)
+                s += rect(x, -height, .7, height, dark(col, .55), None, 0, 0, .8) + rect(x + .7, -height, .6, height, lite(col, .35), None, 0, 0, .5)
+                for _ in range(3):
+                    gx, gy = x + 1.6 + r.random() * max(.5, w - 3), -r.random() * height
+                    s += '<path d="M%.1f %.1f q%.1f -5 0 -%.1f" stroke="%s" stroke-width=".45" fill="none" opacity=".55"/>' % (gx, gy, r.random() * 1.4 - .7, 7 + r.random() * 12, dark(col, .45))
+                if r.random() < .3:
+                    ky = -r.random() * height * .8 - 4
+                    s += '<ellipse cx="%.1f" cy="%.1f" rx="1.5" ry="2" fill="%s" opacity=".7"/>' % (x + w / 2, ky, dark(col, .5))
+                for ny in (-height + 3.5, -4):
+                    s += '<circle cx="%.1f" cy="%.1f" r=".65" fill="%s"/>' % (x + w / 2, ny, dark(col, .6))
                 x += bw
-        elif tex == 'plaster':
-            for _ in range(int(length * height / 90)):
+        elif tex in ('plaster', 'timber'):
+            for _ in range(int(length * height / 14)):
                 x, y = r.random() * length, -r.random() * height
-                s += '<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f" fill="%s" opacity="%.2f"/>' % (x, y, 3 + r.random() * 9, 2 + r.random() * 5, r.choice([lite(col, .3), dark(col, .18), dark(col, .1)]), .12 + r.random() * .14)
-            for _ in range(3):
-                x, y = r.random() * length, -r.random() * height * .8
-                s += '<path d="M%.1f %.1f l%.1f %.1f l%.1f %.1f" stroke="%s" stroke-width=".6" fill="none" opacity=".35"/>' % (x, y, 2 - r.random() * 4, 5, 3 - r.random() * 4, 6, dark(col, .5))
+                s += '<circle cx="%.1f" cy="%.1f" r="%.2f" fill="%s" opacity=".5"/>' % (x, y, .35 + r.random() * .5, r.choice([lite(col, .5), dark(col, .25), dark(col, .15)]))
+            for _ in range(int(length / 22) + 1):
+                x, y = r.random() * length, -r.random() * height * .85 - 3
+                s += '<path d="M%.1f %.1f l%.1f 3 l%.1f 4 l%.1f 3" stroke="%s" stroke-width=".4" fill="none" opacity=".6"/>' % (x, y, 1.5 - r.random() * 3, 1.5 - r.random() * 3, 1.5 - r.random() * 3, dark(col, .5))
+            # a patch where the plaster fell off and the brick shows
+            if length > 60:
+                px_, py_ = length * (.15 + r.random() * .2), -8 - r.random() * 6
+                for j in range(3):
+                    for i in range(3 - j):
+                        s += rect(px_ + i * 5.2 + j * 2.6, py_ - j * 2.9, 4.6, 2.4, r.choice(['#b8623e', '#a8553a', '#c47048']), '#5e3020', .25, .4)
+            if tex == 'timber':
+                beam = '#5e3c22'
+                def b(x, y, w, h):
+                    return rect(x, y, w, h, beam, dark(beam, .5), .35) + rect(x, y, w, min(h, 1), lite(beam, .3), None, 0, 0, .6)
+                s += b(0, -height, length, 4.5) + b(0, -5, length, 5) + b(0, -height * .52, length, 4)
+                n = max(2, int(length / 34))
+                for i in range(n + 1):
+                    s += b(min(length - 4.5, i * length / n), -height, 4.5, height)
+                # braces in the outer bays
+                for (xa, xb) in ((4, length / n), (length - 4, length - length / n)):
+                    s += '<path d="M%.1f %.1f L%.1f %.1f" stroke="%s" stroke-width="4" fill="none"/>' % (xa, -6, xb, -height * .5, beam)
         elif tex in ('brick', 'stone'):
-            bh = 5 if tex == 'brick' else 8
+            bh = 4.2 if tex == 'brick' else 6.5
+            mortar = dark(col, .45) if tex == 'brick' else dark(col, .5)
+            s += rect(0, -height, length, height, mortar)
             row = 0
             y = 0
             while y < height:
-                x = -(row % 2) * 6
+                x = -(row % 2) * (4.5 if tex == 'brick' else 6)
                 while x < length:
-                    bw = (11 if tex == 'brick' else 12 + r.random() * 8)
-                    x0, x1 = max(0, x), min(length, x + bw - 1)
-                    if x1 > x0:
-                        s += rect(x0, -y - bh + .6, x1 - x0, bh - 1.2, r.choice([lite(col, .14), col, dark(col, .14), dark(col, .24)]), None, 0, 1.2 if tex == 'stone' else .4, .8)
+                    bw = 9 if tex == 'brick' else 10 + r.random() * 7
+                    x0, x1 = max(0, x), min(length, x + bw - .7)
+                    hh = min(bh - .7, height - y)
+                    if x1 > x0 and hh > .5:
+                        tone = r.choice([lite(col, .18), lite(col, .08), col, dark(col, .1), dark(col, .2)])
+                        s += rect(x0, -y - hh, x1 - x0, hh, tone, None, 0, .9 if tex == 'stone' else .25)
+                        s += rect(x0, -y - hh, x1 - x0, .7, lite(tone, .35), None, 0, 0, .7)
                     x += bw
                 y += bh
                 row += 1
         if z0 == 0:
-            g = self.lg([(0, '#241408', 0), (1, '#241408', .34)])
-            s += rect(0, -min(height, 16), length, min(height, 16), g)
+            g = self.lg([(0, '#241408', 0), (1, '#241408', .42)])
+            s += rect(0, -min(height, 14), length, min(height, 14), g)
         wall(self, side, u, v, z0, s)
 
     def box(self, u0, v0, u1, v1, z0, z1, col, top=None, edge=True, left=None, right=None, tex=None, seed=0):
         """A block: the left face lit, the right face in shade, the top lightest."""
+        notop = top is False
         top = top or lite(col, .22)
         lf = left or col
         rt = right or mix(dark(col, .42), '#2c2c60', .14)
@@ -240,14 +256,16 @@ class Art:
         # the face looking left (v = v0 … nearest in v), the face looking right (u = u0)
         self.poly([(u0, v0, z0), (u1, v0, z0), (u1, v0, z1), (u0, v0, z1)], self.lg([(0, lite(rt, .06)), (1, dark(rt, .12))]), e, .9)
         self.poly([(u0, v0, z0), (u0, v1, z0), (u0, v1, z1), (u0, v0, z1)], self.lg([(0, lite(lf, .1)), (1, dark(lf, .1))]), e, .9)
-        self.poly([(u0, v0, z1), (u1, v0, z1), (u1, v1, z1), (u0, v1, z1)], top, e, .9)
+        if not notop:
+            self.poly([(u0, v0, z1), (u1, v0, z1), (u1, v1, z1), (u0, v1, z1)], top, e, .9)
         if tex:
             self.face('l', u0, v1, z0, (v1 - v0) * L, z1 - z0, tex, lf, seed)
             self.face('r', u0, v0, z0, (u1 - u0) * L, z1 - z0, tex, rt, seed + 1)
 
-    def tiles(self, q, col, rows=8, cols=12, seed=0):
-        """Shingles on a roof slope: q = eave-near, eave-far, ridge-far, ridge-near (3D points). Courses overlap:
-        each casts a thin shadow on the one below, tiles differ a little in tone."""
+    def tiles(self, q, col, rows=9, cols=12, seed=0):
+        """Shingles on a roof slope: q = eave-near, eave-far, ridge-far, ridge-near (3D points). Every shingle is
+        its own shape with its own tone; each course overlaps the one below, with a lit lower edge and a shadow
+        under it; the gaps between shingles show."""
         r = rnd(seed + 31)
         P = [self.p(*c) for c in q]
 
@@ -256,47 +274,91 @@ class Art:
             bx, by = P[3][0] + (P[2][0] - P[3][0]) * s, P[3][1] + (P[2][1] - P[3][1]) * s
             return ax + (bx - ax) * t, ay + (by - ay) * t
 
+        self.poly([at(0, 0), at(1, 0), at(1, 1), at(0, 1)], dark(col, .5), raw=True)
+        gap = .012
         for j in range(rows - 1, -1, -1):
             t0, t1 = j / rows, (j + 1) / rows
             off = (j % 2) * .5 / cols
             i = -1
             while i < cols:
-                s0, s1 = max(0, i / cols + off), min(1, (i + 1) / cols + off)
+                s0, s1 = max(0, i / cols + off + gap * .5), min(1, (i + 1) / cols + off - gap * .5)
                 i += 1
                 if s1 <= s0:
                     continue
-                tone = r.choice([lite(col, .16), lite(col, .06), col, col, dark(col, .1), dark(col, .2)])
-                tone = mix(tone, lite(col, .25), t0 * .35)
-                self.poly([at(s0, t0), at(s1, t0), at(s1, t1 + .02), at(s0, t1 + .02)], tone, raw=True)
-                self.line(at(s0, t0), at(s0, t1), dark(col, .45), .6, .35)
-            self.line(at(0, t0), at(1, t0), dark(col, .55), 1.5, .5)
-            self.line(at(0, t0 + .28 / rows), at(1, t0 + .28 / rows), lite(col, .4), .7, .3)
+                tone = r.choice([lite(col, .2), lite(col, .1), col, col, dark(col, .08), dark(col, .16), dark(col, .26)])
+                tone = mix(tone, lite(col, .3), t0 * .3)
+                lift = (r.random() - .5) * .25 / rows
+                self.poly([at(s0, t0 + lift), at(s1, t0 + lift), at(s1, t1 + .35 / rows), at(s0, t1 + .35 / rows)], tone, raw=True)
+                # the lit lower edge of the shingle and its thickness
+                self.line(at(s0, t0 + lift), at(s1, t0 + lift), dark(tone, .5), .9, .9)
+                self.line(at(s0, t0 + lift + .13 / rows), at(s1, t0 + lift + .13 / rows), lite(tone, .45), .5, .8)
 
-    def gable(self, u0, v0, u1, v1, z0, zr, col, over=.08, along='u', wall=None, edge=True):
-        """A gabled roof over a footprint: the ridge runs along u (gable end looks left) or v (gable end looks right)."""
-        e = dark(col, .45) if edge else None
+    def gable(self, u0, v0, u1, v1, z0, zr, col, over=.08, along='u', wall=None, edge=True, trim='#f2e2c0', tex=None, thick=6.0):
+        """A gabled roof over a footprint, a real slab: shingles on the slope that looks at the viewer, a fascia
+        board along its eave with the roof's thickness, barge boards along the gable's edges, a ridge cap. The
+        ridge runs along u (the gable wall is the lit one) or along v (the gable wall is the shaded one)."""
         o = over
+        ze = z0 - o * 30
+        rows = 10
         if along == 'u':
             vm = (v0 + v1) / 2
-            # the gable wall under the roof, looking… the end at u0 faces the viewer's right side
             if wall:
-                self.poly([(u0, v0, z0), (u0, v1, z0), (u0, vm, zr)], self.lg([(0, lite(wall, .1)), (1, dark(wall, .1))]), dark(wall, .45), .9)
-            # the slope looking at the viewer (v0 side) and a sliver of the far one
-            self.poly([(u0 - o, vm, zr), (u1 + o, vm, zr), (u1 + o, v1 + o, z0 - o * 30), (u0 - o, v1 + o, z0 - o * 30)], dark(col, .3), e, .9)
-            q = [(u0 - o, v0 - o, z0 - o * 30), (u1 + o, v0 - o, z0 - o * 30), (u1 + o, vm, zr), (u0 - o, vm, zr)]
-            self.poly(q, dark(col, .12), e, .9)
-            self.tiles(q, dark(col, .12), 7, max(6, int((u1 - u0) * 9)), int(u0 * 100))
-            # the eave's shadow on the wall under it
-            self.poly([(u0, v0, z0 - o * 30 - 1), (u1, v0, z0 - o * 30 - 1), (u1, v0, z0 - o * 30 - 12), (u0, v0, z0 - o * 30 - 12)], '#241408', op=.22)
+                self.poly([(u0, v0, z0), (u0, v1, z0), (u0, vm, zr)], self.lg([(0, lite(wall, .1)), (1, dark(wall, .1))]))
+                if tex:
+                    self.gable_face('l', u0, v1, z0, (v1 - v0) * L, zr - z0, tex, wall)
+            # the far slope's edge, then the slope that looks at the viewer
+            self.poly([(u0 - o, vm, zr), (u1 + o, vm, zr), (u1 + o, v1 + o, ze), (u0 - o, v1 + o, ze)], dark(col, .4))
+            q = [(u0 - o, v0 - o, ze), (u1 + o, v0 - o, ze), (u1 + o, vm, zr), (u0 - o, vm, zr)]
+            self.poly([(u0, v0, ze - 1), (u1, v0, ze - 1), (u1, v0, ze - 13), (u0, v0, ze - 13)], '#241408', op=.3)
+            self.tiles(q, dark(col, .1), rows, max(8, int((u1 - u0 + 2 * o) * 13)), int(u0 * 100))
+            # the eave: the roof's thickness and a fascia board
+            self.poly([(u0 - o, v0 - o, ze), (u1 + o, v0 - o, ze), (u1 + o, v0 - o, ze - thick), (u0 - o, v0 - o, ze - thick)], dark(trim, .38))
+            self.poly([(u0 - o, v0 - o, ze - 1), (u1 + o, v0 - o, ze - 1), (u1 + o, v0 - o, ze - 2.4), (u0 - o, v0 - o, ze - 2.4)], lite(trim, .1), op=.8)
+            # barge boards on the gable end (u0): two boards following the slopes
+            for (va, vb) in ((v0 - o, vm), (v1 + o, vm)):
+                self.poly([(u0 - o, va, ze), (u0 - o, vb, zr), (u0 - o, vb, zr - thick - 1), (u0 - o, va, ze - thick - 1)], self.lg([(0, lite(trim, .15)), (1, dark(trim, .15))]), dark(trim, .5), .5)
+            ridge = [(u0 - o, vm, zr), (u1 + o, vm, zr)]
         else:
             um = (u0 + u1) / 2
             if wall:
-                self.poly([(u0, v0, z0), (u1, v0, z0), (um, v0, zr)], self.lg([(0, lite(wall, .0)), (1, dark(wall, .3))]), dark(wall, .45), .9)
-            self.poly([(um, v0 - o, zr), (um, v1 + o, zr), (u1 + o, v1 + o, z0 - o * 30), (u1 + o, v0 - o, z0 - o * 30)], dark(col, .32), e, .9)
-            q = [(u0 - o, v0 - o, z0 - o * 30), (u0 - o, v1 + o, z0 - o * 30), (um, v1 + o, zr), (um, v0 - o, zr)]
-            self.poly(q, lite(col, .08), e, .9)
-            self.tiles(q, lite(col, .08), 7, max(6, int((v1 - v0) * 9)), int(v0 * 100))
-            self.poly([(u0, v0, z0 - o * 30 - 1), (u0, v1, z0 - o * 30 - 1), (u0, v1, z0 - o * 30 - 12), (u0, v0, z0 - o * 30 - 12)], '#241408', op=.2)
+                self.poly([(u0, v0, z0), (u1, v0, z0), (um, v0, zr)], self.lg([(0, dark(wall, .3)), (1, mix(dark(wall, .45), '#2c2c60', .14))]))
+                if tex:
+                    self.gable_face('r', u0, v0, z0, (u1 - u0) * L, zr - z0, tex, mix(dark(wall, .42), '#2c2c60', .14))
+            self.poly([(um, v0 - o, zr), (um, v1 + o, zr), (u1 + o, v1 + o, ze), (u1 + o, v0 - o, ze)], dark(col, .42))
+            q = [(u0 - o, v0 - o, ze), (u0 - o, v1 + o, ze), (um, v1 + o, zr), (um, v0 - o, zr)]
+            self.poly([(u0, v0, ze - 1), (u0, v1, ze - 1), (u0, v1, ze - 13), (u0, v0, ze - 13)], '#241408', op=.26)
+            self.tiles(q, lite(col, .06), rows, max(8, int((v1 - v0 + 2 * o) * 13)), int(v0 * 100))
+            self.poly([(u0 - o, v0 - o, ze), (u0 - o, v1 + o, ze), (u0 - o, v1 + o, ze - thick), (u0 - o, v0 - o, ze - thick)], self.lg([(0, lite(trim, .1)), (1, dark(trim, .2))]))
+            self.poly([(u0 - o, v0 - o, ze - thick + 1.2), (u0 - o, v1 + o, ze - thick + 1.2), (u0 - o, v1 + o, ze - thick), (u0 - o, v0 - o, ze - thick)], dark(trim, .5), op=.7)
+            for (ua, ub) in ((u0 - o, um), (u1 + o, um)):
+                self.poly([(ua, v0 - o, ze), (ub, v0 - o, zr), (ub, v0 - o, zr - thick - 1), (ua, v0 - o, ze - thick - 1)], dark(trim, .34), dark(trim, .6), .5)
+            ridge = [(um, v0 - o, zr), (um, v1 + o, zr)]
+        # the ridge cap: a row of rounded tiles along the top
+        a_, b_ = self.p(*ridge[0]), self.p(*ridge[1])
+        n = max(6, int(math.hypot(b_[0] - a_[0], b_[1] - a_[1]) / 9))
+        self.line(a_, b_, dark(col, .55), 5.5)
+        for i in range(n):
+            p0 = (a_[0] + (b_[0] - a_[0]) * i / n, a_[1] + (b_[1] - a_[1]) * i / n)
+            p1 = (a_[0] + (b_[0] - a_[0]) * (i + .86) / n, a_[1] + (b_[1] - a_[1]) * (i + .86) / n)
+            self.line(p0, p1, lite(col, .12 if i % 2 else .22), 4)
+            self.line((p0[0], p0[1] - 1.2), (p1[0], p1[1] - 1.2), lite(col, .5), .9, .8)
+
+    def gable_face(self, side, u, v, z0, length, rise, tex, col):
+        """The triangle of wall under a gable: a round vent with a frame, boards or beams as the wall below."""
+        s = ''
+        mid = length / 2
+        if tex == 'planks':
+            x = 0
+            while x < length:
+                top = rise * (1 - abs(x - mid) / mid)
+                s += rect(x, -top, .7, top, dark(col, .5), None, 0, 0, .7)
+                x += 7.5
+        elif tex == 'timber':
+            beam = '#5e3c22'
+            s += rect(mid - 2.2, -rise + 3, 4.4, rise - 3, beam) + rect(0, -4.5, length, 4.5, beam)
+        s += '<circle cx="%.1f" cy="%.1f" r="%.1f" fill="%s" stroke="%s" stroke-width="1.6"/>' % (mid, -rise * .38, min(7.5, rise * .2), '#2e2018', lite(col, .5))
+        s += '<path d="M%.1f %.1f h%.1f M%.1f %.1f v%.1f" stroke="%s" stroke-width="1"/>' % (mid - 6, -rise * .38, 12, mid, -rise * .38 - 6, 12, lite(col, .5))
+        wall(self, side, u, v, z0, s)
 
     def roof_lines(self, u0, v0, u1, v1, z0, zr, col, n=4, along='v', over=.08):
         """(The gable paints its own shingles now.)"""
@@ -346,11 +408,11 @@ class Art:
         return ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %s %s"><defs>%s</defs>%s</svg>'
                 % (self.w * s, self.h * s, self.w, self.h, ''.join(self.defs), ''.join(self.body)))
 
-    def image(self, ss=2):
+    def image(self, ss=3):
         w, h = int(self.w * self.scale), int(self.h * self.scale)
         png = resvg_py.svg_to_bytes(svg_string=self.svg(), width=w * ss, height=h * ss)
         im = Image.open(io.BytesIO(bytes(png))).convert('RGBA').resize((w, h), Image.LANCZOS)
-        return painterly(im, self.seed, **self.look) if self.paint else im
+        return painterly(im, self.seed, px=self.scale, **self.look) if self.paint else im
 
     def save(self, name):
         os.makedirs(OUT, exist_ok=True)
@@ -383,14 +445,86 @@ def rect(x, y, w, h, fill, stroke=None, sw=1, rx=0, op=1):
     return s + '/>'
 
 
-def window(x, y, w, h, frame='#fff4dc', glass='#8fd0f0'):
-    return (rect(x - 2, y - 2, w + 4, h + 4, frame, dark(frame, .45), .8, 1.5) + rect(x, y, w, h, glass, None, 0, 1)
-            + '<path d="M%.1f %.1f l%.1f 0 l-%.1f %.1f Z" fill="#ffffff" opacity=".55"/>' % (x, y, w * .7, w * .7, h * .7)
-            + rect(x + w / 2 - .8, y, 1.6, h, frame) + rect(x, y + h / 2 - .8, w, 1.6, frame))
+def window(x, y, w, h, frame='#fff4dc', glass='#8fd0f0', shutters=None, box=None, arch=False):
+    """A window on a wall (flat, map units; y is its top): a frame with depth, glass with a reflection, mullions,
+    a sill; shutters with slats; a flower box."""
+    s = ''
+    if shutters:
+        sw_ = w * .46
+        for sx in (x - sw_ - 2.5, x + w + 2.5):
+            s += rect(sx, y - 1, sw_, h + 2, shutters, dark(shutters, .55), .5, .8)
+            for k in range(1, int(h / 3.2)):
+                s += rect(sx + 1.2, y - 1 + k * 3.2, sw_ - 2.4, .8, dark(shutters, .4)) + rect(sx + 1.2, y - 1 + k * 3.2 + .8, sw_ - 2.4, .5, lite(shutters, .35))
+    rx = w / 2 if arch else 1
+    s += rect(x - 2.6, y - 2.6, w + 5.2, h + 5.2, dark(frame, .5), None, 0, rx + 2) + rect(x - 2, y - 2, w + 4, h + 4, frame, None, 0, rx + 1.6)
+    s += rect(x, y, w, h, dark(glass, .5), None, 0, rx) + rect(x + .8, y + 1.6, w - 1.6, h - 2.4, glass, None, 0, rx)
+    s += '<path d="M%.1f %.1f l%.1f 0 l-%.1f %.1f l-%.1f 0 Z" fill="#ffffff" opacity=".6"/>' % (x + w * .25, y + 1.6, w * .3, h * .55, h * .78, w * .3 * .0 + w * .12)
+    s += '<path d="M%.1f %.1f l%.1f 0 l-%.1f %.1f Z" fill="#ffffff" opacity=".35"/>' % (x + w * .68, y + 1.6, w * .16, w * .3, h * .5)
+    s += rect(x + w / 2 - .9, y, 1.8, h, frame) + rect(x, y + h * .46 - .9, w, 1.8, frame)
+    s += rect(x + w / 2 + .9, y, .5, h, dark(frame, .4), None, 0, 0, .6) + rect(x, y + h * .46 + .9, w, .5, dark(frame, .4), None, 0, 0, .6)
+    # the sill, with its shadow on the wall
+    s += rect(x - 4, y + h + 2, w + 8, 3, lite(frame, .2), dark(frame, .5), .4, .6) + rect(x - 3, y + h + 5, w + 6, 1.6, '#241408', None, 0, 0, .3)
+    if box:
+        s += rect(x - 3, y + h + 4.5, w + 6, 6.5, '#8a5a34', '#4a2a14', .5, 1) + rect(x - 3, y + h + 4.5, w + 6, 1.2, '#c79a5e')
+        n = max(3, int(w / 5))
+        for i in range(n):
+            fx = x - 1 + (i + .5) * (w + 2) / n
+            s += '<ellipse cx="%.1f" cy="%.1f" rx="3.2" ry="2.6" fill="%s"/>' % (fx, y + h + 3.4, ['#4f9a36', '#6fbf45'][i % 2])
+            s += '<circle cx="%.1f" cy="%.1f" r="1.5" fill="%s"/><circle cx="%.1f" cy="%.1f" r=".55" fill="#fff2a0"/>' % (fx + (i % 3 - 1) * .8, y + h + 1.6 - (i % 2), box, fx + (i % 3 - 1) * .8, y + h + 1.6 - (i % 2))
+    return s
 
 
-def door(x, y, w, h, col='#8a5a34', arch=False):
-    s = rect(x - 2, y - 2, w + 4, h + 2, dark(col, .35), None, 0, 2 if not arch else w / 2) + rect(x, y, w, h, col, None, 0, 1 if not arch else w / 2 - 1)
-    for i in range(1, 3):
-        s += rect(x + i * w / 3 - .5, y + (w / 3 if arch else 0), 1, h - (w / 3 if arch else 0), dark(col, .3))
-    return s + '<circle cx="%.1f" cy="%.1f" r="1.6" fill="#f2c94c"/>' % (x + w - 4, y + h * .55)
+def door(x, y, w, h, col='#8a5a34', arch=False, frame='#fff4dc', lamp=False):
+    """A door (y is its top): a frame, planks with a brace, hinges, a handle, a stone step; a lamp over it."""
+    rx = w / 2 if arch else 1
+    s = rect(x - 3.4, y - 3.4, w + 6.8, h + 3.4, dark(frame, .5), None, 0, rx + 3) + rect(x - 2.6, y - 2.6, w + 5.2, h + 2.6, frame, None, 0, rx + 2.2)
+    s += rect(x, y, w, h, dark(col, .45), None, 0, rx) + rect(x + .6, y + .6, w - 1.2, h - .6, col, None, 0, rx)
+    n = max(3, int(w / 5.5))
+    for i in range(1, n):
+        px_ = x + i * w / n
+        s += rect(px_ - .4, y + (w * .3 if arch else 1), .8, h - (w * .3 if arch else 1), dark(col, .5)) + rect(px_ + .4, y + (w * .3 if arch else 1), .5, h - (w * .3 if arch else 1), lite(col, .3), None, 0, 0, .7)
+    for yy in (y + h * .3, y + h * .8):
+        s += rect(x + .6, yy, w - 1.2, 2.6, dark(col, .22), dark(col, .55), .3)
+        s += rect(x + .6, yy + .6, 5, 1.4, '#3a3a40')
+    s += '<path d="M%.1f %.1f L%.1f %.1f" stroke="%s" stroke-width="2.2"/>' % (x + 1.5, y + h * .8, x + w - 1.5, y + h * .32 + 2.6, dark(col, .25))
+    s += rect(x + w - 5.2, y + h * .5, 2.2, 6, '#3a3a40', None, 0, 1) + '<circle cx="%.1f" cy="%.1f" r="1.7" fill="#f2c94c" stroke="#8a6a14" stroke-width=".4"/>' % (x + w - 4.1, y + h * .56)
+    s += rect(x - 5, y + h, w + 10, 3.2, '#b8b0a4', '#6a645c', .4, .6)
+    if lamp:
+        lx, ly = x + w + 7, y + 2
+        s += '<path d="M%.1f %.1f h4 v3" stroke="#3a3a40" stroke-width="1.2" fill="none"/>' % (lx - 4, ly)
+        s += rect(lx - 2.4, ly + 3, 4.8, 6.5, '#ffe9a0', '#3a3a40', .8, .8) + rect(lx - 3, ly + 2.2, 6, 1.4, '#3a3a40') + '<circle cx="%.1f" cy="%.1f" r="1.3" fill="#fff8d0"/>' % (lx, ly + 6.4)
+    return s
+
+
+def barrel(a, u, v, r=.13, h=26, col='#a8703f'):
+    """A cask: staves, two iron hoops, the head with its boards."""
+    x, y0 = a.p(u, v, 0)
+    rx, ry = r * A, r * B
+    a.ell(x + rx * .5, y0 + 1, rx * 1.15, ry * 1.1, '#0e2010', .4, a.blur(1.5))
+    bulge = 1.14
+    g = a.lg([(0, lite(col, .28)), (.3, col), (1, dark(col, .45))], 0, 0, 1, 0)
+    a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f A%.1f %.1f 0 0 0 %.1f %.1f Q%.1f %.1f %.1f %.1f A%.1f %.1f 0 0 1 %.1f %.1f Z' % (
+        x - rx, y0, x - rx * bulge, y0 - h / 2, x - rx, y0 - h, rx, ry, x + rx, y0 - h, x + rx * bulge, y0 - h / 2, x + rx, y0, rx, ry, x - rx, y0), g, dark(col, .55), .5)
+    for i in range(-3, 4):
+        t = i / 3.5
+        a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f' % (x + rx * t, y0 + ry * math.sqrt(max(0, 1 - t * t)), x + rx * t * bulge, y0 - h / 2 + ry * math.sqrt(max(0, 1 - t * t)), x + rx * t, y0 - h + ry * math.sqrt(max(0, 1 - t * t))),
+               stroke=dark(col, .5), sw=.6, op=.8)
+    for hz in (h * .22, h * .78):
+        k = 1 + (bulge - 1) * (1 - abs(hz / h - .5) * 2) * .9
+        a.path('M%.1f %.1f A%.1f %.1f 0 0 0 %.1f %.1f' % (x - rx * k, y0 - hz, rx * k, ry * k, x + rx * k, y0 - hz), stroke='#3a3a40', sw=2.6)
+        a.path('M%.1f %.1f A%.1f %.1f 0 0 0 %.1f %.1f' % (x - rx * k, y0 - hz - .7, rx * k, ry * k, x + rx * k * .2, y0 - hz - .7 + ry * k), stroke='#9aa0a8', sw=.7)
+    a.ell(x, y0 - h, rx, ry, lite(col, .22), stroke=dark(col, .55), sw=.6)
+    a.ell(x, y0 - h, rx * .8, ry * .8, lite(col, .32), stroke=dark(col, .4), sw=.4)
+    for i in (-1, 0, 1):
+        a.line((x + i * rx * .3, y0 - h - ry * .72), (x + i * rx * .3, y0 - h + ry * .72), dark(col, .35), .5, .8)
+
+
+def crate(a, u, v, s=.3, h=14, col='#b98454'):
+    """A wooden crate: boards on both faces, corner posts, a rim."""
+    a.ell(a.p(u + s / 2, v + s / 2)[0] + 6, a.p(u, v)[1] + 1, s * A * 1.1, s * B * 1.1, '#0e2010', .35, a.blur(1.5))
+    a.box(u, v, u + s, v + s, 0, h, col, tex='planks', seed=int(u * 50), top=dark(col, .55))
+    for (pu, pv) in ((u, v), (u + s, v), (u, v + s)):
+        p0, p1 = a.p(pu, pv, 0), a.p(pu, pv, h)
+        a.line(p0, p1, dark(col, .4), 2.4)
+        a.line((p0[0] - .5, p0[1]), (p1[0] - .5, p1[1]), lite(col, .3), .8)
+    a.poly([(u, v, h), (u + s, v, h), (u + s, v + s, h), (u, v + s, h)], 'none', lite(col, .35), 1.6)

@@ -4,7 +4,7 @@ namespace SunnyValley.EditorTools
 {
     /// <summary>
     /// Imports the painted pictures (Assets/SunnyValley/Resources/Art, and the HUD icons in Resources/Icons) as UI
-    /// sprites: no mipmaps, clean transparency, at most 512 pixels — so a fresh checkout without .meta files builds
+    /// sprites: no mipmaps, clean transparency, at most 512 pixels (the farm's map art up to 1024) — so a fresh checkout without .meta files builds
     /// the same everywhere.
     /// </summary>
     public sealed class ArtImport : AssetPostprocessor
@@ -19,10 +19,13 @@ namespace SunnyValley.EditorTools
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
-            importer.mipmapEnabled = false;
+            // the farm's map art is drawn large and shown small at most zooms: mip levels keep it from shimmering
+            importer.mipmapEnabled = assetPath.StartsWith(Root + "Farm/");
             importer.alphaIsTransparency = true;
             // the chapter 1 farm: zone backgrounds are 1600×1200 opaque pictures, buildings up to 1024
-            importer.maxTextureSize = assetPath.StartsWith(Root + "Ch1/Backgrounds/") ? 2048 : assetPath.StartsWith(Root + "Ch1/") ? 1024 : 512;
+            // the working farm's things are drawn at 3–4 pixels per map unit, up to 1024 on the long side
+            importer.maxTextureSize = assetPath.StartsWith(Root + "Ch1/Backgrounds/") ? 2048
+                : assetPath.StartsWith(Root + "Ch1/") || assetPath.StartsWith(Root + "Farm/") ? 1024 : 512;
             importer.wrapMode = UnityEngine.TextureWrapMode.Clamp;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
         }

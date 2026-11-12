@@ -61,7 +61,7 @@ namespace SunnyValley.Game.UI
         const float TreeW = 195.5f, TreeH = 248.2f, TreeFootX = 91, TreeFoot = 25.5f;
         const float AnimalSize = 112.5f, AnimalFootX = 49.5f, AnimalFoot = 9;
         const float SignW = 105, SignH = 120, SignFoot = 9;
-        const float ShopW = 344, ShopH = 300, ShopFootX = 154, ShopFoot = 22;
+        const float ShopW = 344, ShopH = 320, ShopFootX = 154, ShopFoot = 22;
         const float PenW = 500, PenH = 330, PenFootX = 201.5f, PenFoot = 12;
 
         /// <summary>Puts the working farm on the world's map and tells the world where a finger finds it.</summary>
