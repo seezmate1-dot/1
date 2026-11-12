@@ -153,6 +153,11 @@ namespace SunnyValley.Game
                 {
                     new SettingsPopup(this, true).Open();
                 }
+                else if (Current is FarmScreen farm)
+                {
+                    // the farm's menu by a site is the top thing then
+                    farm.Back();
+                }
             }
         }
 

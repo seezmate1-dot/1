@@ -183,6 +183,15 @@ namespace SunnyValley.Game.Flow
 
         public RectTransform RectOf(string id) => View?.Rect(id);
 
+        /// <summary>Android «back» on the farm: closes the menu open by a site. False when there was none.</summary>
+        public bool Back()
+        {
+            if (farm == null || !farm.MenuOpen)
+                return false;
+            farm.CloseMenu();
+            return true;
+        }
+
         void LivesInfo()
         {
             long now = GameState.Now;

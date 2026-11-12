@@ -91,8 +91,8 @@ namespace SunnyValley.Game.Farm
     /// </summary>
     public sealed class FarmSiteMap
     {
-        public const int PlotColumns = 6;
-        public const int PlotRows = 5;
+        public const int PlotColumns = 5;
+        public const int PlotRows = 6;
         public const float PlotW = 180, PlotH = 116, PlotStepX = 192, PlotStepY = 128;
         public const float TreeW = 190, TreeH = 220;
         public const float AnimalW = 132, AnimalH = 132;
@@ -134,12 +134,15 @@ namespace SunnyValley.Game.Farm
             return sb.ToString();
         }
 
-        /// <summary>The bottom centre of plot i: rows fill from the far side of the meadow towards the viewer.</summary>
+        /// <summary>The zoom «Поля» flies to: the field's five plots across fit between the HUD's side buttons.</summary>
+        public const float FieldZoom = 0.72f;
+
+        /// <summary>The bottom centre of plot i: rows of five fill from the far side of the meadow towards the viewer.</summary>
         public static P2 PlotPoint(FarmLayoutDef layout, int i)
         {
             var (zx, zy) = Zone(layout, "meadow", 3600, 2800);
             int col = i % PlotColumns, row = i / PlotColumns;
-            return new P2(zx + 320 + col * PlotStepX, zy + 690 - row * PlotStepY);
+            return new P2(zx + 416 + col * PlotStepX, zy + 770 - row * PlotStepY);
         }
 
         /// <summary>The service row under the farm: pens and workshops chapter 1 has no place for, left to right.</summary>

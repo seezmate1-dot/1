@@ -170,6 +170,8 @@ namespace SunnyValley.Game.Flow
             menu.Show(site, model);
         }
 
+        public bool MenuOpen => menu != null && menu.Open;
+
         public void CloseMenu()
         {
             if (stroke != null)
@@ -202,7 +204,15 @@ namespace SunnyValley.Game.Flow
             var to = best ?? first;
             if (to == null)
                 return;
-            float zoom = what == EconomyViews.Fields ? 0.9f : 1.05f;
+            float zoom = what == EconomyViews.Fields ? FarmSiteMap.FieldZoom : 1.05f;
+            if (what == EconomyViews.Fields)
+            {
+                // the whole field in view: its middle column, the row of the plot that needs a hand
+                var mid = FarmSiteMap.PlotPoint(FarmArt.Layout, FarmSiteMap.PlotColumns / 2);
+                var seen = to;
+                world.Focus(new Vector2(mid.X, Mathf.Min(to.Y + 200, mid.Y) - 150), 0.55f, zoom, () => sites.Pop(seen));
+                return;
+            }
             world.Focus(new Vector2(to.X, to.Y + to.H / 2), 0.55f, zoom, () => sites.Pop(to));
         }
 

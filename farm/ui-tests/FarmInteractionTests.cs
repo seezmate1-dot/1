@@ -593,22 +593,22 @@ namespace SunnyValley.Ui.Tests
             long coins = g.Coins;
             var map = FarmSiteMap.Build(g, Layout);
             var stroke = new ToolStroke(g, map, FarmTool.Seed("wheat"));
-            // one fast swipe: from left of plot 0 to right of plot 5 between two frames
+            // one fast swipe: from left of plot 0 to right of plot 4 (the whole row) between two frames
             var a = map.Find("plot.0").Centre;
-            var b = map.Find("plot.5").Centre;
+            var b = map.Find("plot.4").Centre;
             var hits = stroke.Sweep(new P2(a.X - 150, a.Y), new P2(b.X + 150, b.Y), T0);
-            Assert.That(hits.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.0", "plot.1", "plot.2", "plot.3", "plot.4", "plot.5" }));
+            Assert.That(hits.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.0", "plot.1", "plot.2", "plot.3", "plot.4" }));
             Assert.That(hits.All(h => h.Ok && h.Coins == 1), Is.True);
-            Assert.That(g.Coins, Is.EqualTo(coins - 6));
+            Assert.That(g.Coins, Is.EqualTo(coins - 5));
             for (int i = 0; i < 12; i++)
-                Assert.That(g.Plots[i].Crop, Is.EqualTo(i < 6 ? "wheat" : null), "plot " + i);
+                Assert.That(g.Plots[i].Crop, Is.EqualTo(i < 5 ? "wheat" : null), "plot " + i);
             // back over the same row: nothing twice
             Assert.That(stroke.Sweep(new P2(b.X + 150, b.Y), new P2(a.X - 150, a.Y), T0), Is.Empty);
-            Assert.That(stroke.Done, Is.EqualTo(6));
+            Assert.That(stroke.Done, Is.EqualTo(5));
             // a diagonal takes what lies under it, in order
-            var c = map.Find("plot.11").Centre;
+            var c = map.Find("plot.9").Centre;
             var diag = stroke.Sweep(b, c, T0);
-            Assert.That(diag.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.11" }));
+            Assert.That(diag.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.9" }));
         }
 
         [Test]
@@ -619,7 +619,7 @@ namespace SunnyValley.Ui.Tests
             g.State.Barn["wheat"] = 1;
             var map = FarmSiteMap.Build(g, Layout);
             var stroke = new ToolStroke(g, map, FarmTool.Seed("wheat"));
-            var hits = stroke.Sweep(map.Find("plot.0").Centre, map.Find("plot.5").Centre, T0);
+            var hits = stroke.Sweep(map.Find("plot.0").Centre, map.Find("plot.4").Centre, T0);
             // two for coins, one from the barn, the fourth stops the drag; the rest are not tried
             Assert.That(hits.Count, Is.EqualTo(4));
             Assert.That(hits.Take(3).All(h => h.Ok), Is.True);
@@ -635,12 +635,12 @@ namespace SunnyValley.Ui.Tests
         {
             var g = Fresh();
             g.State.Wallet.Coins = 100;
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 5; i++)
                 g.Plant(T0, i, i < 4 ? "wheat" : "corn");
             var map = FarmSiteMap.Build(g, Layout);
             long now = T0 + 150; // wheat ripe, corn not
             var stroke = new ToolStroke(g, map, FarmTool.Sickle());
-            var hits = stroke.Sweep(map.Find("plot.0").Centre, map.Find("plot.5").Centre, now);
+            var hits = stroke.Sweep(map.Find("plot.0").Centre, map.Find("plot.4").Centre, now);
             Assert.That(hits.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.0", "plot.1", "plot.2", "plot.3" }));
             Assert.That(stroke.Total.Items["wheat"], Is.EqualTo(8));
             Assert.That(g.Plots[4].Crop, Is.EqualTo("corn"));
@@ -649,7 +649,7 @@ namespace SunnyValley.Ui.Tests
             now = T0 + 400;
             g.State.Barn["wheat"] = g.BarnCapacity - (g.BarnUsed - g.BarnCount("wheat")) - 1;
             stroke = new ToolStroke(g, map, FarmTool.Sickle());
-            hits = stroke.Sweep(map.Find("plot.0").Centre, map.Find("plot.5").Centre, now);
+            hits = stroke.Sweep(map.Find("plot.0").Centre, map.Find("plot.4").Centre, now);
             Assert.That(hits.Count, Is.EqualTo(1));
             Assert.That(hits[0].Error, Is.EqualTo(MetaError.BarnFull));
             Assert.That(stroke.Stopped, Is.True);
