@@ -166,18 +166,18 @@ def paint_street(p, rows):
     st = next((r for r in rows if r["kind"] == "Street"), None)
     if st is None:
         return
-    x0, x1 = st["x"] - 330, st["y"] + 330
-    x = x0
-    while x < x1:
-        p.put(art("Farm/Road"), x, 0, 257, 96)
-        x += 256
+    x = 0
+    while x < MAPW:
+        p.put(art("Farm/Street"), x, 0, 513, 440)
+        x += 512
+    x0, x1 = st["x"] - 420, st["y"] + 420
     rng = random.Random(20261112)
     real = [r for r in rows if r["kind"] not in ("Street", "Field", "Yard")]
-    for i in range(90):
-        x, y = x0 + rng.random() * (x1 - x0), 70 + rng.random() * 300
-        name = rng.choice(["Tuft1", "Tuft2", "Tuft1", "Tuft2", "Bush1", "Bush2", "Bush3"])
+    for i in range(70):
+        x, y = x0 + rng.random() * (x1 - x0), 110 + rng.random() * 250
+        name = rng.choice(["Bush1", "Bush2", "Bush3", "Tuft1", "Tuft2"])
         bush = name.startswith("Bush")
-        if any(s["y"] < 420 and abs(x - s["x"]) < s["w"] / 2 + 190 and s["y"] - 60 < y < s["y"] + 330 for s in real):
+        if any(s["y"] < 460 and abs(x - s["x"]) < s["w"] / 2 + 200 and s["y"] - 70 < y < s["y"] + 340 for s in real):
             continue
         w, h = (120, 96) if bush else (60, 44)
         p.put(art("Farm/" + name), x - w / 2, y, w, h)
@@ -201,7 +201,7 @@ def paint_site(p, s, press=None, selected=False, squash=1.0, bob=0.0, show_bubbl
         p.put(art("Farm/PlotOffer"), x - 85, y - 14, 170, 122, .45 if locked else 1)
         p.fit(icon("plus"), x, y + h * .62, 56)
     elif k == "Tree":
-        p.put(art("Farm/" + look), x - 105, y - 16, 210, 276, 1, sx, sy)
+        p.put(art("Farm/" + look), x - 91, y - 25.5, 195.5, 248.2, 1, sx, sy)
     elif k == "Animal":
         p.put(art("Farm/" + look), x - 49.5, y - 9 + bob, 112.5, 112.5, 1, sx, sy)
     elif k in ("Pen", "Nursery"):
@@ -209,7 +209,7 @@ def paint_site(p, s, press=None, selected=False, squash=1.0, bob=0.0, show_bubbl
         ic = icon("apple") if k == "Nursery" else icon("animal." + {"coop": "chicken", "cowshed": "cow", "sheepfold": "sheep", "apiary": "bee", "pigsty": "pig"}.get(s["ref"], "chicken"))
         p.fit(ic, x - 1, y - 9 + 120 * .69, 46)
     elif k == "Workshop" and s["ref"] != "mill":
-        p.put(art("Farm/Workshop_" + s["ref"]), x - 154, y - 22, 300, 300, .45 if locked else .7 if offer else 1, sx, sy)
+        p.put(art("Farm/Workshop_" + s["ref"]), x - 154, y - 22, 344, 300, .45 if locked else .7 if offer else 1, sx, sy)
 
     if s["phase"] == "Growing":
         p.bar(x, y + (-4 if k == "Plot" else -10), min(120, w * .7), s["progress"])

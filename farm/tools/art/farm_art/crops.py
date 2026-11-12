@@ -273,12 +273,14 @@ def pumpkin(a, x, y, k, st, r):
 
 
 DRAW = dict(wheat=wheat, corn=corn, carrot=carrot, sunflower=sunflower, strawberry=strawberry, cotton=cotton, beet=beet, potato=potato, pumpkin=pumpkin)
-GRID = dict(wheat=4, corn=3, carrot=3, sunflower=3, strawberry=3, cotton=3, beet=3, potato=3, pumpkin=2)
+GRID = dict(wheat=5, corn=4, carrot=4, sunflower=3, strawberry=4, cotton=3, beet=4, potato=4, pumpkin=2)
+SIZE = dict(wheat=.9, corn=.86, carrot=.84, sunflower=1, strawberry=.82, cotton=1, beet=.84, potato=.82, pumpkin=1)
 SCALE = {1: .38, 2: .66, 3: .9, 4: 1.0}
 
 
 def crop_art(crop, st, with_bed=False):
     a = Art(CW, CH, CW / 2, CH - FOOT)
+    a.seed = len(crop) * 5 + st
     if with_bed:
         bed(a)
     r = rnd(hash(crop) % 1000 + 11)
@@ -294,7 +296,10 @@ def crop_art(crop, st, with_bed=False):
         x, y = a.p(u, v, 7)
         # the same plant every step, only older
         rr = rnd(int(u * 1000) * 31 + int(v * 1000))
-        DRAW[crop](a, x, y, SCALE[st] * (.92 + rr.random() * .16), st, rr)
+        k = SCALE[st] * SIZE[crop] * (.92 + rr.random() * .16)
+        # each plant shades the soil under it
+        a.ell(x + 5 * k, y + 1.5, 13 * k + 3, 5 * k + 1.5, '#2a1608', .3, a.blur(1.6))
+        DRAW[crop](a, x, y, k, st, rr)
     return a
 
 

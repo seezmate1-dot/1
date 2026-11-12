@@ -58,10 +58,10 @@ namespace SunnyValley.Game.UI
         // how each picture sits on its site: the canvas in map units and where the site's foot (X, Y) is on it
         // (from the canvas' left and bottom) — the numbers of farm/tools/art/farm_art
         const float PlotW = 170, PlotH = 122, CropH = 224, PlotFoot = 14;
-        const float TreeW = 210, TreeH = 276, TreeFoot = 16;
+        const float TreeW = 195.5f, TreeH = 248.2f, TreeFootX = 91, TreeFoot = 25.5f;
         const float AnimalSize = 112.5f, AnimalFootX = 49.5f, AnimalFoot = 9;
         const float SignW = 105, SignH = 120, SignFoot = 9;
-        const float ShopSize = 300, ShopFootX = 154, ShopFoot = 22;
+        const float ShopW = 344, ShopH = 300, ShopFootX = 154, ShopFoot = 22;
         const float PenW = 500, PenH = 330, PenFootX = 201.5f, PenFoot = 12;
 
         /// <summary>Puts the working farm on the world's map and tells the world where a finger finds it.</summary>
@@ -121,27 +121,32 @@ namespace SunnyValley.Game.UI
         static readonly Vector2 Middle = new Vector2(0.5f, 0.5f);
 
         /// <summary>
-        /// The street under the farm, outside the painted zones: a dirt road along its front, tufts and bushes
-        /// between the yards — so the pens and workshops stand in a place, not on a flat green strip.
+        /// The street under the farm, outside the painted zones: a strip of painted ground along the map's lower
+        /// edge (meadow grass, a dirt road in front, a rail fence at the back that covers the seam with the zones),
+        /// and bushes between the yards — so the pens and workshops stand in a place, not on a flat green strip.
         /// </summary>
         void Street()
         {
-            float x0 = FarmSiteMap.StreetStart - 330, x1 = FarmSiteMap.StreetEnd + 330;
-            var road = Art("Road");
-            for (float x = x0; x < x1; x += 256)
-                Picture(Child("road", layer, x, 0, 257, 96, Vector2.zero), road);
-            var rng = new System.Random(20261112);
-            string[] green = { "Tuft1", "Tuft2", "Tuft1", "Tuft2", "Bush1", "Bush2", "Bush3" };
-            for (int i = 0; i < 90; i++)
+            const float tileW = 512, tileH = 440;
+            var ground = Art("Street");
+            if (ground != null)
             {
-                float x = x0 + (float)rng.NextDouble() * (x1 - x0), y = 70 + (float)rng.NextDouble() * 300;
+                for (float x = 0; x < world.MapSize.x; x += tileW)
+                    Picture(Child("street", layer, x, 0, tileW + 1, tileH, Vector2.zero), ground);
+            }
+            float x0 = FarmSiteMap.StreetStart - 420, x1 = FarmSiteMap.StreetEnd + 420;
+            var rng = new System.Random(20261112);
+            string[] green = { "Bush1", "Bush2", "Bush3", "Tuft1", "Tuft2" };
+            for (int i = 0; i < 70; i++)
+            {
+                float x = x0 + (float)rng.NextDouble() * (x1 - x0), y = 110 + (float)rng.NextDouble() * 250;
                 string name = green[rng.Next(green.Length)];
                 bool bush = name.StartsWith("Bush");
                 // not on a yard, a building or an animal
                 bool free = true;
                 foreach (var s in Map.Sites)
                 {
-                    if (s.Y < 420 && Mathf.Abs(x - s.X) < s.W / 2 + 190 && y > s.Y - 60 && y < s.Y + 330)
+                    if (s.Y < 460 && Mathf.Abs(x - s.X) < s.W / 2 + 200 && y > s.Y - 70 && y < s.Y + 340)
                     {
                         free = false;
                         break;
@@ -216,7 +221,7 @@ namespace SunnyValley.Game.UI
                     Picture(Child("plus", v.Body, PlotW / 2, PlotFoot + s.H * 0.62f, 56, 56, Middle), ShapeSprites.Icon(Icons.Plus), true);
                     break;
                 case SiteKind.Tree:
-                    v.Body = Child("body", v.Root, mid, -TreeFoot, TreeW, TreeH, Foot);
+                    v.Body = Child("body", v.Root, mid - TreeFootX + TreeW / 2, -TreeFoot, TreeW, TreeH, Foot);
                     v.BodyImage = Picture(v.Body, null);
                     break;
                 case SiteKind.Animal:
@@ -239,7 +244,7 @@ namespace SunnyValley.Game.UI
                 }
                 case SiteKind.Workshop:
                     // the mill is the chapter's own picture; the others are their own buildings
-                    v.Body = Child("body", v.Root, mid - ShopFootX + ShopSize / 2, -ShopFoot, ShopSize, ShopSize, Foot);
+                    v.Body = Child("body", v.Root, mid - ShopFootX + ShopW / 2, -ShopFoot, ShopW, ShopH, Foot);
                     if (s.Ref != "mill")
                         v.BodyImage = Picture(v.Body, Art("Workshop_" + s.Ref));
                     break;

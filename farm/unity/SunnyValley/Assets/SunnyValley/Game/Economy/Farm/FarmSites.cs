@@ -106,7 +106,7 @@ namespace SunnyValley.Game.Farm
         public const int PlotRows = 6;
         /// <summary>A plot is one tile: its diamond's box.</summary>
         public const float PlotW = 2 * IsoA, PlotH = 2 * IsoB;
-        public const float TreeW = 150, TreeH = 200;
+        public const float TreeW = 130, TreeH = 175;
         public const float AnimalW = 112, AnimalH = 112;
         public const float SignW = 105, SignH = 120;
         public const float WorkshopW = 290, WorkshopH = 270;
@@ -180,7 +180,7 @@ namespace SunnyValley.Game.Farm
             "pen:cowshed", "pen:sheepfold", "pen:pigsty", "ws:bakery", "ws:dairy", "ws:toolshed", "ws:jam", "ws:textile", "ws:sugar_mill", "pen:apiary",
         };
 
-        public const float StreetStart = 520, StreetY = 70, PenRoom = 540, WorkshopRoom = 345;
+        public const float StreetStart = 520, StreetY = 120, PenRoom = 540, WorkshopRoom = 345;
 
         /// <summary>Where the street ends (for the road and the green along it).</summary>
         public static float StreetEnd => StreetStart + 4 * PenRoom + 6 * WorkshopRoom;
@@ -257,17 +257,18 @@ namespace SunnyValley.Game.Farm
                 map.Add(new FarmSite { Id = "plot.offer", Kind = SiteKind.PlotOffer, Index = f.Plots.Count, X = p.X, Y = p.Y, W = PlotW, H = PlotH, Diamond = true });
             }
 
-            // the orchard: three rows of fruit trees along the ground plane, on the lawn in front of the old apple trees
+            // the orchard: three rows of fruit trees along the ground plane, on the lawn in front of the old apple trees,
+            // far enough apart for every crown to stand by itself
             var (ox, oy) = Zone(layout, "orchard", 400, 2800);
-            var grove = new P2(ox + 470, oy + 330);
+            var grove = new P2(ox + 560, oy + 215);
             for (int i = 0; i < f.Trees.Count && i < 18; i++)
             {
                 int col = i % 6, row = i / 6;
                 var t = f.Trees[i];
-                var p = Ground(grove, col * 1.42f, row * 1.25f);
+                var p = Ground(grove, col * 1.85f, row * 1.8f);
                 map.Add(new FarmSite { Id = "tree." + t.Uid, Kind = SiteKind.Tree, Index = t.Uid, Ref = t.Type, X = p.X, Y = p.Y, W = TreeW, H = TreeH });
             }
-            map.Add(new FarmSite { Id = "nursery", Kind = SiteKind.Nursery, X = ox + 1290, Y = oy + 330, W = SignW, H = SignH });
+            map.Add(new FarmSite { Id = "nursery", Kind = SiteKind.Nursery, X = ox + 720, Y = oy + 150, W = SignW, H = SignH });
 
             // animal houses: the sign at the yard's near corner, and the animals of a built one in the yard
             foreach (var house in data.Balance.AnimalHouses)
