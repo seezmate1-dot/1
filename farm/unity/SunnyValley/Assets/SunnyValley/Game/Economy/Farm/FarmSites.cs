@@ -107,7 +107,20 @@ namespace SunnyValley.Game.Farm
         /// <summary>A plot is one tile: its diamond's box.</summary>
         public const float PlotW = 2 * IsoA, PlotH = 2 * IsoB;
         public const float TreeW = 130, TreeH = 175;
-        public const float AnimalW = 112, AnimalH = 112;
+        /// <summary>An animal's size on the map by its kind (docs/ART_BIBLE.md §6): a hen is small, a cow is big.</summary>
+        public static (float w, float h) AnimalSize(string type)
+        {
+            switch (type)
+            {
+                case "chicken": return (52, 46);
+                case "sheep": return (88, 62);
+                case "pig": return (96, 56);
+                case "cow": return (132, 98);
+                case "bee": return (56, 60);
+                default: return (80, 60);
+            }
+        }
+
         public const float SignW = 105, SignH = 120;
         public const float WorkshopW = 290, WorkshopH = 270;
         /// <summary>A pen's yard, in tiles along the two ground axes (the pen's picture is drawn to it).</summary>
@@ -216,13 +229,13 @@ namespace SunnyValley.Game.Farm
         // where the animals of a house stand in its yard (tiles), nearest first is not needed: the view sorts
         static readonly float[][] YardSpots =
         {
-            new[] { 0.5f, 0.4f }, new[] { 1.4f, 0.35f }, new[] { 2.3f, 0.4f }, new[] { 0.4f, 1.3f }, new[] { 1.3f, 1.3f }, new[] { 0.15f, 2.05f },
+            new[] { 0.45f, 0.35f }, new[] { 1.5f, 0.3f }, new[] { 2.55f, 0.35f }, new[] { 0.35f, 1.35f }, new[] { 1.4f, 1.4f }, new[] { 0.1f, 2.1f },
         };
 
         // the hens' run by the coop is smaller than a yard
         static readonly float[][] CoopSpots =
         {
-            new[] { 0f, 0f }, new[] { 0.95f, 0f }, new[] { 1.9f, 0f }, new[] { 0f, 0.95f }, new[] { 0.95f, 0.95f }, new[] { 1.9f, 0.95f },
+            new[] { 0.1f, 0f }, new[] { 0.8f, 0.05f }, new[] { 1.5f, 0f }, new[] { 0.3f, 0.75f }, new[] { 1.0f, 0.7f }, new[] { 1.7f, 0.75f },
         };
 
         /// <summary>The nearest corner of a workshop's ground (the mill: the foot of chapter 1's mill).</summary>
@@ -286,7 +299,8 @@ namespace SunnyValley.Game.Farm
                     if (data.Animals[a.Type].House != house.Id || k >= spots.Length)
                         continue;
                     var p = Ground(c, spots[k][0], spots[k][1]);
-                    map.Add(new FarmSite { Id = "animal." + a.Uid, Kind = SiteKind.Animal, Index = a.Uid, Ref = a.Type, X = p.X, Y = p.Y, W = AnimalW, H = AnimalH });
+                    var (aw, ah) = AnimalSize(a.Type);
+                    map.Add(new FarmSite { Id = "animal." + a.Uid, Kind = SiteKind.Animal, Index = a.Uid, Ref = a.Type, X = p.X, Y = p.Y, W = aw, H = ah });
                     k++;
                 }
             }

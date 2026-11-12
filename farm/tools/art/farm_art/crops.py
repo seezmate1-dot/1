@@ -94,8 +94,13 @@ def wheat(a, x, y, k, st, r):
                 a.ell(tx - 1.6 + lean * .02 * j, ey, 2.3, 2.9, dark(ear, .18), rot=-25)
                 a.ell(tx + 1.6 + lean * .02 * j, ey + 1, 2.3, 2.9, ear, rot=25)
             a.ell(tx, ty - 3, 1.9, 3, lite(ear, .3))
-            a.line((tx, ty - 5), (tx - 1, ty - 11), ear, .8)
-            a.line((tx, ty - 5), (tx + 2, ty - 10), ear, .8)
+            # awns: a fine bristle from every grain, fanning up and out
+            awn = '#fbe08a' if ripe else '#d2e07a'
+            for j in range(5):
+                ey = ty - 3 + j * 3.2
+                for sg in (-1, 1):
+                    a.path('M%.1f %.1f q%.1f %.1f %.1f %.1f' % (tx + sg * 1.6, ey, sg * 2.4, -5, sg * (3.4 + j * .5) + lean * .08, -10 - (4 - j) * 1.6), stroke=awn, sw=.4)
+            a.path('M%.1f %.1f l%.1f -9' % (tx, ty - 5, lean * .05), stroke=awn, sw=.45)
         elif st == 2:
             leaf(a, x + ox, y - hh * .5, 60 if i % 2 else 120, 12 * k, 2, G2)
 

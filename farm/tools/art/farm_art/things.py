@@ -1,356 +1,55 @@
 """Trees, animals, pens, workshops and the small things of the farm map."""
 import math
 from iso import Art, A, B, L, lite, dark, mix, rnd, wall, rect, window, door, barrel, crate
+import trees
+import animals
 
 # ---------------------------------------------------------------------------------------------- trees
 
-TREES = {
-    'apple_tree': dict(leaf='#4f9a36', fruit='#e23a2e', blossom='#ffd9e6', shape=(1.0, 1.0)),
-    'pear_tree': dict(leaf='#7aa83a', fruit='#f0d23c', blossom='#ffffff', shape=(.84, 1.18)),
-    'cherry_tree': dict(leaf='#3f8a4a', fruit='#c2183a', blossom='#ffc2d8', shape=(1.12, .92)),
-}
-TW, TH = 230, 292
-
-
-def _leaf(a, x, y, ln, wd, ang, col, vein=None):
-    """One leaf: a pointed oval from its stem end, at an angle."""
-    t = math.radians(ang)
-    dx, dy = math.cos(t), -math.sin(t)
-    nx, ny = -dy, dx
-    tx, ty = x + dx * ln, y + dy * ln
-    mx, my = x + dx * ln * .45, y + dy * ln * .45
-    a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f Q%.1f %.1f %.1f %.1f Z' % (x, y, mx + nx * wd, my + ny * wd, tx, ty, mx - nx * wd, my - ny * wd, x, y), col)
-    if vein:
-        a.line((x, y), (x + dx * ln * .85, y + dy * ln * .85), vein, .35, .7)
-
-
-def tree(kind, state):
-    """state: 'leaf' (after the harvest), 'bloom' (half way), 'ripe' (fruit on it)."""
-    t = TREES[kind]
-    a = Art(TW, TH, TW / 2 - 8, TH - 30, scale=3.5)
-    a.seed = len(kind) + len(state)
-    x, y = a.ox, a.oy
-    r = rnd(len(kind) * 7 + 1)
-    # the crown's shadow on the grass to the right, and the dark right at the foot
-    a.ell(x + 30, y + 3, 66, 15, '#0e2010', .42, a.blur(5))
-    a.ell(x + 6, y + 1, 28, 9, '#0e2010', .45, a.blur(3))
-    for k in range(-6, 7):
-        a.path('M%.1f %.1f q%.1f -4 %.1f -8' % (x + k * 3.4, y + 3, k * .3, k * 1.2 + r.random() * 2 - 1), stroke=r.choice(['#3f8a2c', '#5fae3c', '#7cc84c']), sw=1.2)
-    # the trunk: flaring roots, furrowed bark, limbs that reach into the crown
-    bark = '#7a5236'
-    g = a.lg([(0, lite(bark, .3)), (.4, bark), (1, dark(bark, .55))], 0, 0, 1, 0)
-    a.path('M%.1f %.1f q-9 -3 -16 4 q11 1 14 -2 q4 -34 -1 -70 l17 0 q-4 36 3 70 q5 4 15 2 q-7 -8 -15 -4 q-9 4 -17 0Z' % (x - 8.5, y), g, dark(bark, .6), .5)
-    sx, sy = t['shape']
-    cx, cy, R = x, y - 132 * sy + (0 if sy <= 1 else 8), 62
-    limbs = [(-46, 8, 7), (44, 10, 6.5), (-22, -30, 5.5), (24, -34, 5), (0, -20, 6), (-58, -14, 4), (58, -10, 4)]
-    for (dx, dy, wdt) in limbs:
-        ex, ey = cx + dx * sx, cy + dy * sy
-        a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f' % (x, y - 62, x + dx * .25, (y - 62 + ey) / 2 - 6, ex, ey), stroke=dark(bark, .5), sw=wdt + 1.2)
-        a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f' % (x - .8, y - 62, x + dx * .25 - .8, (y - 62 + ey) / 2 - 6, ex - .8, ey), stroke=mix(bark, '#a87a52', .3), sw=wdt * .55)
-    for i in range(22):
-        bx = x - 7 + r.random() * 14
-        by = y - 4 - r.random() * 60
-        a.path('M%.1f %.1f q%.1f -6 0 -%.1f' % (bx, by, r.random() * 3 - 1.5, 8 + r.random() * 8), stroke=dark(bark, .6), sw=.7, op=.8)
-        a.path('M%.1f %.1f q%.1f -5 0 -%.1f' % (bx - 1.6, by - 1, r.random() * 2 - 1, 6 + r.random() * 5), stroke=lite(bark, .45), sw=.5, op=.7)
-    # the crown: masses of shade first, then leaves in clusters — every leaf its own shape, lit from the top left
-    leafc = t['leaf']
-    ramp = [mix(leafc, '#0a2416', .8), mix(leafc, '#14401e', .5), leafc, mix(leafc, '#d6ea58', .46), mix(leafc, '#f6f884', .78)]
-    balls = [(0, -52, .56), (-26, -34, .62), (28, -36, .62), (-52, -6, .56), (54, -4, .56), (0, -2, .8), (-40, 22, .62), (42, 24, .62), (0, 34, .66)]
-    for (dx, dy, k) in balls:
-        a.ell(cx + dx * sx + 3, cy + dy * sy + 4, R * k * .92, R * k * .86, mix(ramp[0], ramp[1], .55))
-    for (dx, dy, k) in balls:
-        px, py, rr = cx + dx * sx, cy + dy * sy, R * k
-        clumps = []
-        for _ in range(int(86 * k * k / .4)):
-            ang, d = r.random() * 6.283, math.sqrt(r.random()) * rr
-            ox, oy = math.cos(ang) * d, math.sin(ang) * d * .94
-            lit = (-ox * .55 - oy * .8) / rr
-            low = (py + oy - cy) / (R * 1.3)
-            tone = lit * 2.1 - low * 1.0 + (r.random() - .5) * .8 + 1.7
-            clumps.append((max(0, min(4, int(round(tone)))), px + ox, py + oy, d / rr, ang))
-        clumps.sort(key=lambda c: c[0])
-        for (ti, qx, qy, edge, ang) in clumps:
-            n = r.choice([3, 4, 5]) if edge < .8 else 4
-            base = r.random() * 360
-            for i in range(n):
-                # leaves fan out of the cluster's middle; those at the crown's edge point outwards
-                la = base + i * 360 / n + r.random() * 30 if edge < .8 else -math.degrees(ang) + (i - 1.5) * 34 + r.random() * 16
-                _leaf(a, qx + (r.random() - .5) * 3, qy + (r.random() - .5) * 3, 7 + r.random() * 5, 2.8 + r.random() * 1.6, la, ramp[ti] if i else ramp[max(0, ti - 1)], vein=ramp[min(4, ti + 1)] if ti >= 2 else None)
-    # dark gaps where one looks into the crown, and a limb showing through
-    for _ in range(12):
-        ang, d = r.random() * 6.283, (.3 + r.random() * .5) * R
-        gx, gy = cx + math.cos(ang) * d * sx, cy + math.sin(ang) * d * sy + 12
-        a.ell(gx, gy, 3.6 + r.random() * 3, 2.2 + r.random() * 1.6, ramp[0], .8, rot=r.random() * 90)
-    if state != 'leaf':
-        n = 16 if state == 'ripe' else 26
-        for i in range(n):
-            ang, d = r.random() * 6.283, math.sqrt(.08 + r.random() * .8) * R * 1.0
-            px, py = cx + math.cos(ang) * d * sx, cy + math.sin(ang) * d * sy * .9 + 4
-            if state == 'bloom':
-                for j in range(5):
-                    q = 6.283 * j / 5
-                    a.ell(px + math.cos(q) * 3.2, py + math.sin(q) * 3, 2.8, 2.6, t['blossom'])
-                a.ell(px, py, 1.8, 1.7, '#f6c840')
-            elif kind == 'cherry_tree':
-                a.path('M%.1f %.1f q2 -7 6 -9 M%.1f %.1f q3 -5 5 -9' % (px - 4, py, px + 4, py + 1), stroke='#4a7a2a', sw=1.2)
-                for dx in (-4, 4):
-                    a.ell(px + dx, py + (1 if dx > 0 else 0), 4.6, 4.6, a.rg([(0, '#ff7a8a'), (.5, t['fruit']), (1, dark(t['fruit'], .4))]), stroke=dark(t['fruit'], .5), sw=.6)
-                    a.ell(px + dx - 1.4, py - 1.4, 1.3, 1, '#ffd0d8', .9)
-            elif kind == 'pear_tree':
-                a.path('M%.1f %.1f q4.6 0 4.6 6 q4 5 0 10 q-4.6 3 -9.2 0 q-4 -5 0 -10 q0 -6 4.6 -6Z' % (px, py - 8), a.rg([(0, '#fff2a0'), (.5, t['fruit']), (1, '#b89a20')]), '#8a7414', .6)
-                a.line((px, py - 8), (px + 1, py - 12), '#6b4a2a', 1.4)
-            else:
-                a.ell(px, py, 7, 6.6, a.rg([(0, '#ff9a80'), (.5, t['fruit']), (1, dark(t['fruit'], .4))]), stroke=dark(t['fruit'], .5), sw=.6)
-                a.ell(px - 2.2, py - 2.4, 2, 1.4, '#ffd8cc', .9)
-                a.line((px, py - 6), (px + 1, py - 9.5), '#6b4a2a', 1.3)
-    return a
-
-
-# ---------------------------------------------------------------------------------------------- animals
-
-AW, AH = 150, 150
-OUTL = '#5e3c22'
-
-
-def _shadow(a, x, y, w):
-    a.ell(x + 6, y + 1, w, w * .32, '#1c2a10', .32, a.blur(3))
-
-
-def _eye(a, x, y, r=3.2):
-    a.ell(x, y, r, r * 1.1, '#2a1608')
-    a.ell(x - r * .3, y - r * .4, r * .38, r * .38, '#ffffff')
-
-
-def chicken(a, x, y, ready):
-    _shadow(a, x, y, 34)
-    for lx in (-8, 8):
-        a.path('M%.1f %.1f l0 12 m-5 0 l10 0' % (x + lx, y - 14), stroke='#e8901a', sw=3)
-    body = a.rg([(0, '#ffffff'), (.6, '#f6efe2'), (1, '#d9cbb4')])
-    a.path('M%.1f %.1f q14 -14 30 -2 q8 -14 -4 -26 q-14 6 -14 18Z' % (x + 14, y - 42), body, OUTL, 1.6)          # tail
-    a.ell(x, y - 38, 30, 27, body, stroke=OUTL, sw=1.1)
-    a.path('M%.1f %.1f q14 4 22 -8' % (x - 2, y - 34), stroke='#c9b89a', sw=2.4)                                 # wing
-    a.ell(x - 22, y - 66, 17, 16, body, stroke=OUTL, sw=1.1)
-    a.path('M%.1f %.1f q4 -10 9 -3 q5 -8 9 0 q5 -5 6 4Z' % (x - 34, y - 78), '#e8362e', '#8a1410', 1.2)          # comb
-    a.path('M%.1f %.1f l-13 4 l12 5Z' % (x - 36, y - 66), '#f6a81e', '#a8600a', 1.2)                             # beak
-    a.path('M%.1f %.1f q-1 8 3 9 q4 -2 2 -9Z' % (x - 32, y - 58), '#e8362e', '#8a1410', 1)
-    _eye(a, x - 26, y - 69)
-    a.ell(x - 18, y - 62, 4, 2.6, '#ffb0b0', .7)
-    # feathers: rows on the wing, the tail's quills, a ruff on the neck; the belly turns into shade
-    a.ell(x + 2, y - 19, 18, 6, '#b8a888', .4)
-    for row in range(3):
-        for i in range(4 - row):
-            fx, fy = x - 4 + i * 7 + row * 3, y - 42 + row * 6.5
-            a.path('M%.1f %.1f q4.5 6 9 0' % (fx, fy), stroke='#b09a78', sw=1.1)
-            a.path('M%.1f %.1f q4.5 5 9 0' % (fx, fy - 1), stroke='#ffffff', sw=.6, op=.8)
-    for i in range(4):
-        a.path('M%.1f %.1f q%.1f -7 %.1f -15' % (x + 24 + i * 3, y - 46, 3 + i, 3 + i * 2.4), stroke='#b09a78', sw=1)
-    for i in range(5):
-        a.path('M%.1f %.1f q3 4 6 0' % (x - 30 + i * 5, y - 54 + abs(i - 2) * 1.2), stroke='#c9b89a', sw=.9)
-    for lx in (-8, 8):
-        for k in range(3):
-            a.line((x + lx - 1.6, y - 12 + k * 3), (x + lx + 1.6, y - 12 + k * 3), '#a8600a', .6)
-    if ready:
-        a.ell(x + 30, y - 4, 16, 6, '#c9a25a')
-        a.ell(x + 30, y - 6, 13, 5, '#e8c878')
-        a.ell(x + 30, y - 13, 8.4, 10.6, a.rg([(0, '#ffffff'), (.7, '#f6ead0'), (1, '#d8c29a')]), stroke='#a88a58', sw=1.2)
-
-
-def cow(a, x, y, ready):
-    _shadow(a, x, y, 52)
-    body = a.rg([(0, '#ffffff'), (.6, '#f4efe6'), (1, '#d2c8b8')])
-    for lx in (-30, -14, 14, 30):
-        a.path('M%.1f %.1f l0 24' % (x + lx, y - 26), stroke=OUTL, sw=10.5)
-        a.path('M%.1f %.1f l0 22' % (x + lx, y - 26), stroke='#f4efe6', sw=7.5)
-        a.path('M%.1f %.1f l0 4' % (x + lx, y - 5), stroke='#5a4030', sw=8)
-    a.path('M%.1f %.1f q14 -4 14 14' % (x + 40, y - 56), stroke=OUTL, sw=3.4)
-    a.add('<rect x="%.1f" y="%.1f" width="88" height="46" rx="21" fill="%s" stroke="%s" stroke-width="1.1"/>' % (x - 42, y - 70, body, OUTL))
-    for (dx, dy, rx, ry) in ((10, -56, 13, 9), (-12, -40, 9, 7), (30, -40, 8, 9)):
-        a.ell(x + dx, y + dy, rx, ry, '#5a3a26')
-    a.ell(x + 6, y - 25, 12, 6, '#ffc0c8', stroke='#c07080', sw=1)                                              # udder
-    # the head
-    hx, hy = x - 42, y - 62
-    a.path('M%.1f %.1f q-8 -10 -2 -16 M%.1f %.1f q8 -10 2 -16' % (hx - 12, hy - 16, hx + 12, hy - 16), stroke='#e8d8b0', sw=5)
-    a.ell(hx - 20, hy - 10, 9, 5.4, '#5a3a26', rot=-25, stroke=OUTL, sw=1.2)
-    a.ell(hx + 20, hy - 10, 9, 5.4, '#f4efe6', rot=25, stroke=OUTL, sw=1.2)
-    a.add('<rect x="%.1f" y="%.1f" width="36" height="40" rx="15" fill="%s" stroke="%s" stroke-width="1.1"/>' % (hx - 18, hy - 22, body, OUTL))
-    a.ell(hx + 8, hy - 10, 9, 10, '#5a3a26')
-    a.ell(hx, hy + 9, 16, 10, '#ffc8cc', stroke=OUTL, sw=1.5)
-    a.ell(hx - 6, hy + 9, 2, 3, '#b06a78'); a.ell(hx + 6, hy + 9, 2, 3, '#b06a78')
-    _eye(a, hx - 8, hy - 7); _eye(a, hx + 8, hy - 7)
-    # the belly in shade, the back lit, hooves, the tail's tuft, hair on the poll, the ear's inside
-    a.ell(x + 2, y - 31, 30, 5, '#9a8f80', .4)
-    for lx in (-30, -14, 14, 30):
-        a.path('M%.1f %.1f l0 4.6' % (x + lx, y - 6), stroke='#2a1c14', sw=8.4)
-        a.line((x + lx - 3, y - 6.5), (x + lx + 3, y - 6.5), '#8a7a66', .8)
-        a.line((x + lx - 2.4, y - 22), (x + lx - 2.4, y - 8), '#ffffff', 1, .7)
-    a.path('M%.1f %.1f q5 4 2 10 q-4 2 -5 -4Z' % (x + 52, y - 44), '#5a3a26', '#2a1c14', .6)
-    for k in range(4):
-        a.path('M%.1f %.1f q2 -5 %.1f -7' % (hx - 5 + k * 3.2, hy - 20, k - 1.5), stroke='#e8dcc8', sw=1.1)
-    a.ell(hx + 20, hy - 10, 5, 2.6, '#ffc8cc', rot=25)
-    a.ell(hx - 9, hy + 5, 4, 2, '#ffffff', .7)
-    if ready:
-        bx, by = x + 44, y - 4
-        a.path('M%.1f %.1f l3 -24 l22 0 l3 24 q-14 5 -28 0Z' % (bx - 14, by), a.lg([(0, '#eef2f6'), (.4, '#c2ccd8'), (1, '#8a96a6')], 0, 0, 1, 0), '#5a6674', 1.4)
-        a.ell(bx, by - 24, 11, 4, '#ffffff', stroke='#5a6674', sw=1.2)
-        a.path('M%.1f %.1f q11 -16 22 0' % (bx - 11, by - 24), stroke='#5a6674', sw=1.8)
-
-
-def sheep(a, x, y, ready):
-    _shadow(a, x, y, 44)
-    for lx in (-22, -8, 10, 24):
-        a.path('M%.1f %.1f l0 20' % (x + lx, y - 22), stroke='#3a2a22', sw=6.5)
-    wool = '#fbf6ea' if not ready else '#ffffff'
-    k = 1.14 if ready else 1.0
-    puffs = [(-30, -40, 17), (-14, -56, 18), (8, -60, 19), (28, -52, 17), (38, -36, 15), (22, -26, 17), (0, -24, 18), (-20, -28, 16), (4, -42, 22)]
-    for (dx, dy, rr) in puffs:
-        a.ell(x + dx * k + 1.5, y + dy * k + 5 * (k - 1) * 4 + 2, rr * k, rr * k * .94, '#bfb29a')
-    for (dx, dy, rr) in puffs:
-        a.ell(x + dx * k, y + dy * k + 5 * (k - 1) * 4, rr * k, rr * k * .94, a.rg([(0, '#ffffff'), (.7, wool), (1, '#e2d8c4')]), stroke='#a89a80', sw=.8)
-    hx, hy = x - 40, y - 44
-    a.ell(hx - 13, hy - 3, 8, 4.6, '#3a2a22', rot=-30); a.ell(hx + 13, hy - 3, 8, 4.6, '#3a2a22', rot=30)
-    a.add('<rect x="%.1f" y="%.1f" width="26" height="30" rx="12" fill="#4a3830" stroke="%s" stroke-width="1.6"/>' % (hx - 13, hy - 10, OUTL))
-    for (dx, rr) in ((-8, 7), (0, 8), (8, 7)):
-        a.ell(hx + dx, hy - 11, rr, rr * .9, '#ffffff', stroke='#a89a80', sw=.8)
-    a.ell(hx - 5, hy + 2, 3, 3.4, '#ffffff'); a.ell(hx + 5, hy + 2, 3, 3.4, '#ffffff')
-    a.ell(hx - 5, hy + 2.6, 1.6, 1.9, '#1a0e08'); a.ell(hx + 5, hy + 2.6, 1.6, 1.9, '#1a0e08')
-    a.ell(hx, hy + 13, 3.4, 2.2, '#ffb0b8')
-    # curls of wool all over, the fleece in shade underneath, little hooves
-    rw = rnd(3)
-    for (dx, dy, rr) in puffs:
-        for _ in range(7):
-            q, d = rw.random() * 6.283, rw.random() * rr * k * .75
-            cx_, cy_ = x + dx * k + math.cos(q) * d, y + dy * k + 5 * (k - 1) * 4 + math.sin(q) * d * .9
-            if cx_ > hx + 20:
-                a.path('M%.1f %.1f q3 -3.4 6 0 q-1 2.6 -3.4 1.6' % (cx_ - 3, cy_), stroke='#c9bca4', sw=.8)
-    for lx in (-22, -8, 10, 24):
-        a.path('M%.1f %.1f l0 3.6' % (x + lx, y - 5), stroke='#16100c', sw=6.9)
-        a.line((x + lx - 1.6, y - 20), (x + lx - 1.6, y - 8), '#6a5a50', .8)
-    if ready:
-        for (dx, dy) in ((46, -6), (56, -10), (50, -16)):
-            a.ell(x + dx, y + dy, 9, 8, '#ffffff', stroke='#a89a80', sw=.8)
-
-
-def pig(a, x, y, ready):
-    _shadow(a, x, y, 46)
-    pink = a.rg([(0, '#ffd2d6'), (.6, '#f6a4b0'), (1, '#d87a8c')])
-    for lx in (-24, -10, 12, 26):
-        a.path('M%.1f %.1f l0 16' % (x + lx, y - 20), stroke='#8a3a4a', sw=10)
-        a.path('M%.1f %.1f l0 14' % (x + lx, y - 20), stroke='#f09aa8', sw=7)
-        a.path('M%.1f %.1f l0 3' % (x + lx, y - 4), stroke='#8a4a50', sw=7.4)
-    a.path('M%.1f %.1f q10 -6 6 -12 q-6 -4 -6 4 q2 6 10 2' % (x + 40, y - 44), stroke='#d87a8c', sw=3)
-    a.add('<rect x="%.1f" y="%.1f" width="84" height="48" rx="23" fill="%s" stroke="#8a3a4a" stroke-width="1.1"/>' % (x - 42, y - 64, pink))
-    hx, hy = x - 38, y - 46
-    a.path('M%.1f %.1f l-8 -14 l14 4Z M%.1f %.1f l8 -14 l-14 4Z' % (hx - 12, hy - 14, hx + 12, hy - 14), '#f09aa8', '#8a3a4a', 1.4)
-    a.ell(hx, hy, 21, 19, pink, stroke='#8a3a4a', sw=1.1)
-    a.ell(hx - 2, hy + 6, 10, 7.4, '#ffc2ca', stroke='#8a3a4a', sw=1.4)
-    a.ell(hx - 5, hy + 6, 1.8, 2.6, '#8a3a4a'); a.ell(hx + 1.5, hy + 6, 1.8, 2.6, '#8a3a4a')
-    _eye(a, hx - 9, hy - 5, 2.8); _eye(a, hx + 7, hy - 5, 2.8)
-    # the belly in shade, a lit back, bristles, the ears' insides, the snout's rim, cloven hooves
-    a.ell(x + 6, y - 22, 28, 4.6, '#b85a70', .38)
-    rp = rnd(4)
-    for _ in range(26):
-        bx_, by_ = x - 10 + rp.random() * 42, y - 54 + rp.random() * 22
-        a.line((bx_, by_), (bx_ + 2.4, by_ + 1.6), '#e88a9c', .6, .8)
-    a.path('M%.1f %.1f l-4 -8 l7 2.4Z M%.1f %.1f l4 -8 l-7 2.4Z' % (hx - 13, hy - 15, hx + 13, hy - 15), '#ffc2ca')
-    a.path('M%.1f %.1f q8 -5 16 0' % (hx - 10, hy + 1), stroke='#ffe6ea', sw=1.2)
-    a.ell(hx - 13, hy + 3, 4.6, 3, '#ff9aa8', .6); a.ell(hx + 11, hy + 3, 4.6, 3, '#ff9aa8', .6)
-    for lx in (-24, -10, 12, 26):
-        a.line((x + lx, y - 4.5), (x + lx, y - 1), '#4a2a30', 1)
-        a.line((x + lx - 2.4, y - 18), (x + lx - 2.4, y - 7), '#ffd2d8', .9, .8)
-    if ready:
-        bx, by = x + 46, y - 6
-        a.ell(bx, by, 13, 10, a.rg([(0, '#8a6a4a'), (.6, '#5a4028'), (1, '#33200e')]), stroke='#22140a', sw=1.2)
-        for (dx, dy) in ((-5, -3), (3, -5), (5, 2), (-3, 4), (0, -1)):
-            a.ell(bx + dx, by + dy, 1.6, 1.2, '#b08a60', .9)
-
-
-def bee(a, x, y, ready):
-    """A hive on its stand; ready: honey runs from it and a full jar waits."""
-    _shadow(a, x, y, 40)
-    for lx in (-22, 22):
-        a.path('M%.1f %.1f l0 16' % (x + lx, y - 16), stroke=OUTL, sw=7)
-        a.path('M%.1f %.1f l0 15' % (x + lx, y - 16), stroke='#a8703f', sw=4.4)
-    a.add('<rect x="%.1f" y="%.1f" width="64" height="9" rx="3" fill="#b98454" stroke="%s" stroke-width="1.4"/>' % (x - 32, y - 24, OUTL))
-    rows = [(27, 13), (30, 13), (30, 13), (26, 12), (18, 10)]
-    yy = y - 24
-    for i, (w, h) in enumerate(rows):
-        col = '#f2b93a' if i % 2 == 0 else '#e6a528'
-        a.add('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="%.1f" fill="%s" stroke="#8a5a14" stroke-width="1.4"/>' % (
-            x - w, yy - h, 2 * w, h + 1, h * .5, a.lg([(0, lite(col, .3)), (.4, col), (1, dark(col, .3))], 0, 0, 1, 0)))
-        yy -= h - 1
-    a.ell(x, y - 34, 7, 8, '#5a3410')
-    # the coils are twisted straw: slanting strands, a lit top to every coil; a landing board
-    yy = y - 24
-    rs = rnd(8)
-    for i, (w, h) in enumerate(rows):
-        for k in range(int(w / 2.2)):
-            sx_ = x - w + 3 + k * 4.4 + rs.random()
-            a.line((sx_, yy - 2), (sx_ + 3, yy - h + 2), '#a8700e', .6, .8)
-        a.path('M%.1f %.1f h%.1f' % (x - w + 5, yy - h + 2.6, 2 * w - 14), stroke='#ffe08a', sw=1.2, op=.8)
-        yy -= h - 1
-    a.add('<rect x="%.1f" y="%.1f" width="22" height="3" rx="1" fill="#8a5a24" stroke="#4a2a14" stroke-width=".5"/>' % (x - 11, y - 27))
-    if ready:
-        a.path('M%.1f %.1f q2 12 6 12 q4 0 3 -8 q4 14 9 6' % (x - 16, y - 50), stroke='#f6a81e', sw=4.4)
-        jx, jy = x + 44, y - 4
-        a.add('<rect x="%.1f" y="%.1f" width="24" height="26" rx="6" fill="%s" stroke="#8a5a14" stroke-width="1.4"/>' % (jx - 12, jy - 26, a.lg([(0, '#ffd870'), (1, '#e69a1a')], 0, 0, 1, 0)))
-        a.add('<rect x="%.1f" y="%.1f" width="28" height="7" rx="3" fill="#c07a3a" stroke="#6a3a14" stroke-width="1.2"/>' % (jx - 14, jy - 32))
-        a.ell(jx - 5, jy - 16, 2.4, 6, '#fff2c0', .8)
-    for (dx, dy) in ((-38, -66), (34, -78), (44, -46)):
-        bx, by = x + dx, y + dy
-        a.ell(bx - 3, by - 5, 5, 3, '#ffffff', .8, rot=-30, stroke='#9ab0c0', sw=.5)
-        a.ell(bx + 3, by - 5, 5, 3, '#ffffff', .8, rot=30, stroke='#9ab0c0', sw=.5)
-        a.ell(bx, by, 6, 4.4, '#f6c22e', stroke='#3a2408', sw=1)
-        a.path('M%.1f %.1f l0 7 M%.1f %.1f l0 6' % (bx - 1.5, by - 3.6, bx + 2, by - 3), stroke='#3a2408', sw=1.6)
-
-
-ANIMALS = dict(chicken=chicken, cow=cow, sheep=sheep, pig=pig, bee=bee)
-
-
-def animal(kind, ready):
-    a = Art(AW, AH, 66, AH - 12)
-    ANIMALS[kind](a, a.ox, a.oy, ready)
-    return a
-
-
-# ---------------------------------------------------------------------------------------------- ground and fences
-
-def ground(a, u0, v0, u1, v1, col, rim='#5c9a3a', n=60, seed=1, kind='dirt'):
-    """A patch of worn ground on the grass, drawn sharp: an irregular edge where the turf ends, pebbles and
-    crumbs (or straws) with a light and a dark side, tufts of grass along the edge."""
+def ground(a, u0, v0, u1, v1, col, rim=None, n=60, seed=1, kind='dirt'):
+    """A patch of worn ground on the grass (ART_BIBLE §10): an uneven, rounded outline where the turf gives way —
+    no straight sides, no border — paler worn earth in the middle, pebbles (or straws) with a light and a dark
+    side, and grass standing over its edge all the way round."""
     r = rnd(seed)
-    pts, outer = [], []
-    steps = 11
-    for (ua, va, ub, vb) in ((u0, v0, u1, v0), (u1, v0, u1, v1), (u1, v1, u0, v1), (u0, v1, u0, v0)):
-        for i in range(steps):
-            t = i / steps
-            ju, jv = (r.random() - .5) * .06, (r.random() - .5) * .06
-            pts.append(a.p(ua + (ub - ua) * t + ju, va + (vb - va) * t + jv))
-            cu, cv = (u0 + u1) / 2, (v0 + v1) / 2
-            ou, ov = ua + (ub - ua) * t + ju, va + (vb - va) * t + jv
-            outer.append(a.p(cu + (ou - cu) * 1.045, cv + (ov - cv) * 1.045))
-    a.poly(outer, rim, raw=True)
-    a.poly(pts, a.lg([(0, lite(col, .14)), (1, dark(col, .12))]), raw=True)
+    cu, cv = (u0 + u1) / 2, (v0 + v1) / 2
+    hu, hv = (u1 - u0) / 2, (v1 - v0) / 2
+    pts, inner = [], []
+    steps = 56
+    wob = [r.random() for _ in range(8)]
+    for i in range(steps):
+        q = 6.283 * i / steps
+        # a square with well rounded corners (a superellipse), its edge wandering in and out
+        c, s_ = math.cos(q), math.sin(q)
+        k = (abs(c) ** 3.2 + abs(s_) ** 3.2) ** (-1 / 3.2)
+        w = 1 + .05 * math.sin(q * 3 + wob[0] * 6) + .035 * math.sin(q * 7 + wob[1] * 6) + .02 * math.sin(q * 13 + wob[2] * 6)
+        pts.append(a.p(cu + c * k * hu * w, cv + s_ * k * hv * w))
+        inner.append(a.p(cu + c * k * hu * w * .72, cv + s_ * k * hv * w * .72))
+    a.poly(pts, a.lg([(0, lite(col, .06)), (1, dark(col, .16))]), raw=True)
+    a.poly(inner, lite(col, .16), raw=True, op=.55)
     for _ in range(n):
-        x, y = a.p(u0 + .08 + r.random() * (u1 - u0 - .16), v0 + .08 + r.random() * (v1 - v0 - .16))
+        q, d = r.random() * 6.283, math.sqrt(r.random()) * .86
+        c, s_ = math.cos(q), math.sin(q)
+        k = (abs(c) ** 3.2 + abs(s_) ** 3.2) ** (-1 / 3.2)
+        x, y = a.p(cu + c * k * hu * d, cv + s_ * k * hv * d)
         if kind == 'straw':
             ang = r.random() * 3.14
-            c = r.choice(['#f2d98a', '#d9b85a', '#fff0b0', '#c9a240'])
-            a.line((x, y), (x + math.cos(ang) * 7, y + math.sin(ang) * 2.8), dark(c, .4), 1.1)
-            a.line((x, y - .4), (x + math.cos(ang) * 7, y - .4 + math.sin(ang) * 2.8), c, .7)
+            sc = r.choice(['#f2d264', '#d9b03e', '#fff0a8', '#b8901e'])
+            a.line((x, y), (x + math.cos(ang) * 7, y + math.sin(ang) * 2.8), dark(sc, .45), 1.1)
+            a.line((x, y - .4), (x + math.cos(ang) * 7, y - .4 + math.sin(ang) * 2.8), sc, .7)
         else:
             rr = 1 + r.random() * 2
-            c = r.choice([lite(col, .3), dark(col, .25), '#b8b0a4', '#9a8f80'])
+            pc = r.choice([lite(col, .3), dark(col, .25), '#a89a8a', '#8a8078'])
             a.ell(x + .5, y + .6, rr, rr * .6, dark(col, .5), .8)
-            a.ell(x, y, rr, rr * .6, c)
-            a.ell(x - rr * .3, y - rr * .2, rr * .4, rr * .22, lite(c, .5), .8)
-    for _ in range(int(n * .9)):
-        e = r.randrange(4)
-        t = r.random()
-        u, v = [(u0 + (u1 - u0) * t, v0), (u1, v0 + (v1 - v0) * t), (u0 + (u1 - u0) * t, v1), (u0, v0 + (v1 - v0) * t)][e]
-        x, y = a.p(u + (r.random() - .5) * .08, v + (r.random() - .5) * .08)
-        for k in (-1.5, -.5, .5, 1.5):
-            c = r.choice(['#3f8a2c', '#5fae3c', '#7cc84c', '#4c9632'])
-            a.path('M%.1f %.1f q%.1f -5 %.1f %.1f' % (x + k * 1.6, y + 2, k * .6, k * 2.6 + r.random() * 2 - 1, -7 - r.random() * 5), stroke=c, sw=1.3)
+            a.ell(x, y, rr, rr * .6, pc)
+            a.ell(x - rr * .3, y - rr * .2, rr * .4, rr * .22, lite(pc, .5), .8)
+    # grass over the edge: far side first, so the near blades stand in front of the earth
+    edge = sorted(range(steps), key=lambda i: pts[i][1])
+    for i in edge:
+        for _ in range(3):
+            x, y = pts[i][0] + r.random() * 8 - 4, pts[i][1] + r.random() * 5 - 1
+            for k_ in (-1.5, -.5, .5, 1.5):
+                gc = r.choice(['#3f8a2c', '#5fae3c', '#7cc84c', '#4c9632'])
+                a.path('M%.1f %.1f q%.1f -5 %.1f %.1f' % (x + k_ * 1.5, y + 2, k_ * .6, k_ * 2.4 + r.random() * 2 - 1, -6 - r.random() * 6), stroke=gc, sw=1.2)
 
 
 def fence(a, pts_uv, col='#e8dcc0', h=20, gap=.25, rails=2):
@@ -528,7 +227,7 @@ def _chimney(a, u, v, z0, z1, col='#b8563c', w=.17):
 
 
 def _pad(a, seed, col='#c9a86a'):
-    ground(a, -.12, -.12, 2.0, 2.0, col, seed=seed, n=80)
+    ground(a, -.2, -.2, 2.08, 2.08, col, seed=seed, n=90)
 
 
 def house(a, u0, v0, wu, wv, hz, rise, wc, rc, along, tex='timber', trim='#f6ead0', plinth='#a89a8a', left='', right='', seed=0, over=.12):
@@ -887,21 +586,41 @@ def tuft(seed):
 
 
 def bush(seed, flowers=None):
-    a = Art(120, 96, 60, 86)
-    r = rnd(seed)
-    a.ell(66, 86, 44, 10, '#1c2a10', .3, a.blur(3))
-    col = '#4f9a36'
-    for (dx, dy, rr) in ((-26, -18, 22), (24, -18, 22), (0, -14, 26), (-12, -40, 22), (14, -42, 21), (0, -52, 16)):
-        a.ell(60 + dx + 2, 86 + dy + 3, rr, rr * .9, dark(col, .4))
-        a.ell(60 + dx, 86 + dy, rr, rr * .9, a.rg([(0, lite(col, .4)), (.6, col), (1, dark(col, .3))]))
-    for i in range(22):
-        q, d = r.random() * 6.283, math.sqrt(r.random()) * 40
-        x, y = 60 + math.cos(q) * d, 54 + math.sin(q) * d * .7
-        if flowers:
-            a.ell(x, y, 3.4, 3.2, flowers)
-            a.ell(x, y, 1.3, 1.3, '#fff2a0')
-        else:
-            a.ell(x, y, 4, 2.6, lite(col, .5), .5, rot=r.random() * 90)
+    """A bush: three or four leaf masses, lit from the top left, standing on its shadow; each seed is its own shape."""
+    a = Art(150, 110, 60, 84)
+    a.seed = seed
+    r = rnd(seed * 17)
+    x, y = a.ox, a.oy
+    masses = [[(-26, 20, 21), (22, 22, 22), (-2, 40, 24), (8, 18, 18)], [(-30, 16, 18), (0, 26, 26), (30, 18, 19)], [(-18, 24, 24), (20, 30, 22), (2, 14, 17), (34, 12, 13)]][seed % 3]
+    sh = ''.join('<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f"/>' % (x + dx + hh * trees.SHADOW[0], y + hh * trees.SHADOW[1] + 2, rr, rr * .42) for (dx, hh, rr) in masses)
+    a.add('<g fill="#0e2010" opacity=".40" filter="%s">%s</g>' % (a.blur(2), sh))
+    a.ell(x + 2, y + 2, 34, 7, '#0e2010', .45, a.blur(1.2))
+    ramp = ['#0f3a1c', '#2f7a2c', '#4f9a36', '#86c248', '#b8dc58']
+    for (dx, hh, rr) in masses:
+        a.ell(x + dx + 1.5, y - hh + 2, rr * .8, rr * .72, '#0a2a16')
+    for (dx, hh, rr) in sorted(masses, key=lambda m: -m[1]):
+        px, py = x + dx, y - hh
+        clumps = []
+        for _ in range(int(rr * rr * .13)):
+            ang, d = r.random() * 6.283, math.sqrt(r.random()) * rr
+            ox, oy = math.cos(ang) * d, math.sin(ang) * d * .9
+            lit = (-ox * .6 - oy * .8) / rr + (r.random() - .5) * .16
+            clumps.append((0 if lit < -.42 else 1 if lit < -.02 else 2 if lit < .42 else 3 if lit < .8 else 4, px + ox, py + oy, d / rr, ang))
+        for step in (0, 1, 2, 'x', 3, 4):
+            if step == 'x':
+                if flowers:
+                    for _ in range(int(rr * .5)):
+                        ang, d = r.random() * 6.283, math.sqrt(r.random()) * rr * .9
+                        fx, fy = px + math.cos(ang) * d, py + math.sin(ang) * d * .9
+                        trees._petals(a, fx, fy, .8 + r.random() * .4, flowers, dark(flowers, .3), (fx - px) * .6 + (fy - py) * .8 > rr * .1, r)
+                continue
+            for (tone, qx, qy, edge, ang) in clumps:
+                if tone != step:
+                    continue
+                base = r.random() * 360
+                for i in range(4):
+                    la = base + i * 90 + r.random() * 30 if edge < .8 else -math.degrees(ang) + (i - 1.5) * 36
+                    trees._leaf(a, qx, qy, 5.5 + r.random() * 3.5, 2.2 + r.random() * 1.2, la, ramp[tone] if i else ramp[max(0, tone - 1)])
     return a
 
 
@@ -909,82 +628,100 @@ GW, GH = 512, 440
 
 
 def street_ground(street=True):
-    """The ground of the street under the farm, a strip that repeats left to right: mottled meadow grass with
-    tufts and flowers, a worn dirt road along the front, and a rail fence along the back that hides the seam
-    with the painted zones. Everything that crosses the left edge comes back in at the right one."""
+    """The ground of the street under the farm, a strip that repeats left to right, drawn as sharp as the rest:
+    meadow grass made of blades in the four greens, with darker and lighter tussocks, flowers and stones; a dirt
+    road along the front with a worn edge, ruts and pebbles; a rail fence along the back that covers the seam with
+    the painted zones. street=False: the same meadow without road and fence, for under the map's edge.
+    Everything that crosses the left edge comes back in at the right one."""
     a = Art(GW, GH, 0, 0, scale=2.0)
     a.seed = 77
-    # it repeats: no light across it, no turned edges, only a fine grain
-    a.look = dict(volume=0, rim=0, grain=.025, contrast=1.0, sat=1.0)
+    a.look = dict(volume=0, grain=.02, contrast=1.0, sat=1.0)
     r = rnd(40)
     wrap = (0, GW, -GW)
-    a.add(rect(0, 34 if street else 0, GW, GH - (34 if street else 0), a.lg([(0, '#79b94e'), (.6, '#72b049'), (1, '#6aa644')]) if street else '#6aa644'))
-    # light and shade lie in soft patches, as under scattered clouds and trees
-    for _ in range(26):
-        x, y, rx = r.random() * GW, 60 + r.random() * 270, 40 + r.random() * 70
-        c = r.choice(['#8cc656', '#84c050', '#5c9a3a', '#548f36', '#94cc5a'])
-        for dx in wrap:
-            a.ell(x + dx, y, rx, rx * .42, c, .34, a.blur(9))
-    # the road: packed earth with ruts, pebbles, grass creeping in from both sides
-    for dx in (wrap if street else ()):
-        a.path('M%d 372 q64 -14 128 0 t128 0 t128 0 t128 0 l0 62 l-512 0Z' % dx, '#a8854e', op=.6, flt=a.blur(5))
-        a.path('M%d 380 q64 -12 128 0 t128 0 t128 0 t128 0 l0 60 l-512 0Z' % dx, a.lg([(0, '#dcc08a'), (1, '#c2a068')]), flt=a.blur(2))
-        for yy in (398, 420):
-            a.path('M%d %d q64 -7 128 0 t128 0 t128 0 t128 0' % (dx, yy), stroke='#a8854e', sw=5, op=.4)
-            a.path('M%d %d q64 -7 128 0 t128 0 t128 0 t128 0' % (dx, yy + 3), stroke='#f0dcae', sw=2, op=.4)
-    for _ in range(90 if street else 0):
-        x, y = r.random() * GW, 386 + r.random() * 50
-        c = r.choice(['#f0dcaa', '#a8854e', '#d2b47a', '#8a6e42'])
-        for dx in wrap:
-            a.ell(x + dx, y, 1.5 + r.random() * 3, 1 + r.random() * 1.4, c, .75)
-    # tufts everywhere, thicker along the road's edge and the fence
-    spots = [(r.random() * GW, 70 + r.random() * 300) for _ in range(150)] + [(r.random() * GW, 366 + r.random() * 16) for _ in range(70)] + [(r.random() * GW, 46 + r.random() * 16) for _ in range(60)]
-    if not street:
-        spots = [(r.random() * GW, 12 + r.random() * (GH - 20)) for _ in range(230)]
-    spots.sort(key=lambda p: p[1])
-    for (x, y) in spots:
-        n = r.choice([3, 4, 5])
-        for k in range(n):
-            c = r.choice(['#3f8a2c', '#4c9632', '#5fae3c', '#7cc84c', '#9ad25a'])
-            ex, ey = (k - n / 2) * 3 + r.random() * 3, -7 - r.random() * 9
+    top = 34 if street else 0
+    a.add(rect(0, top, GW, GH - top, a.lg([(0, '#79b94e'), (.6, '#72b049'), (1, '#6aa644')]) if street else '#6aa644'))
+    greens = ['#3f8a2c', '#4c9632', '#5fae3c', '#7cc84c', '#9ad25a']
+    y_lo, y_hi = (top + 10, 372) if street else (6, GH - 4)
+    # tussocks: patches where the grass is darker or lighter, each a crowd of blades
+    tuss = [(r.random() * GW, y_lo + r.random() * (y_hi - y_lo), 26 + r.random() * 44, r.choice([0, 0, 1, 3, 4])) for _ in range(22)]
+    blades = []
+    for _ in range(2600):
+        x, y = r.random() * GW, y_lo + r.random() * (y_hi - y_lo)
+        tone = r.choice([1, 2, 2, 2, 3])
+        for (tx, ty, tr, tt) in tuss:
             for dx in wrap:
-                a.path('M%.1f %.1f q%.1f %.1f %.1f %.1f' % (x + dx + k * 1.6, y, ex * .2, ey * .6, ex, ey), stroke=c, sw=1.7)
-    for _ in range(46):
-        x, y = r.random() * GW, 70 + r.random() * 290
+                if (x - tx - dx) ** 2 + ((y - ty) * 2.2) ** 2 < tr * tr:
+                    tone = tt if r.random() < .7 else tone
+        blades.append((y, x, tone))
+    blades.sort()
+    for (y, x, tone) in blades:
+        ln, lean = 5 + r.random() * 6, r.random() * 5 - 2.5
+        for dx in wrap:
+            if -8 < x + dx < GW + 8:
+                a.path('M%.1f %.1f q%.1f %.1f %.1f %.1f' % (x + dx, y, lean * .2, -ln * .6, lean, -ln), stroke=greens[tone], sw=1.25)
+    for _ in range(50):
+        x, y = r.random() * GW, y_lo + 6 + r.random() * (y_hi - y_lo - 12)
         c = r.choice(['#ffffff', '#ffd23a', '#ff9ab8', '#c8a8ff', '#ffb04a'])
         for dx in wrap:
-            a.line((x + dx, y), (x + dx, y - 6), '#4c9632', 1.1)
+            a.line((x + dx, y), (x + dx, y - 6), '#3f8a2c', 1)
             for j in range(5):
                 q = 6.283 * j / 5
-                a.ell(x + dx + math.cos(q) * 2.4, y - 7 + math.sin(q) * 2.1, 1.9, 1.7, c)
-            a.ell(x + dx, y - 7, 1.3, 1.2, '#f6c22e' if c != '#ffd23a' else '#b06a16')
-    # the fence along the back: weathered posts and two rails, its shadow on the grass
-    post, rail = '#a8845c', '#c2a078'
+                a.ell(x + dx + math.cos(q) * 2.3, y - 7 + math.sin(q) * 2, 1.8, 1.6, c, stroke=dark(c, .3), sw=.25)
+            a.ell(x + dx, y - 7, 1.2, 1.1, '#f6c22e' if c != '#ffd23a' else '#b06a16')
+    for _ in range(9):
+        x, y, rr = r.random() * GW, y_lo + 10 + r.random() * (y_hi - y_lo - 20), 2.4 + r.random() * 2.6
+        for dx in wrap:
+            a.ell(x + dx + 1.2, y + 1, rr, rr * .6, '#2e5a1e', .8)
+            a.ell(x + dx, y, rr, rr * .6, '#a89a8a')
+            a.ell(x + dx - rr * .3, y - rr * .2, rr * .45, rr * .25, '#d0c6b8')
     if not street:
         return a
+    # the road: packed earth, its edge worn into the turf, two ruts, pebbles; grass stands over the edge
+    edge = ' '.join('%.1f,%.1f' % (xx, 380 + 4 * math.sin(xx * 6.283 / 128) + 2.4 * math.sin(xx * 6.283 / 51.2 + 1)) for xx in range(-4, GW + 8, 4))
+    a.add('<polygon points="%s %d,%d -4,%d" fill="%s"/>' % (edge, GW + 4, GH, GH, a.lg([(0, '#cdb078'), (.4, '#dcc08a'), (1, '#c4a268')])))
+    a.add('<polyline points="%s" fill="none" stroke="#8a6a3c" stroke-width="2.2" stroke-linejoin="round"/>' % edge)
+    for yy in (402, 424):
+        pts = ' '.join('%.1f,%.1f' % (xx, yy + 2 * math.sin(xx * 6.283 / 256 + yy)) for xx in range(-4, GW + 8, 8))
+        a.add('<polyline points="%s" fill="none" stroke="#a8854e" stroke-width="4.4"/>' % pts)
+        a.add('<polyline points="%s" fill="none" stroke="#e8d4a4" stroke-width="1.2" transform="translate(0 3)"/>' % pts)
+    for _ in range(120):
+        x, y, rr = r.random() * GW, 388 + r.random() * 48, 1 + r.random() * 2.2
+        c = r.choice(['#f0dcae', '#a8854e', '#b8b0a4', '#8a6e42'])
+        for dx in wrap:
+            a.ell(x + dx + .6, y + .6, rr, rr * .6, '#7a5a30', .8)
+            a.ell(x + dx, y, rr, rr * .6, c)
+            a.ell(x + dx - rr * .3, y - rr * .2, rr * .4, rr * .2, lite(c, .5), .8)
+    for _ in range(170):
+        x = r.random() * GW
+        y = 382 + 4 * math.sin(x * 6.283 / 128) + r.random() * 5
+        ln, lean = 6 + r.random() * 7, r.random() * 6 - 3
+        for dx in wrap:
+            a.path('M%.1f %.1f q%.1f %.1f %.1f %.1f' % (x + dx, y, lean * .2, -ln * .6, lean, -ln), stroke=r.choice(greens), sw=1.4)
+    # the fence along the back: weathered posts with caps, two rails with grain, a thin shadow on the grass
+    post, rail = '#a8845c', '#c2a078'
     for dx in wrap:
-        a.add(rect(dx, 40, GW, 7, '#16260e', None, 0, 3, .3).replace('/>', ' filter="%s"/>' % a.blur(3)))
+        a.add(rect(dx, 39, GW, 4, '#2e5a1e', None, 0, 0, .55))
         for yy in (14, 26):
-            a.add(rect(dx, yy, GW, 5.5, a.lg([(0, lite(rail, .3)), (1, dark(rail, .3))]), dark(rail, .5), .5, 2))
-            for k in range(8):
+            a.add(rect(dx, yy, GW, 5.5, a.lg([(0, lite(rail, .3)), (1, dark(rail, .3))]), dark(rail, .55), .5, 1))
+            a.add(rect(dx, yy + .6, GW, .8, lite(rail, .5), None, 0, 0, .8))
+            for k in range(10):
                 gx = dx + r.random() * GW
-                a.line((gx, yy + 2), (gx + 10 + r.random() * 14, yy + 2.6), dark(rail, .4), .7, .5)
+                a.line((gx, yy + 2.4), (gx + 10 + r.random() * 14, yy + 3), dark(rail, .45), .5, .8)
     for k in range(8):
         px = 32 + k * 64
         for dx in wrap:
-            a.add(rect(px + dx - 5, 4, 10, 40, a.lg([(0, lite(post, .3)), (.5, post), (1, dark(post, .4))], 0, 0, 1, 0), dark(post, .55), .6, 2.5))
-            a.ell(px + dx, 5, 5, 2.2, lite(post, .4))
+            a.add(rect(px + dx - 5, 6, 10, 38, a.lg([(0, lite(post, .3)), (.5, post), (1, dark(post, .45))], 0, 0, 1, 0), dark(post, .6), .5, 1))
+            a.path('M%.1f 6 l5 -4.4 l5 4.4 Z' % (px + dx - 5), lite(post, .4), dark(post, .55), .4)
+            a.line((px + dx - 1.6, 12), (px + dx - 1.2, 40), dark(post, .4), .5, .7)
+            for kk in (-1.5, 0, 1.5):
+                a.path('M%.1f 44 q%.1f -5 %.1f -9' % (px + dx + kk * 2.4, kk, kk * 2.2), stroke=r.choice(greens), sw=1.3)
     return a
 
 
 def build():
     out = {}
-    for k in TREES:
-        for st in ('leaf', 'bloom', 'ripe'):
-            out['Tree_%s_%s' % (k, st)] = tree(k, st).save('Tree_%s_%s' % (k, st))
-    for k in ANIMALS:
-        out['Animal_%s' % k] = animal(k, False).save('Animal_%s' % k)
-        out['Animal_%s_ready' % k] = animal(k, True).save('Animal_%s_ready' % k)
+    out.update(trees.build())
+    out.update(animals.build())
     for k in ('cowshed', 'sheepfold', 'pigsty', 'apiary'):
         out['Pen_%s' % k] = pen(k).save('Pen_%s' % k)
     for k in WS:

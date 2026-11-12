@@ -58,8 +58,13 @@ namespace SunnyValley.Game.UI
         // how each picture sits on its site: the canvas in map units and where the site's foot (X, Y) is on it
         // (from the canvas' left and bottom) — the numbers of farm/tools/art/farm_art
         const float PlotW = 170, PlotH = 122, CropH = 224, PlotFoot = 14;
-        const float TreeW = 195.5f, TreeH = 248.2f, TreeFootX = 91, TreeFoot = 25.5f;
-        const float AnimalSize = 112.5f, AnimalFootX = 49.5f, AnimalFoot = 9;
+        const float TreeW = 255, TreeH = 263.5f, TreeFootX = 95.2f, TreeFoot = 52.7f;
+        // animals are drawn at their real size: canvas width and height, the feet from the left and from the bottom
+        static readonly Dictionary<string, float[]> AnimalCanvas = new Dictionary<string, float[]>
+        {
+            { "chicken", new[] { 96f, 88, 40, 26 } }, { "sheep", new[] { 150f, 122, 64, 38 } }, { "pig", new[] { 160f, 108, 68, 34 } },
+            { "cow", new[] { 214f, 172, 96, 50 } }, { "bee", new[] { 120f, 118, 46, 32 } },
+        };
         const float SignW = 105, SignH = 120, SignFoot = 9;
         const float ShopW = 344, ShopH = 320, ShopFootX = 154, ShopFoot = 22;
         const float PenW = 500, PenH = 330, PenFootX = 201.5f, PenFoot = 12;
@@ -159,7 +164,13 @@ namespace SunnyValley.Game.UI
                     }
                 }
                 if (free)
-                    Picture(Child("green", layer, x, y, bush ? 120 : 60, bush ? 96 : 44, Foot), Art(name));
+                {
+                    // a bush stands on its foot with room for its shadow to the right; a tuft is just itself
+                    if (bush)
+                        Picture(Child("green", layer, x - 60, y - 26, 150, 110, Vector2.zero), Art(name));
+                    else
+                        Picture(Child("green", layer, x, y, 60, 44, Foot), Art(name));
+                }
             }
         }
 
@@ -231,9 +242,13 @@ namespace SunnyValley.Game.UI
                     v.BodyImage = Picture(v.Body, null);
                     break;
                 case SiteKind.Animal:
-                    v.Body = Child("body", v.Root, mid - AnimalFootX + AnimalSize / 2, -AnimalFoot, AnimalSize, AnimalSize, Foot);
+                {
+                    if (!AnimalCanvas.TryGetValue(s.Ref ?? "", out var c))
+                        c = new[] { s.W, s.H, s.W / 2, 0 };
+                    v.Body = Child("body", v.Root, mid - c[2] + c[0] / 2, -c[3], c[0], c[1], Foot);
                     v.BodyImage = Picture(v.Body, Art("Animal_" + s.Ref) ?? ShapeSprites.Icon(EconomyViews.AnimalIcon(s.Ref)), true);
                     break;
+                }
                 case SiteKind.Pen:
                 case SiteKind.Nursery:
                 {
@@ -315,7 +330,8 @@ namespace SunnyValley.Game.UI
                         return "Seeded";
                     return "Crop_" + st.Item + "_" + st.Stage;
                 case SiteKind.Tree:
-                    return "Tree_" + s.Ref + (st.Phase == SitePhase.Ready ? "_ripe" : st.Progress >= 0.5f ? "_bloom" : "_leaf");
+                    // two builds of every species, so a row of trees is not a row of copies
+                    return "Tree_" + s.Ref + (st.Phase == SitePhase.Ready ? "_ripe" : st.Progress >= 0.5f ? "_bloom" : "_leaf") + (s.Index % 2 == 1 ? "_2" : "");
                 case SiteKind.Animal:
                     return "Animal_" + s.Ref + (st.Phase == SitePhase.Ready ? "_ready" : "");
                 default:

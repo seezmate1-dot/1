@@ -86,6 +86,9 @@ def sites(name):
     return rows
 
 
+ANIMAL_CANVAS = dict(chicken=(96, 88, 40, 26), sheep=(150, 122, 64, 38), pig=(160, 108, 68, 34), cow=(214, 172, 96, 50), bee=(120, 118, 46, 32))
+
+
 class Painter:
     """Puts pictures on a map image: positions in map units (y up), the image at ms pixels per unit."""
 
@@ -156,7 +159,7 @@ def growth(s):
             return "Seeded"
         return "Crop_%s_%d" % (s["item"], s["stage"])
     if k == "Tree":
-        return "Tree_%s_%s" % (s["ref"], "ripe" if s["phase"] == "Ready" else "bloom" if s["progress"] >= .5 else "leaf")
+        return "Tree_%s_%s%s" % (s["ref"], "ripe" if s["phase"] == "Ready" else "bloom" if s["progress"] >= .5 else "leaf", "_2" if int(s["id"].split(".")[1]) % 2 == 1 else "")
     if k == "Animal":
         return "Animal_%s%s" % (s["ref"], "_ready" if s["phase"] == "Ready" else "")
     return None
@@ -180,8 +183,10 @@ def paint_street(p, rows):
         bush = name.startswith("Bush")
         if any(s["y"] < 460 and abs(x - s["x"]) < s["w"] / 2 + 200 and s["y"] - 70 < y < s["y"] + 340 for s in real):
             continue
-        w, h = (120, 96) if bush else (60, 44)
-        p.put(art("Farm/" + name), x - w / 2, y, w, h)
+        if bush:
+            p.put(art("Farm/" + name), x - 60, y - 26, 150, 110)
+        else:
+            p.put(art("Farm/" + name), x - 30, y, 60, 44)
 
 
 def paint_site(p, s, press=None, selected=False, squash=1.0, bob=0.0, show_bubble=True):
@@ -202,9 +207,10 @@ def paint_site(p, s, press=None, selected=False, squash=1.0, bob=0.0, show_bubbl
         p.put(art("Farm/PlotOffer"), x - 85, y - 14, 170, 122, .45 if locked else 1)
         p.fit(icon("plus"), x, y + h * .62, 56)
     elif k == "Tree":
-        p.put(art("Farm/" + look), x - 91, y - 25.5, 195.5, 248.2, 1, sx, sy)
+        p.put(art("Farm/" + look), x - 95.2, y - 52.7, 255, 263.5, 1, sx, sy)
     elif k == "Animal":
-        p.put(art("Farm/" + look), x - 49.5, y - 9 + bob, 112.5, 112.5, 1, sx, sy)
+        c = ANIMAL_CANVAS[s["ref"]]
+        p.put(art("Farm/" + look), x - c[2], y - c[3] + bob, c[0], c[1], 1, sx, sy)
     elif k in ("Pen", "Nursery"):
         p.put(art("Farm/Sign"), x - 52.5, y - 9, 105, 120)
         ic = icon("apple") if k == "Nursery" else icon("animal." + {"coop": "chicken", "cowshed": "cow", "sheepfold": "sheep", "apiary": "bee", "pigsty": "pig"}.get(s["ref"], "chicken"))

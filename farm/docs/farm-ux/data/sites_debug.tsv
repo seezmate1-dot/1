@@ -13,12 +13,12 @@ tree.4	Tree	apple_tree	960	3015	130	175	Ready	apple	0.00	4	1	3	0
 tree.5	Tree	apple_tree	1098.8	3096.4	130	175	Ready	apple	0.00	4	1	3	0
 nursery	Nursery	-	1120	2950	105	120	Idle	-	0.00	0	0	0	0
 pen.coop	Pen	coop	4105	915	105	120	Idle	-	0.00	0	0	0	0
-animal.1	Animal	chicken	4320	945	112	112	Ready	egg	0.00	4	1	1	0
-animal.2	Animal	chicken	4391.3	986.8	112	112	Growing	egg	0.40	2	0	0	0
-animal.3	Animal	chicken	4462.5	1028.6	112	112	Growing	egg	0.40	2	0	0	0
+animal.1	Animal	chicken	4327.5	949.4	52	46	Ready	egg	0.00	4	1	1	0
+animal.2	Animal	chicken	4376.3	982.4	52	46	Growing	egg	0.40	2	0	0	0
+animal.3	Animal	chicken	4432.5	1011	52	46	Growing	egg	0.40	2	0	0	0
 pen.cowshed	Pen	cowshed	655	106	105	120	Idle	-	0.00	0	0	0	0
-animal.6	Animal	cow	782.5	159.6	112	112	Hungry	cow_feed	0.00	0	1	0	0
-animal.7	Animal	cow	853.8	197	112	112	Hungry	cow_feed	0.00	0	1	0	0
+animal.6	Animal	cow	782.5	155.2	132	98	Hungry	cow_feed	0.00	0	1	0	0
+animal.7	Animal	cow	865	199.2	132	98	Hungry	cow_feed	0.00	0	1	0	0
 pen.sheepfold	Pen	sheepfold	1195	106	105	120	Offer	-	0.00	0	0	1500	7
 pen.apiary	Pen	apiary	4345	106	105	120	Locked	-	0.00	0	0	2800	11
 pen.pigsty	Pen	pigsty	1735	106	105	120	Locked	-	0.00	0	0	5000	15

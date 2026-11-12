@@ -81,7 +81,7 @@ def overview():
 
 SIZE = {"Plot": (170, 122), "PlotOffer": (170, 122), "Seeded": (170, 224), "Sign": (140, 160), "Ring": (220, 140), "Bubble": (110, 126), "Spark": (64, 64),
         "BarBack": (128, 26), "BarFill": (128, 26), "Sickle": (128, 128), "Street": (512, 440), "Grass": (512, 440),
-        "Tuft1": (60, 44), "Tuft2": (60, 44), "Bush1": (120, 96), "Bush2": (120, 96), "Bush3": (120, 96)}
+        "Tuft1": (60, 44), "Tuft2": (60, 44), "Bush1": (150, 110), "Bush2": (150, 110), "Bush3": (150, 110)}
 CROPS = ("wheat", "corn", "carrot", "sunflower", "strawberry", "cotton", "beet", "potato", "pumpkin")
 TREES = ("apple_tree", "pear_tree", "cherry_tree")
 
@@ -91,9 +91,9 @@ def dims(n):
     if n.startswith("Crop_"):
         return 170, 224
     if n.startswith("Tree_"):
-        return 230, 292
+        return 300, 310
     if n.startswith("Animal_"):
-        return 150, 150
+        return fv.ANIMAL_CANVAS[n.split("_")[1]][:2]
     if n.startswith("Pen_"):
         return 500, 330
     if n.startswith("Workshop_"):
@@ -103,7 +103,7 @@ def dims(n):
 
 GROUPS = [
     ("Грядка и культуры: всходы, молодое, почти спелое, спелое", [["Plot", "PlotOffer", "Seeded"]] + [["Crop_%s_%d" % (c, st) for st in (1, 2, 3, 4)] for c in CROPS]),
-    ("Плодовые деревья: в листве, в цвету, с плодами", [["Tree_%s_%s" % (t, st) for st in ("leaf", "bloom", "ripe")] for t in TREES]),
+    ("Плодовые деревья: в листве, в цвету, с плодами; по два варианта", [["Tree_%s_%s%s" % (t, st, v) for st in ("leaf", "bloom", "ripe") for v in ("", "_2")] for t in TREES]),
     ("Животные: обычный вид и «продукт готов»", [["Animal_%s%s" % (a, r) for a in ("chicken", "cow", "sheep") for r in ("", "_ready")], ["Animal_%s%s" % (a, r) for a in ("pig", "bee") for r in ("", "_ready")]]),
     ("Загоны", [["Pen_cowshed", "Pen_sheepfold"], ["Pen_pigsty", "Pen_apiary"]]),
     ("Мастерские", [["Workshop_bakery", "Workshop_dairy", "Workshop_toolshed"], ["Workshop_jam", "Workshop_textile", "Workshop_sugar_mill"]]),
@@ -166,7 +166,8 @@ def sheets_100():
     for old in glob.glob(os.path.join(HERE, "sprites_100_*.jpg")):
         os.remove(old)
     sets = [("crops_%d" % (k + 1), [["Crop_%s_%d" % (c, st) for st in (1, 2, 3, 4)] for c in CROPS[k * 3:k * 3 + 3]]) for k in range(3)]
-    sets += [("trees", GROUPS[1][1]), ("animals", [["Animal_%s%s" % (a, r) for a in ("chicken", "cow", "sheep", "pig", "bee")] for r in ("", "_ready")]),
+    sets += [("trees_1", [["Tree_%s_%s" % (t, st) for st in ("leaf", "bloom", "ripe")] for t in TREES]), ("trees_2", [["Tree_%s_%s_2" % (t, st) for st in ("leaf", "bloom", "ripe")] for t in TREES]),
+             ("animals", [["Animal_%s%s" % (a, r) for a in ("chicken", "cow", "sheep", "pig", "bee")] for r in ("", "_ready")]),
              ("pens", GROUPS[3][1]), ("workshops", GROUPS[4][1]),
              ("small", [["Plot", "PlotOffer", "Seeded", "Sign"], ["Bush1", "Bush2", "Bush3", "Tuft1", "Tuft2", "Sickle", "Bubble", "Ring"], ["Street", "Grass"]])]
     gap = 12
@@ -206,8 +207,58 @@ def one_to_one():
         print("00_overview_1to1_%s.png" % name, im.size)
 
 
+BEFORE_REV = "70f1d4b"       # the commit before the art bible: what trees and animals looked like
+
+
+def _before(name):
+    """A picture as it was in BEFORE_REV (read from git), or None."""
+    import io
+    import subprocess
+    path = "farm/unity/SunnyValley/Assets/SunnyValley/Resources/Art/Farm/%s.png" % name
+    try:
+        data = subprocess.run(["git", "show", "%s:%s" % (BEFORE_REV, path)], cwd=HERE, capture_output=True, check=True).stdout
+        return Image.open(io.BytesIO(data)).convert("RGBA")
+    except Exception:
+        return None
+
+
+def before_after():
+    """before_after_trees_animals.jpg: the same things before the art bible and after it, each at the size it has
+    on the map times two (so both are downscaled from their files)."""
+    f = lambda n: ImageFont.truetype(fv.FONT, n)
+    k = 2.0
+    pairs = [("Tree_%s_ripe" % t, (230, 292), (300, 310)) for t in TREES] + [("Tree_cherry_tree_bloom", (230, 292), (300, 310))]
+    pairs += [("Animal_%s%s" % (a, r), (150, 150), fv.ANIMAL_CANVAS[a][:2]) for a, r in (("chicken", "_ready"), ("sheep", ""), ("pig", ""), ("cow", "_ready"), ("bee", "_ready"))]
+    rows = [pairs[:4], pairs[4:]]
+    pad = 24
+    W = max(sum(int(max(b[0], a[0]) * k) + pad for (_, b, a) in row) for row in rows) + pad
+    hs = [int(max(max(b[1], a[1]) for (_, b, a) in row) * k) for row in rows]
+    H = 90 + sum(2 * h + 70 + pad for h in hs)
+    out = Image.new("RGBA", (W, H), PAPER + (255,))
+    d = ImageDraw.Draw(out)
+    d.text((pad, 44), "До и после арт-библии: деревья и животные (размер на карте ×2)", font=f(34), fill=INK, anchor="lm")
+    y = 90
+    for row, h in zip(rows, hs):
+        for label, which in (("до", 0), ("после", 1)):
+            d.rounded_rectangle([pad - 8, y, W - pad + 8, y + h + 30], 16, fill=(121, 185, 78, 255))
+            d.text((pad + 4, y + 16), label, font=f(24), fill="white", anchor="lm", stroke_width=2, stroke_fill=(50, 90, 30))
+            x = pad
+            for (name, bsz, asz) in row:
+                im = _before(name) if which == 0 else fv.art("Farm/" + name)
+                sz = bsz if which == 0 else asz
+                if im is not None:
+                    im = im.resize((int(sz[0] * k), int(sz[1] * k)), Image.LANCZOS)
+                    out.alpha_composite(im, (x, y + 30 + h - im.height))
+                x += int(max(bsz[0], asz[0]) * k) + pad
+            y += h + 30 + 10
+        y += pad
+    out.convert("RGB").save(os.path.join(HERE, "before_after_trees_animals.jpg"), quality=90)
+    print("before_after_trees_animals.jpg", out.size)
+
+
 if __name__ == "__main__":
     overview()
     one_to_one()
     sheet()
     sheets_100()
+    before_after()

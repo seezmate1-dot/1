@@ -165,11 +165,11 @@ class Art:
                  % (a[0], a[1], b[0], b[1], col, sw, ' opacity="%s"' % op if op != 1 else ''))
 
     # ---------------------------------------------------------------- solids
-    def shadow(self, u0, v0, u1, v1, h=.5, op=.46, sd=4):
-        """The contact shadow of a block: its footprint pushed right along the ground."""
-        d = h
-        lst = [(u0, v0), (u1, v0), (u1 + d, v0 - d * .35), (u1 + d, v1 - d * .35), (u1, v1), (u0, v1)]
-        self.poly([(u0 + .02, v0), (u1 + d, v0 - d * .4), (u1 + d, v1 - d * .4), (u1, v1 + .02), (u0, v1)], '#0e2010', op=op, flt=self.blur(sd))
+    def shadow(self, u0, v0, u1, v1, h=.5, op=.40, sd=2.5):
+        """The cast shadow of a block (ART_BIBLE §2): its footprint pushed along the ground away from the light —
+        to the right and a little down on the screen, (+0.25, −1) in tiles — by h tiles (0.6 of the height)."""
+        du, dv = .25 * h, -h
+        self.poly([(u0, v1), (u0, v0), (u0 + du, v0 + dv), (u1 + du, v0 + dv), (u1 + du, v1 + dv), (u1, v1)], '#0e2010', op=op, flt=self.blur(sd))
 
     def blob_shadow(self, u, v, r, op=.3, sd=4, squash=.5):
         x, y = self.p(u, v)
