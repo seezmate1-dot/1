@@ -375,6 +375,9 @@ namespace SunnyValley.Ui.Tests
                         float oy = Math.Min(a.Y + a.H, b.Y + b.H) - Math.Max(a.Y, b.Y);
                         // rows of animals and trees may lap a little (the near one is in front), never by half
                         bool covers = ox > Math.Min(a.W, b.W) * 0.5f && oy > Math.Min(a.H, b.H) * 0.5f;
+                        // the field's tiles are diamonds: their boxes interlock, the tiles themselves only touch
+                        if (a.Diamond && b.Diamond)
+                            covers = Math.Abs(a.X - b.X) / a.W + Math.Abs(a.Y - b.Y) / a.H < 0.99f;
                         Assert.That(covers, Is.False, a.Id + " over " + b.Id);
                     }
                 }
@@ -415,8 +418,8 @@ namespace SunnyValley.Ui.Tests
             var g = Fresh();
             var map = FarmSiteMap.Build(g, Layout);
             var hen = map.Sites.First(s => s.Kind == SiteKind.Animal);
-            // zoomed far out a hen is 46 canvas units: a finger 60 map units off its edge still gets it
-            var near = new P2(hen.X, hen.Y + hen.H + 60);
+            // zoomed far out a hen is 39 canvas units: a finger 40 map units off its edge still gets it
+            var near = new P2(hen.X - hen.W / 2 - 40, hen.Y - 30);
             Assert.That(map.At(near, 0.35f), Is.SameAs(hen));
             Assert.That(map.At(near, 1.6f), Is.Null);
         }
@@ -596,16 +599,18 @@ namespace SunnyValley.Ui.Tests
             // one fast swipe: from left of plot 0 to right of plot 4 (the whole row) between two frames
             var a = map.Find("plot.0").Centre;
             var b = map.Find("plot.4").Centre;
-            var hits = stroke.Sweep(new P2(a.X - 150, a.Y), new P2(b.X + 150, b.Y), T0);
+            // the row runs up-right along the ground plane
+            var step = (b - a) * 0.25f;
+            var hits = stroke.Sweep(a - step, b + step, T0);
             Assert.That(hits.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.0", "plot.1", "plot.2", "plot.3", "plot.4" }));
             Assert.That(hits.All(h => h.Ok && h.Coins == 1), Is.True);
             Assert.That(g.Coins, Is.EqualTo(coins - 5));
             for (int i = 0; i < 12; i++)
                 Assert.That(g.Plots[i].Crop, Is.EqualTo(i < 5 ? "wheat" : null), "plot " + i);
             // back over the same row: nothing twice
-            Assert.That(stroke.Sweep(new P2(b.X + 150, b.Y), new P2(a.X - 150, a.Y), T0), Is.Empty);
+            Assert.That(stroke.Sweep(b + step, a - step, T0), Is.Empty);
             Assert.That(stroke.Done, Is.EqualTo(5));
-            // a diagonal takes what lies under it, in order
+            // on to the next row: what lies under the way, in order
             var c = map.Find("plot.9").Centre;
             var diag = stroke.Sweep(b, c, T0);
             Assert.That(diag.Select(h => h.Site.Id), Is.EqualTo(new[] { "plot.9" }));
@@ -714,23 +719,84 @@ namespace SunnyValley.Ui.Tests
             Assert.That(RadialLayout.Place(3, new P2(0, 0), 60, l, b, r, t).Below, Is.False);
         }
 
-        /// <summary>Writes where everything stands for the storyboards (farm/docs/farm-ux/storyboards.py) when asked.</summary>
+        /// <summary>A farm with everything built and in every state, for the overview picture.</summary>
+        static MetaGame Show()
+        {
+            var g = Rich();
+            var f = g.State.Farm;
+            foreach (var h in Data.Balance.AnimalHouses)
+            {
+                if (!f.AnimalHouses.Contains(h.Id))
+                    f.AnimalHouses.Add(h.Id);
+            }
+            foreach (var a in Data.Balance.Animals)
+            {
+                while (g.AnimalCount(a.Id) < 5)
+                    f.Animals.Add(new AnimalState { Uid = f.NextUid++, Type = a.Id });
+            }
+            foreach (var item in Data.Balance.Items)
+                g.State.Barn[item.Id] = 30;
+            g.State.BarnUpgrades = 12;
+            // the field: every crop at every age
+            long[] ago = { 100, 96, 70, 45, 15, 3, 100, 100, 60, 30 };
+            for (int i = 0; i < g.Plots.Count; i++)
+            {
+                if (i % 13 == 12)
+                    continue;
+                var crop = Data.Balance.Crops[(i / 5 + i * 2) % Data.Balance.Crops.Count];
+                g.Plant(T0 - crop.GrowSeconds * ago[i % ago.Length] / 100, i, crop.Item);
+            }
+            int n = 0;
+            foreach (var t in f.Trees)
+                t.ReadyAt = T0 + (n++ % 3 == 0 ? -10 : n % 3 == 1 ? 600 : 9000);
+            n = 0;
+            foreach (var a in f.Animals.ToArray())
+            {
+                int k = n++ % 4;
+                if (k == 0)
+                    continue;
+                long sec = Data.Animals[a.Type].Seconds;
+                g.Feed(T0 - (k == 1 ? sec + 5 : k == 2 ? sec / 2 : sec / 5), a.Uid);
+            }
+            foreach (var w in Data.Balance.Workshops)
+            {
+                if (!g.HasWorkshop(w.Id))
+                    f.Workshops.Add(new WorkshopState { Id = w.Id, Slots = w.Slots });
+                var rc = w.Recipes[0];
+                bool ok = g.Enqueue(T0 - (w.Id == "bakery" || w.Id == "jam" ? rc.Seconds + 5 : rc.Seconds / 2), w.Id, rc.Id).Ok;
+                if (!ok || w.Id == "textile")
+                    g.Workshop(w.Id).Jobs.Clear();
+            }
+            g.TakeEvents();
+            return g;
+        }
+
+        /// <summary>Writes where everything stands for the pictures (farm/docs/farm-ux) when asked.</summary>
         [Test]
         public void DumpSitesForTheStoryboards()
         {
             string to = Environment.GetEnvironmentVariable("FARM_SITES_DUMP");
             if (string.IsNullOrEmpty(to))
                 Assert.Pass();
-            foreach (var (name, g) in new[] { ("fresh", Fresh()), ("debug", EconomyDebug.Game(Data, T0)), ("rich", Rich()) })
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            foreach (var (name, g) in new[] { ("fresh", Fresh()), ("debug", EconomyDebug.Game(Data, T0)), ("rich", Rich()), ("show", Show()) })
             {
                 var map = FarmSiteMap.Build(g, Layout);
                 var lines = new List<string>();
                 foreach (var s in map.Sites)
                 {
                     var st = FarmSiteMap.Status(s, g, T0);
-                    lines.Add(string.Join("\t", s.Id, s.Kind, s.Ref ?? "-", s.X.ToString("0"), s.Y.ToString("0"), s.W.ToString("0"), s.H.ToString("0"), st.Phase, st.Item ?? "-",
-                        st.Progress.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), st.Stage));
+                    lines.Add(string.Join("\t", s.Id, s.Kind, s.Ref ?? "-", s.X.ToString("0.#", inv), s.Y.ToString("0.#", inv), s.W.ToString("0", inv), s.H.ToString("0", inv), st.Phase,
+                        st.Item ?? "-", st.Progress.ToString("0.00", inv), st.Stage, st.Attention ? 1 : 0, st.Count, st.Level));
                 }
+                foreach (var h in Data.Balance.AnimalHouses)
+                {
+                    var c = FarmSiteMap.PenPoint(Layout, h.Id);
+                    lines.Add(string.Join("\t", "yard." + h.Id, "Yard", h.Id, c.X.ToString("0.#", inv), c.Y.ToString("0.#", inv), 0, 0, g.HasAnimalHouse(h.Id) ? "Idle" : "Offer", "-", "0", 0, 0, 0, 0));
+                }
+                var fc = FarmSiteMap.FieldCentre(Layout);
+                lines.Add(string.Join("\t", "field", "Field", "-", fc.X.ToString("0.#", inv), fc.Y.ToString("0.#", inv), 0, 0, "Idle", "-", "0", 0, 0, 0, 0));
+                lines.Add(string.Join("\t", "street", "Street", "-", FarmSiteMap.StreetStart.ToString("0.#", inv), FarmSiteMap.StreetEnd.ToString("0.#", inv), 0, 0, "Idle", "-", "0", 0, 0, 0, 0));
                 File.WriteAllLines(Path.Combine(to, "sites_" + name + ".tsv"), lines);
             }
         }

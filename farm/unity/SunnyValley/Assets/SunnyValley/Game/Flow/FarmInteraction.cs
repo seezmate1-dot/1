@@ -207,10 +207,10 @@ namespace SunnyValley.Game.Flow
             float zoom = what == EconomyViews.Fields ? FarmSiteMap.FieldZoom : 1.05f;
             if (what == EconomyViews.Fields)
             {
-                // the whole field in view: its middle column, the row of the plot that needs a hand
-                var mid = FarmSiteMap.PlotPoint(FarmArt.Layout, FarmSiteMap.PlotColumns / 2);
+                // the whole field in view
+                var mid = FarmSiteMap.FieldCentre(FarmArt.Layout);
                 var seen = to;
-                world.Focus(new Vector2(mid.X, Mathf.Min(to.Y + 200, mid.Y) - 150), 0.55f, zoom, () => sites.Pop(seen));
+                world.Focus(new Vector2(mid.X, mid.Y), 0.55f, zoom, () => sites.Pop(seen));
                 return;
             }
             world.Focus(new Vector2(to.X, to.Y + to.H / 2), 0.55f, zoom, () => sites.Pop(to));
