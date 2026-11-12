@@ -2,6 +2,8 @@
 import sys
 from lib import *
 
+import lib
+lib.SW_SCALE = 1.4
 OUT = '#4a2608'
 WOOD = [(0, '#f0b468'), (.5, '#c47c34'), (1, '#8c4c18')]
 STEEL = [(0, '#6f7b88'), (.22, '#ffffff'), (.55, '#b4c0cc'), (1, '#5e6a77')]
@@ -16,22 +18,22 @@ def rrect(x, y, w, h, r):
 def glyph(s, d, w, fill=None, out='#2a1608', oop=.5):
     """A chunky white stroke glyph with a translucent dark outline: reads on any button colour."""
     f = fill or s.LG([(0, '#ffffff'), (1, '#dfe8f2')])
-    s.add(pa(d, stroke=out, sw=w + 16, op=oop))
+    s.add(pa(d, stroke=out, sw=w + 22, op=oop + .12))
     s.add(pa(d, stroke='#000', sw=w + 2, op=.18, tr='translate(0 5)'))
     s.add(pa(d, stroke='#c9d6e4', sw=w) + pa(d, stroke='#ffffff', sw=w - 7, tr='translate(0 -2.5)'))
 
 # ---------------------------------------------------------------- glyphs
 @icon
 def pause(s):
-    glyph(s, 'M88 66 V190', 44); glyph(s, 'M168 66 V190', 44)
+    glyph(s, 'M84 70 V186', 54); glyph(s, 'M172 70 V186', 54)
 
 @icon
 def close(s):
-    glyph(s, 'M70 70 L186 186 M186 70 L70 186', 40)
+    glyph(s, 'M72 72 L184 184 M184 72 L72 184', 50)
 
 @icon
 def check(s):
-    glyph(s, 'M52 134 L104 186 L204 72', 40)
+    glyph(s, 'M56 134 L104 182 L200 76', 50)
 
 @icon
 def plus(s):
@@ -55,10 +57,10 @@ def gear_path(cx, cy, ro, ri, n=8, hole=0):
 def settings(s):
     f = s.LG([(0, '#ffffff'), (.6, '#dfe8f2'), (1, '#b4c4d6')])
     d = gear_path(128, 128, 108, 80, 8, 34)
-    s.add(pa(d, 'none', stroke='#2a1608', sw=16, op=.5))
+    s.add(pa(d, 'none', stroke='#2a1608', sw=22, op=.62))
     s.shape(f'<path {{ID}} fill-rule="evenodd" clip-rule="evenodd" d="{d}"/>', f, None,
             el(128, 240, 120, 50, '#7f93aa', .6, 10) + pa('M60 96 A 76 76 0 0 1 150 54', stroke='#fff', sw=10, op=.9, blur=2))
-    s.add('<circle cx="128" cy="128" r="34" fill="none" stroke="#2a1608" stroke-opacity=".5" stroke-width="8"/>')
+    s.add('<circle cx="128" cy="128" r="34" fill="none" stroke="#2a1608" stroke-opacity=".62" stroke-width="11"/>')
 
 # ---------------------------------------------------------------- objects
 @icon
@@ -313,6 +315,8 @@ def beauty(s):
     cf = s.RG([(0, '#fff3a0'), (.6, '#ffc928'), (1, '#e08a00')], cx=.4, cy=.35, r=.8)
     s.shape('<circle {ID} cx="128" cy="104" r="28"/>', cf, '#7a3e00', el(119, 95, 7, 5, '#fff', .9, 1, -30), sw=5)
 
+NO_SHADOW = ('pause', 'close', 'check', 'settings', 'plus', 'sun', 'clock', 'xp', 'events', 'people', 'lot')
+
 def sheet(names, path, size=128, cols=8, bgs=((233, 205, 160), (71, 168, 238), (108, 192, 74))):
     rows = (len(names) + cols - 1) // cols
     im = Image.new('RGBA', (cols * size, rows * size * len(bgs)), (0, 0, 0, 255))
@@ -327,4 +331,4 @@ if __name__ == '__main__':
     only = sys.argv[1:]
     for name, fn in ICONS.items():
         if only and name not in only: continue
-        s = S(); fn(s); build('Icons', name, s, pad=10)
+        s = S(); fn(s); build('Icons', name, s, pad=6, shadow=name not in NO_SHADOW)

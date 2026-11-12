@@ -148,6 +148,6 @@
   `Game/UI/UiSkin.cs` (по форме, виду, цвету и глубине узла); границы 9-slice лежат там же в таблице, а не в `.meta`.
   Если файла нет (или `UiSkin.Enabled = false`), `UiView` рисует прежние фигуры из кода. Геометрию вёрстки скин не меняет.
 - Значки HUD без своей картинки в `Resources/Art` лежат в `Resources/Icons/<имя>.png` (`icons.py`), валюты — `currency.py`.
-- Эффекты суперфишек — `Resources/Art/Fx` (`fx.py`): свечение с лучами за фишкой, искра, полоса вил, взрыв бомбы,
-  радужное кольцо, пыльца за пчелой; подключены в `Board/BoardSprites.cs`, `BoardView.Cues.cs`, `PieceVisual.cs`.
+- Эффекты суперфишек — `Resources/Art/Fx` (`fx.py`): искра, полоса вил, взрыв бомбы, лепестки радуги, крылья пчелы, комья травяной плитки,
+  радужное кольцо, пыльца за пчелой (свечения за фишками нет: суперфишки живут своим движением, `PieceVisual.Idle`); подключены в `Board/BoardSprites.cs`, `BoardView.Cues.cs`, `PieceVisual.cs`.
 - Макеты экранов из настоящих картинок и настоящей вёрстки: `farm/art-candidates/fable/mockups` (`mockups.py`).

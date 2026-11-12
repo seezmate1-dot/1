@@ -110,7 +110,29 @@ namespace SunnyValley.Game.UI
                     face.raycastTarget = true; // swallows taps on the screen under a popup
                     break;
                 case NodeKind.Icon:
-                    var icon = rt.gameObject.AddComponent<Image>();
+                    // the picture may be drawn larger than its rectangle (it dominates its button, UiSkin.IconBoost)
+                    float boost = UiSkin.IconBoost(n, out var shift);
+                    if (boost != 1)
+                    {
+                        var grow = new Vector2(n.Rect.W, n.Rect.H) * ((boost - 1) / 2);
+                        rt.offsetMin += shift - grow;
+                        rt.offsetMax += shift + grow;
+                    }
+                    var iconHolder = rt;
+                    var rays = UiSkin.RaysFor(n);
+                    if (rays != null)
+                    {
+                        // rays behind the star, both inside its rectangle so they appear and scale together
+                        var raysRt = NewRect("rays", rt);
+                        var spread = new Vector2(n.Rect.W, n.Rect.H) * 0.34f;
+                        raysRt.offsetMin = -spread;
+                        raysRt.offsetMax = spread;
+                        var ri = raysRt.gameObject.AddComponent<Image>();
+                        ri.sprite = rays;
+                        ri.raycastTarget = false;
+                        iconHolder = NewRect("art", rt);
+                    }
+                    var icon = iconHolder.gameObject.AddComponent<Image>();
                     icon.sprite = ShapeSprites.Icon(n.Icon);
                     icon.preserveAspect = true;
                     icon.raycastTarget = false;
@@ -140,7 +162,10 @@ namespace SunnyValley.Game.UI
                 MakeInteractive(rt, n, face);
 
             foreach (var child in n.Children)
+            {
+                MakeBacking(child, rt);
                 Make(child, NewRect(child.Id, rt));
+            }
 
             if (n.Kind == NodeKind.Scroll && n.Children.Count > 0)
             {
@@ -211,6 +236,40 @@ namespace SunnyValley.Game.UI
         }
 
         /// <summary>
+        /// A picture under a label, made just before the label so it is drawn behind it: the ribbon under a popup's
+        /// title, the small dark pill under a goal's counter. The label keeps its rectangle.
+        /// </summary>
+        static void MakeBacking(UiNode child, RectTransform parent)
+        {
+            if (child.Kind != NodeKind.Label)
+                return;
+            if (UiSkin.IsRibbonTitle(child))
+            {
+                // the ribbon keeps its painted height (112) around the title's middle line, its tails hanging a little lower
+                var r = NewRect(child.Id + ".ribbon", parent);
+                Place(r, child);
+                float cut = (child.Rect.H - 112) / 2;
+                r.offsetMin += new Vector2(-8, cut - 4);
+                r.offsetMax += new Vector2(8, -cut - 4);
+                var img = r.gameObject.AddComponent<Image>();
+                img.sprite = UiSkin.Get("Ribbon");
+                img.type = Image.Type.Sliced;
+                img.raycastTarget = false;
+            }
+            else if (UiSkin.IsGoalCount(child))
+            {
+                var r = NewRect(child.Id + ".pill", parent);
+                Place(r, child);
+                float side = Mathf.Max(0, (child.Rect.W - 100) / 2);
+                r.offsetMin += new Vector2(side, 1);
+                r.offsetMax -= new Vector2(side, 1);
+                var img = r.gameObject.AddComponent<Image>();
+                SetSkin(img, UiSkin.Get("Plate"), true, child.Rect.H / 2);
+                img.raycastTarget = false;
+            }
+        }
+
+        /// <summary>
         /// The painted skin for the node's role (UiSkin): one picture over the rectangle, reaching down by the lower
         /// edge it has painted in (instead of the separate «depth» band), and white highlights over it. Null when the
         /// skin has nothing for this node: then the plain shapes above are drawn.
@@ -231,6 +290,22 @@ namespace SunnyValley.Game.UI
                 var gloss = NewRect("gloss", faceRect).gameObject.AddComponent<Image>();
                 SetSkin(gloss, look.Gloss, look.Sliced, n.Radius);
                 gloss.raycastTarget = false;
+            }
+            var shine = UiSkin.IsMainButton(n) ? UiSkin.Get("Shine") : null;
+            if (shine != null)
+            {
+                // a light sweeps across the main button; the button's own picture cuts it to its shape
+                faceRect.gameObject.AddComponent<Mask>().showMaskGraphic = true;
+                var sweep = NewRect("shine", faceRect);
+                sweep.anchorMin = new Vector2(0, 0);
+                sweep.anchorMax = new Vector2(0, 1);
+                sweep.pivot = new Vector2(0.5f, 0.5f);
+                sweep.offsetMin = new Vector2(-n.Rect.H / 2, look.Drop + n.Depth);
+                sweep.offsetMax = new Vector2(n.Rect.H / 2, 0);
+                var si = sweep.gameObject.AddComponent<Image>();
+                si.sprite = shine;
+                si.raycastTarget = false;
+                sweep.gameObject.AddComponent<ShineSweep>();
             }
             return face;
         }
@@ -348,7 +423,8 @@ namespace SunnyValley.Game.UI
             var t = n.Text;
             var text = rt.gameObject.AddComponent<Text>();
             text.font = Font;
-            text.color = ToColor(t.Color);
+            var look = UiSkin.TextFor(n);
+            text.color = look.Color;
             text.raycastTarget = false;
             text.supportRichText = false;
             text.resizeTextForBestFit = false;
@@ -356,11 +432,18 @@ namespace SunnyValley.Game.UI
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.alignment = t.Align == TextAlign.Left ? TextAnchor.MiddleLeft : t.Align == TextAlign.Right ? TextAnchor.MiddleRight : TextAnchor.MiddleCenter;
-            if (t.Outline)
+            if (look.Stroke)
             {
+                // a thick stroke (thicker for big text) and a drop shadow under it
+                float w = Mathf.Clamp(t.FittedSize * 0.065f, 2.5f, 4.5f);
                 var outline = rt.gameObject.AddComponent<Outline>();
-                outline.effectColor = new Color32(70, 40, 12, 200);
-                outline.effectDistance = new Vector2(2.5f, -2.5f);
+                outline.effectColor = look.StrokeColor;
+                outline.effectDistance = new Vector2(w, -w);
+                var shadow = rt.gameObject.AddComponent<Shadow>();
+                var sc = look.StrokeColor;
+                sc.a = 170;
+                shadow.effectColor = sc;
+                shadow.effectDistance = new Vector2(0, -w * 1.3f);
             }
             Apply(text, t);
             return text;
@@ -453,6 +536,33 @@ namespace SunnyValley.Game.UI
             SetVisible(id, count > 0);
             if (count > 0)
                 SetText(id + ".label", count > 99 ? "99" : count.ToString());
+        }
+    }
+
+    /// <summary>A band of light that crosses its parent from left to right every few seconds (the main button's shine).</summary>
+    public sealed class ShineSweep : MonoBehaviour
+    {
+        const float Period = 3.6f, Travel = 0.75f;
+
+        RectTransform rt, parent;
+        float last = -1;
+
+        void Awake()
+        {
+            rt = (RectTransform)transform;
+            parent = (RectTransform)transform.parent;
+        }
+
+        void Update()
+        {
+            float c = Mathf.Repeat(Time.unscaledTime, Period);
+            float w = rt.rect.width;
+            // out of sight (left of the button) most of the time
+            float k = Mathf.Clamp01(c / Travel);
+            if (k == last)
+                return;
+            last = k;
+            rt.anchoredPosition = new Vector2(Mathf.Lerp(-w, parent.rect.width + w, k), rt.anchoredPosition.y);
         }
     }
 

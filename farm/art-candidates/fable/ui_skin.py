@@ -9,7 +9,7 @@ import json
 from lib import *
 
 R = 64          # corner radius of every 9-slice sprite, px
-O = 7           # outline width
+O = 7           # outline width of plates and wells
 SLICES = {}     # name -> (left, bottom, right, top)
 
 def rr(x, y, w, h, r, fill, extra=''):
@@ -40,25 +40,34 @@ def save(name, d, border=None, ss=3):
     print('UI', name, im.size, border)
 
 # ---------------------------------------------------------------- buttons
-def button(name, top, bot, lipc, out, lip=20, mode='full'):
+SH = 10         # the soft drop shadow under buttons and panels, px below the sprite's body
+
+def shadow(d, W, H):
+    """A soft shadow under a body W×H (the sprite is SH taller)."""
+    d.add(rr(8, 14, W - 16, H - 14 + SH - 5, R, '#2a1206', 'opacity=".38" filter="url(#b3)"'))
+
+def button(name, top, bot, lipc, out, lip=26, mode='full'):
     """mode: full (colour), tint (greyscale for multiply), gloss (white highlights only)."""
+    o = 9
     W, H = 2 * R + 16, 2 * R + 16 + lip
-    d = Doc(W, H)
-    fh = H - 2 * O - lip
+    d = Doc(W, H + SH)
+    fh = H - 2 * o - lip
     if mode != 'gloss':
+        shadow(d, W, H)
         d.add(rr(0, 0, W, H, R, out))
-        d.add(rr(O, O, W - 2 * O, H - 2 * O, R - O, d.lg([(0, lipc), (1, lipc)])))
-        cp = d.clip(rr(O, O, W - 2 * O, H - 2 * O, R - O, '#000'))
-        d.add(f'<g {cp}>' + rr(O, H - O - 10, W - 2 * O, 12, 0, '#000', 'opacity=".16"') + '</g>')
-        d.add(rr(O, O, W - 2 * O, fh, R - O, d.lg([(0, top), (.55, bot), (1, bot)])))
+        d.add(rr(o, o, W - 2 * o, H - 2 * o, R - o, lipc))
+        cp = d.clip(rr(o, o, W - 2 * o, H - 2 * o, R - o, '#000'))
+        d.add(f'<g {cp}>' + rr(o, H - o - 11, W - 2 * o, 13, 0, '#000', 'opacity=".18"')
+              + rr(o, o + fh - 2, W - 2 * o, 9, 0, '#fff', 'opacity=".16"') + '</g>')
+        d.add(rr(o, o, W - 2 * o, fh, R - o, d.lg([(0, top), (.5, bot), (1, bot)])))
     if mode != 'tint':
-        cp = d.clip(rr(O, O, W - 2 * O, fh, R - O, '#000'))
-        g = d.lg([(0, '#fff', .62), (1, '#fff', .12)])
-        hi = rr(O + 7, O + 5, W - 2 * O - 14, 46, R - O - 7, g)
-        hi += el(34, 26, 9, 5.5, '#fff', .95, 1, -28)
-        hi += rr(O - 4, O + fh - 7, W - 2 * O + 8, 12, 0, '#fff', 'opacity=".28" filter="url(#b2)"')
+        cp = d.clip(rr(o, o, W - 2 * o, fh, R - o, '#000'))
+        g = d.lg([(0, '#fff', .7), (1, '#fff', .16)])
+        hi = rr(o + 6, o + 5, W - 2 * o - 12, 44, R - o - 6, g)
+        hi += el(36, 27, 10, 6, '#fff', .98, 1, -28) + el(52, 21, 3.5, 3, '#fff', .9, 1)
+        hi += rr(o - 4, o + fh - 8, W - 2 * o + 8, 13, 0, '#fff', 'opacity=".3" filter="url(#b2)"')
         d.add(f'<g {cp}>{hi}</g>')
-    save(name, d, (R, R + lip, R, R))
+    save(name, d, (R, R + lip + SH, R, R))
 
 BUTTONS = {
     'Yellow': ('#ffe86a', '#ffc420', '#dc8a00', '#8a4a00'),
@@ -69,23 +78,71 @@ BUTTONS = {
 }
 
 # ---------------------------------------------------------------- panels
-def panel():
-    lip = 18
+def panel(name='Panel', inner=('#fdf0d2', '#f4dfb4'), dark=False):
+    lip = 20
+    o = 8
     W, H = 2 * R + 16, 2 * R + 16 + lip
+    d = Doc(W, H + SH)
+    shadow(d, W, H)
+    d.add(rr(0, 0, W, H, R, '#5a3210'))
+    d.add(rr(o, o, W - 2 * o, H - 2 * o, R - o, '#8e5a2a'))
+    fh = H - 2 * o - lip
+    d.add(rr(o, o, W - 2 * o, fh, R - o, d.lg([(0, '#e8b87a'), (1, '#c08a4e')])))
+    cp = d.clip(rr(o, o, W - 2 * o, fh, R - o, '#000'))
+    d.add(f'<g {cp}>' + rr(o + 2, o + 2, W - 2 * o - 4, fh, R - o - 2, 'none', 'stroke="#fff0d0" stroke-width="3.5" opacity=".8"') + '</g>')
+    k = 17   # the wooden rim
+    d.add(rr(o + k - 3, o + k - 3, W - 2 * (o + k) + 6, fh - 2 * k + 6, R - o - k + 3, '#7a4a20', 'opacity=".7"'))
+    d.add(rr(o + k - 3, o + k - 1, W - 2 * (o + k) + 6, fh - 2 * k + 5, R - o - k + 3, '#fff0d0', 'opacity=".55"'))
+    d.add(rr(o + k, o + k, W - 2 * (o + k), fh - 2 * k, R - o - k, d.lg([(0, inner[0]), (1, inner[1])])))
+    cp = d.clip(rr(o + k, o + k, W - 2 * (o + k), fh - 2 * k, R - o - k, '#000'))
+    if dark:
+        d.add(f'<g {cp}>' + rr(o + k - 4, o + k - 6, W - 2 * (o + k) + 8, fh, R - o - k, 'none', 'stroke="#000" stroke-width="14" opacity=".5" filter="url(#b3)"') + '</g>')
+    else:
+        d.add(f'<g {cp}>' + rr(o + k, o + k + 1.5, W - 2 * (o + k), fh, R - o - k, 'none', 'stroke="#fff" stroke-width="3.5" opacity=".9"')
+              + rr(o + k - 4, o + fh - k - 9, W, 13, 0, '#c89a5a', 'opacity=".35" filter="url(#b2)"') + '</g>')
+    # a nail in every corner of the rim
+    for cx, cy in ((27, 27), (W - 27, 27), (27, o + fh - 19), (W - 27, o + fh - 19)):
+        d.add(f'<circle cx="{cx}" cy="{cy + 1.5}" r="5.2" fill="#5a3210"/><circle cx="{cx}" cy="{cy}" r="4.6" fill="#f6d9a0"/><circle cx="{cx - 1.2}" cy="{cy - 1.2}" r="1.8" fill="#fff"/>')
+    save(name, d, (R, R + lip + SH, R, R))
+
+def ribbon():
+    """A title banner with folded ends, stretched along X only (its middle is flat)."""
+    W, H, T = 220, 112, 46          # T: how far a tail reaches
     d = Doc(W, H)
-    d.add(rr(0, 0, W, H, R, '#5e3410'))
-    d.add(rr(O, O, W - 2 * O, H - 2 * O, R - O, '#96602e'))
-    fh = H - 2 * O - lip
-    d.add(rr(O, O, W - 2 * O, fh, R - O, d.lg([(0, '#e2b276'), (1, '#c48e52')])))
-    cp = d.clip(rr(O, O, W - 2 * O, fh, R - O, '#000'))
-    d.add(f'<g {cp}>' + rr(O + 2, O + 2, W - 2 * O - 4, fh, R - O - 2, 'none', 'stroke="#ffe8c0" stroke-width="3" opacity=".7"') + '</g>')
-    k = 11   # the wooden rim
-    d.add(rr(O + k - 2, O + k - 2, W - 2 * (O + k) + 4, fh - 2 * k + 4, R - O - k + 2, '#8a5a2c', 'opacity=".55"'))
-    d.add(rr(O + k, O + k, W - 2 * (O + k), fh - 2 * k, R - O - k, d.lg([(0, '#fdf0d2'), (1, '#f4dfb4')])))
-    cp = d.clip(rr(O + k, O + k, W - 2 * (O + k), fh - 2 * k, R - O - k, '#000'))
-    d.add(f'<g {cp}>' + rr(O + k, O + k + 1.5, W - 2 * (O + k), fh, R - O - k, 'none', 'stroke="#fff" stroke-width="3.5" opacity=".9"')
-          + rr(O + k - 4, O + fh - k - 8, W, 12, 0, '#c89a5a', 'opacity=".35" filter="url(#b2)"') + '</g>')
-    save('Panel', d, (R, R + lip, R, R))
+    out, dk = '#103a6e', '#1c5aa0'
+    for sx in (1, -1):
+        tr = '' if sx == 1 else f'transform="translate({W} 0) scale(-1 1)"'
+        tail = f'M4 30 H{T + 22} V{H - 4} H4 L24 {(30 + H - 4) / 2} Z'
+        fold = f'M{T} {H - 22} L{T + 22} {H - 4} V{H - 22} Z'
+        d.add(f'<g {tr}><path d="{tail}" fill="{dk}" stroke="{out}" stroke-width="7" stroke-linejoin="round"/>'
+              f'<path d="M10 36 H{T + 22}" stroke="#fff" stroke-width="3" opacity=".25"/>'
+              f'<path d="{fold}" fill="#0c2c58" stroke="{out}" stroke-width="5" stroke-linejoin="round"/></g>')
+    d.add(rr(T - 12, 4, W - 2 * (T - 12), H - 26, 14, out))
+    d.add(rr(T - 5, 11, W - 2 * (T - 5), H - 40, 9, d.lg([(0, '#8ad4ff'), (.5, '#3c9cea'), (1, '#2a80d0')])))
+    cp = d.clip(rr(T - 5, 11, W - 2 * (T - 5), H - 40, 9, '#000'))
+    d.add(f'<g {cp}>' + rr(T - 5, 11, W - 2 * (T - 5), 26, 9, d.lg([(0, '#fff', .55), (1, '#fff', .08)]))
+          + rr(T - 5, H - 37, W, 10, 0, '#103a6e', 'opacity=".28"') + '</g>')
+    save('Ribbon', d, (T + 30, 0, T + 30, 0))
+
+def rays():
+    """Golden rays behind a big star."""
+    S_ = 256
+    d = Doc(S_, S_)
+    g = d.rg([(0, '#fff6b0', 1), (.5, '#ffc21e', .95), (.85, '#ff9a1e', .55), (1, '#ff9a1e', 0)], cx=128, cy=128, r=128, units=1)
+    body = ''
+    for k in range(12):
+        w = 20 if k % 2 == 0 else 13
+        L = 126 if k % 2 == 0 else 100
+        body += f'<path d="M128 128 L{128 - w} {128 - L} L{128 + w} {128 - L}Z" transform="rotate({k * 30} 128 128)" fill="{g}"/>'
+    d.add(f'<g filter="url(#b1)">{body}</g><circle cx="128" cy="128" r="80" fill="{d.rg([(0, "#fffbe0", .95), (.6, "#ffe36a", .5), (1, "#ffd84a", 0)], cx=.5, cy=.5, r=.5)}"/>')
+    save('Rays', d)
+
+def shine():
+    """The light that sweeps across the main button: a slanted soft band."""
+    d = Doc(128, 128)
+    g = d.lg([(0, '#fff', 0), (.5, '#fff', .75), (1, '#fff', 0)], x1=0, y1=0, x2=1, y2=0)
+    d.add(f'<path d="M58 0 H112 L70 128 H16 Z" fill="{g}"/>')
+    save('Shine', d)
 
 def inset():
     """A sunken sub-panel, greyscale: multiplied by the node's colour (WoodInset, a dimmed row, a picked card)."""
@@ -179,12 +236,13 @@ def booster_slot():
 
 # ---------------------------------------------------------------- the board
 def cell(name, top, bot, edge):
+    """A calm, neutral board cell: the pieces and the turf plates carry the colour, not the board."""
     S_ = 128
     d = Doc(S_, S_)
-    d.add(rr(0, 0, S_, S_, 20, edge))
-    d.add(rr(0, 0, S_, S_ - 5, 20, d.lg([(0, top), (1, bot)])))
-    cp = d.clip(rr(0, 0, S_, S_ - 5, 20, '#000'))
-    d.add(f'<g {cp}>' + rr(2, 2.5, S_ - 4, S_, 18, 'none', 'stroke="#fff" stroke-width="4" opacity=".55"') + '</g>')
+    d.add(rr(0, 0, S_, S_, 16, edge))
+    d.add(rr(0, 0, S_, S_ - 3, 16, d.lg([(0, top), (1, bot)])))
+    cp = d.clip(rr(0, 0, S_, S_ - 3, 16, '#000'))
+    d.add(f'<g {cp}>' + rr(1.5, 2, S_ - 3, S_, 15, 'none', 'stroke="#fff" stroke-width="3" opacity=".3"') + '</g>')
     save(name, d, (24, 24, 24, 24))
 
 def all_():
@@ -192,11 +250,11 @@ def all_():
         button('Button' + n, t, b, l, o)
     button('ButtonTint', '#ffffff', '#ededed', '#a0a0a0', '#5c5c5c', mode='tint')
     button('ButtonGloss', 0, 0, 0, 0, mode='gloss')
-    panel(); inset(); plate(); bar()
+    panel(); panel('PanelDark', ('#3a2210', '#5a3a1e'), dark=True); ribbon(); rays(); shine(); inset(); plate(); bar()
     round_('tint'); round_('gloss'); dot('tint'); dot('gloss')
     booster_slot()
-    cell('CellLight', '#fbeecd', '#f6e3b6', '#d9bd86')
-    cell('CellDark', '#f1dfb2', '#ebd49f', '#cfb078')
+    cell('CellLight', '#ebe6dc', '#e5dfd4', '#cfc8ba')
+    cell('CellDark', '#e1dbcf', '#dad3c6', '#c6beaf')
     json.dump(SLICES, open(os.path.join(HERE, 'UI', 'slices.json'), 'w'), indent=1)
 
 if __name__ == '__main__':

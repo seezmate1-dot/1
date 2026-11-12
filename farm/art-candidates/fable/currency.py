@@ -1,5 +1,7 @@
 """Currency icons (Resources/Art/Currency): Coin, Crystal, Heart, Star, plus the empty star slot (Icons/star.empty)."""
 from lib import *
+import lib
+lib.SW_SCALE = 1.3
 
 def coin():
     s = S()
@@ -18,7 +20,7 @@ def coin():
     s.add(f'<circle cx="128" cy="131" r="27" fill="{c}" stroke="#a85a00" stroke-width="3.5"/>')
     s.add(''.join(f'<circle cx="{128+13*math.cos(a*1.05):.1f}" cy="{131+13*math.sin(a*1.05):.1f}" r="3" fill="#a85a00" opacity=".7"/>' for a in range(6)) + '<circle cx="128" cy="131" r="3" fill="#a85a00" opacity=".7"/>')
     s.add(gloss(84, 76, 13, 20, 40, .9) + el(176, 190, 5, 5, '#fff', .8, 1))
-    build('Currency', 'Coin', s, pad=10)
+    build('Currency', 'Coin', s, pad=6)
 
 def crystal():
     s = S()
@@ -33,7 +35,7 @@ def crystal():
            + pa('M84 50 H150 L134 82 H100Z', '#fff', op=.55, blur=2) + el(60, 96, 5, 5, '#fff', .9, 1))
     s.shape(outline, base, OUT, fac, sw=6)
     s.add(pa(star(196, 60, 4, 26, 7), '#fff', op=.95) + pa(star(64, 170, 4, 14, 4), '#fff', op=.85))
-    build('Currency', 'Crystal', s, pad=12)
+    build('Currency', 'Crystal', s, pad=8)
 
 HEART = 'M128 226 C 60 176, 22 138, 22 92 C 22 56, 48 34, 78 34 C 100 34, 118 46, 128 64 C 138 46, 156 34, 178 34 C 208 34, 234 56, 234 92 C 234 138, 196 176, 128 226 Z'
 def heart():
@@ -42,7 +44,7 @@ def heart():
     sh = (el(150, 236, 110, 44, '#7a0014', .55, 12) + pa('M214 70 C 228 100, 214 140, 170 180', stroke='#ff9aa0', sw=7, op=.55, blur=3)
           + gloss(74, 74, 17, 25, 38, .92))
     s.shape(HEART, f, '#6e0a14', sh, sw=6)
-    build('Currency', 'Heart', s, pad=12)
+    build('Currency', 'Heart', s, pad=8)
 
 STAR = None
 def star_path(ro=112, ri=54, r=13):
@@ -71,7 +73,7 @@ def star_icon():
           + pa(star_path(74, 36, 8), '#fff2a0', op=.5, blur=3)
           + gloss(92, 92, 12, 19, 40, .95) + el(176, 150, 5, 5, '#fff', .75, 1))
     s.shape(d, f, '#8a4200', sh, sw=6.5)
-    build('Currency', 'Star', s, pad=10)
+    build('Currency', 'Star', s, pad=6)
 
 def star_empty():
     """An empty star slot: the same silhouette pressed into the wood."""
@@ -82,7 +84,7 @@ def star_empty():
           + pa(d, 'none', stroke='#ffe2b0', sw=7, op=.35, blur=2, tr='translate(0 -5)'))
     s.shape(d, f, '#5e3410', sh, sw=6.5)
     s.add(pa(d, 'none', stroke='#e9cf9a', sw=3, op=.5, tr='translate(0 7)') if False else '')
-    build('Icons', 'star.empty', s, pad=10)
+    build('Icons', 'star.empty', s, pad=6)
 
 if __name__ == '__main__':
     coin(); crystal(); heart(); star_icon(); star_empty()

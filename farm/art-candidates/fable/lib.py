@@ -44,6 +44,7 @@ class S:
         self.body.append(s)
     def shape(self, d, fill, outline, shade='', sw=4.5, tr='', extra=''):
         """Outlined shape with clipped inner shading. d: path data or element with {ID}."""
+        sw *= SW_SCALE
         i = uid('p')
         el = d.replace('{ID}', f'id="{i}"') if d.lstrip().startswith('<') else f'<path id="{i}" d="{d}"/>'
         self.defs.append(el + f'<clipPath id="{i}c"><use href="#{i}"/></clipPath>')
@@ -90,9 +91,20 @@ def render(svg, size=256, ss=3):
     return im.resize((size, size), Image.LANCZOS) if ss > 1 else im
 
 PAD = 20
-def build(folder, name, s, fit=True, pad=PAD):
+SW_SCALE = 1.0   # outline weight of S.shape; the HUD icon set sets it higher (chunkier at 48-64 px)
+
+def _bbox(s):
+    im = render(s.svg(vb='-128 -128 512 512'), size=1024, ss=1)
+    return [v / 2 - 128 for v in im.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox()]
+
+def build(folder, name, s, fit=True, pad=PAD, shadow=False):
     """Render; auto-fit the artwork into the canvas with uniform padding; write .svg + .png."""
     tr = ''
+    if shadow:
+        # a soft contact shadow under the object, as wide as the object
+        x0, y0, x1, y1 = _bbox(s)
+        w = x1 - x0
+        s.body.insert(0, el((x0 + x1) / 2, y1 - w * .035, w * .46, w * .075, '#2a1206', .42, 5))
     if fit:
         im = render(s.svg(vb='-128 -128 512 512'), size=1024, ss=1)
         im = im.point(lambda v: 255 if v > 40 else 0) if False else im

@@ -41,11 +41,14 @@ namespace SunnyValley.Game.UI
         // farm/art-candidates/fable/UI/slices.json
         static readonly Dictionary<string, Slice> Slices = new Dictionary<string, Slice>
         {
-            { "ButtonYellow", new Slice(144, 164, 64, 84, 64, 64) }, { "ButtonGreen", new Slice(144, 164, 64, 84, 64, 64) },
-            { "ButtonBlue", new Slice(144, 164, 64, 84, 64, 64) }, { "ButtonRed", new Slice(144, 164, 64, 84, 64, 64) },
-            { "ButtonGrey", new Slice(144, 164, 64, 84, 64, 64) }, { "ButtonTint", new Slice(144, 164, 64, 84, 64, 64) },
-            { "ButtonGloss", new Slice(144, 164, 64, 84, 64, 64) },
-            { "Panel", new Slice(144, 162, 64, 82, 64, 64) }, { "Inset", new Slice(144, 144, 64, 64, 64, 64) },
+            { "ButtonYellow", new Slice(144, 180, 64, 100, 64, 64) }, { "ButtonGreen", new Slice(144, 180, 64, 100, 64, 64) },
+            { "ButtonBlue", new Slice(144, 180, 64, 100, 64, 64) }, { "ButtonRed", new Slice(144, 180, 64, 100, 64, 64) },
+            { "ButtonGrey", new Slice(144, 180, 64, 100, 64, 64) }, { "ButtonTint", new Slice(144, 180, 64, 100, 64, 64) },
+            { "ButtonGloss", new Slice(144, 180, 64, 100, 64, 64) },
+            { "Panel", new Slice(144, 174, 64, 94, 64, 64) }, { "PanelDark", new Slice(144, 174, 64, 94, 64, 64) },
+            { "Inset", new Slice(144, 144, 64, 64, 64, 64) },
+            { "Ribbon", new Slice(220, 112, 76, 0, 76, 0) }, { "Rays", new Slice(256, 256, 0, 0, 0, 0) },
+            { "Shine", new Slice(128, 128, 0, 0, 0, 0) },
             { "Plate", new Slice(144, 144, 64, 64, 64, 64) },
             { "BarTrack", new Slice(144, 144, 64, 64, 64, 64) }, { "BarFill", new Slice(144, 144, 64, 64, 64, 64) },
             { "BarGloss", new Slice(144, 144, 64, 64, 64, 64) },
@@ -54,6 +57,11 @@ namespace SunnyValley.Game.UI
             { "BoosterSlot", new Slice(256, 256, 0, 0, 0, 0) },
             { "CellLight", new Slice(128, 128, 0, 0, 0, 0) }, { "CellDark", new Slice(128, 128, 0, 0, 0, 0) },
         };
+
+        /// <summary>The soft shadow painted under buttons and panels, in sprite pixels (at 64-pixel corners).</summary>
+        const float ShadowPixels = 10;
+
+        static float Shadow(UiNode n) => ShadowPixels * Mathf.Min(n.Radius, n.Rect.H / 2) / ShapeSprites.SliceRadius;
 
         /// <summary>The part of a round button's sprite under the disc (its darker lower edge), as a share of the disc.</summary>
         public const float RoundDrop = 16f / 256f;
@@ -141,12 +149,15 @@ namespace SunnyValley.Game.UI
             }
             else if (n.Color == Tokens.Wood && n.Depth > 0)
             {
-                look.Base = Get("Panel");
-                look.Drop = n.Depth;
+                // the moves counter is a dark well in a wooden rim (light digits on it), the rest light wood
+                look.Base = IsMoves(n) ? Get("PanelDark") : null;
+                if (look.Base == null)
+                    look.Base = Get("Panel");
+                look.Drop = n.Depth + Shadow(n);
             }
             else if (n.Depth > 0)
             {
-                look.Drop = n.Depth;
+                look.Drop = n.Depth + Shadow(n);
                 // only real buttons get a painted colour: panels with a depth (toggle tracks, cards) change colour later
                 string named = n.Kind == NodeKind.Button ? ButtonName(n.Color) : null;
                 look.Base = named != null ? Get(named) : null;
@@ -162,6 +173,132 @@ namespace SunnyValley.Game.UI
                 // an opaque flat panel inside a popup: a sunken well in its colour
                 look.Base = Get("Inset");
                 look.Tint = true;
+            }
+            return look;
+        }
+
+        static bool IsMoves(UiNode n) => n != null && n.Id.EndsWith(".moves");
+
+        /// <summary>The main button of a screen (the big yellow «Играть»): a light sweeps across it now and then.</summary>
+        public static bool IsMainButton(UiNode n) =>
+            n.Kind == NodeKind.Button && n.Shape == LShape.RoundRect && n.Color == Tokens.Yellow && n.Rect.H >= Tokens.PlayHeight - 1;
+
+        // ------------------------------------------------------------------ icons
+
+        /// <summary>
+        /// How much larger than its layout rectangle an icon is drawn, and where it moves (canvas units): in a polished
+        /// casual game the icon dominates its button and breaks out of the frame, the disc behind it is secondary.
+        /// Only the picture grows — the layout, the tap areas and the tests' geometry stay as they are.
+        /// </summary>
+        public static float IconBoost(UiNode n, out Vector2 shift)
+        {
+            shift = Vector2.zero;
+            var p = n.Parent;
+            if (!Enabled || p == null || n.Kind != NodeKind.Icon)
+                return 1;
+            float h = n.Rect.H;
+            if (p.Shape == LShape.Circle && p.Id.EndsWith(".disc"))
+            {
+                if (p.Id.Contains("booster"))
+                {
+                    // a tool stands in its slot and sticks out of the top
+                    shift = new Vector2(0, h * 0.14f);
+                    return 1.5f;
+                }
+                shift = new Vector2(0, h * 0.05f);
+                return 1.36f;
+            }
+            if (p.Shape == LShape.Circle && p.Kind == NodeKind.Button)
+                return 1.14f;
+            if (p.Shape == LShape.RoundRect && p.Color == Tokens.Plate && p.Id.EndsWith(".bg"))
+            {
+                // a currency's icon is taller than its pill and hangs over the left end
+                shift = new Vector2(-h * 0.08f, 0);
+                return 1.34f;
+            }
+            if (n.Id.Contains(".goal") && n.Id.EndsWith(".icon"))
+            {
+                shift = new Vector2(0, -h * 0.03f);
+                return 1.16f;
+            }
+            return 1;
+        }
+
+        /// <summary>A big earned star gets golden rays behind it.</summary>
+        public static Sprite RaysFor(UiNode n) =>
+            Enabled && n.Kind == NodeKind.Icon && n.Icon == Icons.Star && n.Rect.W >= 150 ? Get("Rays") : null;
+
+        // ------------------------------------------------------------------ backings: pictures under a label
+
+        /// <summary>A popup's title sits on a ribbon.</summary>
+        public static bool IsRibbonTitle(UiNode n) =>
+            n.Kind == NodeKind.Label && n.Id.EndsWith(".panel.title") && n.Rect.W >= 2 * 76 + 40 && Get("Ribbon") != null;
+
+        /// <summary>A goal's counter sits in a small dark pill.</summary>
+        public static bool IsGoalCount(UiNode n) =>
+            n.Kind == NodeKind.Label && n.Id.EndsWith(".count") && n.Parent != null && n.Parent.Id.Contains(".goal") && Get("Plate") != null;
+
+        // ------------------------------------------------------------------ text
+
+        /// <summary>How a label is drawn: its colour, and whether it gets a thick dark stroke with a drop shadow.</summary>
+        public struct TextLook
+        {
+            public Color32 Color;
+            public bool Stroke;
+            public Color32 StrokeColor;
+        }
+
+        static readonly Color32 StrokeBrown = new Color32(62, 34, 10, 255);
+
+        /// <summary>
+        /// Light text on pictures gets a thick stroke in a dark shade of what is under it (dark orange on the yellow
+        /// button, dark green on the green one, …) and a drop shadow, like the chunky captions of casual games; labels
+        /// on a ribbon, in a goal pill and on the dark moves counter turn light.
+        /// </summary>
+        public static TextLook TextFor(UiNode n)
+        {
+            var t = n.Text;
+            var look = new TextLook { Color = UiView.ToColor(t.Color), Stroke = t.Outline, StrokeColor = StrokeBrown };
+            if (!Enabled)
+                return look;
+            if (IsRibbonTitle(n))
+            {
+                look.Color = new Color32(255, 255, 255, 255);
+                look.Stroke = true;
+                look.StrokeColor = new Color32(16, 58, 110, 255);
+                return look;
+            }
+            if (IsGoalCount(n))
+            {
+                look.Color = new Color32(255, 255, 255, 255);
+                look.Stroke = false;
+                return look;
+            }
+            if (IsMoves(n.Parent) && Get("PanelDark") != null)
+            {
+                bool value = n.Id.EndsWith(".value");
+                look.Color = value ? new Color32(255, 255, 255, 255) : new Color32(255, 222, 160, 255);
+                look.Stroke = value;
+                return look;
+            }
+            if (look.Stroke)
+            {
+                for (var p = n.Parent; p != null; p = p.Parent)
+                {
+                    if (p.Shape == LShape.None)
+                        continue;
+                    if (p.Kind == NodeKind.Button)
+                    {
+                        switch (p.Color)
+                        {
+                            case Tokens.Yellow: look.StrokeColor = new Color32(150, 78, 0, 255); break;
+                            case Tokens.Green: look.StrokeColor = new Color32(28, 88, 16, 255); break;
+                            case Tokens.Blue: look.StrokeColor = new Color32(16, 58, 110, 255); break;
+                            case Tokens.Red: look.StrokeColor = new Color32(110, 20, 8, 255); break;
+                        }
+                    }
+                    break;
+                }
             }
             return look;
         }
