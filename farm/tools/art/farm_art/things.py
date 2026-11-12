@@ -637,7 +637,7 @@ def bush(seed, flowers=None):
 GW, GH = 512, 440
 
 
-def street_ground():
+def street_ground(street=True):
     """The ground of the street under the farm, a strip that repeats left to right: mottled meadow grass with
     tufts and flowers, a worn dirt road along the front, and a rail fence along the back that hides the seam
     with the painted zones. Everything that crosses the left edge comes back in at the right one."""
@@ -647,7 +647,7 @@ def street_ground():
     a.look = dict(volume=0, rim=0, grain=.025, contrast=1.0, sat=1.0)
     r = rnd(40)
     wrap = (0, GW, -GW)
-    a.add(rect(0, 34, GW, GH - 34, a.lg([(0, '#79b94e'), (.6, '#72b049'), (1, '#6aa644')])))
+    a.add(rect(0, 34 if street else 0, GW, GH - (34 if street else 0), a.lg([(0, '#79b94e'), (.6, '#72b049'), (1, '#6aa644')]) if street else '#6aa644'))
     # light and shade lie in soft patches, as under scattered clouds and trees
     for _ in range(26):
         x, y, rx = r.random() * GW, 60 + r.random() * 270, 40 + r.random() * 70
@@ -655,19 +655,21 @@ def street_ground():
         for dx in wrap:
             a.ell(x + dx, y, rx, rx * .42, c, .34, a.blur(9))
     # the road: packed earth with ruts, pebbles, grass creeping in from both sides
-    for dx in wrap:
+    for dx in (wrap if street else ()):
         a.path('M%d 372 q64 -14 128 0 t128 0 t128 0 t128 0 l0 62 l-512 0Z' % dx, '#a8854e', op=.6, flt=a.blur(5))
         a.path('M%d 380 q64 -12 128 0 t128 0 t128 0 t128 0 l0 60 l-512 0Z' % dx, a.lg([(0, '#dcc08a'), (1, '#c2a068')]), flt=a.blur(2))
         for yy in (398, 420):
             a.path('M%d %d q64 -7 128 0 t128 0 t128 0 t128 0' % (dx, yy), stroke='#a8854e', sw=5, op=.4)
             a.path('M%d %d q64 -7 128 0 t128 0 t128 0 t128 0' % (dx, yy + 3), stroke='#f0dcae', sw=2, op=.4)
-    for _ in range(90):
+    for _ in range(90 if street else 0):
         x, y = r.random() * GW, 386 + r.random() * 50
         c = r.choice(['#f0dcaa', '#a8854e', '#d2b47a', '#8a6e42'])
         for dx in wrap:
             a.ell(x + dx, y, 1.5 + r.random() * 3, 1 + r.random() * 1.4, c, .75)
     # tufts everywhere, thicker along the road's edge and the fence
     spots = [(r.random() * GW, 70 + r.random() * 300) for _ in range(150)] + [(r.random() * GW, 366 + r.random() * 16) for _ in range(70)] + [(r.random() * GW, 46 + r.random() * 16) for _ in range(60)]
+    if not street:
+        spots = [(r.random() * GW, 12 + r.random() * (GH - 20)) for _ in range(230)]
     spots.sort(key=lambda p: p[1])
     for (x, y) in spots:
         n = r.choice([3, 4, 5])
@@ -687,6 +689,8 @@ def street_ground():
             a.ell(x + dx, y - 7, 1.3, 1.2, '#f6c22e' if c != '#ffd23a' else '#b06a16')
     # the fence along the back: weathered posts and two rails, its shadow on the grass
     post, rail = '#a8845c', '#c2a078'
+    if not street:
+        return a
     for dx in wrap:
         a.add(rect(dx, 40, GW, 7, '#16260e', None, 0, 3, .3).replace('/>', ' filter="%s"/>' % a.blur(3)))
         for yy in (14, 26):
@@ -715,7 +719,7 @@ def build():
     for k in WS:
         out['Workshop_%s' % k] = workshop(k).save('Workshop_%s' % k)
     for name, a in (('Sign', sign()), ('Ring', ring()), ('Bubble', bubble()), ('Spark', spark()), ('BarBack', bar(False)), ('BarFill', bar(True)), ('Sickle', sickle()),
-                    ('Tuft1', tuft(1)), ('Tuft2', tuft(2)), ('Bush1', bush(1)), ('Bush2', bush(2, '#ff8ab0')), ('Bush3', bush(3, '#ffd23a')), ('Street', street_ground())):
+                    ('Tuft1', tuft(1)), ('Tuft2', tuft(2)), ('Bush1', bush(1)), ('Bush2', bush(2, '#ff8ab0')), ('Bush3', bush(3, '#ffd23a')), ('Street', street_ground()), ('Grass', street_ground(False))):
         out[name] = a.save(name)
     return out
 

@@ -54,7 +54,9 @@
   (`ToolStroke`); урожай летит по дуге к кнопке «Амбар» (`Game/UI/FarmFx.cs`, `Game/Flow/FarmInteraction.cs`).
 - Камера: `TouchGestures` (касание против перетаскивания по порогу 10 dp, двойное касание, щипок) и `FarmCamera`
   (инерция, «резина» у края, зажатый масштаб, поля HUD) — чистый C#, тесты `farm/ui-tests/FarmInteractionTests.cs`.
-- Картинки объектов — `Resources/Art/Farm`, рисует `python3 farm/tools/art/farm_sites_art.py`.
+- Картинки объектов — `Resources/Art/Farm` (грядка, 9 культур × 4 шага, деревья по сезону, животные, дворы, здание
+  каждой мастерской, земля улицы), рисует `python3 farm/tools/art/farm_sites_art.py` в проекции карты. Значки товаров,
+  инструментов и животных — `Resources/Icons/item.*`, `tool.*`, `animal.*` (`farm/art-candidates/fable/farm_icons.py`).
 
 ## Как открыть и собрать
 

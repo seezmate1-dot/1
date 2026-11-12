@@ -82,7 +82,7 @@ def sheet():
     f = lambda n: ImageFont.truetype(fv.FONT, n)
     names = sorted(os.path.basename(p)[:-4] for p in glob.glob(os.path.join(fv.ART, "Farm", "*.png")))
     size = {"Plot": (170, 122), "PlotOffer": (170, 122), "Seeded": (170, 224), "Sign": (105, 120), "Ring": (220, 140), "Bubble": (96, 110), "Spark": (56, 56),
-            "BarBack": (128, 26), "BarFill": (128, 26), "Sickle": (128, 128), "Street": (512, 440), "Tuft1": (60, 44), "Tuft2": (60, 44), "Bush1": (120, 96), "Bush2": (120, 96), "Bush3": (120, 96)}
+            "BarBack": (128, 26), "BarFill": (128, 26), "Sickle": (128, 128), "Street": (512, 440), "Grass": (512, 440), "Tuft1": (60, 44), "Tuft2": (60, 44), "Bush1": (120, 96), "Bush2": (120, 96), "Bush3": (120, 96)}
 
     def dims(n):
         if n.startswith("Crop_"):
@@ -104,7 +104,7 @@ def sheet():
         ("Животные: обычный вид и «продукт готов»", [["Animal_%s%s" % (a, r) for a in ("chicken", "cow", "sheep") for r in ("", "_ready")], ["Animal_%s%s" % (a, r) for a in ("pig", "bee") for r in ("", "_ready")]]),
         ("Загоны", [["Pen_cowshed", "Pen_sheepfold"], ["Pen_pigsty", "Pen_apiary"]]),
         ("Мастерские", [["Workshop_bakery", "Workshop_dairy", "Workshop_toolshed"], ["Workshop_jam", "Workshop_textile", "Workshop_sugar_mill"]]),
-        ("Мелочи карты", [["Sign", "Ring", "Bubble", "Spark", "BarBack", "BarFill", "Sickle", "Tuft1", "Tuft2", "Bush1", "Bush2", "Bush3"], ["Street"]]),
+        ("Мелочи карты", [["Sign", "Ring", "Bubble", "Spark", "BarBack", "BarFill", "Sickle", "Tuft1", "Tuft2", "Bush1", "Bush2", "Bush3"], ["Street", "Grass"]]),
     ]
     used = {n for _, rows in groups for row in rows for n in row}
     missing = [n for n in names if n not in used]

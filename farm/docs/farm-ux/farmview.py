@@ -166,8 +166,9 @@ def paint_street(p, rows):
     st = next((r for r in rows if r["kind"] == "Street"), None)
     if st is None:
         return
-    x = 0
-    while x < MAPW:
+    x = -512
+    while x < MAPW + 512:
+        p.put(art("Farm/Grass"), x, -439, 513, 440)
         p.put(art("Farm/Street"), x, 0, 513, 440)
         x += 512
     x0, x1 = st["x"] - 420, st["y"] + 420

@@ -131,8 +131,14 @@ namespace SunnyValley.Game.UI
             var ground = Art("Street");
             if (ground != null)
             {
-                for (float x = 0; x < world.MapSize.x; x += tileW)
+                // the same meadow goes on below the map's edge: the camera may lift the street out from under «Играть»
+                var grass = Art("Grass");
+                for (float x = -tileW; x < world.MapSize.x + tileW; x += tileW)
+                {
+                    if (grass != null)
+                        Picture(Child("grass", layer, x, -tileH + 1, tileW + 1, tileH, Vector2.zero), grass);
                     Picture(Child("street", layer, x, 0, tileW + 1, tileH, Vector2.zero), ground);
+                }
             }
             float x0 = FarmSiteMap.StreetStart - 420, x1 = FarmSiteMap.StreetEnd + 420;
             var rng = new System.Random(20261112);
