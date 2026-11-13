@@ -24,3 +24,4 @@ AshRPG/.vsconfig
 # Import them into Content/ThirdParty/ and record them in docs/ASSETS.csv,
 # so they can be downloaded again on any machine.
 AshRPG/Content/ThirdParty/
+farm/tools/art/sd_raw/
