@@ -1,275 +1,401 @@
 """Animals (ART_BIBLE §4–§6): drawn at their real size on the map — a hen 44 high, a sheep 60, a pig 52, a cow 96 —
-each with its own build and outline of back and head, lit from the top left, standing on its own shadow.
-Each comes plain and with its product beside it."""
+each with its own build and outline of back and head. Every part of the body (far legs, barrel, near legs, head,
+muzzle, ears) is its own layer: lit from the top left as a soft solid, throwing a soft shadow on the parts behind
+it. Each stands on its own shadow, which touches its feet. Each comes plain and with its product beside it."""
 import math
-from iso import Art, lite, dark, mix, rnd
+from iso import Art, lite, dark, mix, rnd, smooth, ribbon
 
 # canvas (map units) and where the feet are on it, from the left and from the bottom
 SIZES = dict(chicken=(96, 88, 40, 26), sheep=(150, 122, 64, 38), pig=(160, 108, 68, 34), cow=(214, 172, 96, 50), bee=(120, 118, 46, 32))
 
-
-def _ground(a, x, y, w, h):
-    """The animal's shadow: thrown to the right and down, and dark right under it."""
-    a.ell(x + h * .3 + 2, y + h * .1 + 1.5, w * .56, w * .17, '#0e2010', .40, a.blur(2))
-    a.ell(x + 2, y + 1.5, w * .4, w * .1, '#0e2010', .45, a.blur(1.1))
+DROP = dict(dx=1.6, dy=2.4, sd=2.2, op=.34, col='#2a1408')
 
 
-def _eye(a, x, y, r=2.2):
-    a.ell(x, y, r, r * 1.08, '#1e120a')
-    a.ell(x - r * .32, y - r * .38, r * .36, r * .36, '#ffffff')
+def _ground(a, x, y, w, feet=()):
+    """The shadow: a soft pool right under the body, a little to the right, and a dark touch under every foot."""
+    a.ell(x + w * .1, y + 2.5, w * .56, w * .15, '#0e2010', .36, a.blur(3))
+    a.ell(x + w * .04, y + 1.5, w * .38, w * .08, '#0e2010', .3, a.blur(1.6))
+    for (fx, fw) in feet:
+        a.ell(x + fx + 1, y + 1, fw, fw * .36, '#0e2010', .5, a.blur(.9))
 
 
-def _leg(a, x, y, h, w, col, hoof, lit=True):
-    """A leg with a knee and a hoof."""
-    c = col if lit else dark(col, .28)
-    a.path('M%.1f %.1f q%.1f %.1f %.1f %.1f l%.1f 0 q%.1f %.1f %.1f %.1f Z' % (x - w / 2, y - h, -w * .12, h * .5, w * .1, h - 3, w * .8, w * .2, -h * .5, w * .1, -h + 3),
-           a.lg([(0, lite(c, .2)), (.5, c), (1, dark(c, .3))], 0, 0, 1, 0), dark(c, .55), .5)
-    a.path('M%.1f %.1f l%.1f 0 l.6 3.6 l%.1f 0 Z' % (x - w * .42, y - 3.4, w * .84, -w * .96), hoof, dark(hoof, .5), .4)
+def _eye(a, x, y, r=2.6, look=(-.25, .1)):
+    """A big shining eye: dark iris, a soft brown rim, two glints, a lid line."""
+    a.ell(x, y, r * 1.04, r * 1.14, '#fffdf6', stroke='#5a4030', sw=.3)
+    ix, iy = x + look[0] * r, y + look[1] * r
+    a.ell(ix, iy, r * .8, r * .9, a.rg([(0, '#4a2c16'), (.7, '#24140a'), (1, '#120a06')], .5, .6, .6))
+    a.ell(ix - r * .3, iy - r * .38, r * .34, r * .34, '#ffffff')
+    a.ell(ix + r * .3, iy + r * .36, r * .16, r * .16, '#ffffff', .8)
+    a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f' % (x - r * 1.1, y - r * .5, x, y - r * 1.5, x + r * 1.1, y - r * .5), stroke='#5a4030', sw=.45)
 
+
+def _leg(a, P, pts, col, hoof, out, hoof_h=6):
+    """A leg along (dx, h, width) points down to the ground, with a hoof."""
+    d = ribbon([P(dx, h) + (w,) for (dx, h, w) in pts], 6)
+    a.path(d, a.lg([(0, lite(col, .12)), (1, dark(col, .2))]), out, .6)
+    dx, h, w = pts[-1]
+    x, y = P(dx, 0)
+    a.path('M%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f Z' % (x - w * .5, y - hoof_h, x - w * .62, y - .6, x, y + 1.2, x + w * .62, y - .6, x + w * .5, y - hoof_h),
+           a.lg([(0, lite(hoof, .25)), (1, hoof)]), dark(hoof, .5), .4)
+    a.path('M%.1f %.1f l0 %.1f' % (x - w * .05, y - hoof_h * .7, hoof_h * .7), stroke=dark(hoof, .6), sw=.5)
+
+
+def _blush(a, x, y, rx, ry, col='#ff7a90', op=.45):
+    a.ell(x, y, rx, ry, col, op, a.blur(1.2))
+
+
+# ---------------------------------------------------------------------------------------------- hen
 
 def chicken(a, x, y, ready):
-    _ground(a, x, y, 40, 30)
+    P = lambda dx, h: (x + dx, y - h)
+    _ground(a, x + 2, y, 36, feet=((-3, 5), (6, 5)))
     out = '#8a7a66'
-    white, cream, shade = '#fffaf0', '#eee4d0', '#c9b89a'
-    # legs and toes
-    for (lx, lit) in ((5, False), (-3, True)):
-        c = '#e8901a' if lit else '#c07410'
-        a.path('M%.1f %.1f l-.6 10' % (x + lx, y - 11), stroke='#8a4e08', sw=2.6)
-        a.path('M%.1f %.1f l-.6 10' % (x + lx, y - 11), stroke=c, sw=1.5)
-        a.path('M%.1f %.1f l-5 1.6 M%.1f %.1f l-1.4 2.6 M%.1f %.1f l3.6 1.6' % (x + lx - .6, y - 1, x + lx - .6, y - 1, x + lx - .6, y - 1), stroke=c, sw=1.3)
-    # the tail: a fan of quills
-    for i in range(6):
-        ang = 38 + i * 13
-        t = math.radians(ang)
-        ln = 15 + (2.5 - abs(i - 2.5)) * 2.4
-        bx, by = x + 13, y - 27
-        tx, ty = bx + math.cos(t) * ln, by - math.sin(t) * ln
-        nx, ny = math.sin(t) * 3, math.cos(t) * 3
+    white, cream, shade = '#fffaf0', '#f2e8d4', '#cdbc9e'
+    # tail: a fan of feathers rising behind
+    a.layer(relief=dict(r=2.5, depth=1.2, lit=.3, shade=.5, fine=.4))
+    for i in range(7):
+        ang = math.radians(28 + i * 15)
+        ln = 15 + (3 - abs(i - 3)) * 2.2
+        bx, by = P(13, 24)
+        tx, ty = bx + math.cos(ang) * ln, by - math.sin(ang) * ln
+        nx, ny = math.sin(ang) * 3.6, math.cos(ang) * 3.6
         a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f Q%.1f %.1f %.1f %.1f Z' % (bx, by, (bx + tx) / 2 + nx, (by + ty) / 2 + ny, tx, ty, (bx + tx) / 2 - nx, (by + ty) / 2 - ny, bx, by),
-               [shade, cream, white][min(2, i // 2)], out, .4)
-        a.line((bx, by), (tx, ty), '#b8a888', .35)
-    # the body: a full breast, the back rising to the tail
-    body = 'M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (
-        x - 15, y - 26, x - 19, y - 12, x - 4, y - 7, x + 7, y - 9, x + 17, y - 11, x + 19, y - 24, x + 14, y - 30, x + 6, y - 34, x - 9, y - 36, x - 15, y - 26)
-    a.path(body, a.rg([(0, white), (.6, cream), (1, shade)], .35, .28, .8), out, .6)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 13, y - 14, x - 6, y - 8, x + 6, y - 9, x + 14, y - 14, x + 8, y - 11, x - 6, y - 10, x - 13, y - 14), shade, op=.75)
-    # the wing, feathers in rows
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 6, y - 28, x + 4, y - 31, x + 14, y - 26, x + 16, y - 18, x + 8, y - 13, x - 4, y - 16, x - 6, y - 28),
-           a.lg([(0, white), (1, cream)]), out, .5)
+               a.lg([(0, white), (1, [shade, cream, white][min(2, i // 2)])]), out, .45)
+        a.line((bx, by), ((bx + tx * 3) / 4, (by + ty * 3) / 4), '#c0ae8e', .4)
+    # legs
+    a.layer(relief=dict(r=1.2, depth=1.2, lit=.4, shade=.5))
+    for (lx, lit) in ((7, False), (-2, True)):
+        c = '#f09a1e' if lit else '#c97c12'
+        fx, fy = P(lx, 0)
+        a.path('M%.1f %.1f L%.1f %.1f' % (P(lx + 1, 13)[0], P(lx + 1, 13)[1], fx, fy - 1), stroke='#8a4e08', sw=3)
+        a.path('M%.1f %.1f L%.1f %.1f' % (P(lx + 1, 13)[0], P(lx + 1, 13)[1], fx, fy - 1), stroke=c, sw=2)
+        for (tx, ty) in ((-6, 1.6), (-2.4, 3), (3.6, 1.8)):
+            a.path('M%.1f %.1f l%.1f %.1f' % (fx, fy - 1, tx, ty), stroke='#8a4e08', sw=2.2)
+            a.path('M%.1f %.1f l%.1f %.1f' % (fx, fy - 1, tx, ty), stroke=c, sw=1.4)
+    # the body: a full round breast, the back rising to the tail
+    a.layer(relief=dict(r=7, depth=1.0, lit=.3, shade=.62, rim=.2), drop=DROP)
+    body = smooth([P(-14, 30), P(-18, 20), P(-13, 11), P(-2, 8), (P(9, 9)), P(17, 15), P(19, 24), P(14, 30), P(4, 33), P(-7, 34)])
+    a.path(body, a.rg([(0, white), (.65, cream), (1, shade)], .32, .26, .85), out, .6)
+    r = rnd(2)
+    cl = a.clip(body)
+    s = ''
+    for row in range(5):
+        for i in range(7):
+            fx, fy = P(-15 + i * 4.6 + (row % 2) * 2.3, 28 - row * 4.2)
+            s += '<path d="M%.1f %.1f q2.3 3.2 4.6 0" stroke="#c9b898" stroke-width=".5" fill="none" opacity=".8"/>' % (fx, fy)
+    a.group(s, clip=cl)
+    # the wing: three rows of feathers
+    a.layer(relief=dict(r=3.5, depth=1.1, lit=.3, shade=.55), drop=dict(DROP, op=.28))
+    wing = smooth([P(-5, 27), P(4, 29.5), P(13, 26), P(17, 18), P(11, 13), P(2, 13.5), P(-5, 18)])
+    a.path(wing, a.lg([(0, white), (1, '#e6d8bc')]), out, .5)
     for row in range(3):
         for i in range(4 - row):
-            fx, fy = x - 3 + i * 4.6 + row * 2, y - 25 + row * 3.6
-            a.path('M%.1f %.1f q2.3 3 4.6 0' % (fx, fy), stroke='#b8a888', sw=.5)
-    # neck feathers, head, comb, wattle, beak, eye
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f L%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 14, y - 27, x - 17, y - 33, x - 18, y - 37, x - 17, y - 40, x - 8, y - 40, x - 7, y - 36, x - 6, y - 32, x - 6, y - 30),
-           a.lg([(0, white), (1, cream)], 0, 0, 1, 0), out, .5)
-    for i in range(4):
-        a.path('M%.1f %.1f q1.6 2 3.2 0' % (x - 15.5 + i * 2.4, y - 31 + (i % 2)), stroke='#b8a888', sw=.45)
-    hx, hy = x - 13, y - 42
-    a.path('M%.1f %.1f q1 -6 3.6 -2 q1.6 -6 4 -1 q2.6 -4 3.4 1.4 Z' % (hx - 4.6, hy - 4), a.lg([(0, '#f06a5a'), (1, '#d8302a')]), '#8a1410', .5)
-    a.ell(hx, hy, 6, 5.6, a.rg([(0, white), (.7, cream), (1, shade)], .35, .3, .8), stroke=out, sw=.55)
-    a.path('M%.1f %.1f l-6.4 2 l6 2.2 Z' % (hx - 5, hy - .6), '#f2a81e', '#8a5a08', .45)
-    a.line((hx - 10, hy + 1.3), (hx - 5.4, hy + 1.3), '#8a5a08', .35)
-    a.path('M%.1f %.1f q-1.2 4.6 1 5.4 q2.4 -.8 1.4 -5.4 Z' % (hx - 4, hy + 3), '#d8302a', '#8a1410', .45)
-    _eye(a, hx - 2, hy - 1, 1.5)
-    a.ell(hx + 1.4, hy + 1.6, 1.8, 1.2, '#f8b0b0', .7)
+            fx, fy = P(-2.5 + i * 4.6 + row * 2.4, 24.5 - row * 3.6)
+            a.path('M%.1f %.1f q2.3 3.2 4.6 0' % (fx, fy), stroke='#b8a888', sw=.55)
+    for i in range(3):
+        a.path('M%.1f %.1f L%.1f %.1f' % (P(6 + i * 3, 15 + i)[0], P(6 + i * 3, 15 + i)[1], P(13 + i * 1.6, 15.5 + i * 1.5)[0], P(13 + i * 1.6, 15.5 + i * 1.5)[1]), stroke='#b8a888', sw=.5)
+    # comb behind the head
+    a.layer(relief=dict(r=1.6, depth=1.2, lit=.4, shade=.5))
+    hx, hy = P(-11, 39)
+    a.path('M%.1f %.1f q-.5 -6.5 3 -4.6 q.6 -5.4 4.2 -2.6 q2.6 -3.4 4.4 .8 q1.4 3 -1 6 Z' % (hx - 5.5, hy - 4), a.lg([(0, '#f06a5a'), (1, '#d8302a')]), '#8a1410', .5)
+    # neck and head
+    a.layer(relief=dict(r=5, depth=1.0, lit=.3, shade=.55, rim=.2), drop=dict(DROP, op=.25))
+    a.path(smooth([P(-16, 28), P(-18, 36), P(-17.6, 42), P(-13, 46.6), P(-7, 46), P(-3.6, 41), P(-4, 34), P(-5, 28), P(-10, 25)]), a.rg([(0, white), (.7, cream), (1, shade)], .35, .3, .85), out, .55)
+    for i in range(5):
+        fx, fy = P(-15.5 + i * 2.3, 30 - (i % 2) * 1.4)
+        a.path('M%.1f %.1f q1.4 2.4 2.8 0' % (fx, fy), stroke='#c0ae8e', sw=.45)
+    a.layer()
+    # wattle, beak, eye, cheek
+    a.path('M%.1f %.1f q-1.8 5 .8 6.4 q3 -.6 2 -6 Z' % (hx - 4.6, hy + 2.4), a.lg([(0, '#f06a5a'), (1, '#c8281e')]), '#8a1410', .45)
+    a.path('M%.1f %.1f l-7 2.4 l6.4 2.6 Z' % (hx - 5.6, hy - 1.4), a.lg([(0, '#ffc640'), (1, '#e8901a')]), '#8a5a08', .45)
+    a.line((hx - 11.6, hy + 1.1), (hx - 6, hy + 1), '#8a5a08', .4)
+    _blush(a, hx + 1.6, hy + 2.2, 2.4, 1.6, '#ff8a8a', .5)
+    _eye(a, hx - 2, hy - 1.4, 2.1, look=(-.2, .1))
     if ready:
-        nx_, ny_ = x + 30, y - 1
-        a.ell(nx_ + 2, ny_ + 2, 14, 4.4, '#0e2010', .4, a.blur(1))
-        a.ell(nx_, ny_, 12.5, 4.6, '#b88a3a', stroke='#6a4a14', sw=.5)
+        nx_, ny_ = x + 33, y - 1
+        a.layer(relief=dict(r=3, depth=1, lit=.3, shade=.5, fine=.5))
+        a.ell(nx_ + 2, ny_ + 2, 15, 4.6, '#0e2010', .4, a.blur(1.2))
+        a.ell(nx_, ny_, 13, 5, '#b88a3a', stroke='#6a4a14', sw=.5)
         r = rnd(5)
-        for _ in range(26):
+        for _ in range(60):
             q = r.random() * 6.283
-            a.line((nx_ + math.cos(q) * 12, ny_ + math.sin(q) * 4), (nx_ + math.cos(q) * 7, ny_ + math.sin(q) * 2 - 1.5), r.choice(['#f2d264', '#d9b03e', '#8a6a14']), .6)
-        a.ell(nx_, ny_ - 5.5, 5.2, 6.6, a.rg([(0, '#ffffff'), (.7, '#f6ead0'), (1, '#d2bc94')], .35, .28, .8), stroke='#a88a58', sw=.5)
+            a.line((nx_ + math.cos(q) * 13 * (.8 + r.random() * .3), ny_ + math.sin(q) * 5), (nx_ + math.cos(q + .3) * 6, ny_ + math.sin(q) * 2.4 - 1.5), r.choice(['#f2d264', '#d9b03e', '#8a6a14', '#fff0a8']), .7)
+        a.layer(relief=dict(r=3, depth=1, lit=.2, shade=.5), drop=DROP)
+        a.ell(nx_, ny_ - 5.5, 5.6, 7, a.rg([(0, '#ffffff'), (.7, '#f8eed8'), (1, '#d8c29a')], .35, .28, .8), stroke='#a88a58', sw=.5)
+        a.layer()
+        a.ell(nx_ - 1.8, ny_ - 8, 1.4, 2, '#ffffff', .9, rot=-20)
 
+
+# ---------------------------------------------------------------------------------------------- cow
 
 def cow(a, x, y, ready):
-    _ground(a, x, y, 120, 80)
+    P = lambda dx, h: (x + dx, y - h)
+    _ground(a, x + 8, y, 118, feet=((-30, 8), (40, 8), (-14, 7), (54, 7)))
     out = '#5e4a3a'
-    white, mid, shade, patch = '#fbf7ee', '#e6dfd2', '#b8ae9e', '#5a3a26'
-    # far legs, then the near ones
-    _leg(a, x - 30, y - 2, 40, 7.6, mid, '#2e2018', False)
-    _leg(a, x + 44, y - 2, 42, 8.4, mid, '#2e2018', False)
-    # the tail and its tuft
-    a.path('M%.1f %.1f q10 8 7 34' % (x + 60, y - 78), stroke=out, sw=3.4)
-    a.path('M%.1f %.1f q10 8 7 34' % (x + 60, y - 78), stroke=mid, sw=2.2)
-    a.path('M%.1f %.1f q-4 9 1 15 q6 -5 4 -15 Z' % (x + 65, y - 46), patch, dark(patch, .5), .4)
-    # the barrel: withers, a level back, hips, a deep belly, the brisket
-    body = ('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (
-        x - 46, y - 84, x - 20, y - 92, x + 30, y - 88, x + 52, y - 86, x + 66, y - 84, x + 68, y - 60, x + 60, y - 44,
-        x + 50, y - 34, x + 10, y - 30, x - 20, y - 34, x - 40, y - 36, x - 56, y - 44, x - 56, y - 62, x - 56, y - 74, x - 54, y - 80, x - 46, y - 84))
-    a.path(body, a.lg([(0, white), (.55, mid), (1, shade)]), out, .7)
-    # patches lie on the form: stretched along the barrel, wrapped over the back
-    for d in ('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 12, y - 89, x + 6, y - 92, x + 26, y - 88, x + 28, y - 76, x + 30, y - 62, x + 12, y - 58, x, y - 64, x - 12, y - 68, x - 20, y - 80, x - 12, y - 89),
-              'M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x + 46, y - 86, x + 62, y - 84, x + 66, y - 66, x + 60, y - 54, x + 48, y - 54, x + 40, y - 70, x + 46, y - 86),
-              'M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 30, y - 56, x - 16, y - 60, x - 6, y - 50, x - 10, y - 40, x - 24, y - 36, x - 38, y - 44, x - 30, y - 56)):
-        a.path(d, a.lg([(0, lite(patch, .18)), (1, dark(patch, .3))]))
-    # the belly turns into shade; light along the spine
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 52, y - 50, x - 30, y - 34, x + 30, y - 30, x + 62, y - 48, x + 40, y - 40, x - 20, y - 42, x - 52, y - 50), '#3a2a20', op=.28)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f' % (x - 40, y - 85, x - 10, y - 91, x + 30, y - 88, x + 54, y - 85), stroke='#ffffff', sw=1.4, op=.7)
-    # the udder, the near legs
-    a.path('M%.1f %.1f q2 12 12 12 q10 0 12 -12 Z' % (x + 22, y - 36), a.lg([(0, '#f8c0c8'), (1, '#d88a98')]), '#a85a6a', .5)
-    for tx in (28, 34, 40):
-        a.path('M%.1f %.1f l0 4' % (x + tx, y - 25), stroke='#d88a98', sw=2)
-    _leg(a, x - 44, y, 42, 8.4, white, '#2e2018')
-    _leg(a, x + 30, y, 44, 9.4, white, '#2e2018')
-    # neck and head: a long face, a broad muzzle, ears out to the sides, short horns
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f L%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 44, y - 84, x - 56, y - 90, x - 62, y - 92, x - 68, y - 92, x - 70, y - 66, x - 62, y - 60, x - 54, y - 56, x - 50, y - 58),
-           a.lg([(0, white), (1, mid)]), out, .6)
-    hx, hy = x - 74, y - 78
-    for (ex, rot, c) in ((12, 28, patch), (-11, -28, white)):
-        a.ell(hx + ex, hy - 13, 8, 4, c, rot=rot, stroke=out, sw=.5)
-        a.ell(hx + ex, hy - 13, 5, 2, '#f0b8c0', rot=rot)
+    white, mid, shade, patch = '#fbf7ee', '#e9e1d2', '#c2b7a6', '#6a4630'
+    hoof = '#3a2a20'
+    LEG = dict(r=4.5, depth=1.1, lit=.3, shade=.6)
+    # far legs
+    a.layer(relief=LEG)
+    _leg(a, P, [(-13, 42, 15), (-12, 22, 12), (-13, 5, 12.5)], dark(mid, .22), hoof, out)
+    _leg(a, P, [(52, 44, 17), (57, 24, 12), (54, 5, 12.5)], dark(mid, .22), hoof, out)
+    a.layer(relief=LEG, drop=dict(DROP, op=.3))
+    _leg(a, P, [(-31, 46, 17), (-30, 24, 14), (-31, 5, 14.5)], white, hoof, out, 6.5)
+    _leg(a, P, [(40, 48, 21), (46, 26, 14), (42, 5, 14.5)], white, hoof, out, 6.5)
+    # tail
+    a.layer(relief=dict(r=2, depth=1, lit=.3, shade=.5))
+    tl = [P(58, 76) + (5,), P(66, 66) + (3.4,), P(68, 50) + (2.8,), P(66, 38) + (2.6,)]
+    a.path(ribbon(tl, 6), mid, out, .5)
+    a.path(smooth([P(64, 40), P(62, 30), P(66, 22), P(70, 30), P(69, 40)]), a.lg([(0, patch), (1, dark(patch, .3))]), dark(patch, .5), .4)
+    # the barrel
+    a.layer(relief=dict(r=15, depth=1.35, lit=.3, shade=.8, rim=.2), drop=DROP)
+    body = smooth([P(-44, 78), P(-28, 86), P(0, 88), P(30, 87), P(52, 82), P(63, 68), P(63, 50), P(54, 36), P(36, 31), P(14, 28), P(-10, 29), P(-30, 33), P(-44, 42), P(-50, 58), P(-50, 70)])
+    a.path(body, a.lg([(0, white), (.6, mid), (1, shade)]), out, .7)
+    cl = a.clip(body)
+    s = ''
+    for pts in ([P(-14, 90), P(8, 92), P(28, 86), P(30, 70), P(16, 58), P(-2, 62), P(-16, 74)],
+                [P(46, 86), P(66, 80), P(68, 58), P(58, 46), P(46, 52), P(40, 68)],
+                [P(-34, 52), P(-20, 56), P(-12, 46), P(-18, 34), P(-34, 30), P(-42, 40)],
+                [P(14, 40), P(26, 42), P(30, 34), P(22, 26), P(10, 30)]):
+        s += '<path d="%s" fill="%s"/>' % (smooth(pts), a.lg([(0, lite(patch, .12)), (1, dark(patch, .25))]))
+    s += '<ellipse cx="%.1f" cy="%.1f" rx="52" ry="13" fill="#6a5040" opacity=".4" filter="%s"/>' % (P(10, 30) + (a.blur(5),))
+    a.group(s, clip=cl)
+    # udder
+    a.layer(relief=dict(r=4, depth=1, lit=.3, shade=.5), drop=dict(DROP, op=.2))
+    a.path(smooth([P(18, 36), P(16, 28), P(22, 22), P(32, 21), P(40, 26), P(40, 36)]), a.lg([(0, '#fbc8d0'), (1, '#e090a0')]), '#a85a6a', .5)
+    for tx in (22, 29, 36):
+        a.path('M%.1f %.1f l0 4.6' % (P(tx, 23)[0], P(tx, 23)[1]), stroke='#a85a6a', sw=3.2)
+        a.path('M%.1f %.1f l0 4.4' % (P(tx, 23)[0], P(tx, 23)[1]), stroke='#eaa0ae', sw=2.2)
+    # ears and horns behind the head
+    hx, hy = -54, 78
+    a.layer(relief=dict(r=2.6, depth=1.1, lit=.35, shade=.5), drop=dict(DROP, op=.25))
+    for (sg, c) in ((-1, white), (1, patch)):
+        ex, ey = P(hx + sg * 19, hy + 12)
+        e = smooth([P(hx + sg * 13, hy + 14), P(hx + sg * 22, hy + 18), P(hx + sg * 29, hy + 13), P(hx + sg * 22, hy + 7), P(hx + sg * 13, hy + 9)])
+        a.path(e, c, out, .5)
+        a.path(smooth([P(hx + sg * 16, hy + 13), P(hx + sg * 22, hy + 15.5), P(hx + sg * 26, hy + 12.6), P(hx + sg * 21, hy + 9.6)]), '#f0b0bc')
     for sg in (-1, 1):
-        a.path('M%.1f %.1f q%.1f -8 %.1f -11' % (hx + sg * 6, hy - 17, sg * 5, sg * 2), stroke='#8a7a5a', sw=4)
-        a.path('M%.1f %.1f q%.1f -8 %.1f -11' % (hx + sg * 6, hy - 17, sg * 5, sg * 2), stroke='#efe2c0', sw=2.4)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (
-        hx - 11, hy - 16, hx - 15, hy - 4, hx - 14, hy + 10, hx - 9, hy + 16, hx - 2, hy + 20, hx + 8, hy + 18, hx + 11, hy + 8, hx + 13, hy - 4, hx + 12, hy - 16, hx - 11, hy - 16),
-           a.lg([(0, white), (1, mid)]), out, .6)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (hx + 1, hy - 16, hx + 12, hy - 16, hx + 13, hy - 2, hx + 9, hy + 2, hx + 2, hy + 2, hx - 2, hy - 8, hx + 1, hy - 16), patch)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (hx - 13, hy + 6, hx - 14, hy + 16, hx - 4, hy + 21, hx + 6, hy + 19, hx + 11, hy + 12, hx + 4, hy + 5, hx - 13, hy + 6),
-           a.lg([(0, '#f8c8cc'), (1, '#e0a0aa')]), '#a85a6a', .5)
-    a.ell(hx - 7, hy + 13, 1.6, 2.2, '#8a4a58'); a.ell(hx + 1.6, hy + 14, 1.6, 2.2, '#8a4a58')
-    a.path('M%.1f %.1f q5 2.4 10 0' % (hx - 8, hy + 17.6), stroke='#a85a6a', sw=.6)
-    _eye(a, hx - 6.4, hy - 3, 2.3); _eye(a, hx + 6.4, hy - 2.4, 2.3)
-    for k in range(4):
-        a.path('M%.1f %.1f q1.4 -4 %.1f -5.6' % (hx - 4 + k * 2.6, hy - 15, k - 1.5), stroke='#efe6d2', sw=1)
+        a.path(ribbon([P(hx + sg * 8, hy + 18) + (5,), P(hx + sg * 12, hy + 25) + (3.8,), P(hx + sg * 11, hy + 31) + (1.2,)], 6), a.lg([(0, '#fff6dc'), (1, '#d8c498')]), '#8a7a5a', .5)
+    # the head: broad brow, long face
+    a.layer(relief=dict(r=10, depth=1.0, lit=.3, shade=.6, rim=.2), drop=DROP)
+    head = smooth([P(hx - 15, hy + 18), P(hx, hy + 22), P(hx + 15, hy + 18), P(hx + 19, hy + 4), P(hx + 15, hy - 12), P(hx + 8, hy - 20), P(hx - 8, hy - 20), P(hx - 15, hy - 12), P(hx - 19, hy + 4)])
+    a.path(head, a.lg([(0, white), (1, mid)]), out, .65)
+    a.group('<path d="%s" fill="%s"/>' % (smooth([P(hx + 2, hy + 24), P(hx + 20, hy + 20), P(hx + 22, hy + 2), P(hx + 14, hy - 6), P(hx + 5, hy - 2), P(hx + 1, hy + 10)]), patch), clip=a.clip(head))
+    # forelock
+    for k in range(5):
+        a.path('M%.1f %.1f q%.1f 3 %.1f 7' % (P(hx - 6 + k * 3, hy + 22)[0], P(hx - 6 + k * 3, hy + 22)[1], (k - 2) * .8, (k - 2) * 1.2), stroke='#f4ead6', sw=2.2)
+    # the muzzle
+    a.layer(relief=dict(r=6, depth=1.0, lit=.3, shade=.5, rim=.15), drop=dict(DROP, op=.25))
+    a.path(smooth([P(hx - 15, hy - 8), P(hx, hy - 4), P(hx + 15, hy - 8), P(hx + 16, hy - 17), P(hx + 9, hy - 24), P(hx - 9, hy - 24), P(hx - 16, hy - 17)]), a.lg([(0, '#fbd0d4'), (1, '#e8a2ac')]), '#a85a6a', .55)
+    a.layer()
+    for sg in (-1, 1):
+        a.ell(P(hx + sg * 6.5, 0)[0], P(0, hy - 13)[1], 2.2, 3, '#9a4e5e', rot=sg * 14)
+        a.ell(P(hx + sg * 6.5, 0)[0] - .4, P(0, hy - 13.6)[1], 1, 1.4, '#5e2a36', rot=sg * 14)
+    a.path('M%.1f %.1f Q%.1f %.1f %.1f %.1f' % (P(hx - 7, hy - 19.6) + P(hx, hy - 22.6) + P(hx + 7, hy - 19.6)), stroke='#a85a6a', sw=.8)
+    _blush(a, P(hx - 13, 0)[0], P(0, hy - 4)[1], 4, 2.6)
+    _blush(a, P(hx + 13, 0)[0], P(0, hy - 4)[1], 4, 2.6)
+    _eye(a, *P(hx - 8.5, hy + 4), r=3.5)
+    _eye(a, *P(hx + 8.5, hy + 4), r=3.5)
     if ready:
-        bx, by = x + 86, y - 2
-        a.ell(bx + 3, by + 2, 13, 4, '#0e2010', .42, a.blur(1))
-        a.path('M%.1f %.1f l2.6 -20 l19 0 l2.6 20 q-12 4.4 -24.2 0Z' % (bx - 12, by), a.lg([(0, '#f2f5f8'), (.4, '#c2ccd8'), (1, '#8490a0')], 0, 0, 1, 0), '#56626e', .6)
-        a.ell(bx, by - 20, 9.6, 3.4, '#ffffff', stroke='#56626e', sw=.5)
-        a.path('M%.1f %.1f q9.6 -14 19.2 0' % (bx - 9.6, by - 20), stroke='#56626e', sw=1.2)
-        a.path('M%.1f %.1f a12 4 0 0 0 23 0' % (bx - 11.5, by - 8), stroke='#7a8694', sw=.9)
+        bx, by = x + 90, y - 2
+        a.ell(bx + 3, by + 2, 15, 4.4, '#0e2010', .42, a.blur(1.2))
+        a.layer(relief=dict(r=5, depth=1.2, lit=.4, shade=.6, rim=.3))
+        a.path('M%.1f %.1f l3 -22 l20 0 l3 22 q-13 4.6 -26 0Z' % (bx - 13, by), a.lg([(0, '#eef2f6'), (.4, '#c2ccd8'), (1, '#8490a0')], 0, 0, 1, 0), '#56626e', .6)
+        for hz in (6, 16):
+            a.path('M%.1f %.1f q%.1f 4 %.1f 0' % (bx - 12.4 + hz * .12, by - hz, 12.4 - hz * .12, 24.8 - hz * .24), stroke='#6a7684', sw=1.4)
+        a.layer()
+        a.ell(bx, by - 22, 10, 3.6, '#7a8694', stroke='#56626e', sw=.5)
+        a.ell(bx, by - 21.4, 8.8, 2.9, a.lg([(0, '#ffffff'), (1, '#e8eef4')]))
+        a.path('M%.1f %.1f q10 -16 20 0' % (bx - 10, by - 22), stroke='#56626e', sw=1.4)
+        a.path('M%.1f %.1f q10 -16 20 0' % (bx - 10, by - 22.5), stroke='#c2ccd8', sw=.5)
 
+
+# ---------------------------------------------------------------------------------------------- sheep
 
 def sheep(a, x, y, ready):
-    k = 1.1 if ready else 1.0
-    _ground(a, x, y, 80, 54)
-    face, wool, wshade = '#4a3830', '#fbf6ea', '#bfb29a'
-    for (lx, lit) in ((-16, False), (22, False), (-24, True), (14, True)):
-        _leg(a, x + lx, y - (0 if lit else 2), 22, 5.2, '#3e3028' if lit else '#2a201a', '#16100c')
+    P = lambda dx, h: (x + dx, y - h)
+    k = 1.12 if ready else 1.0
+    _ground(a, x + 6, y, 78, feet=((-18, 4.5), (22, 4.5), (-8, 4), (31, 4)))
+    face, wool, wshade = '#5a4438', '#fbf6ea', '#cfc2a8'
+    hoof = '#1e1612'
+    a.layer(relief=dict(r=2.4, depth=1.1, lit=.3, shade=.55))
+    for (lx, far) in ((-8, True), (31, True)):
+        _leg(a, P, [(lx, 22, 7), (lx, 10, 5), (lx, 3, 5.4)], '#3a2c24', hoof, '#140e0a', 3.4)
+    a.layer(relief=dict(r=2.4, depth=1.1, lit=.35, shade=.55))
+    for lx in (-18, 22):
+        _leg(a, P, [(lx, 22, 8), (lx, 10, 5.6), (lx, 3, 6)], '#4e3c32', hoof, '#140e0a', 3.6)
     r = rnd(3)
-    # the fleece: a body of wool with a scalloped edge, darker underneath, curls all over
-    cx, cy, rx, ry = x + 2, y - 38 * k, 36 * k, 21 * k
-    lobes = []
-    n = 16
-    for i in range(n):
-        q = 6.283 * i / n
-        lobes.append((cx + math.cos(q) * rx, cy + math.sin(q) * ry, 9.5 + r.random() * 3))
-    for (lx, ly, lr) in lobes:
-        a.ell(lx + 1.4, ly + 2, lr, lr * .92, wshade)
-    a.ell(cx, cy, rx, ry, a.lg([(0, '#ffffff'), (.6, wool), (1, '#d8ccb4')]))
-    for (lx, ly, lr) in sorted(lobes, key=lambda l: l[1]):
-        low = (ly - cy) / ry
-        a.ell(lx, ly, lr, lr * .92, a.rg([(0, '#ffffff'), (.65, wool if low < .3 else '#e2d8c2'), (1, '#cfc2a8')], .36, .3, .8), stroke='#a89a80', sw=.4)
-    for _ in range(70):
-        q, d = r.random() * 6.283, math.sqrt(r.random())
-        px, py = cx + math.cos(q) * d * rx, cy + math.sin(q) * d * ry
-        a.path('M%.1f %.1f q2.2 -2.6 4.4 0 q-.6 2 -2.6 1.2' % (px - 2.2, py), stroke='#c9bca4' if py < cy + 6 else '#a89a80', sw=.55)
-    a.path('M%.1f %.1f q%.1f %.1f %.1f 0' % (cx - rx * .8, cy + ry * .5, rx * .8, ry * .9, rx * 1.6), stroke='#8a7a64', sw=5, op=.25)
-    # the head: a dark, narrow face under a cap of wool, ears to the sides
-    hx, hy = x - 38 * k + 2, y - 44 * k
+    # the fleece: a cloud of round locks, the lower ones in shade
+    cx, cy, rx, ry = 7, 20 + 19 * k, 30 * k, 18 * k
+    locks = []
+    for i in range(15):
+        q = 6.283 * i / 15 + r.uniform(-.1, .1)
+        locks.append((cx + math.cos(q) * rx, cy + math.sin(q) * ry, (8.6 + r.random() * 3) * k))
+    a.layer(relief=dict(r=11 * k, depth=.9, lit=.25, shade=.7, rim=.2, fine=.3), drop=DROP)
+    d = ''
+    for (lx, ly, lr) in locks:
+        px, py = P(lx, ly)
+        d += '<circle cx="%.1f" cy="%.1f" r="%.1f"/>' % (px, py, lr)
+    px, py = P(cx, cy)
+    a.add('<g fill="%s" stroke="#a89a80" stroke-width="1">%s<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f"/></g>' % (wool, d, px, py, rx, ry))
+    a.add('<g fill="%s">%s<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f"/></g>' % (a.lg([(0, '#ffffff'), (.55, wool), (1, '#ddd0b8')]), d, px, py, rx, ry))
+    # locks on the body: each a little dome with its own curl
+    a.layer(relief=dict(r=2.6, depth=.8, lit=.3, shade=.42, fine=.2))
+    for _ in range(int(46 * k)):
+        q, dd = r.random() * 6.283, math.sqrt(r.random()) * .98
+        lx, ly = cx + math.cos(q) * dd * rx * 1.08, cy + math.sin(q) * dd * ry * 1.1
+        px, py = P(lx, ly)
+        rr = (4.2 + r.random() * 2.6) * k
+        low = (cy - ly) / ry
+        a.ell(px, py, rr, rr * .9, wool if low < .2 else mix(wool, '#d8ccb4', min(1, low)), stroke='#b8aa90', sw=.35, op=.95)
+        a.path('M%.1f %.1f q%.1f -%.1f %.1f 0 q-%.1f %.1f -%.1f %.1f' % (px - rr * .5, py + rr * .1, rr * .5, rr * .7, rr, rr * .2, rr * .5, rr * .6, rr * .2), stroke='#c4b69c', sw=.45, op=.8)
+    # the head: ears, a dark soft face, a cap of wool
+    hx, hy = -29 * k + 2, 40 * k + 2
+    a.layer(relief=dict(r=2.4, depth=1.1, lit=.35, shade=.5), drop=dict(DROP, op=.25))
     for sg in (-1, 1):
-        a.ell(hx + sg * 10.5, hy - 1, 6.4, 3, face, rot=sg * 24, stroke='#1e1410', sw=.4)
-        a.ell(hx + sg * 10.5, hy - .6, 3.6, 1.4, '#7a6258', rot=sg * 24)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (
-        hx - 8, hy - 8, hx - 10, hy + 2, hx - 7, hy + 13, hx, hy + 15, hx + 7, hy + 13, hx + 10, hy + 2, hx + 8, hy - 8, hx + 4, hy - 11, hx - 4, hy - 11, hx - 8, hy - 8),
-           a.lg([(0, lite(face, .2)), (1, dark(face, .3))], 0, 0, 1, 0), '#1e1410', .5)
-    for (dx, rr) in ((-6, 5.4), (0, 6.4), (6, 5.4)):
-        a.ell(hx + dx, hy - 10, rr, rr * .9, a.rg([(0, '#ffffff'), (1, '#e2d8c2')], .36, .3, .8), stroke='#a89a80', sw=.4)
-    for sg in (-1, 1):
-        a.ell(hx + sg * 4.2, hy + 1, 2.3, 2.6, '#f6f0e4')
-        a.ell(hx + sg * 4.2, hy + 1.5, 1.2, 1.5, '#16100c')
-        a.ell(hx + sg * 4.2 - .4, hy + 1, .4, .4, '#ffffff')
-    a.path('M%.1f %.1f l2 2.2 l2 -2.2 M%.1f %.1f l0 2' % (hx - 2, hy + 9, hx, hy + 11.2), stroke='#e8a0aa', sw=.9)
+        e = smooth([P(hx + sg * 7, hy + 6), P(hx + sg * 14, hy + 7.5), P(hx + sg * 19, hy + 3), P(hx + sg * 14, hy + 1), P(hx + sg * 7, hy + 2)])
+        a.path(e, face, '#1e1410', .45)
+        a.path(smooth([P(hx + sg * 9, hy + 5), P(hx + sg * 14, hy + 5.8), P(hx + sg * 17, hy + 3.2), P(hx + sg * 13, hy + 2.6)]), '#b08a80')
+    a.layer(relief=dict(r=6.5, depth=1.0, lit=.36, shade=.55, rim=.22), drop=DROP)
+    a.path(smooth([P(hx - 9, hy + 9), P(hx, hy + 12), P(hx + 9, hy + 9), P(hx + 11, hy), P(hx + 8, hy - 10), P(hx + 3, hy - 15), P(hx - 3, hy - 15), P(hx - 8, hy - 10), P(hx - 11, hy)]),
+           a.lg([(0, lite(face, .16)), (1, dark(face, .2))]), '#1e1410', .5)
+    a.layer(relief=dict(r=3, depth=.9, lit=.3, shade=.45), drop=dict(DROP, op=.25))
+    for (dx, dy, rr) in ((-6.5, 9.5, 5), (0, 12, 6), (6.5, 9.5, 5), (-3, 14.5, 4), (3.4, 14.6, 4)):
+        a.ell(*P(hx + dx, hy + dy), rr, rr * .9, a.rg([(0, '#ffffff'), (1, '#e6dcc6')], .36, .3, .8), stroke='#b8aa90', sw=.4)
+    a.layer()
+    _eye(a, *P(hx - 5, hy + 1.6), r=2.9)
+    _eye(a, *P(hx + 5, hy + 1.6), r=2.9)
+    nx, ny = P(hx, hy - 9.5)
+    a.path('M%.1f %.1f l2.4 2.6 l2.4 -2.6 Z' % (nx - 2.4, ny), '#e8a0aa', '#8a4a58', .4)
+    a.path('M%.1f %.1f l0 2 M%.1f %.1f q-2 1.8 -3.6 .4 M%.1f %.1f q2 1.8 3.6 .4' % (nx, ny + 2.6, nx, ny + 4.6, nx, ny + 4.6), stroke='#2a1c16', sw=.6)
+    _blush(a, nx - 7, ny - 3.5, 2.6, 1.6, '#ff9aa0', .4)
+    _blush(a, nx + 7, ny - 3.5, 2.6, 1.6, '#ff9aa0', .4)
     if ready:
-        bx, by = x + 52, y - 4
-        a.ell(bx + 3, by + 3, 14, 4, '#0e2010', .4, a.blur(1))
-        for (dx, dy, rr) in ((-6, -2, 7), (5, -3, 7.6), (0, -9, 7), (-1, 1, 6)):
-            a.ell(bx + dx, by + dy, rr, rr * .9, a.rg([(0, '#ffffff'), (1, '#e2d8c2')], .36, .3, .8), stroke='#a89a80', sw=.4)
+        bx, by = x + 56, y - 4
+        a.ell(bx + 3, by + 3, 15, 4.4, '#0e2010', .4, a.blur(1.2))
+        a.layer(relief=dict(r=4.5, depth=.9, lit=.25, shade=.6, fine=.3), drop=DROP)
+        for (dx, dy, rr) in ((-7, -2, 7.4), (6, -3, 8), (0, -10, 7.4), (-1, 1, 6.4), (-9, -8, 5), (9, -9, 5)):
+            a.ell(bx + dx, by + dy, rr, rr * .9, a.rg([(0, '#ffffff'), (1, '#e6dcc6')], .36, .3, .8), stroke='#b8aa90', sw=.4)
+            a.path('M%.1f %.1f q%.1f -%.1f %.1f 0' % (bx + dx - rr * .5, by + dy, rr * .5, rr * .6, rr), stroke='#c4b69c', sw=.5)
 
+
+# ---------------------------------------------------------------------------------------------- pig
 
 def pig(a, x, y, ready):
-    _ground(a, x, y, 90, 50)
-    out, pink, light, shade = '#8a3a4a', '#eea0ae', '#f8c0c8', '#c06a7c'
-    _leg(a, x - 20, y - 2, 20, 8, pink, '#6a3a40', False)
-    _leg(a, x + 34, y - 2, 20, 8.6, pink, '#6a3a40', False)
-    # a curl of a tail
-    a.path('M%.1f %.1f q8 -3 7 -9 q-2 -6 -7 -2 q-2 5 5 6 q5 0 6 -5' % (x + 44, y - 38), stroke=out, sw=2.6)
-    a.path('M%.1f %.1f q8 -3 7 -9 q-2 -6 -7 -2 q-2 5 5 6 q5 0 6 -5' % (x + 44, y - 38), stroke=pink, sw=1.5)
-    # the barrel: a long, low body with a round rump and a sagging belly
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (
-        x - 34, y - 46, x - 10, y - 54, x + 26, y - 53, x + 42, y - 46, x + 52, y - 40, x + 52, y - 26, x + 44, y - 19,
-        x + 30, y - 12, x - 6, y - 11, x - 24, y - 15, x - 38, y - 20, x - 42, y - 36, x - 34, y - 46),
-           a.lg([(0, light), (.55, pink), (1, shade)]), out, .7)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (x - 34, y - 24, x - 14, y - 12, x + 28, y - 12, x + 48, y - 26, x + 30, y - 19, x - 10, y - 19, x - 34, y - 24), '#8a3a4a', op=.3)
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f' % (x - 26, y - 48, x - 4, y - 53, x + 24, y - 52, x + 40, y - 46), stroke='#ffe6ea', sw=1.3, op=.8)
+    P = lambda dx, h: (x + dx, y - h)
+    _ground(a, x + 8, y, 92, feet=((-22, 6), (30, 6), (-8, 5), (42, 5)))
+    out, pink, light, shade = '#9a4a5a', '#f2a6b4', '#fbc8d0', '#cc7a8c'
+    hoof = '#7a4048'
+    LEG = dict(r=3.4, depth=1.1, lit=.3, shade=.55)
+    a.layer(relief=LEG)
+    _leg(a, P, [(-8, 22, 11), (-8, 10, 8), (-8, 3, 8.4)], dark(pink, .2), hoof, out, 4)
+    _leg(a, P, [(42, 22, 12), (43, 10, 8), (42, 3, 8.4)], dark(pink, .2), hoof, out, 4)
+    a.layer(relief=LEG, drop=dict(DROP, op=.3))
+    _leg(a, P, [(-22, 24, 12), (-22, 10, 9.4), (-22, 3, 9.8)], light, hoof, out, 4.4)
+    _leg(a, P, [(30, 25, 13), (31, 10, 9.4), (30, 3, 9.8)], light, hoof, out, 4.4)
+    # the curl of the tail
+    a.layer(relief=dict(r=1.3, depth=1.1, lit=.4, shade=.5))
+    tx, ty = P(48, 38)
+    for (c, w) in ((out, 3.4), (pink, 2.2)):
+        a.path('M%.1f %.1f q8 -1 8 -7 q-1 -6 -6 -4 q-4 3 0 7 q5 3 9 -1' % (tx, ty), stroke=c, sw=w)
+    # the barrel: long, low and round
+    a.layer(relief=dict(r=13, depth=1.35, lit=.3, shade=.8, rim=.22), drop=DROP)
+    body = smooth([P(-32, 46), P(-16, 52), P(6, 54), P(28, 53), P(44, 47), P(53, 36), P(53, 25), P(45, 16), P(30, 12), P(6, 10.5), P(-18, 12), P(-33, 18), P(-40, 30), P(-39, 40)])
+    a.path(body, a.lg([(0, light), (.55, pink), (1, shade)]), out, .7)
     r = rnd(4)
-    for _ in range(40):
-        bx_, by_ = x - 26 + r.random() * 68, y - 48 + r.random() * 22
-        a.line((bx_, by_), (bx_ + 2.2, by_ + 1.4), '#fbd0d6' if by_ < y - 36 else '#d88a98', .45, .9)
-    _leg(a, x - 30, y, 21, 9, light, '#6a3a40')
-    _leg(a, x + 24, y, 21, 9.6, light, '#6a3a40')
-    # the head: heavy jowls, ears flopping forward, a flat round snout
-    hx, hy = x - 46, y - 34
-    a.path('M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f Z' % (
-        hx - 2, hy - 17, hx - 16, hy - 15, hx - 21, hy - 2, hx - 17, hy + 8, hx - 12, hy + 16, hx + 6, hy + 17, hx + 14, hy + 8, hx + 20, hy - 2, hx + 14, hy - 17, hx - 2, hy - 17),
+    s = ''
+    for _ in range(46):
+        bx_, by_ = P(-28 + r.random() * 74, 18 + r.random() * 32)
+        s += '<path d="M%.1f %.1f q1.4 .2 2.6 1.6" stroke="%s" stroke-width=".45" fill="none" opacity=".8"/>' % (bx_, by_, '#ffe0e4' if r.random() < .6 else '#d88a98')
+    s += '<ellipse cx="%.1f" cy="%.1f" rx="44" ry="10" fill="#a04a60" opacity=".45" filter="%s"/>' % (P(8, 12) + (a.blur(4),))
+    a.group(s, clip=a.clip(body))
+    # the head: round, with heavy cheeks; ears flopping forward; a flat snout
+    hx, hy = -36, 34
+    a.layer(relief=dict(r=9.5, depth=1.0, lit=.3, shade=.58, rim=.22), drop=DROP)
+    a.path(smooth([P(hx - 14, hy + 15), P(hx, hy + 19), P(hx + 14, hy + 15), P(hx + 20, hy + 3), P(hx + 17, hy - 10), P(hx + 6, hy - 17), P(hx - 8, hy - 17), P(hx - 18, hy - 10), P(hx - 21, hy + 3)]),
            a.rg([(0, light), (.6, pink), (1, shade)], .36, .3, .85), out, .65)
-    for (ex, flip) in ((9, 1), (-10, -1)):
-        a.path('M%.1f %.1f q%.1f -11 %.1f -12 q%.1f 6 %.1f 14 Z' % (hx + ex - flip * 4, hy - 13, flip * 2, flip * 9, flip * 1, -flip * 3), a.lg([(0, pink), (1, shade)]), out, .5)
-        a.path('M%.1f %.1f q%.1f -6 %.1f -7' % (hx + ex - flip * 2, hy - 12, flip * 2, flip * 5), stroke='#f8c8d0', sw=1.6)
-    a.ell(hx - 9, hy + 5, 9, 7.4, a.lg([(0, '#fbd0d6'), (1, '#e090a0')]), stroke=out, sw=.6, rot=-12)
-    a.ell(hx - 11.6, hy + 4.6, 1.7, 2.6, '#8a3a4a', rot=-12); a.ell(hx - 6.4, hy + 5.6, 1.7, 2.6, '#8a3a4a', rot=-12)
-    a.path('M%.1f %.1f q5 4 10 1' % (hx - 12, hy + 13), stroke=out, sw=.6)
-    _eye(a, hx - 9, hy - 6, 2); _eye(a, hx + 4, hy - 5.4, 2)
-    a.ell(hx + 9, hy + 3, 4, 2.6, '#f08a9c', .55)
+    a.layer(relief=dict(r=3, depth=1.1, lit=.35, shade=.55), drop=dict(DROP, op=.3))
+    for sg in (-1, 1):
+        e = smooth([P(hx + sg * 8, hy + 15), P(hx + sg * 15, hy + 22), P(hx + sg * 22, hy + 17), P(hx + sg * 21, hy + 8), P(hx + sg * 15, hy + 5), P(hx + sg * 10, hy + 9)])
+        a.path(e, a.lg([(0, pink), (1, shade)]), out, .5)
+        a.path(smooth([P(hx + sg * 12, hy + 14), P(hx + sg * 16, hy + 18), P(hx + sg * 19.5, hy + 14), P(hx + sg * 17, hy + 9)]), '#e88a9c', op=.8)
+    a.layer(relief=dict(r=4, depth=1.1, lit=.35, shade=.5, rim=.2), drop=dict(DROP, op=.3))
+    sx, sy = P(hx - 6, hy - 5)
+    a.ell(sx, sy, 10, 7.6, a.lg([(0, '#ffd6dc'), (1, '#ea96a6')]), stroke=out, sw=.6, rot=-6)
+    a.layer()
+    for sg in (-1, 1):
+        a.ell(sx + sg * 3.6, sy + .2, 1.7, 2.7, '#8a3a4a', rot=-6)
+    a.path('M%.1f %.1f q6 4.6 12 1' % (sx - 5, sy + 9.6), stroke=out, sw=.8)
+    _eye(a, *P(hx - 12, hy + 6), r=3.1)
+    _eye(a, *P(hx + 5.5, hy + 6), r=3.1)
+    _blush(a, *P(hx + 12, hy - 4), 4.4, 2.8, '#ff7a94', .5)
+    _blush(a, *P(hx - 18, hy - 3), 2.6, 2.4, '#ff7a94', .4)
     if ready:
-        bx, by = x + 68, y - 4
-        a.ell(bx + 3, by + 3, 12, 3.6, '#0e2010', .42, a.blur(1))
-        a.path('M%.1f %.1f q-3 -8 3 -12 q6 -4 12 0 q7 3 5 10 q-2 6 -10 6 q-8 1 -10 -4 Z' % (bx - 9, by - 1), a.rg([(0, '#8a6a4a'), (.6, '#5a4028'), (1, '#2e1c0e')], .36, .3, .8), '#1e120a', .5)
-        for (dx, dy) in ((-4, -6), (3, -8), (5, -2), (-3, -1), (0, -4.6)):
-            a.ell(bx + dx, by + dy, 1.5, 1.1, '#b08a60', .9)
-            a.ell(bx + dx + .5, by + dy + .6, 1, .7, '#2e1c0e', .7)
+        bx, by = x + 72, y - 4
+        a.ell(bx + 3, by + 3, 13, 4, '#0e2010', .42, a.blur(1.1))
+        a.layer(relief=dict(r=5, depth=1.1, lit=.3, shade=.6, fine=.4))
+        a.path(smooth([(bx - 10, by - 2), (bx - 11, by - 9), (bx - 5, by - 15), (bx + 3, by - 15.6), (bx + 10, by - 11), (bx + 11, by - 4), (bx + 5, by + 1.6), (bx - 4, by + 2)]),
+               a.rg([(0, '#8a6a4a'), (.6, '#5a4028'), (1, '#2e1c0e')], .36, .3, .8), '#1e120a', .5)
+        a.layer()
+        r = rnd(9)
+        for _ in range(16):
+            dx, dy = r.uniform(-8, 8), r.uniform(-13, 0)
+            a.ell(bx + dx + .5, by + dy + .6, 1.3, .9, '#2e1c0e', .7)
+            a.ell(bx + dx, by + dy, 1.3, .9, '#b08a60', .85)
 
+
+# ---------------------------------------------------------------------------------------------- hive
 
 def bee(a, x, y, ready):
     """A straw hive on its stand; ready: honey runs from it and a full jar waits."""
-    _ground(a, x, y, 50, 46)
+    _ground(a, x + 3, y, 52, feet=((-15, 4), (15, 4)))
     out = '#5e3c22'
+    a.layer(relief=dict(r=2.4, depth=1.2, lit=.4, shade=.6, fine=.3))
     for lx in (-15, 15):
-        a.path('M%.1f %.1f l0 11' % (x + lx, y - 11), stroke=out, sw=4.6)
-        a.path('M%.1f %.1f l0 10.4' % (x + lx - .4, y - 11), stroke='#a8703f', sw=2.8)
-    a.add('<rect x="%.1f" y="%.1f" width="44" height="6" rx="2" fill="%s" stroke="%s" stroke-width=".5"/>' % (x - 22, y - 16, a.lg([(0, '#d0a068'), (1, '#8a5a34')]), out))
-    rows = [(18.5, 9), (20.5, 9), (20.5, 9), (17.5, 8.4), (12, 7)]
-    yy = y - 16
+        a.add('<rect x="%.1f" y="%.1f" width="5" height="12" rx="1" fill="#a8703f" stroke="%s" stroke-width=".5"/>' % (x + lx - 2.5, y - 12, out))
+    a.add('<rect x="%.1f" y="%.1f" width="46" height="6.4" rx="2" fill="%s" stroke="%s" stroke-width=".5"/>' % (x - 23, y - 17, a.lg([(0, '#d0a068'), (1, '#8a5a34')]), out))
+    for i in range(5):
+        a.line((x - 20 + i * 9, y - 15.6), (x - 14 + i * 9, y - 15.2), '#7a4a24', .4, .7)
+    rows = [(19, 9), (21, 9), (21, 9), (18.5, 8.6), (14, 7.6), (8, 6)]
+    yy = y - 16.6
     r = rnd(8)
+    a.layer(relief=dict(r=3.2, depth=1.15, lit=.36, shade=.62, rim=.2, fine=.35), drop=DROP)
     for i, (w, h) in enumerate(rows):
-        col = '#f0b63a' if i % 2 == 0 else '#e2a22a'
+        col = '#f0b63a' if i % 2 == 0 else '#e6a82e'
         a.add('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="%.1f" fill="%s" stroke="#8a5a14" stroke-width=".5"/>' % (
-            x - w, yy - h, 2 * w, h + .8, h * .5, a.lg([(0, lite(col, .32)), (.4, col), (1, dark(col, .38))], 0, 0, 1, 0)))
-        for k in range(int(w / 1.5)):
-            sx = x - w + 2 + k * 3 + r.random()
-            a.line((sx, yy - 1.4), (sx + 2, yy - h + 1.4), '#a8700e', .4, .8)
-        a.path('M%.1f %.1f h%.1f' % (x - w + 3.4, yy - h + 1.8, 2 * w - 10), stroke='#ffe08a', sw=.8, op=.8)
-        yy -= h - .7
-    a.ell(x, y - 23, 4.6, 5.4, '#3e2408')
-    a.add('<rect x="%.1f" y="%.1f" width="14" height="2" rx=".8" fill="#8a5a24" stroke="#4a2a14" stroke-width=".35"/>' % (x - 7, y - 18.6))
+            x - w, yy - h, 2 * w, h + .8, h * .5, a.lg([(0, lite(col, .25)), (.45, col), (1, dark(col, .3))], 0, 0, 1, 0)))
+        s = ''
+        for k in range(int(w / 1.1)):
+            sx = x - w + 2 + k * 2.2 + r.random()
+            s += '<path d="M%.1f %.1f q1.6 -%.1f 2.2 -%.1f" stroke="%s" stroke-width=".45" fill="none" opacity=".75"/>' % (sx, yy - 1.2, h * .5, h - 2.4, r.choice(['#a8700e', '#c08a1c', '#ffe08a']))
+        a.add(s)
+        yy -= h - .8
+    a.layer()
+    a.ell(x, y - 24, 5, 5.8, a.rg([(0, '#5a3410'), (1, '#2a1604')], .5, .7, .7), stroke='#8a5a14', sw=.5)
+    a.add('<rect x="%.1f" y="%.1f" width="15" height="2.4" rx="1" fill="#9a6a34" stroke="#4a2a14" stroke-width=".35"/>' % (x - 7.5, y - 19.4))
     if ready:
-        a.path('M%.1f %.1f q1.4 8 4 8 q2.8 0 2 -5.4 q2.8 9.6 6 4' % (x - 11, y - 33), stroke='#b8700a', sw=3.4)
-        a.path('M%.1f %.1f q1.4 8 4 8 q2.8 0 2 -5.4 q2.8 9.6 6 4' % (x - 11, y - 33), stroke='#f6b02a', sw=2.2)
-        jx, jy = x + 34, y - 2
-        a.ell(jx + 2, jy + 2, 10, 3, '#0e2010', .42, a.blur(.9))
-        a.add('<rect x="%.1f" y="%.1f" width="16" height="17" rx="4" fill="%s" stroke="#8a5a14" stroke-width=".5"/>' % (jx - 8, jy - 17, a.lg([(0, '#ffd870'), (.4, '#f2a81e'), (1, '#c8800e')], 0, 0, 1, 0)))
-        a.add('<rect x="%.1f" y="%.1f" width="18.6" height="4.6" rx="2" fill="#c07a3a" stroke="#6a3a14" stroke-width=".45"/>' % (jx - 9.3, jy - 21))
-        a.ell(jx - 3.4, jy - 10, 1.5, 4, '#fff2c0', .85)
-    for (dx, dy) in ((-27, -44), (24, -52), (30, -30)):
+        a.layer(relief=dict(r=1.6, depth=1.2, lit=.6, shade=.4))
+        a.path('M%.1f %.1f q1.4 9 4.4 9 q3 0 2.2 -6 q3 10.6 6.4 4.4' % (x - 12, y - 35), stroke='#b8700a', sw=3.8)
+        a.path('M%.1f %.1f q1.4 9 4.4 9 q3 0 2.2 -6 q3 10.6 6.4 4.4' % (x - 12, y - 35), stroke='#f8b62e', sw=2.6)
+        jx, jy = x + 36, y - 2
+        a.layer()
+        a.ell(jx + 2, jy + 2, 11, 3.2, '#0e2010', .42, a.blur(1))
+        a.layer(relief=dict(r=3.6, depth=1.1, lit=.4, shade=.5, rim=.3))
+        a.add('<rect x="%.1f" y="%.1f" width="17" height="18" rx="4.4" fill="%s" stroke="#8a5a14" stroke-width=".5"/>' % (jx - 8.5, jy - 18, a.lg([(0, '#ffd870'), (.4, '#f2a81e'), (1, '#c8800e')], 0, 0, 1, 0)))
+        a.add('<rect x="%.1f" y="%.1f" width="19.6" height="5" rx="2" fill="#c07a3a" stroke="#6a3a14" stroke-width=".45"/>' % (jx - 9.8, jy - 22.4))
+        a.layer()
+        a.add('<rect x="%.1f" y="%.1f" width="9" height="7" rx="1" fill="#fff6dc" stroke="#b08a50" stroke-width=".3"/>' % (jx - 4.5, jy - 13))
+        a.ell(jx, jy - 9.5, 2, 1.6, '#f2a81e')
+        a.ell(jx - 5.6, jy - 10, 1.1, 5, '#fff2c0', .8)
+    a.layer()
+    for (dx, dy, rot) in ((-27, -46, -10), (25, -55, 14), (32, -32, -6)):
         bx, by = x + dx, y + dy
-        a.ell(bx - 2, by - 3.4, 3.4, 2, '#ffffff', .85, rot=-30, stroke='#9ab0c0', sw=.3)
-        a.ell(bx + 2, by - 3.4, 3.4, 2, '#ffffff', .85, rot=30, stroke='#9ab0c0', sw=.3)
-        a.ell(bx, by, 4, 3, '#f6c22e', stroke='#3a2408', sw=.5)
-        a.path('M%.1f %.1f l0 4.6 M%.1f %.1f l0 4' % (bx - 1, by - 2.4, bx + 1.4, by - 2), stroke='#3a2408', sw=1)
+        s = '<ellipse cx="-2.4" cy="-4" rx="4" ry="2.4" fill="#ffffff" opacity=".8" stroke="#9ab0c0" stroke-width=".3" transform="rotate(-32 -2.4 -4)"/>'
+        s += '<ellipse cx="2" cy="-4.4" rx="4" ry="2.4" fill="#ffffff" opacity=".8" stroke="#9ab0c0" stroke-width=".3" transform="rotate(24 2 -4.4)"/>'
+        s += '<ellipse cx="0" cy="0" rx="4.8" ry="3.5" fill="%s" stroke="#3a2408" stroke-width=".5"/>' % a.rg([(0, '#ffe46a'), (1, '#f0a81e')], .35, .3, .8)
+        s += '<path d="M-.8 -3.3 q-1 3.3 0 6.6 M1.8 -3 q-1 3 0 6" stroke="#3a2408" stroke-width="1.2" fill="none"/>'
+        s += '<circle cx="-3.6" cy="-.4" r="1.9" fill="#3a2408"/><circle cx="-4.2" cy="-.9" r=".55" fill="#ffffff"/>'
+        a.group(s, transform='translate(%.1f %.1f) rotate(%d)' % (bx, by, rot))
 
 
 ANIMALS = dict(chicken=chicken, cow=cow, sheep=sheep, pig=pig, bee=bee)
@@ -279,7 +405,7 @@ def animal(kind, ready):
     w, h, fx, foot = SIZES[kind]
     a = Art(w, h, fx, h - foot)
     a.seed = len(kind) + (3 if ready else 0)
-    a.look = dict(volume=.1)
+    a.look = dict(volume=.06, grain=.025)
     ANIMALS[kind](a, a.ox, a.oy, ready)
     return a
 
@@ -290,3 +416,19 @@ def build():
         out['Animal_%s' % k] = animal(k, False).save('Animal_%s' % k)
         out['Animal_%s_ready' % k] = animal(k, True).save('Animal_%s_ready' % k)
     return out
+
+
+if __name__ == '__main__':
+    import sys
+    from PIL import Image
+    ks = sys.argv[2].split(',') if len(sys.argv) > 2 else list(ANIMALS)
+    ims = [[animal(k, rd).image() for k in ks] for rd in (False, True)]
+    W = sum(im.width for im in ims[0])
+    H = max(im.height for im in ims[0])
+    sheet = Image.new('RGBA', (W, H * 2), (121, 185, 78, 255))
+    for j, row in enumerate(ims):
+        xx = 0
+        for im in row:
+            sheet.alpha_composite(im, (xx, j * H + H - im.height))
+            xx += im.width
+    sheet.convert('RGB').save(sys.argv[1], quality=92)
