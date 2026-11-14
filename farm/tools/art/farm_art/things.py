@@ -1,6 +1,6 @@
 """Trees, animals, pens, workshops and the small things of the farm map."""
 import math
-from iso import Art, A, B, L, lite, dark, mix, rnd, wall, rect, window, door, barrel, crate
+from iso import Art, A, B, L, LIGHT, lite, dark, mix, rnd, wall, rect, window, door, barrel, crate
 import trees
 import animals
 
@@ -575,52 +575,68 @@ def sickle():
 # ---------------------------------------------------------------------------------------------- decorations of the road strip
 
 def tuft(seed):
+    """A tuft of grass: tapering blades, the near ones lighter, lit as a soft solid."""
     a = Art(60, 44, 30, 38)
+    a.look = dict(volume=.05, grain=.03)
     r = rnd(seed)
-    for i in range(9):
-        k = (i - 4) * 5 + r.random() * 3
-        c = r.choice(['#4c9632', '#5fae3c', '#7cc84c', '#8fd05a'])
-        a.path('M%.1f 38 q%.1f -12 %.1f %.1f' % (30 + k * .5, k * .2, k, -16 - r.random() * 14), stroke=dark(c, .3), sw=4)
-        a.path('M%.1f 38 q%.1f -12 %.1f %.1f' % (30 + k * .5, k * .2, k, -16 - r.random() * 14 + 1), stroke=c, sw=2.4)
+    a.ell(32, 38.5, 16, 3.4, '#0e2010', .4, a.blur(1.2))
+    for row, cols in ((0, ['#3f8a2c', '#4c9632']), (1, ['#5fae3c', '#7cc84c', '#8fd05a'])):
+        a.layer(relief=dict(r=1.5, depth=1.1, lit=.35, shade=.5), drop=dict(dx=1, dy=1.4, sd=1.2, op=.3, col='#06220f'))
+        for i in range(8 if row == 0 else 7):
+            k = (i - (3.5 if row == 0 else 3)) * 5.4 + r.uniform(-1.5, 1.5)
+            hgt = (20 + r.random() * 14) * (1 if row == 0 else .78)
+            w = 3.2 + r.random() * 1.4
+            bx = 30 + k * .5
+            c = r.choice(cols)
+            a.path('M%.1f 39 Q%.1f %.1f %.1f %.1f Q%.1f %.1f %.1f 39 Z' % (bx - w / 2, bx - w / 2 + k * .15, 39 - hgt * .6, bx + k, 39 - hgt, bx + w / 2 + k * .3, 39 - hgt * .5, bx + w / 2),
+                   a.lg([(0, lite(c, .2)), (1, dark(c, .15))]), dark(c, .4), .35)
     return a
 
 
+BUSH = dict(ramp=['#0f3a1c', '#1f5a24', '#2f7a2c', '#4f9a36', '#86c248', '#b8dc58'], leaf=dict(ln=9, wd=3.4, teeth=0, droop=.1, spread=80))
+
+
 def bush(seed, flowers=None):
-    """A bush: three or four leaf masses, lit from the top left, standing on its shadow; each seed is its own shape."""
+    """A bush: three or four leaf masses built of clumps of single leaves (as the trees are), lit from the top
+    left, each mass shading the one behind; flowers sit among the leaves; the shadow lies under it."""
     a = Art(150, 110, 60, 84)
     a.seed = seed
+    a.look = dict(volume=.08, grain=.03)
     r = rnd(seed * 17)
     x, y = a.ox, a.oy
-    masses = [[(-26, 20, 21), (22, 22, 22), (-2, 40, 24), (8, 18, 18)], [(-30, 16, 18), (0, 26, 26), (30, 18, 19)], [(-18, 24, 24), (20, 30, 22), (2, 14, 17), (34, 12, 13)]][seed % 3]
-    sh = ''.join('<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f"/>' % (x + dx + hh * trees.SHADOW[0], y + hh * trees.SHADOW[1] + 2, rr, rr * .42) for (dx, hh, rr) in masses)
-    a.add('<g fill="#0e2010" opacity=".40" filter="%s">%s</g>' % (a.blur(2), sh))
-    a.ell(x + 2, y + 2, 34, 7, '#0e2010', .45, a.blur(1.2))
-    ramp = ['#0f3a1c', '#2f7a2c', '#4f9a36', '#86c248', '#b8dc58']
-    for (dx, hh, rr) in masses:
-        a.ell(x + dx + 1.5, y - hh + 2, rr * .8, rr * .72, '#0a2a16')
-    for (dx, hh, rr) in sorted(masses, key=lambda m: -m[1]):
+    masses = [[(-26, 20, 21, 0), (22, 22, 22, 0), (-2, 40, 24, 0), (8, 18, 19, 1), (-20, 14, 14, 1)],
+              [(-30, 17, 18, 0), (0, 27, 26, 0), (30, 19, 19, 0), (-12, 14, 15, 1), (16, 13, 14, 1)],
+              [(-18, 24, 24, 0), (20, 30, 22, 0), (34, 13, 13, 1), (2, 15, 18, 1), (-28, 12, 12, 1)]][seed % 3]
+    sh = ''.join('<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f"/>' % (x + dx * .9 + 7, y + 4, rr * 1.05, rr * .42) for (dx, hh, rr, z) in masses)
+    a.add('<g fill="#0e2010" opacity=".38" filter="%s">%s</g>' % (a.blur(2.6), sh))
+    a.ell(x + 2, y + 2, 34, 7, '#0e2010', .45, a.blur(1.4))
+    ramp, lf = BUSH['ramp'], BUSH['leaf']
+    sp = dict(blossom=lite(flowers, .35), blush=flowers, shade=dark(flowers, .3)) if flowers else None
+    ccx = sum(m[0] for m in masses) / len(masses)
+    ccy = sum(m[1] for m in masses) / len(masses)
+    for (dx, hh, rr, z) in sorted(masses, key=lambda m: (m[3], -m[1])):
         px, py = x + dx, y - hh
-        clumps = []
-        for _ in range(int(rr * rr * .13)):
-            ang, d = r.random() * 6.283, math.sqrt(r.random()) * rr
-            ox, oy = math.cos(ang) * d, math.sin(ang) * d * .9
-            lit = (-ox * .6 - oy * .8) / rr + (r.random() - .5) * .16
-            clumps.append((0 if lit < -.42 else 1 if lit < -.02 else 2 if lit < .42 else 3 if lit < .8 else 4, px + ox, py + oy, d / rr, ang))
-        for step in (0, 1, 2, 'x', 3, 4):
-            if step == 'x':
-                if flowers:
-                    for _ in range(int(rr * .5)):
-                        ang, d = r.random() * 6.283, math.sqrt(r.random()) * rr * .9
-                        fx, fy = px + math.cos(ang) * d, py + math.sin(ang) * d * .9
-                        trees._petals(a, fx, fy, .8 + r.random() * .4, flowers, dark(flowers, .3), (fx - px) * .6 + (fy - py) * .8 > rr * .1, r)
-                continue
-            for (tone, qx, qy, edge, ang) in clumps:
-                if tone != step:
-                    continue
-                base = r.random() * 360
-                for i in range(4):
-                    la = base + i * 90 + r.random() * 30 if edge < .8 else -math.degrees(ang) + (i - 1.5) * 36
-                    trees._leaf(a, qx, qy, 5.5 + r.random() * 3.5, 2.2 + r.random() * 1.2, la, ramp[tone] if i else ramp[max(0, tone - 1)])
+        cn = trees._sphere_n(dx - ccx, -(hh - ccy), 62)
+        a.layer(relief=dict(r=rr * .42, depth=.9, lit=.22, shade=.6, rim=.16, fine=.15), drop=dict(dx=2, dy=4, sd=3, op=.36, col='#06220f'))
+        a.ell(px + 1, py + 2, rr * .8, rr * .74, ramp[0])
+        cl = []
+        for i in range(5):
+            q = math.radians(40 + i * 72 + r.uniform(-14, 14))
+            d = rr * (.52 + r.random() * .1)
+            cl.append((math.cos(q) * d, math.sin(q) * d * .94, rr * (.48 + r.random() * .1)))
+        cl.sort(key=lambda t: -(t[0] * .52 + t[1] * .62))
+        cl.append((0, 0, rr * .56))
+        late = []
+        for (ox, oy, cr_) in cl:
+            sn = trees._sphere_n(ox, oy, rr * 1.02)
+            bn = trees._norm((sn[0] * .6 + cn[0] * .95, sn[1] * .6 + cn[1] * .95, sn[2] * .4 + cn[2] * .45))
+            shaded = (bn[0] * LIGHT[0] + bn[1] * LIGHT[1] + bn[2] * LIGHT[2]) < .1
+            trees.clump(a, 'bush', px + ox, py + oy, cr_, bn, ramp, lf, r, density=.5, tone=-.14 * max(0, oy / rr))
+            if sp:
+                for _ in range(int(cr_ * .28)):
+                    late.append((px + ox + r.uniform(-.8, .8) * cr_, py + oy + r.uniform(-.8, .8) * cr_, shaded))
+        for (fx, fy, shaded) in late:
+            trees.blossom(a, fx, fy, .9 + r.random() * .4, sp, shaded, r, bud=r.random() < .15)
     return a
 
 
