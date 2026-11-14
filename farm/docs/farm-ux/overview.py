@@ -18,11 +18,23 @@ INK = (90, 53, 18)
 PAPER = (250, 244, 230)
 
 
+_bases = {}
+
+
+def _base(k):
+    if k not in _bases:
+        _bases[k] = fv.base_map(k)
+    return _bases[k]
+
+
 def view(rows, cx, cy, w, h, ms):
     """A window of the map, w × h map units around (cx, cy), with the farm on it."""
     x0, y1 = cx - w / 2, cy + h / 2
-    base = fv.base_map(.5)
-    crop = base.crop((int(x0 * .5), int((fv.MAPH - y1) * .5), int((x0 + w) * .5), int((fv.MAPH - y1 + h) * .5))).resize((int(w * ms), int(h * ms)), Image.LANCZOS)
+    k = .5 if ms < 1 else ms          # the map is composed at the view's own density (never stretched up)
+    base = _base(k)
+    crop = base.crop((int(x0 * k), int((fv.MAPH - y1) * k), int((x0 + w) * k), int((fv.MAPH - y1 + h) * k)))
+    if k != ms:
+        crop = crop.resize((int(w * ms), int(h * ms)), Image.LANCZOS)
     p = fv.Painter(crop, ms, x0, y1)
     fv.paint_farm(p, rows)
     return crop
@@ -205,6 +217,11 @@ def one_to_one():
         im = view(rows, cx, cy, w, h, 1.0)
         im.convert("RGB").save(os.path.join(HERE, "00_overview_1to1_%s.png" % name), optimize=True)
         print("00_overview_1to1_%s.png" % name, im.size)
+    # a phone's dense screen: two pixels per map unit
+    cx, cy = sum(t["x"] for t in tree) / len(tree), sum(t["y"] for t in tree) / len(tree) + 110
+    im = view(rows, cx, cy, 900, 600, 2.0)
+    im.convert("RGB").save(os.path.join(HERE, "00_overview_2x_orchard.png"), optimize=True)
+    print("00_overview_2x_orchard.png", im.size)
 
 
 BEFORE_REV = "70f1d4b"       # the commit before the art bible: what trees and animals looked like

@@ -5,7 +5,7 @@ from scipy import ndimage
 
 SPEC = {  # shape: width factor, tip sharpness, serration (count, depth); colours base→tip, rib
     "apple":  dict(w=0.95, tip=0.9, ser=(16, 0.05), c0=(58, 112, 34), c1=(122, 178, 58), rib=(170, 205, 110), length=1.0),
-    "pear":   dict(w=0.72, tip=0.55, ser=(0, 0), c0=(36, 92, 40), c1=(84, 150, 58), rib=(140, 190, 110), length=1.0, gloss=True),
+    "pear":   dict(w=0.72, tip=0.55, ser=(0, 0), c0=(52, 112, 40), c1=(118, 178, 62), rib=(140, 190, 110), length=1.0, gloss=True),
     "cherry": dict(w=0.5, tip=0.45, ser=(26, 0.035), c0=(48, 104, 36), c1=(104, 166, 56), rib=(160, 200, 105), length=1.08),
     "bush":   dict(w=0.8, tip=0.8, ser=(12, 0.04), c0=(44, 100, 38), c1=(108, 168, 60), rib=(150, 196, 104), length=1.0),
 }

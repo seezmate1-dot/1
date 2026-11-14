@@ -9,11 +9,11 @@ N = os.path.expanduser("~/assets3d/stylized_nature/Ultimate Stylized Nature - Ma
 TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tex")
 CFG = {
     "apple":  dict(models=["MapleTree_4", "NormalTree_5"], scale=(1.2, 1.2, 0.9), bark=(0.62, 0.42, 0.28),
-                   leaves="apple", fruit="apple", n_fruit=26, bloom=(1.0, 0.75, 0.8), n_bloom=230),
+                   leaves="apple", fruit="apple", n_fruit=13, bloom=(1.0, 0.75, 0.8), n_bloom=230),
     "pear":   dict(models=["NormalTree_1", "NormalTree_2"], scale=(1.15, 1.15, 0.95), bark=(0.5, 0.42, 0.36),
-                   leaves="pear", fruit="pear", n_fruit=26, bloom=(1.0, 1.0, 0.97), n_bloom=230),
+                   leaves="pear", fruit="pear", n_fruit=12, bloom=(1.0, 1.0, 0.97), n_bloom=230),
     "cherry": dict(models=["MapleTree_2", "MapleTree_5"], scale=(1.3, 1.3, 0.85), bark=(0.62, 0.3, 0.25),
-                   leaves="cherry", fruit="cherry", n_fruit=46, bloom=(0.9, 0.38, 0.55), n_bloom=260),
+                   leaves="cherry", fruit="cherry", n_fruit=16, bloom=(0.9, 0.38, 0.55), n_bloom=260),
 }[species]
 random.seed(variant * 31 + len(species))
 scene.load(N + CFG["models"][variant - 1] + ".blend")
@@ -51,6 +51,25 @@ import bmesh
 mn0, mx0 = scene.bounds([tree]); H0 = mx0.z - mn0.z
 bm = bmesh.new(); bm.from_mesh(tree.data)
 leafset = {i for i, s_ in enumerate(tree.material_slots) if mat_kind(s_.material) == "leaf"}
+lv = {v for f in bm.faces if f.material_index in leafset for v in f.verts}
+# bigger leaf cards: every card (a linked island of leaf faces) grows around its own centre, so the crown reads as
+# soft full clumps at the map's size instead of a noise of small leaves
+LEAF_K = float(os.environ.get("LEAF_K", "1.55"))
+seen = set()
+for f in bm.faces:
+    if f.material_index not in leafset or f.index in seen: continue
+    isl, stack = [], [f]
+    while stack:
+        g = stack.pop()
+        if g.index in seen: continue
+        seen.add(g.index); isl.append(g)
+        for e in g.edges:
+            for h in e.link_faces:
+                if h.index not in seen and h.material_index in leafset: stack.append(h)
+    vs = {v for g in isl for v in g.verts}
+    c = sum((v.co for v in vs), mathutils.Vector()) / len(vs)
+    for v in vs: v.co = c + (v.co - c) * LEAF_K
+bm.faces.ensure_lookup_table()
 lv = {v for f in bm.faces if f.material_index in leafset for v in f.verts}
 if lv:
     c0 = sum((v.co for v in lv), mathutils.Vector()) / len(lv)
@@ -100,7 +119,7 @@ print("visible leaf faces", len(outer), "of", len(cands))
 def pick(n, front_bias, mind_k=0.055):
     pts = [t for t in outer if t[0].z > mn.z + H * 0.3 and t[2].dot(cam_dir) > 0.2]
     random.shuffle(pts); res = []
-    mind = H * mind_k
+    mind = H * (mind_k if state == "bloom" else 0.1)
     for t in pts:
         if all((t[0] - q[0]).length > mind for q in res): res.append(t)
         if len(res) >= n: break
@@ -120,7 +139,7 @@ if state == "ripe":
     pts = pick(CFG["n_fruit"], -0.1)
     if kind == "apple":
         mats = [glossy("a1", (0.42, 0.01, 0.008), 0.25), glossy("a2", (0.5, 0.02, 0.008), 0.25), glossy("a3", (0.46, 0.03, 0.01), 0.27)]
-        r = H * 0.036
+        r = H * 0.055
         for c, rv, nrm in pts:
             loc = c - nrm * r * 0.35 - mathutils.Vector((0, 0, r * 0.4))
             bpy.ops.mesh.primitive_uv_sphere_add(radius=r * random.uniform(0.85, 1.1), location=loc, segments=24, ring_count=14)
@@ -132,7 +151,7 @@ if state == "ripe":
             add_stem(loc + mathutils.Vector((0, 0, r * 0.7)), r * 0.6, r * 0.07, stem_m)
     elif kind == "pear":
         mats = [glossy("p1", (0.55, 0.42, 0.04), 0.32), glossy("p2", (0.45, 0.45, 0.05), 0.32), glossy("p3", (0.6, 0.36, 0.04), 0.32)]
-        r = H * 0.03
+        r = H * 0.045
         for c, rv, nrm in pts:
             loc = c - nrm * r * 0.3 - mathutils.Vector((0, 0, r * 1.0))
             bpy.ops.mesh.primitive_uv_sphere_add(radius=r, location=loc, segments=24, ring_count=16)
@@ -146,7 +165,7 @@ if state == "ripe":
             add_stem(loc + mathutils.Vector((0, 0, r * 1.4)), r * 0.7, r * 0.08, stem_m)
     else:  # cherry pairs on a shared stalk
         m = glossy("c", (0.42, 0.0, 0.02), 0.18, 0.08)
-        r = H * 0.021
+        r = H * 0.032
         for c, rv, nrm in pts:
             top = c - nrm * r * 0.5
             for sgn in (-1, 1):
@@ -160,7 +179,7 @@ if state == "ripe":
 elif state == "bloom":
     # five-petal blossoms with a yellow heart, in clusters, facing out of the crown
     pet = glossy("petal", CFG["bloom"], 0.5, 0.3); heart = glossy("heart", (0.9, 0.7, 0.1), 0.6)
-    r = H * (0.011 if species == "pear" else 0.015)
+    r = H * (0.022 if species == "pear" else 0.026)
     bpy.ops.mesh.primitive_circle_add(vertices=16, radius=r, fill_type="NGON", location=(0, 0, 0))
     p0 = bpy.context.object; p0.scale = (0.55, 1, 1); bpy.ops.object.transform_apply(scale=True)
     for v in p0.data.vertices: v.co.y += r * 0.85; v.co.z += (v.co.y / r) ** 2 * r * 0.12
@@ -175,7 +194,7 @@ elif state == "bloom":
     for o in petals + [hrt]: o.select_set(True)
     bpy.context.view_layer.objects.active = p0; bpy.ops.object.transform_apply(rotation=True); bpy.ops.object.join()
     flower = bpy.context.object; flower.name = "_flower_src"; flower.hide_render = True
-    pts = pick(CFG["n_bloom"] // 3, -0.35, 0.045)
+    pts = pick(26, -0.35, 0.09)
     for c, rv, nrm in pts:
         for k in range(random.randint(2, 3)):
             o = flower.copy(); bpy.context.scene.collection.objects.link(o); o.hide_render = False; o.name = "fl"
@@ -187,7 +206,7 @@ elif state == "bloom":
 
 # grass tufts at the foot
 GR = os.path.expanduser("~/assets3d/stylized_nature/Ultimate Stylized Nature - May 2022/glTF/Grass_Small.gltf")
-for k, (dx, dy, rz) in enumerate(((-0.05, -0.04, 0.3), (0.06, -0.02, 2.0), (0.0, 0.05, 4.1))):
+for k, (dx, dy, rz) in enumerate(()):
     before = set(bpy.context.scene.objects)
     bpy.ops.import_scene.gltf(filepath=GR)
     for o in set(bpy.context.scene.objects) - before:
