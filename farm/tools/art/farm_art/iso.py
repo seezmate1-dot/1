@@ -8,6 +8,7 @@ import io
 import math
 import os
 import random
+import re
 import numpy as np
 import resvg_py
 from PIL import Image, ImageFilter
@@ -88,11 +89,46 @@ class Art:
         self.ox = w / 2 if ox is None else ox
         self.oy = h - 8 if oy is None else oy
         self.scale = scale
-        self.defs, self.body = [], []
+        self.defs = []
+        self.layers = [dict(body=[], relief=None, drop=None, atop=False)]
         self.n = 0
         self.paint = True          # the painted look (not for the interface's things)
         self.seed = 1
         self.look = {}             # painterly()'s numbers, when a picture wants its own
+
+    # ---------------------------------------------------------------- layers
+    @property
+    def body(self):
+        return self.layers[-1]['body']
+
+    def layer(self, relief=None, drop=None, atop=False):
+        """Starts a new layer; what is drawn next belongs to it. relief: dict(r, depth, lit, shade, rim) — the layer
+        is lit as a soft solid (see relief_shade); drop: dict(dx, dy, sd, op) — it throws a soft shadow on what is
+        already under it (never on empty ground); atop: it is painted only where something already is."""
+        self.layers.append(dict(body=[], relief=relief, drop=drop, atop=atop))
+
+    def clip(self, d):
+        i = self.uid()
+        self.defs.append('<clipPath id="%s"><path d="%s"/></clipPath>' % (i, d))
+        return 'url(#%s)' % i
+
+    def group(self, inner, clip=None, op=1, flt=None, transform=None):
+        s = '<g'
+        if clip:
+            s += ' clip-path="%s"' % clip
+        if op != 1:
+            s += ' opacity="%s"' % op
+        if flt:
+            s += ' filter="%s"' % flt
+        if transform:
+            s += ' transform="%s"' % transform
+        self.add(s + '>' + inner + '</g>')
+
+    def grab(self, fn):
+        """Runs fn (which draws) and returns what it drew as a string instead of adding it."""
+        self.layers.append(dict(body=[], relief=None, drop=None, atop=False))
+        fn()
+        return ''.join(self.layers.pop()['body'])
 
     # ---------------------------------------------------------------- projection
     def p(self, u, v, z=0):
@@ -403,15 +439,50 @@ class Art:
             self.poly([(v0, u, z[0]), (v1, u, z[0]), (v1, u, z[1]), (v0, u, z[1])], col, dark(col, .5), 1)
 
     # ---------------------------------------------------------------- output
-    def svg(self):
-        s = self.scale
-        return ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %s %s"><defs>%s</defs>%s</svg>'
-                % (self.w * s, self.h * s, self.w, self.h, ''.join(self.defs), ''.join(self.body)))
+    _ref = re.compile(r'url\(#(i\d+)\)')
 
-    def image(self, ss=3):
+    def _svg(self, body, k=1):
+        used = set(self._ref.findall(body))
+        defs = ''.join(d for d in self.defs if d.split('id="', 1)[1].split('"', 1)[0] in used)
+        s = self.scale * k
+        return ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %s %s"><defs>%s</defs>%s</svg>'
+                % (self.w * s, self.h * s, self.w, self.h, defs, body))
+
+    def svg(self):
+        return self._svg(''.join(''.join(l['body']) for l in self.layers))
+
+    def image(self, ss=2):
         w, h = int(self.w * self.scale), int(self.h * self.scale)
-        png = resvg_py.svg_to_bytes(svg_string=self.svg(), width=w * ss, height=h * ss)
-        im = Image.open(io.BytesIO(bytes(png))).convert('RGBA').resize((w, h), Image.LANCZOS)
+        px = self.scale * ss
+        canvas = None                      # premultiplied float RGBA
+        for l in self.layers:
+            if not l['body']:
+                continue
+            png = resvg_py.svg_to_bytes(svg_string=self._svg(''.join(l['body'])), width=w * ss, height=h * ss)
+            im = np.asarray(Image.open(io.BytesIO(bytes(png))).convert('RGBA')).astype(np.float32) / 255
+            rgb, al = im[..., :3], im[..., 3]
+            if l['relief']:
+                rgb = relief_shade(rgb, al, px, **l['relief'])
+            if canvas is None:
+                canvas = np.zeros(im.shape, np.float32)
+            if l['drop']:
+                d = l['drop']
+                sh = _shift(_blur(al, d.get('sd', 2) * px), d.get('dx', 2) * px, d.get('dy', 3) * px) * d.get('op', .4)
+                tint = np.array(rgb_f(d.get('col', '#12240f')), np.float32)
+                canvas[..., :3] = canvas[..., :3] * (1 - sh[..., None]) + tint * (sh * canvas[..., 3])[..., None]
+            if l['atop']:
+                al = al * canvas[..., 3]
+                canvas[..., :3] = canvas[..., :3] * (1 - im[..., 3:4]) + rgb * al[..., None]
+            else:
+                canvas[..., :3] = canvas[..., :3] * (1 - al[..., None]) + rgb * al[..., None]
+                canvas[..., 3] = canvas[..., 3] * (1 - al) + al
+        a_ = canvas[..., 3]
+        out = np.dstack([np.where(a_[..., None] > 1e-4, canvas[..., :3] / np.maximum(a_[..., None], 1e-4), 0), a_])
+        im = Image.fromarray((np.clip(out, 0, 1) * 255 + .5).astype(np.uint8), 'RGBA')
+        if ss != 1:
+            # premultiplied downscale, so nothing dark bleeds in from the transparent edge
+            pm = im.convert('RGBa').resize((w, h), Image.LANCZOS).convert('RGBA')
+            im = pm
         return painterly(im, self.seed, px=self.scale, **self.look) if self.paint else im
 
     def save(self, name):
@@ -419,6 +490,73 @@ class Art:
         im = self.image()
         im.save(os.path.join(OUT, name + '.png'), optimize=True)
         return im
+
+
+def rgb_f(h):
+    return tuple(v / 255 for v in rgb(h))
+
+
+def _blur(a, sd):
+    """A Gaussian blur of a float image: done small (the blur is smooth anyway) and scaled back up."""
+    sd = max(.3, sd)
+    h, w = a.shape
+    f = max(1, int(sd / 2.0))
+    im = Image.fromarray(np.ascontiguousarray(a, dtype=np.float32), 'F')
+    if f > 1:
+        im = im.resize((max(2, w // f), max(2, h // f)), Image.BOX)
+    x = np.asarray(im)
+    s_ = sd / f
+    rad = max(1, int(s_ * 3 + .5))
+    k = np.exp(-.5 * (np.arange(-rad, rad + 1) / s_) ** 2).astype(np.float32)
+    k /= k.sum()
+    xp = np.pad(x, ((rad, rad), (rad, rad)))
+    acc = np.zeros((xp.shape[0], x.shape[1]), np.float32)
+    for i, kv in enumerate(k):
+        acc += kv * xp[:, i:i + x.shape[1]]
+    out = np.zeros_like(x)
+    for i, kv in enumerate(k):
+        out += kv * acc[i:i + x.shape[0], :]
+    if f > 1:
+        out = np.asarray(Image.fromarray(out, 'F').resize((w, h), Image.BICUBIC))
+    return out
+
+
+def _shift(a, dx, dy):
+    dx, dy = int(round(dx)), int(round(dy))
+    out = np.zeros_like(a)
+    h, w = a.shape
+    ys, yd = (slice(0, h - dy), slice(dy, h)) if dy >= 0 else (slice(-dy, h), slice(0, h + dy))
+    xs, xd = (slice(0, w - dx), slice(dx, w)) if dx >= 0 else (slice(-dx, w), slice(0, w + dx))
+    out[yd, xd] = a[ys, xs]
+    return out
+
+
+LIGHT = (-.52, -.62, .59)                 # towards the light: left, up, and out of the screen
+
+
+def relief_shade(rgb, al, px, r=8, depth=1.0, lit=.5, shade=.6, rim=.0, warm='#fff2c4', cool=(.50, .58, .78), fine=.25):
+    """Lights a flat layer as if it were a soft solid: its height is its silhouette blurred at three sizes (r, in
+    map units, is the biggest — about half the thickness of the form), the normal comes from that height's slope,
+    and the light is the map's own (top left). Lit sides go towards a warm light, sides turned away are multiplied
+    down towards a cool dark; rim adds a thin bright edge towards the light."""
+    s = r * px
+    H = (1 - fine) * (.62 * _blur(al, s) + .38 * _blur(al, s * .45)) + fine * _blur(al, max(1.0, s * .14))
+    gy, gx = np.gradient(H)
+    k = depth * s * 1.6
+    nx, ny = -gx * k, -gy * k
+    inv = 1 / np.sqrt(nx * nx + ny * ny + 1)
+    d = (nx * LIGHT[0] + ny * LIGHT[1] + LIGHT[2]) * inv - LIGHT[2]
+    up = np.clip(d * 2.2 * lit, 0, .85)[..., None]
+    dn = np.clip(-d * 1.5 * shade, 0, .8)[..., None]
+    w_ = np.array(rgb_f(warm), np.float32)
+    out = rgb + (w_ - rgb) * up
+    out = out * (1 - dn * (1 - np.array(cool, np.float32)))
+    if rim:
+        e = _blur(al, max(1.0, .9 * px))
+        gy2, gx2 = np.gradient(e)
+        rl = np.clip(-(gx2 * LIGHT[0] + gy2 * LIGHT[1]) * px * 1.6, 0, 1) * rim
+        out = out + (w_ - out) * np.clip(rl, 0, .9)[..., None]
+    return np.clip(out, 0, 1)
 
 
 def rnd(seed):
@@ -528,3 +666,57 @@ def crate(a, u, v, s=.3, h=14, col='#b98454'):
         a.line(p0, p1, dark(col, .4), 2.4)
         a.line((p0[0] - .5, p0[1]), (p1[0] - .5, p1[1]), lite(col, .3), .8)
     a.poly([(u, v, h), (u + s, v, h), (u + s, v + s, h), (u, v + s, h)], 'none', lite(col, .35), 1.6)
+
+
+# ---------------------------------------------------------------------------------------------- smooth shapes
+
+def smooth(pts, closed=True, t=.5):
+    """A path through the points with rounded turns (Catmull-Rom as cubic Béziers). t: 0 is straight, .5 is round."""
+    n = len(pts)
+    if n < 3:
+        return 'M' + ' L'.join('%.2f %.2f' % q for q in pts)
+    d = 'M%.2f %.2f' % pts[0]
+    rng = range(n) if closed else range(n - 1)
+    for i in rng:
+        p0 = pts[(i - 1) % n] if closed or i > 0 else pts[i]
+        p1, p2 = pts[i], pts[(i + 1) % n]
+        p3 = pts[(i + 2) % n] if closed or i + 2 < n else p2
+        c1 = (p1[0] + (p2[0] - p0[0]) * t / 3, p1[1] + (p2[1] - p0[1]) * t / 3)
+        c2 = (p2[0] - (p3[0] - p1[0]) * t / 3, p2[1] - (p3[1] - p1[1]) * t / 3)
+        d += ' C%.2f %.2f %.2f %.2f %.2f %.2f' % (c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
+    return d + (' Z' if closed else '')
+
+
+def spline(pts, n=8):
+    """Points along the smooth open curve through pts (n per span)."""
+    out = []
+    m = len(pts)
+    for i in range(m - 1):
+        p0, p1, p2, p3 = pts[max(0, i - 1)], pts[i], pts[i + 1], pts[min(m - 1, i + 2)]
+        for j in range(n):
+            t = j / n
+            out.append(tuple(.5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t * t + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t ** 3) for k in range(len(p1))))
+    out.append(tuple(pts[-1]))
+    return out
+
+
+def ribbon(pts, n=8, cap=True):
+    """A tapering limb: pts are (x, y, width) along its spine; returns the outline as a closed path."""
+    sp = spline(pts, n)
+    left, right = [], []
+    for i, (x, y, w) in enumerate(sp):
+        a_, b_ = sp[max(0, i - 1)], sp[min(len(sp) - 1, i + 1)]
+        dx, dy = b_[0] - a_[0], b_[1] - a_[1]
+        ln = math.hypot(dx, dy) or 1
+        nx, ny = -dy / ln, dx / ln
+        left.append((x + nx * w / 2, y + ny * w / 2))
+        right.append((x - nx * w / 2, y - ny * w / 2))
+    pts_ = left + right[::-1]
+    return 'M' + ' L'.join('%.2f %.2f' % q for q in pts_) + ' Z'
+
+
+def ramp_at(ramp, t):
+    """A colour from a list of evenly spaced stops, t in 0..1."""
+    t = max(0.0, min(1.0, t)) * (len(ramp) - 1)
+    i = min(len(ramp) - 2, int(t))
+    return mix(ramp[i], ramp[i + 1], t - i)
