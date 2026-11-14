@@ -256,9 +256,70 @@ def before_after():
     print("before_after_trees_animals.jpg", out.size)
 
 
+REDRAW_REV = "2068527"       # the flat vector art before the layered, lit redraw
+
+
+def before_after_redraw():
+    """before_after_redraw.jpg: trees, animals, crops and bushes before the redraw (flat vectors) and after it
+    (leaf by leaf, every part lit as a solid) — both at 100% of the files' pixels, so the detail can be judged."""
+    import io
+    import subprocess
+    f = lambda n: ImageFont.truetype(fv.FONT, n)
+
+    def old(name):
+        path = "farm/unity/SunnyValley/Assets/SunnyValley/Resources/Art/Farm/%s.png" % name
+        data = subprocess.run(["git", "show", "%s:%s" % (REDRAW_REV, path)], cwd=HERE, capture_output=True, check=True).stdout
+        return Image.open(io.BytesIO(data)).convert("RGBA")
+
+    def trim(im, box):
+        return im.crop(box) if box else im
+
+    rows = [[("Tree_apple_tree_ripe", None), ("Tree_pear_tree_bloom", None), ("Tree_cherry_tree_ripe", None), ("Tree_apple_tree_leaf_2", None)],
+            [("Animal_cow_ready", None), ("Animal_sheep", None), ("Animal_pig", None), ("Animal_chicken_ready", None), ("Animal_bee_ready", None), ("Bush2", None)],
+            [("Crop_wheat_4", (0, 200, 680, 896)), ("Crop_corn_4", (0, 200, 680, 896)), ("Crop_strawberry_4", (0, 200, 680, 896)), ("Crop_pumpkin_4", (0, 200, 680, 896)), ("Plot", None)]]
+    pad = 20
+    plot = fv.art("Farm/Plot")
+    sets = []
+    for row in rows:
+        pair = []
+        for which in (0, 1):
+            ims = []
+            for (n, box) in row:
+                im = old(n) if which == 0 else fv.art("Farm/" + n)
+                if n.startswith("Crop_"):
+                    under = Image.new("RGBA", im.size, (0, 0, 0, 0))
+                    pl = old("Plot") if which == 0 else plot
+                    under.alpha_composite(pl, (0, im.height - pl.height))
+                    under.alpha_composite(im)
+                    im = under
+                ims.append(trim(im, box))
+            pair.append(ims)
+        sets.append(pair)
+    W = max(sum(im.width + pad for im in pair[0]) for pair in sets) + pad
+    H = 90 + sum(2 * (max(im.height for im in pair[0]) + 40) + pad for pair in sets)
+    out = Image.new("RGBA", (W, H), PAPER + (255,))
+    d = ImageDraw.Draw(out)
+    d.text((pad, 44), "До и после перерисовки: деревья, животные, культуры (100% пикселей файла)", font=f(40), fill=INK, anchor="lm")
+    y = 90
+    for pair in sets:
+        h = max(im.height for im in pair[0])
+        for label, ims in zip(("до", "после"), pair):
+            d.rounded_rectangle([pad - 8, y, W - pad + 8, y + h + 30], 16, fill=(121, 185, 78, 255))
+            d.text((pad + 6, y + 20), label, font=f(30), fill="white", anchor="lm", stroke_width=2, stroke_fill=(50, 90, 30))
+            x = pad
+            for im in ims:
+                out.alpha_composite(im, (x, y + 30 + h - im.height))
+                x += im.width + pad
+            y += h + 40
+        y += pad
+    out.convert("RGB").save(os.path.join(HERE, "before_after_redraw.jpg"), quality=88)
+    print("before_after_redraw.jpg", out.size)
+
+
 if __name__ == "__main__":
     overview()
     one_to_one()
     sheet()
     sheets_100()
     before_after()
+    before_after_redraw()
