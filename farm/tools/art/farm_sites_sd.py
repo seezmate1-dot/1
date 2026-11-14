@@ -36,6 +36,8 @@ NEGATIVE = ("photo, photograph, dull colors, dark, gloomy, text, watermark, sign
             "flat vector, clipart, outline, black outline, cast shadow, ground plane, grass field, landscape, scenery")
 ISO = "isometric view, "
 BACKDROP = ", isolated on plain white background"
+# said first (CLIP reads only 77 tokens): without it fields and pens came out as whole scenes
+FRONT = "one single game asset isolated on a plain white background, "
 # what each kind must not get: no ground disc under things that stand on the map's own grass
 EXTRA_NEG = {"tree": ", grass base, round base, platform, island, disc, ground patch, exposed roots, pot",
              "bush": ", grass base, round base, platform, island, disc, pot",
@@ -53,7 +55,7 @@ TREE = {
                     "umbrella shaped crown of green leaves on long branches", 37),
 }
 BLOOM = {"apple_tree": "covered in white and pale pink apple blossoms among the leaves",
-         "pear_tree": "covered in pure white pear blossoms among the leaves",
+         "pear_tree": "covered in masses of pure white pear blossoms all over the crown",
          "cherry_tree": "covered in soft pink cherry blossoms among the leaves"}
 RIPE = {"apple_tree": "with many shiny ripe red apples hanging among the green leaves",
         "pear_tree": "with many ripe yellow pears hanging among the green leaves",
@@ -73,13 +75,13 @@ ANIMAL = {
 }
 
 PEN = {
-    "cowshed": "a small fenced cow paddock on a patch of trampled earth with a little red wooden cowshed, a wooden "
+    "cowshed": "a small square fenced cow paddock on a patch of trampled earth with a little red wooden cowshed, a wooden "
                "water trough and hay bales",
-    "sheepfold": "a small fenced sheep pen on a patch of grass with a little wooden shelter with a straw roof and a "
+    "sheepfold": "a small square fenced sheep pen on a patch of grass with a little wooden shelter with a straw roof and a "
                  "feeding rack of hay",
-    "pigsty": "a small fenced pigsty with a muddy puddle, a little wooden pig shed with a green roof and a feeding "
+    "pigsty": "a small square fenced pigsty with a muddy puddle, a little wooden pig shed with a green roof and a feeding "
               "trough",
-    "apiary": "a small fenced apiary garden with flowers, three wooden bee hives on stands and a little shed",
+    "apiary": "a small square fenced apiary garden with flowers, three wooden bee hives on stands and a little shed",
 }
 
 WORKSHOP = {
@@ -125,29 +127,30 @@ def jobs():
         for v, s in (("", seed), ("_2", seed + 100)):
             leaf = "Tree_%s_leaf%s" % (t, v)
             j[leaf] = (ISO + desc + ", green leaves only, no fruit, single tree", None, 1.0, s, "tree")
-            j["Tree_%s_bloom%s" % (t, v)] = ("a blooming tree " + BLOOM[t] + ", " + ISO + desc, leaf, 0.8, s, "tree")
+            j["Tree_%s_bloom%s" % (t, v)] = ("a blooming tree " + BLOOM[t] + ", " + ISO + desc, leaf, 0.88 if t == "pear_tree" else 0.8, s, "tree")
             j["Tree_%s_ripe%s" % (t, v)] = ("a fruit tree " + RIPE[t] + ", " + ISO + desc, leaf, 0.75, s, "tree")
     for a, (desc, _, ready) in ANIMAL.items():
         base = "Animal_" + a
         j[base] = (ISO + desc, None, 1.0, 5, "animal")
         j[base + "_ready"] = (ready[0].upper() + ready[1:] + ", " + ISO + desc, base, 0.6, 5, "animal")
     for p, desc in PEN.items():
-        j["Pen_" + p] = (ISO + desc + ", a small square plot seen from above at an angle, game building asset", None, 1.0, 9,
+        j["Pen_" + p] = (FRONT + desc + ", " + ISO + "the whole square enclosure in view, centered", None, 1.0, 9,
                          "pen")
     for w, desc in WORKSHOP.items():
-        j["Workshop_" + w] = (ISO + desc + ", standing on a small patch of earth and grass, single building, game "
+        j["Workshop_" + w] = (FRONT + ISO + desc + ", standing on a small patch of earth and grass, single building, game "
                               "building asset", None, 1.0, 13, "building")
     for c, stages in CROP.items():
         for i, desc in enumerate(stages, 1):
-            j["Crop_%s_%d" % (c, i)] = (ISO + desc + " growing, a small group of plants seen from above at an angle, no "
-                                        "soil bed", None, 1.0, 17 + i, "crop")
-    j["Seeded"] = (ISO + "a few tiny green seedlings just sprouting, a small group", None, 1.0, 3, "crop")
+            j["Crop_%s_%d" % (c, i)] = (FRONT + desc + ", one compact round clump, " + ISO + "centered", None, 1.0,
+                                        17 + i, "crop")
+    j["Seeded"] = (FRONT + "seven tiny green seedlings sprouting from little dark soil mounds in a small diamond "
+                   "pattern, " + ISO + "centered", None, 1.0, 3, "crop")
     for i in (1, 2, 3):
-        j["Bush%d" % i] = (ISO + ["a round leafy green bush", "a low wide flowering bush with small pink flowers",
+        j["Bush%d" % i] = (FRONT + ISO + ["a round leafy green bush", "a low wide flowering bush with small pink flowers",
                                   "a leafy bush with small yellow flowers"][i - 1] + ", single bush", None, 1.0, 40 + i,
                            "bush")
-    j["Plot"] = (ISO + "a small rectangular garden bed of freshly tilled dark brown soil with straight furrows and a low "
-                 "earth rim, seen from above at an angle, empty, no plants", None, 1.0, 2, "plot")
+    j["Plot"] = (FRONT + "an isometric diamond shaped garden bed of freshly tilled brown soil with furrows, short grass "
+                 "tufts along the edges, empty, no plants, centered", None, 1.0, 2, "plot")
     return j
 
 
@@ -197,6 +200,29 @@ def style_ref(kind):
 
 def _ipa(kind):
     return {"ip_adapter_image": style_ref(kind)} if IPA_SCALE > 0 else {}
+
+
+def white_border(img):
+    """Share of the picture's edge that is plain white: a scene (field, landscape) fills the edge, an asset does not."""
+    import numpy as np
+    a = np.asarray(img.convert("RGB")).astype(int)
+    m = max(4, a.shape[0] // 40)
+    edge = np.concatenate([a[:m].reshape(-1, 3), a[-m:].reshape(-1, 3), a[:, :m].reshape(-1, 3), a[:, -m:].reshape(-1, 3)])
+    return float(((edge.min(axis=1) > 215) & (edge.max(axis=1) - edge.min(axis=1) < 25)).mean())
+
+
+def paint(fn, seed, tries=4):
+    """fn(seed) → picture; repainted with another seed while its edge is not white."""
+    best, score = None, -1.0
+    for k in range(tries):
+        img = fn(seed + 1000 * k)
+        w = white_border(img)
+        if w > score:
+            best, score = img, w
+        if w >= 0.8:
+            break
+        print("  edge %.2f white, another seed" % w, flush=True)
+    return best
 
 
 def draw(prompt, size, seed, negative, kind):
@@ -349,11 +375,11 @@ def main():
             braw = os.path.join(RAW, base + ".png")
             if not os.path.exists(braw):
                 print("  base missing for", name, "- painting from text", flush=True)
-                raw = draw(prompt + BACKDROP, gen, seed, neg, kind)
+                raw = paint(lambda sd: draw(prompt + BACKDROP, gen, sd, neg, kind), seed)
             else:
-                raw = img2img(Image.open(braw), prompt + BACKDROP, gen, strength, seed, neg, kind)
+                raw = paint(lambda sd: img2img(Image.open(braw), prompt + BACKDROP, gen, strength, sd, neg, kind), seed)
         else:
-            raw = draw(prompt + BACKDROP, gen, seed, neg, kind)
+            raw = paint(lambda sd: draw(prompt + BACKDROP, gen, sd, neg, kind), seed)
         if not os.path.exists(raw_path) or args.force:
             raw.save(raw_path)
         finish(raw, size, kind).save(target)
