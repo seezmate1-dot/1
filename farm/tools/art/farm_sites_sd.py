@@ -42,7 +42,7 @@ FRONT = "one single game asset isolated on a plain white background, "
 EXTRA_NEG = {"tree": ", grass base, round base, platform, island, disc, ground patch, exposed roots, pot",
              "bush": ", grass base, round base, platform, island, disc, pot",
              "animal": ", grass base, round base, platform, ground patch, pen, fence",
-             "crop": ", grass base, round base, platform, pot, wooden box, raised bed",
+             "crop": ", grass base, round base, soil disc, sand disc, platform, pot, wooden box, raised bed, pineapple",
              "pen": "", "building": "", "plot": ", plants, grass base"}
 NO_FRUIT = ", fruit, apples, pears, cherries, berries, flowers, blossoms"
 
@@ -103,8 +103,9 @@ CROP = {
               "green-gold ears", "a thick clump of ripe golden wheat with full ears and long awns"],
     "carrot": ["a few tiny carrot seedlings", "a clump of young feathery carrot leaves", "a clump of lush feathery "
                "carrot tops", "lush feathery carrot tops with bright orange carrots poking out of the soil"],
-    "corn": ["a few tiny corn seedlings", "a few young green corn plants", "tall green corn plants with tassels",
-             "tall corn plants with ripe yellow corn cobs in green husks"],
+    "corn": ["a few tiny corn seedlings", "three young upright corn stalks with long narrow arching green leaves",
+             "three tall upright green corn stalks with tassels on top",
+             "three tall upright corn stalks with ripe yellow corn cobs in green husks"],
     "sunflower": ["a few tiny sunflower seedlings", "young green sunflower plants", "tall sunflower plants with closed "
                   "green buds", "tall sunflowers with big bright yellow blooming heads"],
     "strawberry": ["a few tiny strawberry seedlings", "a low clump of strawberry leaves", "a strawberry bush with white "
@@ -150,7 +151,7 @@ def jobs():
                                   "a leafy bush with small yellow flowers"][i - 1] + ", single bush", None, 1.0, 40 + i,
                            "bush")
     j["Plot"] = (FRONT + "an isometric diamond shaped garden bed of freshly tilled brown soil with furrows, short grass "
-                 "tufts along the edges, empty, no plants, centered", None, 1.0, 2, "plot")
+                 "tufts along the edges, bare soil, empty, no plants, no seedlings, centered", None, 1.0, 2, "plot")
     return j
 
 
